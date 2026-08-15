@@ -1,0 +1,2149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>Modern .NET Developer — Course</title>
+    <style>
+        /* ============================================================
+           ROOT VARIABLES & THEMING
+           ============================================================ */
+        :root {
+            --bg-dark: #0B0E14;
+            --bg-panel: #151821;
+            --bg-sidebar: #0B0E14;
+            --bg-main: #0F121A;
+            --bg-card: #1A1E2A;
+            --bg-hover: #1E2230;
+            --bg-active: rgba(139, 92, 246, 0.12);
+            --text-main: #E2E8F0;
+            --text-muted: #94A3B8;
+            --accent-purple: #8B5CF6;
+            --accent-green: #10B981;
+            --border-color: #1E293B;
+            --shadow-color: rgba(0, 0, 0, 0.6);
+            --scrollbar-track: #151821;
+            --scrollbar-thumb: #2D3748;
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --transition-speed: 0.3s;
+            --radius: 10px;
+            --radius-sm: 6px;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --font-size-base: 15px;
+            --sidebar-width: 340px;
+            --header-height: 60px;
+        }
+
+        [data-theme="light"] {
+            --bg-dark: #F1F5F9;
+            --bg-panel: #FFFFFF;
+            --bg-sidebar: #F8FAFC;
+            --bg-main: #F1F5F9;
+            --bg-card: #FFFFFF;
+            --bg-hover: #E2E8F0;
+            --bg-active: rgba(139, 92, 246, 0.10);
+            --text-main: #0F172A;
+            --text-muted: #475569;
+            --border-color: #CBD5E1;
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --scrollbar-track: #E2E8F0;
+            --scrollbar-thumb: #94A3B8;
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        /* ============================================================
+           RESET & BASE
+           ============================================================ */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: var(--font);
+            background: var(--bg-dark);
+            color: var(--text-main);
+            transition: background var(--transition-speed), color var(--transition-speed);
+            font-size: var(--font-size-base);
+            overflow: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 10px;
+        }
+
+        /* ============================================================
+           LAYOUT
+           ============================================================ */
+        .app {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            transition: width 0.3s ease, min-width 0.3s ease, transform 0.3s ease, background var(--transition-speed), border-color var(--transition-speed);
+            position: relative;
+            z-index: 20;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            border-right: none;
+            overflow: hidden;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 15;
+            backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 30;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 20px;
+            transition: all var(--transition-speed);
+            box-shadow: var(--card-shadow);
+            align-items: center;
+            justify-content: center;
+        }
+        .sidebar-toggle:hover {
+            border-color: var(--accent-purple);
+            background: var(--bg-hover);
+        }
+
+        /* ─── MAIN ─── */
+        .main {
+            flex: 1;
+            background: var(--bg-main);
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0;
+            transition: background var(--transition-speed);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ============================================================
+           SIDEBAR HEADER
+           ============================================================ */
+        .sidebar-header {
+            padding: 12px 14px 10px;
+            border-bottom: 1px solid var(--border-color);
+            transition: border-color var(--transition-speed);
+            flex-shrink: 0;
+        }
+
+        .sidebar-header .top-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .sidebar-header .top-row .brand {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .sidebar-header .top-row .brand span {
+            background: var(--accent-purple);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 600;
+            padding: 1px 7px;
+            border-radius: 20px;
+            letter-spacing: 0.3px;
+        }
+
+        .toolbar-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all var(--transition-speed);
+            background: var(--bg-panel);
+            flex-shrink: 0;
+        }
+        .toolbar-btn:hover {
+            border-color: var(--accent-purple);
+            color: var(--text-main);
+            background: var(--bg-hover);
+        }
+        .toolbar-btn.active {
+            border-color: var(--accent-purple);
+            color: var(--accent-purple);
+            background: var(--bg-active);
+        }
+
+        .search-wrap {
+            position: relative;
+        }
+        .search-wrap .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 12px;
+            pointer-events: none;
+        }
+        .search-wrap input {
+            width: 100%;
+            padding: 6px 10px 6px 32px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-main);
+            font-size: 12px;
+            transition: all var(--transition-speed);
+            outline: none;
+            height: 32px;
+        }
+        .search-wrap input::placeholder {
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+        .search-wrap input:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+        }
+        .search-wrap .clear-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+            display: none;
+            padding: 2px 4px;
+        }
+        .search-wrap .clear-btn.visible {
+            display: block;
+        }
+        .search-wrap .clear-btn:hover {
+            color: var(--text-main);
+        }
+
+        .search-info {
+            font-size: 10px;
+            color: var(--text-muted);
+            padding: 3px 0 0 4px;
+            min-height: 18px;
+            transition: opacity var(--transition-speed);
+        }
+        .search-info.highlight {
+            color: var(--accent-purple);
+        }
+
+        /* ============================================================
+           TREE CONTAINER
+           ============================================================ */
+        .tree-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 10px 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tree-container .course-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            padding: 0 6px 8px 6px;
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           BOOK ACCORDION
+           ============================================================ */
+        .book-details {
+            border-bottom: 1px solid var(--border-color);
+            transition: border-color var(--transition-speed);
+        }
+        .book-details:last-of-type {
+            border-bottom: none;
+        }
+
+        .book-summary {
+            list-style: none;
+            cursor: pointer;
+            display: block;
+            padding: 0;
+            transition: background 0.15s;
+            border-radius: var(--radius-sm);
+        }
+        .book-summary::-webkit-details-marker {
+            display: none;
+        }
+        .book-summary:hover {
+            background: var(--bg-hover);
+        }
+
+        .book-summary .book-header {
+            padding: 10px 10px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .book-summary .book-header .book-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+        .book-summary .book-header .book-title-row .book-icon {
+            margin-right: 3px;
+        }
+        .book-summary .book-header .book-title-row .book-pct {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .book-summary .book-header .book-title-row .book-cert-badge {
+            font-size: 13px;
+            margin-left: 4px;
+        }
+
+        .book-summary .book-header .progress-wrap {
+            width: 100%;
+            height: 3px;
+            background: var(--bg-panel);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 3px 0 2px;
+        }
+        .book-summary .book-header .progress-wrap .bar {
+            height: 100%;
+            background: var(--accent-purple);
+            border-radius: 4px;
+            transition: width 0.6s ease;
+            width: 0%;
+        }
+        .book-summary .book-header .progress-text {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* ============================================================
+           PART ACCORDION
+           ============================================================ */
+        .part-details {
+            margin: 1px 0;
+        }
+        .part-details summary {
+            list-style: none;
+            padding: 6px 10px 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s;
+            user-select: none;
+        }
+        .part-details summary::-webkit-details-marker {
+            display: none;
+        }
+        .part-details summary:hover {
+            background: var(--bg-hover);
+        }
+        .part-details summary::after {
+            content: '▾';
+            color: var(--text-muted);
+            font-size: 12px;
+            transition: transform 0.25s ease;
+        }
+        .part-details[open] summary::after {
+            transform: rotate(180deg);
+        }
+
+        /* ============================================================
+           LESSON LIST
+           ============================================================ */
+        .lesson-list {
+            list-style: none;
+            padding: 2px 0 4px 0;
+            margin: 0 0 0 14px;
+            border-left: 1.5px solid var(--border-color);
+            transition: border-color var(--transition-speed);
+        }
+
+        .lesson-list li {
+            position: relative;
+        }
+
+        .lesson-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 5px 10px 5px 14px;
+            border-radius: var(--radius-sm);
+            transition: all 0.15s;
+            cursor: pointer;
+            position: relative;
+            line-height: 1.3;
+        }
+        .lesson-link:hover {
+            color: var(--text-main);
+            background: var(--bg-hover);
+        }
+        .lesson-link .lesson-status {
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            margin-left: auto;
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .lesson-link .lesson-status.done {
+            opacity: 1;
+            color: var(--accent-green);
+        }
+
+        .lesson-link.active {
+            color: var(--accent-purple);
+            background: var(--bg-active);
+            font-weight: 500;
+        }
+        .lesson-link.active::before {
+            content: '';
+            position: absolute;
+            left: -1.5px;
+            top: 4px;
+            bottom: 4px;
+            width: 2.5px;
+            background: var(--accent-purple);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .lesson-link.completed {
+            color: var(--text-muted);
+        }
+        .lesson-link.completed .check-mark {
+            color: var(--accent-green);
+        }
+
+        .lesson-link .match-highlight {
+            background: rgba(139, 92, 246, 0.25);
+            padding: 0 2px;
+            border-radius: 2px;
+            font-weight: 600;
+        }
+        [data-theme="light"] .lesson-link .match-highlight {
+            background: rgba(139, 92, 246, 0.20);
+        }
+
+        .lesson-link.hidden {
+            display: none;
+        }
+        .part-details.hidden-part>summary,
+        .part-details.hidden-part>.lesson-list {
+            display: none;
+        }
+        .book-details.hidden-book>.book-summary,
+        .book-details.hidden-book>.nav-tree {
+            display: none;
+        }
+
+        /* ============================================================
+           MAIN CONTENT AREA
+           ============================================================ */
+        .main-content {
+            flex: 1;
+            padding: 20px 24px 40px;
+            max-width: 880px;
+            margin: 0 auto;
+            width: 100%;
+            animation: fadeSlideIn 0.35s ease;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .main-content .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .main-content .breadcrumb span {
+            color: var(--text-muted);
+        }
+        .main-content .breadcrumb .sep {
+            opacity: 0.4;
+        }
+        .main-content .breadcrumb .crumb-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .main-content .breadcrumb .crumb-link:hover {
+            color: var(--accent-purple);
+        }
+        .main-content .breadcrumb .current {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .main-content .lesson-header {
+            margin-bottom: 18px;
+        }
+        .main-content .lesson-header .lesson-number {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-purple);
+            font-weight: 600;
+        }
+        .main-content .lesson-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 4px 0 4px;
+            line-height: 1.25;
+            word-break: break-word;
+        }
+        .main-content .lesson-header .lesson-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+        }
+        .main-content .lesson-header .lesson-meta .part-tag {
+            background: var(--bg-panel);
+            padding: 2px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            font-size: 10px;
+        }
+
+        .lesson-body {
+            color: var(--text-main);
+            font-size: 15px;
+            line-height: 1.75;
+            transition: font-size 0.2s;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+        .lesson-body p {
+            margin-bottom: 14px;
+        }
+        .lesson-body h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 24px 0 10px;
+            color: var(--text-main);
+        }
+        .lesson-body h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin: 18px 0 8px;
+            color: var(--text-main);
+        }
+        .lesson-body h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 14px 0 6px;
+            color: var(--text-main);
+        }
+        .lesson-body ul,
+        .lesson-body ol {
+            margin: 0 0 14px 20px;
+        }
+        .lesson-body li {
+            margin-bottom: 5px;
+        }
+        .lesson-body code {
+            background: var(--bg-panel);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+            color: var(--accent-purple);
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        .lesson-body pre {
+            background: var(--bg-panel);
+            padding: 14px 16px;
+            border-radius: var(--radius-sm);
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 14px 0;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+            line-height: 1.6;
+            color: var(--text-main);
+            -webkit-overflow-scrolling: touch;
+        }
+        .lesson-body pre code {
+            background: transparent;
+            border: none;
+            color: inherit;
+            padding: 0;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .lesson-body .tip-box {
+            background: var(--bg-active);
+            border-left: 3px solid var(--accent-purple);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin: 14px 0;
+            color: var(--text-main);
+        }
+        .lesson-body .tip-box strong {
+            color: var(--accent-purple);
+        }
+        .lesson-body .concept-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+            margin: 14px 0;
+        }
+        .lesson-body .concept-box .concept-title {
+            font-weight: 600;
+            color: var(--accent-blue);
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        .lesson-body .concept-box .concept-title .emoji {
+            margin-right: 6px;
+        }
+        .lesson-body .example-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-left: 3px solid var(--accent-orange);
+        }
+        .lesson-body .example-box .example-label {
+            font-weight: 600;
+            color: var(--accent-orange);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .lesson-body .highlight-green {
+            color: var(--accent-green);
+            font-weight: 500;
+        }
+        .lesson-body .highlight-purple {
+            color: var(--accent-purple);
+            font-weight: 500;
+        }
+
+        /* ============================================================
+           LESSON NAVIGATION
+           ============================================================ */
+        .lesson-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .lesson-nav .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.15s;
+            text-decoration: none;
+            height: 36px;
+        }
+        .lesson-nav .nav-btn:hover {
+            border-color: var(--accent-purple);
+            background: var(--bg-hover);
+        }
+        .lesson-nav .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .lesson-nav .complete-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.15s;
+            height: 36px;
+        }
+        .lesson-nav .complete-toggle:hover {
+            border-color: var(--accent-green);
+            color: var(--text-main);
+        }
+        .lesson-nav .complete-toggle.done {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        /* ============================================================
+           EMPTY STATE
+           ============================================================ */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: var(--text-muted);
+            padding: 40px 20px;
+        }
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 14px;
+            opacity: 0.5;
+        }
+        .empty-state h2 {
+            color: var(--text-main);
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+        .empty-state p {
+            max-width: 400px;
+            font-size: 14px;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+
+        /* Tablets and small desktops */
+        @media (max-width: 900px) {
+            :root {
+                --sidebar-width: 300px;
+            }
+            .main-content {
+                padding: 16px 20px 30px;
+            }
+            .main-content .lesson-header h1 {
+                font-size: 22px;
+            }
+        }
+
+        /* Mobile landscape & tablets */
+        @media (max-width: 768px) {
+            :root {
+                --sidebar-width: 280px;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 20;
+                transform: translateX(-100%);
+                width: var(--sidebar-width);
+                min-width: var(--sidebar-width);
+                border-right: 1px solid var(--border-color);
+                box-shadow: var(--card-shadow);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+                width: var(--sidebar-width);
+                min-width: var(--sidebar-width);
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .sidebar-toggle {
+                display: flex;
+            }
+
+            .main {
+                height: 100vh;
+                padding-top: 0;
+            }
+
+            .main-content {
+                padding: 14px 16px 30px;
+                padding-top: 60px;
+            }
+
+            .main-content .lesson-header h1 {
+                font-size: 20px;
+            }
+
+            .lesson-nav .nav-btn,
+            .lesson-nav .complete-toggle {
+                font-size: 11px;
+                padding: 4px 10px;
+                height: 32px;
+            }
+        }
+
+        /* Small phones */
+        @media (max-width: 480px) {
+            :root {
+                --sidebar-width: 100vw;
+            }
+
+            .sidebar {
+                width: 100vw;
+                min-width: 100vw;
+            }
+
+            .sidebar-header .top-row .brand {
+                font-size: 13px;
+            }
+            .toolbar-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            .main-content {
+                padding: 10px 12px 24px;
+                padding-top: 56px;
+            }
+            .main-content .lesson-header h1 {
+                font-size: 18px;
+            }
+            .main-content .breadcrumb {
+                font-size: 10px;
+            }
+
+            .lesson-body {
+                font-size: 14px;
+                line-height: 1.7;
+            }
+            .lesson-body h2 {
+                font-size: 18px;
+            }
+            .lesson-body h3 {
+                font-size: 15px;
+            }
+            .lesson-body pre {
+                font-size: 12px;
+                padding: 10px 12px;
+            }
+            .lesson-body code {
+                font-size: 12px;
+            }
+
+            .sidebar-toggle {
+                width: 34px;
+                height: 34px;
+                font-size: 16px;
+                top: 8px;
+                left: 8px;
+            }
+        }
+
+        /* ============================================================
+           PRINT STYLES
+           ============================================================ */
+        @media print {
+            .sidebar {
+                display: none !important;
+            }
+            .sidebar-toggle {
+                display: none !important;
+            }
+            .sidebar-overlay {
+                display: none !important;
+            }
+            .main {
+                height: auto !important;
+                overflow: visible !important;
+                padding-top: 0 !important;
+            }
+            .main-content {
+                padding: 20px !important;
+                max-width: 100% !important;
+                padding-top: 20px !important;
+            }
+            .lesson-nav {
+                display: none !important;
+            }
+            .lesson-body {
+                font-size: 12px !important;
+                line-height: 1.5 !important;
+            }
+            pre,
+            code {
+                white-space: pre-wrap !important;
+                word-break: break-word !important;
+            }
+            .empty-state {
+                display: none !important;
+            }
+            .lesson-view {
+                display: block !important;
+            }
+        }
+
+        /* ============================================================
+           UTILITY
+           ============================================================ */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        .text-ellipsis {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .flex-shrink-0 {
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app">
+
+        <!-- ─── SIDEBAR OVERLAY (mobile) ─── -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- ─── SIDEBAR TOGGLE (mobile) ─── -->
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+
+        <!-- ─── SIDEBAR ─── -->
+        <aside class="sidebar" id="sidebar">
+
+            <div class="sidebar-header">
+                <div class="top-row">
+                    <div class="brand">
+                        📘 .NET Dev
+                        <span>v6</span>
+                    </div>
+                    <button class="toolbar-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">🌓</button>
+                    <button class="toolbar-btn" id="expandAllBtn" title="Expand all">⊞</button>
+                    <button class="toolbar-btn" id="collapseAllBtn" title="Collapse all">⊟</button>
+                </div>
+                <div class="search-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search lessons…" aria-label="Search lessons" />
+                    <button class="clear-btn" id="clearSearch" aria-label="Clear search">✕</button>
+                </div>
+                <div class="search-info" id="searchInfo"></div>
+            </div>
+
+            <div class="tree-container" id="treeContainer">
+                <div class="course-label">Course Content</div>
+                <div id="treeRoot"></div>
+            </div>
+
+        </aside>
+
+        <!-- ─── MAIN CONTENT ─── -->
+        <main class="main" id="mainContent">
+            <div class="empty-state" id="emptyState">
+                <div class="icon">📖</div>
+                <h2>Welcome to Modern .NET</h2>
+                <p>Select a lesson from the sidebar to begin your journey through C# and .NET development.</p>
+                <p style="margin-top:8px;font-size:12px;color:var(--text-muted);">👆 Tap the ☰ menu on mobile to open the sidebar.</p>
+            </div>
+            <div class="main-content" id="lessonView" style="display:none;">
+                <div class="breadcrumb" id="breadcrumb"></div>
+                <div class="lesson-header">
+                    <div class="lesson-number" id="lessonNumber"></div>
+                    <h1 id="lessonTitle"></h1>
+                    <div class="lesson-meta">
+                        <span id="lessonBook"></span>
+                        <span class="part-tag" id="lessonPart"></span>
+                        <span id="lessonStatus"></span>
+                    </div>
+                </div>
+
+                <div class="lesson-body" id="lessonBody">
+                    <!-- Content will be loaded from the Content folder -->
+                </div>
+
+                <div class="lesson-nav">
+                    <button class="nav-btn" id="prevBtn">← Previous</button>
+                    <button class="complete-toggle" id="completeToggle">☐ Mark Complete</button>
+                    <button class="nav-btn" id="nextBtn">Next →</button>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- ============================================================
+    JAVASCRIPT — Course Player with Custom File Mapping
+    ============================================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ─── FILE MAPPING ──────────────────────────────────────────────
+            // 👇 EDIT THIS MAP to match your actual filenames in the 'Content' folder.
+            // The key is the lesson ID (e.g., 'f1-1'), the value is the filename.
+            // Add all lessons that have custom filenames; others will fall back to a generated name.
+            const FILE_MAP = {
+                // Foundations — Part I
+                'f1-1': '003-what-are-c-and-net.html', // Example: your file is 003-...
+                // 'f1-2': '004-setting-up-the-modern-environment.html',
+                // 'f1-3': '005-your-first-csharp-application.html',
+                // ... add all other lessons as needed.
+            };
+
+            // ─── COURSE DATA ──────────────────────────────────────────────
+            const COURSE_DATA = {
+                books: [{
+                    id: 'foundations',
+                    title: 'C# Foundations',
+                    icon: '📘',
+                    parts: [{
+                        id: 'f1',
+                        title: 'Part I — C# and .NET',
+                        lessons: [
+                            { id: 'f1-1', title: 'What Are C# and .NET?' },
+                            { id: 'f1-2', title: 'Setting Up the Modern Environment' },
+                            { id: 'f1-3', title: 'Your First C# Application' },
+                        ]
+                    }, {
+                        id: 'f2',
+                        title: 'Part II — Language Fundamentals',
+                        lessons: [
+                            { id: 'f2-1', title: 'Variables and Constants' },
+                            { id: 'f2-2', title: 'Built-in Data Types' },
+                            { id: 'f2-3', title: 'Strings and Text' },
+                            { id: 'f2-4', title: 'Type Conversion' },
+                            { id: 'f2-5', title: 'Operators' },
+                            { id: 'f2-6', title: 'Control Flow' },
+                            { id: 'f2-7', title: 'Methods' },
+                        ]
+                    }, {
+                        id: 'f3',
+                        title: 'Part III — Object-Oriented C#',
+                        lessons: [
+                            { id: 'f3-1', title: 'Classes and Objects' },
+                            { id: 'f3-2', title: 'Fields and Properties' },
+                            { id: 'f3-3', title: 'Constructors' },
+                            { id: 'f3-4', title: 'Static Members' },
+                            { id: 'f3-5', title: 'Access Modifiers' },
+                            { id: 'f3-6', title: 'Encapsulation' },
+                            { id: 'f3-7', title: 'Value vs Reference Types' },
+                            { id: 'f3-8', title: 'Structs' },
+                            { id: 'f3-9', title: 'Enums' },
+                            { id: 'f3-10', title: 'Inheritance' },
+                            { id: 'f3-11', title: 'Polymorphism' },
+                            { id: 'f3-12', title: 'Overloading and Overriding' },
+                            { id: 'f3-13', title: 'Interfaces — First Look' },
+                            { id: 'f3-14', title: 'Composition vs Inheritance' },
+                        ]
+                    }, {
+                        id: 'f4',
+                        title: 'Part IV — Collections and Data',
+                        lessons: [
+                            { id: 'f4-1', title: 'Arrays' },
+                            { id: 'f4-2', title: 'Multidimensional Arrays' },
+                            { id: 'f4-3', title: 'Jagged Arrays' },
+                            { id: 'f4-4', title: 'Lists' },
+                            { id: 'f4-5', title: 'Dictionaries' },
+                            { id: 'f4-6', title: 'HashSet' },
+                            { id: 'f4-7', title: 'Stack and Queue' },
+                            { id: 'f4-8', title: 'Collection Interfaces' },
+                            { id: 'f4-9', title: 'IEnumerable<T> — First Look' },
+                        ]
+                    }, {
+                        id: 'f5',
+                        title: 'Part V — Errors, Files and Dates',
+                        lessons: [
+                            { id: 'f5-1', title: 'Exception Handling' },
+                            { id: 'f5-2', title: 'Creating and Throwing' },
+                            { id: 'f5-3', title: 'File and Directory Operations' },
+                            { id: 'f5-4', title: 'Paths' },
+                            { id: 'f5-5', title: 'Streams — Introduction' },
+                            { id: 'f5-6', title: 'DateTime and DateTimeOffset' },
+                            { id: 'f5-7', title: 'Time Zones' },
+                            { id: 'f5-8', title: 'Working with JSON' },
+                            { id: 'f5-9', title: 'Serialization' },
+                        ]
+                    }, {
+                        id: 'f6',
+                        title: 'Part VI — Modern C# Fundamentals',
+                        lessons: [
+                            { id: 'f6-1', title: 'Nullable Reference Types' },
+                            { id: 'f6-2', title: 'Null-Safe Programming' },
+                            { id: 'f6-3', title: 'Pattern Matching' },
+                            { id: 'f6-4', title: 'Records — Introduction' },
+                            { id: 'f6-5', title: 'Tuples & Deconstruction' },
+                            { id: 'f6-6', title: 'Modern Switch Expressions' },
+                            { id: 'f6-7', title: 'Modern Collection Expressions' },
+                            { id: 'f6-8', title: 'required Members' },
+                            { id: 'f6-9', title: 'Primary Constructors' },
+                        ]
+                    }, {
+                        id: 'f7',
+                        title: 'Part VII — Practical Development',
+                        lessons: [
+                            { id: 'f7-1', title: 'Debugging C# Applications' },
+                            { id: 'f7-2', title: 'Reading Stack Traces' },
+                            { id: 'f7-3', title: 'Writing Clean C#' },
+                            { id: 'f7-4', title: 'Naming Conventions' },
+                            { id: 'f7-5', title: 'Common Beginner Mistakes' },
+                            { id: 'f7-6', title: 'Project: Expense Tracker' },
+                            { id: 'f7-7', title: 'Project: Employee System' },
+                            { id: 'f7-8', title: 'Fundamentals Challenge' },
+                        ]
+                    }]
+                }, {
+                    id: 'intermediate',
+                    title: 'C# In Practice',
+                    icon: '📕',
+                    parts: [{
+                        id: 'i1',
+                        title: 'Part I — Advanced OOP',
+                        lessons: [
+                            { id: 'i1-1', title: 'OOP Revisited' },
+                            { id: 'i1-2', title: 'Encapsulation in Real Applications' },
+                            { id: 'i1-3', title: 'Inheritance' },
+                            { id: 'i1-4', title: 'Composition' },
+                            { id: 'i1-5', title: 'Polymorphism' },
+                            { id: 'i1-6', title: 'Abstract Classes' },
+                            { id: 'i1-7', title: 'Sealed Classes and Members' },
+                            { id: 'i1-8', title: 'Interfaces' },
+                            { id: 'i1-9', title: 'Multiple Interface Implementation' },
+                            { id: 'i1-10', title: 'Interface Segregation' },
+                            { id: 'i1-11', title: 'Explicit Interface Implementation' },
+                            { id: 'i1-12', title: 'Dependency Inversion' },
+                        ]
+                    }, {
+                        id: 'i2',
+                        title: 'Part II — Generics & Collections',
+                        lessons: [
+                            { id: 'i2-1', title: 'Generics' },
+                            { id: 'i2-2', title: 'Generic Classes' },
+                            { id: 'i2-3', title: 'Generic Methods' },
+                            { id: 'i2-4', title: 'Generic Constraints' },
+                            { id: 'i2-5', title: 'where Constraints' },
+                            { id: 'i2-6', title: 'Covariance and Contravariance' },
+                            { id: 'i2-7', title: 'Generic Collections' },
+                            { id: 'i2-8', title: 'Dictionary Internals' },
+                            { id: 'i2-9', title: 'Equality and Hashing' },
+                            { id: 'i2-10', title: 'IComparable<T>' },
+                            { id: 'i2-11', title: 'IEquatable<T>' },
+                            { id: 'i2-12', title: 'Custom Collections' },
+                        ]
+                    }, {
+                        id: 'i3',
+                        title: 'Part III — Delegates & Functional C#',
+                        lessons: [
+                            { id: 'i3-1', title: 'Delegates' },
+                            { id: 'i3-2', title: 'Custom Delegates' },
+                            { id: 'i3-3', title: 'Action' },
+                            { id: 'i3-4', title: 'Func' },
+                            { id: 'i3-5', title: 'Predicate' },
+                            { id: 'i3-6', title: 'Lambda Expressions' },
+                            { id: 'i3-7', title: 'Closures' },
+                            { id: 'i3-8', title: 'Local Functions' },
+                            { id: 'i3-9', title: 'Higher-Order Functions' },
+                            { id: 'i3-10', title: 'Events' },
+                            { id: 'i3-11', title: 'Event Patterns' },
+                            { id: 'i3-12', title: 'Event-Driven Design' },
+                        ]
+                    }, {
+                        id: 'i4',
+                        title: 'Part IV — LINQ',
+                        lessons: [
+                            { id: 'i4-1', title: 'Introduction to LINQ' },
+                            { id: 'i4-2', title: 'IEnumerable and IQueryable' },
+                            { id: 'i4-3', title: 'Filtering' },
+                            { id: 'i4-4', title: 'Projection' },
+                            { id: 'i4-5', title: 'Sorting' },
+                            { id: 'i4-6', title: 'Grouping' },
+                            { id: 'i4-7', title: 'Joining' },
+                            { id: 'i4-8', title: 'Aggregation' },
+                            { id: 'i4-9', title: 'Deferred Execution' },
+                            { id: 'i4-10', title: 'Immediate Execution' },
+                            { id: 'i4-11', title: 'LINQ Query Syntax' },
+                            { id: 'i4-12', title: 'LINQ Method Syntax' },
+                            { id: 'i4-13', title: 'Custom LINQ Extensions' },
+                            { id: 'i4-14', title: 'LINQ Performance' },
+                        ]
+                    }, {
+                        id: 'i5',
+                        title: 'Part V — Modern .NET Dev',
+                        lessons: [
+                            { id: 'i5-1', title: 'Dependency Injection' },
+                            { id: 'i5-2', title: 'Service Lifetimes' },
+                            { id: 'i5-3', title: 'Configuration' },
+                            { id: 'i5-4', title: 'Options Pattern' },
+                            { id: 'i5-5', title: 'Logging' },
+                            { id: 'i5-6', title: 'Environment-Based Configuration' },
+                            { id: 'i5-7', title: 'HTTP Client' },
+                            { id: 'i5-8', title: 'JSON APIs' },
+                            { id: 'i5-9', title: 'REST Fundamentals' },
+                            { id: 'i5-10', title: 'OpenAPI' },
+                        ]
+                    }, {
+                        id: 'i6',
+                        title: 'Part VI — Data Access',
+                        lessons: [
+                            { id: 'i6-1', title: 'ADO.NET Fundamentals' },
+                            { id: 'i6-2', title: 'Database Connections' },
+                            { id: 'i6-3', title: 'Commands' },
+                            { id: 'i6-4', title: 'Parameters' },
+                            { id: 'i6-5', title: 'Transactions' },
+                            { id: 'i6-6', title: 'Entity Framework Core' },
+                            { id: 'i6-7', title: 'DbContext' },
+                            { id: 'i6-8', title: 'Entities' },
+                            { id: 'i6-9', title: 'Relationships' },
+                            { id: 'i6-10', title: 'Migrations' },
+                            { id: 'i6-11', title: 'LINQ with EF Core' },
+                            { id: 'i6-12', title: 'Tracking vs No-Tracking' },
+                            { id: 'i6-13', title: 'Transactions and Concurrency' },
+                            { id: 'i6-14', title: 'Repository Pattern — When and Why' },
+                        ]
+                    }, {
+                        id: 'i7',
+                        title: 'Part VII — Async Programming',
+                        lessons: [
+                            { id: 'i7-1', title: 'Synchronous vs Asynchronous' },
+                            { id: 'i7-2', title: 'Task and Task<T>' },
+                            { id: 'i7-3', title: 'async / await' },
+                            { id: 'i7-4', title: 'CancellationToken' },
+                            { id: 'i7-5', title: 'Task.WhenAll' },
+                            { id: 'i7-6', title: 'Task.WhenAny' },
+                            { id: 'i7-7', title: 'Exception Handling in Async' },
+                            { id: 'i7-8', title: 'Async Streams' },
+                            { id: 'i7-9', title: 'IAsyncEnumerable<T>' },
+                            { id: 'i7-10', title: 'Common Async Mistakes' },
+                        ]
+                    }, {
+                        id: 'i8',
+                        title: 'Part VIII — Intermediate Projects',
+                        lessons: [
+                            { id: 'i8-1', title: 'REST API Project' },
+                            { id: 'i8-2', title: 'Employee Management API' },
+                            { id: 'i8-3', title: 'EF Core Database Project' },
+                            { id: 'i8-4', title: 'Notification Service' },
+                            { id: 'i8-5', title: 'Background Processing Service' },
+                            { id: 'i8-6', title: 'Intermediate C# Challenge' },
+                        ]
+                    }]
+                }, {
+                    id: 'advanced',
+                    title: 'Production .NET',
+                    icon: '📗',
+                    parts: [{
+                        id: 'a1',
+                        title: 'Part I — Advanced C# Language',
+                        lessons: [
+                            { id: 'a1-1', title: 'How Modern C# Executes' },
+                            { id: 'a1-2', title: 'CLR and Runtime Internals' },
+                            { id: 'a1-3', title: 'JIT Compilation' },
+                            { id: 'a1-4', title: 'Garbage Collection' },
+                            { id: 'a1-5', title: 'Generational GC' },
+                            { id: 'a1-6', title: 'Memory Allocation' },
+                            { id: 'a1-7', title: 'Stack vs Heap' },
+                            { id: 'a1-8', title: 'Boxing and Unboxing' },
+                            { id: 'a1-9', title: 'Value Types vs Reference Types' },
+                            { id: 'a1-10', title: 'Records and Record Structs' },
+                            { id: 'a1-11', title: 'Pattern Matching in Depth' },
+                            { id: 'a1-12', title: 'Advanced Generics' },
+                            { id: 'a1-13', title: 'Variance' },
+                            { id: 'a1-14', title: 'Reflection' },
+                            { id: 'a1-15', title: 'Attributes' },
+                            { id: 'a1-16', title: 'Source Generators — Intro' },
+                        ]
+                    }, {
+                        id: 'a2',
+                        title: 'Part II — Delegates & Events',
+                        lessons: [
+                            { id: 'a2-1', title: 'Advanced Delegates' },
+                            { id: 'a2-2', title: 'Action / Func / Predicate' },
+                            { id: 'a2-3', title: 'Expression Trees' },
+                            { id: 'a2-4', title: 'Lambda Internals' },
+                            { id: 'a2-5', title: 'Closures' },
+                            { id: 'a2-6', title: 'Advanced Events' },
+                            { id: 'a2-7', title: 'Event Aggregation' },
+                            { id: 'a2-8', title: 'Extension Methods' },
+                            { id: 'a2-9', title: 'C# 14 Extension Members' },
+                        ]
+                    }, {
+                        id: 'a3',
+                        title: 'Part III — LINQ Deep Dive',
+                        lessons: [
+                            { id: 'a3-1', title: 'IEnumerable<T> Internals' },
+                            { id: 'a3-2', title: 'IQueryable<T>' },
+                            { id: 'a3-3', title: 'Expression Trees' },
+                            { id: 'a3-4', title: 'Deferred Execution' },
+                            { id: 'a3-5', title: 'LINQ Performance' },
+                            { id: 'a3-6', title: 'Custom LINQ Operators' },
+                            { id: 'a3-7', title: 'LINQ to Objects' },
+                            { id: 'a3-8', title: 'LINQ to EF Core' },
+                            { id: 'a3-9', title: 'LINQ and SQL Translation' },
+                            { id: 'a3-10', title: 'Avoiding LINQ Performance Traps' },
+                        ]
+                    }, {
+                        id: 'a4',
+                        title: 'Part IV — Async & Concurrency',
+                        lessons: [
+                            { id: 'a4-1', title: 'Task Internals' },
+                            { id: 'a4-2', title: 'Synchronization Context' },
+                            { id: 'a4-3', title: 'ThreadPool' },
+                            { id: 'a4-4', title: 'ValueTask' },
+                            { id: 'a4-5', title: 'Cancellation' },
+                            { id: 'a4-6', title: 'Parallel Programming' },
+                            { id: 'a4-7', title: 'Parallel.ForEach' },
+                            { id: 'a4-8', title: 'Channels' },
+                            { id: 'a4-9', title: 'Concurrent Collections' },
+                            { id: 'a4-10', title: 'Locking and Synchronization' },
+                            { id: 'a4-11', title: 'Race Conditions' },
+                            { id: 'a4-12', title: 'Deadlocks' },
+                            { id: 'a4-13', title: 'Thread-Safe Design' },
+                            { id: 'a4-14', title: 'Async Streams' },
+                            { id: 'a4-15', title: 'High-Throughput Async' },
+                        ]
+                    }, {
+                        id: 'a5',
+                        title: 'Part V — Memory & Performance',
+                        lessons: [
+                            { id: 'a5-1', title: 'Span<T>' },
+                            { id: 'a5-2', title: 'ReadOnlySpan<T>' },
+                            { id: 'a5-3', title: 'Memory<T>' },
+                            { id: 'a5-4', title: 'ArrayPool<T>' },
+                            { id: 'a5-5', title: 'MemoryPool<T>' },
+                            { id: 'a5-6', title: 'ref / in / out' },
+                            { id: 'a5-7', title: 'ref struct' },
+                            { id: 'a5-8', title: 'stackalloc' },
+                            { id: 'a5-9', title: 'Zero-Allocation Programming' },
+                            { id: 'a5-10', title: 'Performance Benchmarking' },
+                            { id: 'a5-11', title: 'Profiling .NET Applications' },
+                        ]
+                    }, {
+                        id: 'a6',
+                        title: 'Part VI — Architecture & Design',
+                        lessons: [
+                            { id: 'a6-1', title: 'SOLID Principles' },
+                            { id: 'a6-2', title: 'Clean Code' },
+                            { id: 'a6-3', title: 'Coupling and Cohesion' },
+                            { id: 'a6-4', title: 'Dependency Injection at Scale' },
+                            { id: 'a6-5', title: 'Design Patterns' },
+                            { id: 'a6-6', title: 'Factory Pattern' },
+                            { id: 'a6-7', title: 'Strategy Pattern' },
+                            { id: 'a6-8', title: 'Decorator Pattern' },
+                            { id: 'a6-9', title: 'Adapter Pattern' },
+                            { id: 'a6-10', title: 'Observer Pattern' },
+                            { id: 'a6-11', title: 'Builder Pattern' },
+                            { id: 'a6-12', title: 'Mediator Pattern' },
+                            { id: 'a6-13', title: 'Repository Pattern' },
+                            { id: 'a6-14', title: 'Unit of Work' },
+                            { id: 'a6-15', title: 'Clean Architecture' },
+                            { id: 'a6-16', title: 'Hexagonal Architecture' },
+                            { id: 'a6-17', title: 'Domain-Driven Design' },
+                        ]
+                    }, {
+                        id: 'a7',
+                        title: 'Part VII — Production ASP.NET',
+                        lessons: [
+                            { id: 'a7-1', title: 'ASP.NET Core Architecture' },
+                            { id: 'a7-2', title: 'Middleware' },
+                            { id: 'a7-3', title: 'Filters' },
+                            { id: 'a7-4', title: 'Minimal APIs' },
+                            { id: 'a7-5', title: 'Controllers' },
+                            { id: 'a7-6', title: 'Model Binding' },
+                            { id: 'a7-7', title: 'Validation' },
+                            { id: 'a7-8', title: 'Authentication' },
+                            { id: 'a7-9', title: 'Authorization' },
+                            { id: 'a7-10', title: 'JWT' },
+                            { id: 'a7-11', title: 'OAuth / OpenID Connect' },
+                            { id: 'a7-12', title: 'Rate Limiting' },
+                            { id: 'a7-13', title: 'Caching' },
+                            { id: 'a7-14', title: 'Distributed Caching' },
+                            { id: 'a7-15', title: 'Resilience & Fault Handling' },
+                            { id: 'a7-16', title: 'Health Checks' },
+                            { id: 'a7-17', title: 'Observability' },
+                            { id: 'a7-18', title: 'OpenTelemetry' },
+                        ]
+                    }, {
+                        id: 'a8',
+                        title: 'Part VIII — Enterprise Data',
+                        lessons: [
+                            { id: 'a8-1', title: 'Advanced EF Core' },
+                            { id: 'a8-2', title: 'Query Optimization' },
+                            { id: 'a8-3', title: 'Compiled Queries' },
+                            { id: 'a8-4', title: 'Transactions' },
+                            { id: 'a8-5', title: 'Concurrency' },
+                            { id: 'a8-6', title: 'Database Connection Mgmt' },
+                            { id: 'a8-7', title: 'Stored Procedures' },
+                            { id: 'a8-8', title: 'Bulk Operations' },
+                            { id: 'a8-9', title: 'Caching Strategies' },
+                            { id: 'a8-10', title: 'SQL vs EF Core' },
+                            { id: 'a8-11', title: 'DB Performance Troubleshooting' },
+                        ]
+                    }, {
+                        id: 'a9',
+                        title: 'Part IX — Distributed Systems',
+                        lessons: [
+                            { id: 'a9-1', title: 'REST API Architecture' },
+                            { id: 'a9-2', title: 'Microservices' },
+                            { id: 'a9-3', title: 'Message-Based Architecture' },
+                            { id: 'a9-4', title: 'Queues' },
+                            { id: 'a9-5', title: 'Kafka Fundamentals' },
+                            { id: 'a9-6', title: 'Event-Driven Architecture' },
+                            { id: 'a9-7', title: 'Idempotency' },
+                            { id: 'a9-8', title: 'Retries' },
+                            { id: 'a9-9', title: 'Circuit Breakers' },
+                            { id: 'a9-10', title: 'Distributed Transactions' },
+                            { id: 'a9-11', title: 'Outbox Pattern' },
+                            { id: 'a9-12', title: 'Eventual Consistency' },
+                        ]
+                    }, {
+                        id: 'a10',
+                        title: 'Part X — Cloud and Containers',
+                        lessons: [
+                            { id: 'a10-1', title: 'Configuration for Cloud' },
+                            { id: 'a10-2', title: 'Docker and .NET' },
+                            { id: 'a10-3', title: 'Containerized ASP.NET Core' },
+                            { id: 'a10-4', title: 'Environment Variables' },
+                            { id: 'a10-5', title: 'Secrets Management' },
+                            { id: 'a10-6', title: 'Health Probes' },
+                            { id: 'a10-7', title: 'Logging and Observability' },
+                            { id: 'a10-8', title: 'Scaling .NET Applications' },
+                            { id: 'a10-9', title: 'Cloud-Native .NET' },
+                            { id: 'a10-10', title: '.NET Aspire — Introduction' },
+                        ]
+                    }, {
+                        id: 'a11',
+                        title: 'Part XI — Testing & Prod Eng',
+                        lessons: [
+                            { id: 'a11-1', title: 'Unit Testing' },
+                            { id: 'a11-2', title: 'Integration Testing' },
+                            { id: 'a11-3', title: 'Mocking' },
+                            { id: 'a11-4', title: 'Testcontainers' },
+                            { id: 'a11-5', title: 'API Testing' },
+                            { id: 'a11-6', title: 'Performance Testing' },
+                            { id: 'a11-7', title: 'Load Testing' },
+                            { id: 'a11-8', title: 'Debugging Production Issues' },
+                            { id: 'a11-9', title: 'Memory Leaks' },
+                            { id: 'a11-10', title: 'High CPU' },
+                            { id: 'a11-11', title: 'Deadlocks' },
+                            { id: 'a11-12', title: 'Thread Pool Starvation' },
+                            { id: 'a11-13', title: 'Database Bottlenecks' },
+                            { id: 'a11-14', title: 'Production Incident Analysis' },
+                        ]
+                    }, {
+                        id: 'a12',
+                        title: 'Part XII — Modern C# 14',
+                        lessons: [
+                            { id: 'a12-1', title: "What's New in C# 14" },
+                            { id: 'a12-2', title: 'Extension Members' },
+                            { id: 'a12-3', title: 'field Backed Properties' },
+                            { id: 'a12-4', title: 'Null-Conditional Assignment' },
+                            { id: 'a12-5', title: 'Enhanced Span Conversions' },
+                            { id: 'a12-6', title: 'Lambda Parameter Modifiers' },
+                            { id: 'a12-7', title: 'Partial Constructors' },
+                            { id: 'a12-8', title: 'User-Defined Compound Assignment' },
+                            { id: 'a12-9', title: 'Modern File-Based Apps' },
+                        ]
+                    }, {
+                        id: 'a13',
+                        title: 'Part XIII — Capstone',
+                        lessons: [
+                            { id: 'a13-1', title: 'Designing Enterprise Apps' },
+                            { id: 'a13-2', title: 'Clean Architecture' },
+                            { id: 'a13-3', title: 'Authentication' },
+                            { id: 'a13-4', title: 'Database' },
+                            { id: 'a13-5', title: 'Caching' },
+                            { id: 'a13-6', title: 'Background Processing' },
+                            { id: 'a13-7', title: 'Messaging' },
+                            { id: 'a13-8', title: 'Logging' },
+                            { id: 'a13-9', title: 'Monitoring' },
+                            { id: 'a13-10', title: 'Testing' },
+                            { id: 'a13-11', title: 'Containerization' },
+                            { id: 'a13-12', title: 'Performance Optimization' },
+                            { id: 'a13-13', title: 'Production Deployment' },
+                            { id: 'a13-14', title: 'Final Architecture Review' },
+                        ]
+                    }]
+                }]
+            };
+
+            // ─── STATE ──────────────────────────────────────────────────────
+            let state = {
+                lessonMap: {},
+                flatLessons: [],
+                currentId: null,
+                completed: new Set(),
+                searchQuery: '',
+                theme: 'dark',
+                sidebarOpen: false,
+            };
+
+            // ─── DOM REFS ──────────────────────────────────────────────────
+            const $ = (sel) => document.querySelector(sel);
+            const $$ = (sel) => document.querySelectorAll(sel);
+
+            const treeRoot = $('#treeRoot');
+            const searchInput = $('#searchInput');
+            const clearSearch = $('#clearSearch');
+            const searchInfo = $('#searchInfo');
+            const themeToggle = $('#themeToggle');
+            const expandAllBtn = $('#expandAllBtn');
+            const collapseAllBtn = $('#collapseAllBtn');
+            const emptyState = $('#emptyState');
+            const lessonView = $('#lessonView');
+            const breadcrumb = $('#breadcrumb');
+            const lessonNumber = $('#lessonNumber');
+            const lessonTitle = $('#lessonTitle');
+            const lessonBook = $('#lessonBook');
+            const lessonPart = $('#lessonPart');
+            const lessonStatus = $('#lessonStatus');
+            const lessonBody = $('#lessonBody');
+            const prevBtn = $('#prevBtn');
+            const nextBtn = $('#nextBtn');
+            const completeToggle = $('#completeToggle');
+            const sidebarToggle = $('#sidebarToggle');
+            const sidebarOverlay = $('#sidebarOverlay');
+            const sidebar = $('#sidebar');
+
+            // ─── HELPERS ──────────────────────────────────────────────────
+            function getBookTitle(bookId) {
+                for (const b of COURSE_DATA.books) {
+                    if (b.id === bookId) return b.title;
+                }
+                return bookId;
+            }
+
+            function getPartTitle(bookId, partId) {
+                for (const b of COURSE_DATA.books) {
+                    if (b.id === bookId) {
+                        for (const p of b.parts) {
+                            if (p.id === partId) return p.title;
+                        }
+                    }
+                }
+                return partId;
+            }
+
+            function getLessonIndex(id) {
+                return state.flatLessons.findIndex(l => l.lesson.id === id);
+            }
+
+            function getPrevLessonId(id) {
+                const idx = getLessonIndex(id);
+                if (idx > 0) return state.flatLessons[idx - 1].lesson.id;
+                return null;
+            }
+
+            function getNextLessonId(id) {
+                const idx = getLessonIndex(id);
+                if (idx < state.flatLessons.length - 1) return state.flatLessons[idx + 1].lesson.id;
+                return null;
+            }
+
+            function countLessonsInBook(bookId) {
+                const book = COURSE_DATA.books.find(b => b.id === bookId);
+                if (!book) return 0;
+                let count = 0;
+                for (const p of book.parts) count += p.lessons.length;
+                return count;
+            }
+
+            function countCompletedInBook(bookId) {
+                let count = 0;
+                for (const id of state.completed) {
+                    const entry = state.lessonMap[id];
+                    if (entry && entry.book === bookId) count++;
+                }
+                return count;
+            }
+
+            function countCompletedInPart(bookId, partId) {
+                let count = 0;
+                for (const id of state.completed) {
+                    const entry = state.lessonMap[id];
+                    if (entry && entry.book === bookId && entry.part === partId) count++;
+                }
+                return count;
+            }
+
+            function isBookComplete(bookId) {
+                return countCompletedInBook(bookId) === countLessonsInBook(bookId) && countLessonsInBook(bookId) > 0;
+            }
+
+            function getTotalCompleted() { return state.completed.size; }
+
+            function getTotalLessons() { return state.flatLessons.length; }
+
+            // ─── SAVE / LOAD STATE ──────────────────────────────────────────
+            function saveCompleted() {
+                try { localStorage.setItem('dotnet_completed', JSON.stringify([...state.completed])); } catch (_) {}
+            }
+            function loadCompleted() {
+                try { const data = localStorage.getItem('dotnet_completed'); if (data) state.completed = new Set(JSON
+                        .parse(data)); } catch (_) {}
+            }
+
+            // ─── FILENAME GENERATION ──────────────────────────────────────
+            function getLessonFilename(lessonId, lessonTitle) {
+                // 1. Check the custom map first
+                if (FILE_MAP[lessonId]) {
+                    return FILE_MAP[lessonId];
+                }
+
+                // 2. Fallback: generate a name from the title (no numeric prefix)
+                let slug = lessonTitle.toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-');
+                slug = slug.replace(/^-|-$/g, '');
+                return `${slug}.html`;
+            }
+
+            // ─── FETCH CONTENT ──────────────────────────────────────────────
+			async function fetchLessonContent(lessonId, lessonTitle) {
+				const filename = getLessonFilename(lessonId, lessonTitle);
+				const paths = [
+					`Content/${filename}`,
+					`./Content/${filename}`,
+					`../Content/${filename}`  // fallback if the app is in a subfolder
+				];
+				
+				for (const url of paths) {
+					try {
+						console.log(`Trying to load: ${url}`);
+						const response = await fetch(url);
+						if (response.ok) {
+							const html = await response.text();
+							return html;
+						}
+					} catch (err) {
+						console.warn(`Failed to load ${url}:`, err);
+					}
+				}
+				
+				// If all fail, show a helpful error with the first path
+				const firstPath = paths[0];
+				return `<p style="color:var(--text-muted);">❌ Content not found. Tried these paths:<br>${paths.join('<br>')}<br><br>Make sure the file <strong>${filename}</strong> exists in the <strong>Content</strong> folder.</p>`;
+			}
+
+            // ─── RENDER TREE ──────────────────────────────────────────────
+            function renderTree() {
+                let html = '';
+                for (const book of COURSE_DATA.books) {
+                    const completedInBook = countCompletedInBook(book.id);
+                    const totalInBook = countLessonsInBook(book.id);
+                    const pct = totalInBook ? Math.round((completedInBook / totalInBook) * 100) : 0;
+                    const complete = isBookComplete(book.id);
+
+                    html += `<details class="book-details" data-book="${book.id}" open>`;
+                    html += `<summary class="book-summary">`;
+                    html += `<div class="book-header">`;
+                    html += `<div class="book-title-row">`;
+                    html += `<span><span class="book-icon">${book.icon}</span> ${book.title}</span>`;
+                    html += `<span>`;
+                    if (complete) html += `<span class="book-cert-badge">🎓</span> `;
+                    html += `<span class="book-pct">${pct}%</span>`;
+                    html += `</span>`;
+                    html += `</div>`;
+                    html += `<div class="progress-wrap"><div class="bar" style="width:${pct}%"></div></div>`;
+                    html += `<div class="progress-text">${completedInBook} / ${totalInBook} Lessons Completed</div>`;
+                    html += `</div>`;
+                    html += `</summary>`;
+                    html += `<div class="nav-tree" style="padding:0 0 6px 0;">`;
+
+                    for (const part of book.parts) {
+                        const completedInPart = countCompletedInPart(book.id, part.id);
+                        const totalInPart = part.lessons.length;
+                        const partPct = totalInPart ? Math.round((completedInPart / totalInPart) * 100) : 0;
+                        const openAttr = (partPct < 100) ? 'open' : '';
+
+                        html += `<details class="part-details" data-book="${book.id}" data-part="${part.id}" ${openAttr}>`;
+                        html += `<summary>`;
+                        html += `<span>${part.title}</span>`;
+                        html += `<span style="font-weight:400;font-size:10px;color:var(--text-muted);">${partPct}%</span>`;
+                        html += `</summary>`;
+                        html += `<ul class="lesson-list">`;
+
+                        for (const lesson of part.lessons) {
+                            const isActive = (state.currentId === lesson.id);
+                            const isCompleted = state.completed.has(lesson.id);
+                            const cls = isActive ? 'active' : '';
+                            const doneCls = isCompleted ? 'completed' : '';
+
+                            let displayTitle = lesson.title;
+                            if (state.searchQuery) {
+                                const idx = lesson.title.toLowerCase().indexOf(state.searchQuery.toLowerCase());
+                                if (idx !== -1) {
+                                    const before = lesson.title.slice(0, idx);
+                                    const match = lesson.title.slice(idx, idx + state.searchQuery.length);
+                                    const after = lesson.title.slice(idx + state.searchQuery.length);
+                                    displayTitle = `${before}<span class="match-highlight">${match}</span>${after}`;
+                                }
+                            }
+
+                            html += `<li>`;
+                            html += `<a class="lesson-link ${cls} ${doneCls}" data-id="${lesson.id}" href="#">`;
+                            html += `<span>${displayTitle}</span>`;
+                            html += `<span class="lesson-status ${isCompleted ? 'done' : ''}">`;
+                            if (isCompleted) html += ` ✅`;
+                            html += `</span>`;
+                            html += `</a>`;
+                            html += `</li>`;
+                        }
+
+                        html += `</ul>`;
+                        html += `</details>`;
+                    }
+
+                    html += `</div>`;
+                    html += `</details>`;
+                }
+                treeRoot.innerHTML = html;
+
+                treeRoot.querySelectorAll('.lesson-link').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const id = el.dataset.id;
+                        if (id) loadLesson(id);
+                        if (window.innerWidth <= 768) closeSidebar();
+                    });
+                });
+
+                applySearchFilter();
+                updateProgressBars();
+            }
+
+            // ─── UPDATE PROGRESS BARS ──────────────────────────────────
+            function updateProgressBars() {
+                for (const book of COURSE_DATA.books) {
+                    const details = treeRoot.querySelector(`.book-details[data-book="${book.id}"]`);
+                    if (!details) continue;
+                    const bar = details.querySelector('.progress-wrap .bar');
+                    const pctText = details.querySelector('.book-pct');
+                    const progressText = details.querySelector('.progress-text');
+                    const completed = countCompletedInBook(book.id);
+                    const total = countLessonsInBook(book.id);
+                    const pct = total ? Math.round((completed / total) * 100) : 0;
+                    if (bar) bar.style.width = pct + '%';
+                    if (pctText) {
+                        const complete = isBookComplete(book.id);
+                        pctText.textContent = (complete ? '🎓 ' : '') + pct + '%';
+                    }
+                    if (progressText) progressText.textContent = `${completed} / ${total} Lessons Completed`;
+
+                    const certBadge = details.querySelector('.book-cert-badge');
+                    if (isBookComplete(book.id)) {
+                        if (!certBadge) {
+                            const row = details.querySelector('.book-title-row');
+                            if (row) {
+                                const span = row.querySelector('span:last-child');
+                                if (span) {
+                                    const badge = document.createElement('span');
+                                    badge.className = 'book-cert-badge';
+                                    badge.textContent = '🎓';
+                                    span.prepend(badge);
+                                }
+                            }
+                        }
+                    } else {
+                        if (certBadge) certBadge.remove();
+                    }
+
+                    for (const part of book.parts) {
+                        const partDetails = details.querySelector(`.part-details[data-part="${part.id}"]`);
+                        if (!partDetails) continue;
+                        const sum = partDetails.querySelector('summary');
+                        const completedInPart = countCompletedInPart(book.id, part.id);
+                        const totalInPart = part.lessons.length;
+                        const pctPart = totalInPart ? Math.round((completedInPart / totalInPart) * 100) : 0;
+                        if (sum) {
+                            const pctSpan = sum.querySelector('span:last-child');
+                            if (pctSpan) pctSpan.textContent = pctPart + '%';
+                        }
+                    }
+                }
+
+                treeRoot.querySelectorAll('.lesson-link').forEach(el => {
+                    const id = el.dataset.id;
+                    const isCompleted = state.completed.has(id);
+                    const statusEl = el.querySelector('.lesson-status');
+                    if (statusEl) {
+                        statusEl.innerHTML = isCompleted ? ' ✅' : '';
+                        statusEl.classList.toggle('done', isCompleted);
+                    }
+                    el.classList.toggle('completed', isCompleted);
+                });
+            }
+
+            // ─── SIDEBAR TOGGLE (mobile) ──────────────────────────────────
+            function openSidebar() {
+                sidebar.classList.add('open');
+                sidebarOverlay.classList.add('active');
+                state.sidebarOpen = true;
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                sidebarOverlay.classList.remove('active');
+                state.sidebarOpen = false;
+            }
+
+            function toggleSidebar() {
+                if (state.sidebarOpen) closeSidebar();
+                else openSidebar();
+            }
+
+            // ─── LOAD LESSON ──────────────────────────────────────────────
+            async function loadLesson(id) {
+                const entry = state.lessonMap[id];
+                if (!entry) return;
+
+                state.currentId = id;
+
+                treeRoot.querySelectorAll('.lesson-link').forEach(el => {
+                    el.classList.toggle('active', el.dataset.id === id);
+                });
+
+                const activeEl = treeRoot.querySelector(`.lesson-link.active`);
+                if (activeEl) activeEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+                const bookTitle = getBookTitle(entry.book);
+                const partTitle = getPartTitle(entry.book, entry.part);
+                breadcrumb.innerHTML = `
+              <span class="crumb-link" data-book="${entry.book}">${bookTitle}</span>
+              <span class="sep">›</span>
+              <span class="crumb-link" data-book="${entry.book}" data-part="${entry.part}">${partTitle}</span>
+              <span class="sep">›</span>
+              <span class="current">${entry.lesson.title}</span>
+            `;
+                breadcrumb.querySelectorAll('.crumb-link').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const book = el.dataset.book;
+                        const part = el.dataset.part;
+                        if (part) {
+                            const details = treeRoot.querySelector(
+                                `.part-details[data-book="${book}"][data-part="${part}"]`);
+                            if (details) details.open = true;
+                        }
+                        const bookDetails = treeRoot.querySelector(`.book-details[data-book="${book}"]`);
+                        if (bookDetails) bookDetails.open = true;
+                        if (window.innerWidth <= 768) closeSidebar();
+                    });
+                });
+
+                const total = state.flatLessons.length;
+                const idx = getLessonIndex(id);
+                lessonNumber.textContent = `Lesson ${idx + 1} of ${total}`;
+                lessonTitle.textContent = entry.lesson.title;
+                lessonBook.textContent = `📚 ${bookTitle}`;
+                lessonPart.textContent = partTitle;
+
+                const isCompleted = state.completed.has(id);
+                lessonStatus.textContent = isCompleted ? '✅ Completed' : '📝 In Progress';
+                lessonStatus.style.color = isCompleted ? 'var(--accent-green)' : 'var(--text-muted)';
+
+                // Load content from external file
+                const contentHtml = await fetchLessonContent(id, entry.lesson.title);
+                lessonBody.innerHTML = contentHtml;
+
+                completeToggle.textContent = isCompleted ? '✅ Completed' : '☐ Mark Complete';
+                completeToggle.classList.toggle('done', isCompleted);
+
+                const prevId = getPrevLessonId(id);
+                const nextId = getNextLessonId(id);
+                prevBtn.disabled = !prevId;
+                nextBtn.disabled = !nextId;
+                prevBtn.onclick = () => { if (prevId) loadLesson(prevId); };
+                nextBtn.onclick = () => { if (nextId) loadLesson(nextId); };
+
+                emptyState.style.display = 'none';
+                lessonView.style.display = 'block';
+
+                try { localStorage.setItem('dotnet_lastLesson', id); } catch (_) {}
+
+                if (history.pushState) history.pushState({ lessonId: id }, '', `#${id}`);
+
+                checkBookCompletion(entry.book);
+            }
+
+            // ─── BOOK COMPLETION CHECK ──────────────────────────────────
+            function checkBookCompletion(bookId) {
+                if (isBookComplete(bookId)) {
+                    updateProgressBars();
+                }
+            }
+
+            // ─── TOGGLE COMPLETE ──────────────────────────────────────────
+            function toggleComplete() {
+                if (!state.currentId) return;
+                const id = state.currentId;
+                if (state.completed.has(id)) state.completed.delete(id);
+                else state.completed.add(id);
+                saveCompleted();
+                updateProgressBars();
+                const entry = state.lessonMap[id];
+                if (entry) {
+                    const isCompleted = state.completed.has(id);
+                    lessonStatus.textContent = isCompleted ? '✅ Completed' : '📝 In Progress';
+                    lessonStatus.style.color = isCompleted ? 'var(--accent-green)' : 'var(--text-muted)';
+                    completeToggle.textContent = isCompleted ? '✅ Completed' : '☐ Mark Complete';
+                    completeToggle.classList.toggle('done', isCompleted);
+                    checkBookCompletion(entry.book);
+                }
+            }
+
+            // ─── SEARCH ──────────────────────────────────────────────────
+            function applySearchFilter() {
+                const query = state.searchQuery.trim().toLowerCase();
+                const links = treeRoot.querySelectorAll('.lesson-link');
+                let visibleCount = 0;
+                links.forEach(link => {
+                    const title = link.textContent.trim().toLowerCase();
+                    const match = !query || title.includes(query);
+                    link.classList.toggle('hidden', !match);
+                    if (match) visibleCount++;
+                });
+                treeRoot.querySelectorAll('.part-details').forEach(details => {
+                    const visibleLinks = details.querySelectorAll('.lesson-link:not(.hidden)');
+                    details.classList.toggle('hidden-part', visibleLinks.length === 0);
+                });
+                treeRoot.querySelectorAll('.book-details').forEach(details => {
+                    const visibleParts = details.querySelectorAll('.part-details:not(.hidden-part)');
+                    details.classList.toggle('hidden-book', visibleParts.length === 0);
+                });
+                if (query) {
+                    searchInfo.textContent = `Showing ${visibleCount} of ${links.length} lessons`;
+                    searchInfo.classList.add('highlight');
+                } else {
+                    searchInfo.textContent = '';
+                    searchInfo.classList.remove('highlight');
+                }
+                clearSearch.classList.toggle('visible', query.length > 0);
+            }
+
+            // ─── THEME ────────────────────────────────────────────────────
+            function setTheme(theme) {
+                state.theme = theme;
+                document.documentElement.setAttribute('data-theme', theme);
+                themeToggle.textContent = theme === 'dark' ? '🌓' : '☀️';
+                try { localStorage.setItem('dotnet_theme', theme); } catch (_) {}
+            }
+            function toggleTheme() { setTheme(state.theme === 'dark' ? 'light' : 'dark'); }
+
+            // ─── EXPAND / COLLAPSE ──────────────────────────────────
+            function expandAll() { treeRoot.querySelectorAll('.book-details, .part-details').forEach(el => { el.open =
+                        true; }); }
+
+            function collapseAll() {
+                treeRoot.querySelectorAll('.book-details, .part-details').forEach(el => { el.open = false; });
+                if (state.currentId) {
+                    const entry = state.lessonMap[state.currentId];
+                    if (entry) {
+                        const bookDetails = treeRoot.querySelector(`.book-details[data-book="${entry.book}"]`);
+                        if (bookDetails) bookDetails.open = true;
+                        const partDetails = treeRoot.querySelector(
+                            `.part-details[data-book="${entry.book}"][data-part="${entry.part}"]`);
+                        if (partDetails) partDetails.open = true;
+                    }
+                }
+            }
+
+            // ─── BUILD LESSON MAP ────────────────────────────────────────
+            function buildLessonMap() {
+                state.lessonMap = {};
+                state.flatLessons = [];
+                for (const book of COURSE_DATA.books) {
+                    for (const part of book.parts) {
+                        for (const lesson of part.lessons) {
+                            state.lessonMap[lesson.id] = { book: book.id, part: part.id, lesson: lesson };
+                            state.flatLessons.push({ book: book.id, part: part.id, lesson: lesson });
+                        }
+                    }
+                }
+            }
+
+            // ─── ROUTING ──────────────────────────────────────────────────
+            function routeFromHash() {
+                const hash = window.location.hash.slice(1);
+                if (hash && state.lessonMap[hash]) { loadLesson(hash); return true; }
+                return false;
+            }
+
+            // ─── INIT ──────────────────────────────────────────────────────
+            function init() {
+                let savedTheme = 'dark';
+                try { savedTheme = localStorage.getItem('dotnet_theme') || 'dark'; } catch (_) {}
+                setTheme(savedTheme);
+
+                loadCompleted();
+                buildLessonMap();
+                renderTree();
+
+                let restored = routeFromHash();
+                if (!restored) {
+                    let lastId = null;
+                    try { lastId = localStorage.getItem('dotnet_lastLesson'); } catch (_) {}
+                    if (lastId && state.lessonMap[lastId]) { loadLesson(lastId);
+                        restored = true; }
+                }
+                if (!restored && state.flatLessons.length > 0) {
+                    loadLesson(state.flatLessons[0].lesson.id);
+                }
+
+                // ─── EVENTS ─────────────────────────────────────────────
+                sidebarToggle.addEventListener('click', toggleSidebar);
+                sidebarOverlay.addEventListener('click', closeSidebar);
+
+                let resizeTimeout;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        if (window.innerWidth > 768 && state.sidebarOpen) closeSidebar();
+                    }, 200);
+                });
+
+                searchInput.addEventListener('input', () => { state.searchQuery = searchInput.value;
+                    applySearchFilter(); });
+                clearSearch.addEventListener('click', () => { searchInput.value = '';
+                    state.searchQuery = '';
+                    applySearchFilter();
+                    searchInput.focus(); });
+                themeToggle.addEventListener('click', toggleTheme);
+                expandAllBtn.addEventListener('click', expandAll);
+                collapseAllBtn.addEventListener('click', collapseAll);
+                completeToggle.addEventListener('click', toggleComplete);
+
+                window.addEventListener('hashchange', () => {
+                    const hash = window.location.hash.slice(1);
+                    if (hash && state.lessonMap[hash]) loadLesson(hash);
+                });
+
+                window.addEventListener('popstate', (e) => { if (e.state && e.state.lessonId) loadLesson(e.state
+                        .lessonId); });
+
+                console.log(`🚀 Modern .NET Developer (v6) — ${state.flatLessons.length} lessons loaded`);
+                console.log(`📊 Progress: ${getTotalCompleted()}/${getTotalLessons()} completed`);
+                console.log(`📁 Lesson content loaded from the 'Content' folder using FILE_MAP.`);
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+            else init();
+
+        })();
+    </script>
+
+</body>
+</html>
