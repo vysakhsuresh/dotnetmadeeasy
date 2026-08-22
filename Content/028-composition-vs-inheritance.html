@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>012 - Composition vs Inheritance · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Inheritance says "I am a..." — Composition says "I have a..."
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Imagine you're building a car. You could use inheritance: "A Car <em>is a</em> Vehicle" — that works. But a Car also <em>has</em> an engine, wheels, and a steering wheel. If you tried to model those with inheritance, you'd need a messy hierarchy: "Car <em>is a</em> Engine"? No, that's nonsense.</p>
+    <p>Inheritance is a powerful tool, but it's often overused. When you inherit, you tie your subclass tightly to the parent. That's fine for "is-a" relationships (like Dog is an Animal), but for "has-a" relationships (like a Car has an Engine), <strong>composition</strong> is the better choice.</p>
+    <p><strong>In this lesson, you'll learn when to use inheritance, when to use composition, and why composition is often preferred in modern software design.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Inheritance</strong> is the "is-a" relationship. A <code>Dog</code> <em>is an</em> <code>Animal</code>. A <code>Square</code> <em>is a</em> <code>Shape</code>. The subclass inherits behavior from the base class.</p>
+    <p><strong>Composition</strong> is the "has-a" relationship. A <code>Car</code> <em>has an</em> <code>Engine</code>. A <code>House</code> <em>has a</em> <code>Door</code>. The class contains instances of other classes to provide functionality.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><strong>Inheritance</strong> (in OOP) is a mechanism where a class derives from another class, gaining its members and behavior. In C#, inheritance is single (a class can inherit from only one base class) but allows method overriding and polymorphism.</p>
+    <p><strong>Composition</strong> is a design principle where a class contains objects of other classes as fields or properties. It delegates work to those contained objects, effectively "composing" behavior from multiple parts.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🧬 Inheritance (is-a)</h4>
+            <ul>
+                <li>Creates a <strong>hierarchy</strong> of types</li>
+                <li>Subclass <strong>reuses</strong> parent code</li>
+                <li>Can override behavior (<code>virtual</code>/<code>override</code>)</li>
+                <li><strong>Tight coupling</strong> — subclass depends on parent</li>
+                <li>Fragile base class problem</li>
+                <li>Single inheritance in C#</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🧩 Composition (has-a)</h4>
+            <ul>
+                <li>Builds objects from <strong>parts</strong></li>
+                <li>Class uses other objects via <strong>delegation</strong></li>
+                <li>Behavior can be changed at runtime by swapping parts</li>
+                <li><strong>Loose coupling</strong> — parts are independent</li>
+                <li>More flexible and easier to test</li>
+                <li>Not limited by inheritance constraints</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem with Overusing Inheritance</h3>
+    <p>Inheritance sounds great — "reuse code!" — but it comes with hidden costs:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Fragile Base Class</strong> — changes to the base class can break all subclasses, even if you didn't touch them.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Inflexibility</strong> — once you inherit, you're stuck with the parent's behavior unless you override it (which can be complex).</li>
+        <li style="margin-bottom:0.4rem;"><strong>Deep Hierarchies</strong> — they become hard to understand and maintain.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Cannot change at runtime</strong> — the relationship is fixed at compile time.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Inheritance is limited to one base class</strong> in C#, so you can't combine multiple behaviors.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Prefer Composition</h3>
+    <p>Composition solves these issues:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Loose coupling</strong> — components are independent and can be changed without affecting each other.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Flexibility</strong> — you can swap parts at runtime (e.g., change the engine of a car).</li>
+        <li style="margin-bottom:0.4rem;"><strong>Reusability</strong> — you can compose behavior from many different objects.</li>
+        <li style="margin-bottom:0.4rem;"><strong>No deep hierarchies</strong> — your classes remain flat and simple.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Easier testing</strong> — you can mock the parts.</li>
+    </ul>
+    <p>The principle "Favor composition over inheritance" is one of the most important design guidelines in object-oriented programming.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            INHERITANCE vs COMPOSITION — VISUAL
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.1rem;">🧬 Inheritance</div>
+                <div style="margin:0.5rem 0;font-size:0.9rem;">
+                    <code>Animal</code> ← <code>Mammal</code> ← <code>Dog</code>
+                </div>
+                <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);">
+                    Dog <strong>is a</strong> Mammal <strong>is a</strong> Animal
+                </div>
+                <div style="margin-top:0.5rem;font-size:0.8rem;border-top:1px solid var(--border-color,#1E293B);padding-top:0.5rem;">
+                    <span class="badge">Fixed hierarchy</span>
+                </div>
+            </div>
+
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.1rem;">🧩 Composition</div>
+                <div style="margin:0.5rem 0;font-size:0.9rem;">
+                    <code>Car</code> <span style="color:var(--accent-purple,#8B5CF6);">⤳</span> <code>Engine</code><br />
+                    <code>Car</code> <span style="color:var(--accent-purple,#8B5CF6);">⤳</span> <code>Wheel</code><br />
+                    <code>Car</code> <span style="color:var(--accent-purple,#8B5CF6);">⤳</span> <code>SteeringWheel</code>
+                </div>
+                <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);">
+                    Car <strong>has</strong> an Engine, Wheels, SteeringWheel
+                </div>
+                <div style="margin-top:0.5rem;font-size:0.8rem;border-top:1px solid var(--border-color,#1E293B);padding-top:0.5rem;">
+                    <span class="badge">Flexible parts</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">INHERITANCE MECHANISM</div>
+        <div class="flow-step">
+            <div class="step-label">1. DEFINE A BASE CLASS</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class Animal
+{
+    public virtual void Speak() => Console.WriteLine("...");
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. DERIVE A SUBCLASS</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class Dog : Animal
+{
+    public override void Speak() => Console.WriteLine("Woof!");
+}</code></pre>
+            <ul>
+                <li><code>Dog</code> inherits all members of <code>Animal</code></li>
+                <li>Can override virtual members</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. USE POLYMORPHISM</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Animal animal = new Dog();
+animal.Speak(); // "Woof!"</code></pre>
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <div class="flow-title">COMPOSITION MECHANISM</div>
+        <div class="flow-step">
+            <div class="step-label">1. DEFINE THE PARTS</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class Engine
+{
+    public void Start() => Console.WriteLine("Engine started");
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. COMPOSE THEM IN A CONTAINER</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class Car
+{
+    private Engine _engine = new Engine();
+    public void Start() => _engine.Start();
+}</code></pre>
+            <ul>
+                <li><code>Car</code> contains an <code>Engine</code> (has-a)</li>
+                <li>Delegates work to the engine</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. SWAP OR EXTEND PARTS EASILY</div>
+            <ul>
+                <li>You can pass a different engine to the constructor</li>
+                <li>You can replace the engine at runtime (if designed that way)</li>
+                <li>No inheritance chain to break</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Inheritance — "is-a"</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class Shape
+{
+    public virtual double Area() => 0;
+}
+public class Rectangle : Shape
+{
+    public double Width { get; set; }
+    public double Height { get; set; }
+    public override double Area() => Width * Height;
+}
+public class Circle : Shape
+{
+    public double Radius { get; set; }
+    public override double Area() => Math.PI * Radius * Radius;
+}</code></pre>
+    <p><strong>Meaning:</strong> A Rectangle <em>is a</em> Shape. Circle <em>is a</em> Shape. They share a common base and can be used polymorphically.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:2rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Composition — "has-a"</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class Logger
+{
+    public void Log(string message) => Console.WriteLine($"Log: {message}");
+}
+public class OrderService
+{
+    private Logger _logger; // composition
+    public OrderService(Logger logger) => _logger = logger;
+    public void ProcessOrder() => _logger.Log("Order processed");
+}</code></pre>
+    <p><strong>Meaning:</strong> OrderService <em>has a</em> Logger. It doesn't inherit from Logger; it uses it. This makes OrderService flexible — you can swap loggers or mock them for testing.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Consider a notification system that can send emails, SMS, and push notifications. With inheritance, you might create a base <code>Notifier</code> and derive <code>EmailNotifier</code>, <code>SmsNotifier</code>, etc. But if you need to combine behaviors (e.g., email + SMS), inheritance fails.</p>
+    <p>With composition, you can create small, focused classes and combine them flexibly.</p>
+
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ─── Parts (composition) ───
+public interface IMessageSender
+{
+    void Send(string message);
+}
+
+public class EmailSender : IMessageSender
+{
+    public void Send(string message) => Console.WriteLine($"Email: {message}");
+}
+
+public class SmsSender : IMessageSender
+{
+    public void Send(string message) => Console.WriteLine($"SMS: {message}");
+}
+
+public class PushSender : IMessageSender
+{
+    public void Send(string message) => Console.WriteLine($"Push: {message}");
+}
+
+// ─── Composed Notification Service ───
+public class NotificationService
+{
+    private readonly List&lt;IMessageSender&gt; _senders;
+
+    public NotificationService(params IMessageSender[] senders)
+    {
+        _senders = senders.ToList();
+    }
+
+    public void Notify(string message)
+    {
+        foreach (var sender in _senders)
+            sender.Send(message);
+    }
+}
+
+// ─── Usage ───
+var service = new NotificationService(
+    new EmailSender(),
+    new SmsSender()
+);
+service.Notify("Order shipped!"); // Sends both email and SMS</code></pre>
+
+    <p><strong>Why this is better than inheritance:</strong></p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">You can compose any combination of senders at runtime.</li>
+        <li style="margin-bottom:0.4rem;">Adding a new sender (e.g., <code>SlackSender</code>) doesn't require changing existing code.</li>
+        <li style="margin-bottom:0.4rem;">Each sender is focused and testable in isolation.</li>
+        <li style="margin-bottom:0.4rem;">No deep inheritance hierarchies — just interfaces and composition.</li>
+    </ul>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🏗️</span> Building with LEGO</div>
+        <p><strong>Inheritance</strong> is like a <strong>pre‑assembled toy</strong> — you get a specific shape, and you can't easily change the parts. If you want a different toy, you have to buy a new one (create a new subclass). The structure is fixed.</p>
+        <p><strong>Composition</strong> is like <strong>LEGO bricks</strong> — you have small, reusable pieces that you can combine in countless ways. You can swap a red brick for a blue one, or add a wheel to a car. The possibilities are endless, and you can change the configuration at any time.</p>
+        <p>In software, composition gives you the same flexibility: you build complex behavior by combining small, focused objects, rather than locking yourself into a rigid hierarchy.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">INTERNALS</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. INHERITANCE — VTABLE AND MEMORY LAYOUT</div>
+            <ul>
+                <li>The derived class object contains the base class sub‑object.</li>
+                <li>Virtual methods are dispatched via the vtable.</li>
+                <li>Memory includes all base class fields plus derived fields.</li>
+                <li>Calling a base method is a direct call if not overridden.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">2. COMPOSITION — DELEGATION AND OBJECT REFERENCES</div>
+            <ul>
+                <li>The containing class holds references to component objects.</li>
+                <li>No automatic inheritance of members; you must explicitly delegate.</li>
+                <li>Memory is separate objects; no base class overhead.</li>
+                <li>Can use dependency injection to supply components.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">3. PERFORMANCE CONSIDERATIONS</div>
+            <ul>
+                <li>Inheritance method calls may be slightly faster (direct vtable lookup).</li>
+                <li>Composition involves delegation, which adds a small overhead, but it's negligible in most cases.</li>
+                <li>Composition often leads to more objects, which can increase memory usage, but the design flexibility usually outweighs that.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Composition is just using objects" — yes, but it's a design principle</h3>
+    <p>Every class that uses another object is using composition. The principle is about <strong>preferring</strong> composition over inheritance when designing relationships. It's not just a tactic; it's a mindset to favor loose coupling.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Inheritance is always bad" — no, it has its place</h3>
+    <p>Inheritance is great for genuine "is-a" relationships where the behavior is truly shared and unlikely to change. For example, a <code>List&lt;T&gt;</code> inherits from <code>Collection&lt;T&gt;</code> because a list <em>is a</em> collection. Use inheritance when the relationship is stable and you want to reuse code and enable polymorphism.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "Composition is always more code" — yes, but it's worth it</h3>
+    <p>Composition often requires writing more code (delegating methods), but the code is simpler, more testable, and more maintainable. The extra lines are a small price for flexibility.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Forcing inheritance for convenience</h4>
+    <p>❌ Creating a base class just to share a few helper methods, even when there's no logical "is-a" relationship.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class UtilityBase
+{
+    public void Log(string msg) { ... }
+}
+public class OrderService : UtilityBase { } // Not an "is-a"</code></pre>
+    <p>✅ Use composition: inject a logger instead.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Over-engineering with composition</h4>
+    <p>❌ Composing everything into tiny pieces, making the design overly complex for simple problems.</p>
+    <p>✅ Use the right tool for the job. For trivial cases, a simple inheritance might be fine.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Not using interfaces with composition</h4>
+    <p>❌ Hard-coding concrete components inside a class, making it hard to swap or test.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class OrderService
+{
+    private Logger _logger = new Logger(); // tight coupling
+}</code></pre>
+    <p>✅ Depend on an interface: <code>private readonly ILogger _logger;</code> and inject it.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Use inheritance when:</h3>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">There is a clear, stable <strong>"is-a"</strong> relationship.</li>
+        <li style="margin-bottom:0.4rem;">You want to reuse code and override behavior.</li>
+        <li style="margin-bottom:0.4rem;">You need runtime polymorphism (virtual dispatch).</li>
+        <li style="margin-bottom:0.4rem;">The relationship is unlikely to change.</li>
+        <li style="margin-bottom:0.4rem;">You are designing a framework where base classes provide default behavior.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Use composition when:</h3>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">There is a <strong>"has-a"</strong> relationship (which is most of the time).</li>
+        <li style="margin-bottom:0.4rem;">You need flexibility to change behavior at runtime.</li>
+        <li style="margin-bottom:0.4rem;">You want to keep classes <strong>small and focused</strong>.</li>
+        <li style="margin-bottom:0.4rem;">You want to enable <strong>unit testing</strong> with mocks.</li>
+        <li style="margin-bottom:0.4rem;">You need to combine behavior from multiple sources (multiple inheritance of behavior).</li>
+    </ul>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> If you're unsure, start with composition. You can always refactor to inheritance later if the relationship becomes clearer. Inheritance is harder to change once it's in place.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Inheritance</strong> = "I am a..."<br />
+        <strong>Composition</strong> = "I have a..."<br /><br />
+        <strong>Remember:</strong><br />
+        · Inheritance creates a <strong>tight bond</strong> — changes to parent affect children.<br />
+        · Composition creates <strong>loose coupling</strong> — parts can be swapped independently.<br />
+        · Favor composition over inheritance, <strong>except</strong> when the relationship is truly an "is-a" and stable.<br />
+        · Composition leads to more <strong>maintainable and testable</strong> code.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><strong>Inheritance</strong> is "is-a" — a Dog is an Animal. It's good for sharing common behavior and enabling polymorphism, but it creates tight coupling.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Composition</strong> is "has-a" — a Car has an Engine. It's more flexible, promotes loose coupling, and is easier to test.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Favor composition over inheritance</strong> — this principle leads to more maintainable and flexible systems.</li>
+            <li style="margin-bottom:0.4rem;">Use inheritance when the relationship is stable and truly hierarchical. Use composition for everything else.</li>
+            <li style="margin-bottom:0.4rem;">Both have their place — the key is knowing when to use which.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've learned the difference between inheritance and composition, and when to use each. Let's see if you can apply these concepts.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Which of the following is an example of an "is-a" relationship, where inheritance is appropriate?</p>
+        <ul class="options">
+            <li>A) A Car has an Engine</li>
+            <li>B) A Square is a Shape</li>
+            <li>C) A OrderService uses a Logger</li>
+            <li>D) A House has a Door</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A Square <em>is a</em> Shape — this is a classic inheritance relationship. The behavior and properties of a Shape can be shared and overridden by Square.</p>
+                <p><span class="incorrect">❌ Why A, C, D are incorrect:</span> All of these are "has-a" relationships. A Car has an Engine, OrderService has a Logger, House has a Door. These are better modeled with composition.</p>
+                <p><strong>Reinforcement:</strong> Inheritance models "is-a"; composition models "has-a".</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What is a major drawback of using inheritance excessively?</p>
+        <ul class="options">
+            <li>A) It reduces code reuse</li>
+            <li>B) It creates tight coupling and can lead to the fragile base class problem</li>
+            <li>C) It makes code slower at runtime</li>
+            <li>D) It prevents the use of interfaces</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Inheritance couples the subclass to the base class. Changes to the base class can break subclasses unexpectedly (fragile base class problem). This is one of the main reasons to prefer composition.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Inheritance actually promotes code reuse (that's one of its purposes).</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Inheritance generally has minimal performance impact; method calls are fast.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Inheritance and interfaces can be used together; they are not mutually exclusive.</p>
+                <p><strong>Reinforcement:</strong> Tight coupling and fragility are the primary drawbacks of overusing inheritance.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Which of the following best describes the principle "Favor composition over inheritance"?</p>
+        <ul class="options">
+            <li>A) Always use composition instead of inheritance, never use inheritance</li>
+            <li>B) Prefer building classes by combining smaller objects (composition) rather than inheriting from a base class, to achieve more flexibility and less coupling</li>
+            <li>C) Inheritance should only be used for interfaces, not for classes</li>
+            <li>D) Composition is only for GUI frameworks; inheritance is for everything else</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The principle is a guideline, not an absolute rule. It suggests that composition often leads to more flexible and maintainable designs, but inheritance still has its place for "is-a" relationships.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> It says "favor," not "always." Inheritance is still useful in appropriate scenarios.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Inheritance and interfaces are different concepts; the principle applies to class inheritance.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Composition is a general design principle, not limited to any specific domain.</p>
+                <p><strong>Reinforcement:</strong> Favor composition means prefer it when it makes sense, not that it's always the only choice.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> You are building a <code>PaymentProcessor</code> that needs to log each transaction. You already have a <code>ILogger</code> interface with multiple implementations (ConsoleLogger, FileLogger). Which approach is better?</p>
+        <ul class="options">
+            <li>A) Make <code>PaymentProcessor</code> inherit from <code>ConsoleLogger</code> to get logging</li>
+            <li>B) Make <code>PaymentProcessor</code> inherit from a <code>LoggerBase</code> class</li>
+            <li>C) Use composition: inject an <code>ILogger</code> dependency into <code>PaymentProcessor</code></li>
+            <li>D) Copy the logging code into <code>PaymentProcessor</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> PaymentProcessor <em>has</em> a logger (composition). Injecting the logger via the constructor allows you to swap implementations easily, and makes testing simpler (you can mock ILogger). This follows the dependency inversion principle.</p>
+                <p><span class="incorrect">❌ Why A and B are incorrect:</span> PaymentProcessor is not a type of logger; inheriting would be a misuse of inheritance (not an "is-a" relationship).</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Copy-pasting code is a maintenance nightmare and violates DRY.</p>
+                <p><strong>Reinforcement:</strong> For cross-cutting concerns like logging, composition (dependency injection) is the standard pattern.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 5 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> Which of the following is a benefit of composition over inheritance?</p>
+        <ul class="options">
+            <li>A) Composition allows a class to inherit from multiple base classes</li>
+            <li>B) Composition makes it easier to change behavior at runtime</li>
+            <li>C) Composition eliminates the need for interfaces</li>
+            <li>D) Composition is always faster than inheritance</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> With composition, you can swap out components (e.g., change the engine of a car) at runtime, which is not possible with inheritance (the relationship is fixed at compile time).</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Composition does not provide multiple inheritance of classes (C# still has single inheritance), but it does allow combining behavior from many objects, which is a form of multiple inheritance of behavior.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Interfaces are often used in conjunction with composition to define contracts for the parts.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Inheritance method calls can be slightly faster, but the difference is negligible; flexibility is the primary benefit.</p>
+                <p><strong>Reinforcement:</strong> Runtime flexibility is one of the biggest advantages of composition.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand the trade-offs between inheritance and composition — you can design more flexible, maintainable systems!</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
