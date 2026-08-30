@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>060 - Debugging C# Applications · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Writing the code is half the job. Figuring out why it isn't doing what you told it to is the other half — and debugging is the skill that gets you there fast.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Your program compiles. It runs. And the total on screen is wrong by exactly one cent, or a customer's order shows up twice, or the app just... stops, silently, three screens into a flow that used to work fine. There's no red squiggly line to click on. The compiler already agreed this code was valid. Now what?</p>
+    <p>Every developer, from their first week to their thirtieth year, hits this moment. The instinct is to stare at the code and re-read it, hoping the bug jumps out. Sometimes it does. Usually it doesn't — because if you could see the bug just by reading, you wouldn't have written it in the first place. What you need is a way to <em>watch the program think</em>: to pause it mid-execution, look at what every variable actually holds at that exact moment, and walk forward one line at a time until reality stops matching your expectations.</p>
+    <p><strong>That's debugging.</strong> It isn't a consolation skill for when you're "not good enough" to write bug-free code — nobody writes bug-free code. Debugging is a core engineering skill, arguably the one that separates developers who ship working software from those who don't. In this lesson you'll learn how a debugger actually works, the small set of moves (breakpoints, stepping, watching) that cover 95% of real debugging sessions, and the habits that keep you fast when something breaks.</p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Debugging</strong> is the process of finding out why a program isn't behaving the way you expect, and then fixing it. A <strong>debugger</strong> is the tool that makes this possible: it lets you freeze your running program at a specific line, inspect the exact value of every variable at that instant, and then move forward one statement — or one method call — at a time.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>In .NET, debugging is handled by the CLR's debugging APIs together with an IDE (Visual Studio, Visual Studio Code, Rider, etc.) acting as the front end. The core tools you'll use constantly are:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Breakpoints</strong> — a marker on a specific line telling the debugger "pause execution here, before this line runs."</li>
+        <li style="margin-bottom:0.4rem;"><strong>Stepping</strong> — moving execution forward one line, one method call, or out of the current method, while the program stays paused.</li>
+        <li style="margin-bottom:0.4rem;"><strong>The Locals window</strong> — shows every variable currently in scope and its live value.</li>
+        <li style="margin-bottom:0.4rem;"><strong>The Watch window</strong> — lets you pin specific variables or expressions you care about, so you don't have to hunt for them in Locals every time.</li>
+        <li style="margin-bottom:0.4rem;"><strong>The Call Stack window</strong> — shows the chain of method calls that got you to where you currently are paused.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Conditional breakpoints</strong> — a breakpoint that only pauses execution when a condition you specify is true (e.g., only when <code>orderId == 4471</code>).</li>
+    </ul>
+    <p>Together, these tools let you replace guessing with observation. Instead of asking "what do I <em>think</em> this variable is?", you ask the debugger and it tells you exactly.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — "Print Debugging" Doesn't Scale</h3>
+    <p>Before debuggers were convenient, and still today when people reach for the fastest tool at hand, the go-to technique is sprinkling <code>Console.WriteLine</code> calls everywhere:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">decimal CalculateTotal(List&lt;decimal&gt; prices, decimal taxRate)
+{
+    Console.WriteLine("entered CalculateTotal");
+    decimal subtotal = 0;
+    foreach (var price in prices)
+    {
+        Console.WriteLine($"price = {price}");
+        subtotal += price;
+    }
+    Console.WriteLine($"subtotal = {subtotal}");
+    decimal total = subtotal + (subtotal * taxRate);
+    Console.WriteLine($"total = {total}");
+    return total;
+}</code></pre>
+    <p>This works, technically — but it has real costs:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">You have to <strong>guess in advance</strong> which variables might be interesting, edit the code to print them, and re-run.</li>
+        <li style="margin-bottom:0.4rem;">If the bug isn't where you guessed, you edit again, and re-run again — a slow loop.</li>
+        <li style="margin-bottom:0.4rem;">You can only see values <strong>as text</strong>; you can't inspect a complex object's full state without writing a print statement for every field.</li>
+        <li style="margin-bottom:0.4rem;">It's easy to forget a <code>Console.WriteLine</code> and accidentally ship it, or leave dead code cluttering the method.</li>
+        <li style="margin-bottom:0.4rem;">In a loop that runs 10,000 times, you get 10,000 lines of noise when you only cared about iteration #4,471.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Pause and Inspect, Instead of Predict and Print</h3>
+    <p>A debugger flips the process around. Instead of deciding <em>in advance</em> what to print, you pause the program at the moment you're unsure about, and then look at <strong>everything</strong> — every local variable, every field, every object graph — with no code changes and no guessing about what to log. You can change your mind mid-session and inspect something you didn't expect to need, for free.</p>
+
+    <div class="callout">
+        <strong>💡 Not a replacement, a different tool:</strong> Logging (writing structured messages that persist, like with a logging framework) and debugging (live, interactive inspection) solve different problems. Logging tells you what happened in production, after the fact, across many runs. Debugging tells you exactly what's happening in <em>this one run</em>, right now, in detail. You'll use both throughout your career — this lesson is about the second one.
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <p>Here's the shape of a typical debugging session, from "something's wrong" to "fixed and verified":</p>
+
+    <div class="flow-container">
+        <div class="flow-title">THE DEBUGGING LOOP</div>
+        <div style="display:flex;flex-direction:column;gap:0.3rem;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.08));border-radius:6px;padding:0.6rem 1rem;border-left:4px solid #FBBF24;">
+                <div style="font-weight:600;color:#FBBF24;font-size:0.85rem;text-transform:uppercase;">1. Form a hypothesis</div>
+                <div style="font-size:0.9rem;color:var(--text-main,#E2E8F0);">"I think the total is wrong because tax is being applied twice."</div>
+            </div>
+            <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.08));border-radius:6px;padding:0.6rem 1rem;border-left:4px solid #34D399;">
+                <div style="font-weight:600;color:#34D399;font-size:0.85rem;text-transform:uppercase;">2. Set a breakpoint near the suspect line</div>
+                <div style="font-size:0.9rem;color:var(--text-main,#E2E8F0);">Click in the margin next to the tax calculation.</div>
+            </div>
+            <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.08));border-radius:6px;padding:0.6rem 1rem;border-left:4px solid #8B5CF6;">
+                <div style="font-weight:600;color:#8B5CF6;font-size:0.85rem;text-transform:uppercase;">3. Run and let it pause</div>
+                <div style="font-size:0.9rem;color:var(--text-main,#E2E8F0);">Execution freezes right before that line runs.</div>
+            </div>
+            <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.08));border-radius:6px;padding:0.6rem 1rem;border-left:4px solid #F59E0B;">
+                <div style="font-weight:600;color:#F59E0B;font-size:0.85rem;text-transform:uppercase;">4. Inspect state</div>
+                <div style="font-size:0.9rem;color:var(--text-main,#E2E8F0);">Check Locals/Watch — is <code>subtotal</code> what you expected? Is the hypothesis confirmed or busted?</div>
+            </div>
+            <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.08));border-radius:6px;padding:0.6rem 1rem;border-left:4px solid #EF4444;">
+                <div style="font-weight:600;color:#EF4444;font-size:0.85rem;text-transform:uppercase;">5. Step forward, narrow the gap</div>
+                <div style="font-size:0.9rem;color:var(--text-main,#E2E8F0);">Step line-by-line until the value flips from "correct" to "wrong" — that line is your culprit.</div>
+            </div>
+            <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.08));border-radius:6px;padding:0.6rem 1rem;border-left:4px solid #34D399;">
+                <div style="font-weight:600;color:#34D399;font-size:0.85rem;text-transform:uppercase;">6. Fix, then verify with the same breakpoint</div>
+                <div style="font-size:0.9rem;color:var(--text-main,#E2E8F0);">Re-run and confirm the value is now correct at that exact spot.</div>
+            </div>
+        </div>
+    </div>
+    <p>Almost every bug you'll ever chase down follows this loop: hypothesize where the wrongness starts, pause there, and use stepping to squeeze the gap between "still correct" and "already wrong" until it's a single line.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. Setting a breakpoint</h4>
+    <p>Click in the left margin next to a line number (or press F9 with the cursor on that line). A red dot appears. This tells the debugger: "when execution is about to run this line, pause and hand control back to the developer."</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Starting a debug session</h4>
+    <p>Instead of just running the program, you start it <em>under the debugger</em> (F5 in most IDEs). The program runs completely normally — same speed, same behavior — right up until it reaches a line with a breakpoint on it. Then it freezes, mid-statement, with every variable exactly as it was.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. Stepping — the three moves</h4>
+    <p>Once paused, you have three ways to move forward, and picking the right one is most of the skill:</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>⬇️ Step Over (F10)</h4>
+            <ul>
+                <li>Runs the current line completely</li>
+                <li>If it's a method call, the whole method runs without pausing inside it</li>
+                <li>Use when you trust the method you're stepping past</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>➡️ Step Into (F11)</h4>
+            <ul>
+                <li>If the current line calls a method, jumps <em>inside</em> that method</li>
+                <li>Lets you watch its internals line by line</li>
+                <li>Use when you suspect the bug is inside that method</li>
+            </ul>
+        </div>
+    </div>
+    <div class="comparison-grid" style="margin-top:0;">
+        <div class="comparison-card">
+            <h4>⬆️ Step Out (Shift+F11)</h4>
+            <ul>
+                <li>Finishes running the rest of the <em>current</em> method</li>
+                <li>Pauses again right after it returns to the caller</li>
+                <li>Use when you've seen enough of this method and want back out</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>▶️ Continue (F5)</h4>
+            <ul>
+                <li>Resumes normal execution</li>
+                <li>Runs until the next breakpoint (or the program ends)</li>
+                <li>Use when you're done inspecting this pause point</li>
+            </ul>
+        </div>
+    </div>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">4. Inspecting state — Locals, Watch, and hover</h4>
+    <p>While paused, hover your mouse over any variable in the editor and its current value pops up. The <strong>Locals</strong> window lists every variable in scope automatically. The <strong>Watch</strong> window lets you type in a specific variable or even an expression (like <code>subtotal * taxRate</code>) and keep it pinned across every pause, so you don't have to search for it each time.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">5. Conditional breakpoints — for loops and rare cases</h4>
+    <p>Right-click a breakpoint and add a condition, and it will only stop when that condition is true. This is essential when a bug only shows up on, say, the 4,471st item in a loop of 10,000 — without it, you'd have to hit "Continue" four thousand times.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">foreach (var order in orders)          // breakpoint here, condition:
+{                                        //   order.Id == 4471
+    ProcessOrder(order);
+}</code></pre>
+    <p>With that condition set, the debugger silently runs through every other iteration at full speed and only pauses on the exact one you care about.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">6. The Call Stack window</h4>
+    <p>While paused, the Call Stack window shows the chain of method calls that led here — <code>Main()</code> called <code>ProcessOrder()</code>, which called <code>CalculateTotal()</code>, which is where you're currently stopped. You can click any frame in that list to inspect the local variables of that caller too, which is invaluable for understanding <em>how</em> execution got to this point, not just <em>what</em> it looks like right now.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Here's a small method with a real bug — a classic off-by-one mistake — worked through the way a debugging session would go.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">static decimal AverageOfFirstThree(List&lt;decimal&gt; values)
+{
+    decimal sum = 0;
+    for (int i = 0; i &lt;= 3; i++)        // 🔴 breakpoint set on this line
+    {
+        sum += values[i];
+    }
+    return sum / 3;
+}
+
+// Called with:
+var prices = new List&lt;decimal&gt; { 10m, 20m, 30m };
+Console.WriteLine(AverageOfFirstThree(prices)); // throws instead of printing 20</code></pre>
+    <p><strong>What a debugging session looks like here:</strong></p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Set a breakpoint on the <code>for</code> line. Run. It pauses before the loop starts — <code>i</code> doesn't exist yet, <code>sum</code> is <code>0</code>.</li>
+        <li style="margin-bottom:0.4rem;">Step over repeatedly (F10). Each pass, check <code>i</code> and <code>sum</code> in the Watch window: <code>i=0, sum=10</code>, then <code>i=1, sum=30</code>, then <code>i=2, sum=60</code>.</li>
+        <li style="margin-bottom:0.4rem;">One more step over — and the line <code>sum += values[i]</code> throws an <code>IndexOutOfRangeException</code> before you even reach <code>return</code>.</li>
+        <li style="margin-bottom:0.4rem;">The debugger stops exactly there, with <code>i = 3</code> visible in Locals, and <code>values</code> only has indices 0, 1, 2. The condition <code>i &lt;= 3</code> should have been <code>i &lt; 3</code>.</li>
+    </ul>
+    <p>Notice what happened: you didn't have to <em>guess</em> that <code>i</code> would reach 3. The debugger showed you the exact value at the exact moment things went wrong — no print statements needed, no re-running with extra logging.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Imagine a small order-processing system where a <code>Customer</code> can have a <code>Discount</code> applied, and the final total is coming out higher than it should for certain customers:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class Customer
+{
+    public string Name { get; set; } = "";
+    public decimal DiscountPercent { get; set; } // e.g. 10 means 10%
+}
+
+public class OrderProcessor
+{
+    public decimal CalculateFinalTotal(decimal subtotal, Customer customer)
+    {
+        decimal discountAmount = subtotal * customer.DiscountPercent;   // 🔴 breakpoint
+        decimal total = subtotal - discountAmount;
+        return total;
+    }
+}</code></pre>
+    <p>A customer with a 10% discount ends up with a <em>negative</em> total on a $50 order. Rather than staring at the formula, a developer would:</p>
+    <ol style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Put a breakpoint on the <code>discountAmount</code> line and re-run the failing scenario.</li>
+        <li style="margin-bottom:0.4rem;">When it pauses, check <code>customer.DiscountPercent</code> in Locals — it shows <code>10</code>, not <code>0.10</code>.</li>
+        <li style="margin-bottom:0.4rem;">Step over and watch <code>discountAmount</code> get set to <code>500</code> (50 × 10) — five hundred dollars off a fifty dollar order.</li>
+        <li style="margin-bottom:0.4rem;">The bug is now obvious: <code>DiscountPercent</code> is stored as a whole number (10 meaning 10%) but the formula treats it as a fraction (0.10). The fix is <code>subtotal * (customer.DiscountPercent / 100)</code>.</li>
+    </ol>
+    <p>This is a perfect example of a bug that's nearly invisible by reading the code — the formula <em>looks</em> reasonable — but becomes obvious the instant you can see the actual number flowing through it.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔍</span> The debugger as a detective's timeline</div>
+        <p>Think of your program's execution as a story unfolding scene by scene. Without a debugger, you're handed the finished book and told "somewhere in here, the plot stops making sense" — you have to re-read the whole thing hoping to spot it.</p>
+        <p>A breakpoint is a bookmark: "pause the story right here." Stepping is turning the page one panel at a time, watching each character's state (variables) change as the scene plays out. The moment a value flips from "makes sense" to "doesn't make sense" — that's the page where the crime happened. You didn't need to read the whole book again; you narrowed it down scene by scene until you caught it in the act.</p>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Step Over" vs "Step Into" — which method gets skipped?</h3>
+    <p>Both keep you on the same line's method call, but Step Over treats that call as a black box (it runs to completion and you land on the next line), while Step Into follows execution inside it. A good rule of thumb: Step Over methods you already trust (like framework calls, or code you've already verified); Step Into the one method you actually suspect is broken.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Debug build vs Release build</h3>
+    <p>Debugging works best against a <strong>Debug</strong> build (the default when you press F5 in an IDE). A <strong>Release</strong> build is compiler-optimized: the JIT may reorder statements, inline small methods, or eliminate variables entirely — which means breakpoints can land in unexpected places or a variable you want to inspect might not even exist anymore in the compiled code. Always debug against Debug configuration unless you're specifically diagnosing a Release-only issue.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. A breakpoint is not the same as "break on exception"</h3>
+    <p>A normal breakpoint pauses at a line you chose in advance. Most IDEs also let you configure the debugger to automatically pause the instant <em>any</em> exception is thrown, anywhere in your code — even one you'd normally never think to put a breakpoint near. This is invaluable when you don't yet know where the problem originates; it takes you straight to the throwing line instead of making you guess where to look first.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Stepping into everything, including framework code</h4>
+    <p>❌ Hitting F11 on every single line, including calls into <code>List&lt;T&gt;</code> or <code>Console.WriteLine</code>, wastes time wandering through code you didn't write and don't need to see.</p>
+    <p>✅ Reserve Step Into for the one method you actually suspect. Use Step Over for everything you trust.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Debugging without a hypothesis</h4>
+    <p>❌ Setting a breakpoint at the very top of <code>Main</code> and stepping through the entire program line by line, hoping to notice something.</p>
+    <p>✅ Form a guess first — "I think the problem starts around the discount calculation" — and put the breakpoint as close to that guess as possible. It's far faster to be wrong and adjust than to step through everything blindly.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Forgetting a breakpoint is still there</h4>
+    <p>❌ Leaving a breakpoint set in a hot loop, then wondering why the app "hangs" the next time you debug something unrelated — it's just paused, waiting.</p>
+    <p>✅ Clear breakpoints you're done with (Ctrl+Shift+F9 in most IDEs clears all of them at once).</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 4 — Not using conditional breakpoints in loops</h4>
+    <p>❌ Setting a plain breakpoint inside a loop over 10,000 items, then clicking "Continue" hundreds of times to reach the one iteration that fails.</p>
+    <p>✅ Right-click the breakpoint, add a condition matching the specific case (e.g., <code>item.Id == 4471</code>), and let the debugger skip straight to it.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 5 — Giving up and going back to print statements too early</h4>
+    <p>❌ After one confusing pause, abandoning the debugger and littering the method with <code>Console.WriteLine</code> calls instead.</p>
+    <p>✅ Print debugging has its place for quick sanity checks in throwaway scripts, but for anything with real logic, the debugger will almost always get you to the answer faster once you're comfortable with stepping and watches.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Reach for the debugger when:</h3>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Output is wrong in a way you can't explain just by reading the code.</li>
+        <li style="margin-bottom:0.4rem;">You need to inspect a complex object graph (nested objects, collections) at a specific moment.</li>
+        <li style="margin-bottom:0.4rem;">An exception is being thrown somewhere in a call chain and you need to find exactly where and why.</li>
+        <li style="margin-bottom:0.4rem;">You're learning someone else's code and want to watch it actually execute, not just read it.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">A debugger may be the wrong tool when:</h3>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">The bug only happens in production, under real load, and can't be reproduced locally — that's a job for logging and monitoring, not a live debugger.</li>
+        <li style="margin-bottom:0.4rem;">Timing-sensitive bugs (race conditions across threads) can behave differently — or vanish — the instant you pause execution, since pausing changes the timing itself.</li>
+        <li style="margin-bottom:0.4rem;">You just need a one-off sanity check on a tiny script — a quick print statement can be faster than setting up a debug session.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Breakpoint</strong> = "pause the movie right here."<br />
+        <strong>Step Over</strong> = "skip past this scene, trust it plays out fine."<br />
+        <strong>Step Into</strong> = "follow the character into that scene."<br />
+        <strong>Step Out</strong> = "fast-forward to the end of this scene."<br />
+        <strong>Watch/Locals</strong> = "show me every prop's exact position, right now."<br /><br />
+        <strong>Remember:</strong><br />
+        · Form a hypothesis before you start stepping.<br />
+        · Narrow the gap between "still correct" and "already wrong" one line at a time.<br />
+        · Debug against a Debug build, not Release.<br />
+        · Conditional breakpoints turn "click Continue 500 times" into "pause exactly once."
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <strong>debugger</strong> lets you pause a running program and inspect the real, live value of every variable — no guessing, no editing code to add print statements.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Breakpoints</strong> mark where to pause; <strong>Step Over / Into / Out</strong> control how you move forward from there.</li>
+            <li style="margin-bottom:0.4rem;">The <strong>Locals</strong> and <strong>Watch</strong> windows show you variable state; the <strong>Call Stack</strong> shows you how you got there.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Conditional breakpoints</strong> turn "step through 10,000 iterations" into "pause exactly on the one that matters."</li>
+            <li style="margin-bottom:0.4rem;">Debugging is a skill you build with practice, not a fallback for when you're stuck — treat it as a normal, daily part of writing software.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how breakpoints, stepping, and watches turn guesswork into observation. Let's check that it stuck.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> You're paused on a line that calls <code>ValidateOrder(order)</code>, and you're confident that method is correct — you just want to see what happens right after it returns. Which action should you take?</p>
+        <ul class="options">
+            <li>A) Step Into (F11)</li>
+            <li>B) Step Over (F10)</li>
+            <li>C) Step Out (Shift+F11)</li>
+            <li>D) Set a new breakpoint inside <code>ValidateOrder</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Step Over runs the entire method call as one unit and pauses again on the next line in the current method — exactly what you want when you trust the method being called and just want to move past it.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Step Into would take you inside <code>ValidateOrder</code>, which you said you don't need to inspect.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Step Out finishes the <em>current</em> method entirely and returns to its caller — that's a much bigger jump than you want here.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> That would still take you inside the method, and it's more setup than needed for a method you already trust.</p>
+                <p><strong>Reinforcement:</strong> Step Over is for methods you trust; Step Into is for the one method you actually suspect.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A loop processes 10,000 orders, and the bug only reproduces on order #4,471. What's the most efficient way to reach that exact iteration in the debugger?</p>
+        <ul class="options">
+            <li>A) Set a normal breakpoint in the loop and click Continue thousands of times</li>
+            <li>B) Add a print statement that logs every order's ID</li>
+            <li>C) Set a conditional breakpoint with a condition like <code>order.Id == 4471</code></li>
+            <li>D) Step Into every iteration of the loop manually</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> A conditional breakpoint only pauses execution when its condition evaluates to true — the debugger runs every other iteration at full speed and stops precisely on the one you care about.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Technically works, but requires manually resuming thousands of times — extremely slow.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> This is print debugging, which would flood the output with 10,000 lines when you only need one.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Step Into moves one statement or call at a time — using it to crawl through 4,471 iterations would be extremely slow and isn't its purpose.</p>
+                <p><strong>Reinforcement:</strong> Conditional breakpoints are the right tool whenever a bug only shows up on a specific case buried inside a large loop.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why is it recommended to debug against a Debug build rather than a Release build?</p>
+        <ul class="options">
+            <li>A) Release builds cannot run in an IDE at all</li>
+            <li>B) The compiler's optimizations in Release mode can reorder or eliminate code, making breakpoints and variable inspection unreliable</li>
+            <li>C) Debug builds run faster, so debugging finishes sooner</li>
+            <li>D) There is no real difference; it's just a naming convention</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Release builds are optimized by the compiler and JIT — statements can be reordered, small methods inlined, and some variables removed entirely — so breakpoints may not land where expected and some values may be unavailable to inspect.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Release builds run fine in an IDE; debugging them is just less reliable, not impossible.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Raw execution speed isn't the reason; the issue is code shape and available debug information, not speed.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The difference is real — Debug builds include full debug symbols and skip most optimizations specifically to make debugging accurate.</p>
+                <p><strong>Reinforcement:</strong> Always debug against Debug configuration unless you're specifically diagnosing a Release-only issue.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Which of these is the strongest reason to prefer a debugger over sprinkling <code>Console.WriteLine</code> calls through your code while investigating a bug?</p>
+        <ul class="options">
+            <li>A) A debugger lets you inspect any variable's live value on demand, without predicting in advance which ones you'll need or editing the source code</li>
+            <li>B) <code>Console.WriteLine</code> is not valid C# syntax</li>
+            <li>C) A debugger automatically fixes bugs once found</li>
+            <li>D) Print statements can never show the value of an object's properties</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> The core advantage of a debugger is that you don't need to guess in advance which values matter — you pause once and can inspect anything in scope, change your mind, and dig deeper without re-running the program.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> <code>Console.WriteLine</code> is perfectly valid C# — it's just a slower, less flexible debugging technique for anything beyond trivial cases.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Debuggers help you find and understand bugs; you still have to write the fix yourself.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> You certainly can print an object's properties — it just requires writing a print statement per property in advance, which the debugger gives you for free at any moment.</p>
+                <p><strong>Reinforcement:</strong> The core value of a debugger is removing the need to predict what you'll need to inspect before you run the program.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> While paused at a breakpoint deep inside <code>CalculateTotal()</code>, you want to see the values of variables in the method that called it, <code>ProcessOrder()</code>, without leaving your current pause point. What should you do?</p>
+        <ul class="options">
+            <li>A) Step Out until you reach <code>ProcessOrder</code></li>
+            <li>B) Click the <code>ProcessOrder</code> frame in the Call Stack window</li>
+            <li>C) Restart the debug session</li>
+            <li>D) This isn't possible — you can only see the current method's variables</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The Call Stack window lists every method call that led to your current pause point. Clicking an earlier frame lets you inspect that method's local variables as they were at the moment it called into the next frame — all without resuming or losing your current pause.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Step Out would resume execution and finish the current method, moving you past this pause point rather than just letting you look around.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Restarting would lose your current paused state entirely — unnecessary when the Call Stack window gives you this for free.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The Call Stack window exists precisely to let you inspect variables in any frame of the current call chain, not just the innermost one.</p>
+                <p><strong>Reinforcement:</strong> The Call Stack window isn't just a list of names — each frame is clickable and shows that method's own local state at the time it made its call.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know how to turn "I have no idea why this is broken" into a fast, methodical investigation — the debugger is officially part of your toolkit.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

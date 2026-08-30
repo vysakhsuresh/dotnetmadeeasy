@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>061 - Reading Stack Traces · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        A stack trace isn't a wall of noise to scroll past — it's a map that already tells you exactly where things went wrong.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Your program crashes and the console fills with something like this:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.85rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Unhandled exception. System.DivideByZeroException: Attempted to divide by zero.
+   at ExpenseTracker.ReportGenerator.CalculateAveragePerDay(List`1 expenses) in /src/ReportGenerator.cs:line 42
+   at ExpenseTracker.ReportGenerator.BuildMonthlySummary(Int32 month) in /src/ReportGenerator.cs:line 21
+   at ExpenseTracker.Program.Main(String[] args) in /src/Program.cs:line 14</code></pre>
+    <p>To a beginner, this can feel like the program is yelling at you in a foreign language. The instinct is to panic, scroll past it, or just re-read the whole codebase hoping to spot the problem. But look again: that block of text is actually one of the most useful things .NET will ever hand you. It's telling you the <em>exact</em> exception type, the <em>exact</em> line number, and the <em>exact</em> chain of method calls that led there — for free, with zero extra effort on your part.</p>
+    <p><strong>In this lesson you'll learn to read a .NET stack trace fluently</strong>: which line to look at first, how to follow a chain of <code>InnerException</code>s back to the real root cause, and how this connects directly to the exception handling you've already learned with <code>try</code>/<code>catch</code>/<code>throw</code>.</p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>stack trace</strong> is a record of exactly which methods were running, in what order, at the moment an exception was thrown. It reads like a trail of breadcrumbs leading from "where the program started" all the way down to "the precise line that broke."</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Whenever a method calls another method, the CLR pushes a new <strong>stack frame</strong> onto the <strong>call stack</strong> — a record of that method, its arguments, and where to return to once it finishes. When an exception is thrown and nothing catches it locally, the CLR captures the current contents of that call stack as the exception propagates upward (this is called <strong>unwinding</strong> the stack). The result — printed as the <code>StackTrace</code> property of the <code>Exception</code> object — lists every method frame that was active at the moment of the throw, from the innermost (where it happened) to the outermost (where execution originally started).</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem</h3>
+    <p>Imagine an exception message with no stack trace at all — just <code>"Object reference not set to an instance of an object."</code> That tells you <em>something</em> is null, but in a real application with hundreds of methods, which one? Which line? Called from where? Without a record of the call chain, you'd be reduced to adding breakpoints or print statements everywhere and re-running the program repeatedly, hoping to reproduce the crash while watching more closely.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution</h3>
+    <p>The CLR solves this by automatically capturing the call chain at the exact instant an exception is thrown — before you've written a single line of debugging code. That's the stack trace. It turns "something broke somewhere" into "this specific method, on this specific line, called from this specific chain of callers, broke." Combined with the exception's <strong>type</strong> (like <code>DivideByZeroException</code> or <code>NullReferenceException</code>) and its <strong>message</strong>, you almost always have enough information to jump straight to the fix without a single debugging session.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <p>Picture the call stack as it grows while your program runs, then unwinds when an exception is thrown:</p>
+
+    <div class="flow-container">
+        <div class="flow-title">THE CALL STACK GROWS DOWNWARD, THEN THE TRACE READS BACK UP</div>
+        <div style="display:flex;flex-direction:column;gap:0.3rem;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.08));border-radius:6px;padding:0.6rem 1rem;border-left:4px solid #FBBF24;">
+                <div style="font-weight:600;color:#FBBF24;font-size:0.85rem;text-transform:uppercase;">Main() calls...</div>
+                <div style="font-size:0.9rem;color:var(--text-main,#E2E8F0);">Bottom of the trace — where the program started</div>
+            </div>
+            <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.08));border-radius:6px;padding:0.6rem 1rem;border-left:4px solid #34D399;">
+                <div style="font-weight:600;color:#34D399;font-size:0.85rem;text-transform:uppercase;">BuildMonthlySummary() calls...</div>
+                <div style="font-size:0.9rem;color:var(--text-main,#E2E8F0);">Middle frame</div>
+            </div>
+            <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.08));border-radius:6px;padding:0.6rem 1rem;border-left:4px solid #EF4444;">
+                <div style="font-weight:600;color:#EF4444;font-size:0.85rem;text-transform:uppercase;">CalculateAveragePerDay() — 💥 throws here</div>
+                <div style="font-size:0.9rem;color:var(--text-main,#E2E8F0);">Top of the trace — the exact origin of the exception</div>
+            </div>
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-muted,#94A3B8);text-align:center;margin-top:0.8rem;">The printed stack trace lists these frames in reverse: the throwing method first, the entry point last.</p>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 1 — Read the exception type and message first</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Unhandled exception. System.DivideByZeroException: Attempted to divide by zero.</code></pre>
+    <p>This one line tells you the exception's <strong>type</strong> (<code>DivideByZeroException</code>) and its <strong>message</strong>. The type alone often narrows the cause dramatically — a <code>NullReferenceException</code> means something you dereferenced was null; an <code>IndexOutOfRangeException</code> means an array/list index was out of bounds; a <code>FormatException</code> means a string couldn't be parsed into the expected type.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 2 — The first "at" line is where it actually happened</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">   at ExpenseTracker.ReportGenerator.CalculateAveragePerDay(List`1 expenses) in /src/ReportGenerator.cs:line 42</code></pre>
+    <p>Read this top-down: the topmost <code>at</code> line is always the <strong>innermost</strong> frame — the exact method and line number where the exception was thrown. This is your starting point, almost every time. It tells you: namespace + class + method (<code>ExpenseTracker.ReportGenerator.CalculateAveragePerDay</code>), the parameter types it was called with, the file, and the line number.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 3 — Each line below it is the caller of the line above</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">   at ExpenseTracker.ReportGenerator.CalculateAveragePerDay(List`1 expenses) in /src/ReportGenerator.cs:line 42
+   at ExpenseTracker.ReportGenerator.BuildMonthlySummary(Int32 month) in /src/ReportGenerator.cs:line 21
+   at ExpenseTracker.Program.Main(String[] args) in /src/Program.cs:line 14</code></pre>
+    <p>So this trace reads: <code>Main</code> called <code>BuildMonthlySummary</code> (from <code>Program.cs</code> line 14), which called <code>CalculateAveragePerDay</code> (from <code>ReportGenerator.cs</code> line 21), which is where the divide-by-zero actually happened (<code>ReportGenerator.cs</code> line 42). You now know not just <em>where</em> it broke, but the exact <em>path</em> that led there — useful for understanding <em>why</em> a method was called with bad data in the first place.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 4 — Check for an <code>InnerException</code></h4>
+    <p>Sometimes a method deliberately catches a low-level exception and wraps it in a more meaningful one before re-throwing (you'll recognize this pattern from exception handling: <code>throw new InvalidOperationException("...", ex);</code>). When that happens, the trace shows the outer exception, but the <em>original</em> cause is nested inside its <code>InnerException</code> property:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.85rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Unhandled exception. System.InvalidOperationException: Failed to load monthly report.
+   at ExpenseTracker.ReportGenerator.BuildMonthlySummary(Int32 month) in /src/ReportGenerator.cs:line 25
+   at ExpenseTracker.Program.Main(String[] args) in /src/Program.cs:line 14
+ ---&gt; System.IO.FileNotFoundException: Could not find file 'expenses-2026-08.json'.
+   at System.IO.File.ReadAllText(String path)
+   at ExpenseTracker.ReportGenerator.BuildMonthlySummary(Int32 month) in /src/ReportGenerator.cs:line 21
+   --- End of inner exception stack trace ---</code></pre>
+    <p>The section after <code>---&gt;</code> is the <strong>inner exception</strong> — the real, original problem (a missing file). The outer <code>InvalidOperationException</code> is just a friendlier wrapper the developer chose to throw. <strong>Always read down to the innermost exception</strong> — that's usually where the actual root cause lives, not the outer wrapper.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 5 — Connecting this to <code>try</code>/<code>catch</code></h4>
+    <p>You've already learned that <code>catch</code> blocks can catch an exception and inspect it. The same object you catch has this exact stack trace built in:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">try
+{
+    BuildMonthlySummary(8);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Type: {ex.GetType().Name}");
+    Console.WriteLine($"Message: {ex.Message}");
+    Console.WriteLine($"Stack trace:\n{ex.StackTrace}");
+    if (ex.InnerException is not null)
+        Console.WriteLine($"Inner: {ex.InnerException.Message}");
+}</code></pre>
+    <p>An <strong>unhandled</strong> exception (one no <code>catch</code> block caught) is what causes the CLR to print the trace to the console and crash the program — that's the scenario at the top of this lesson. A <strong>handled</strong> exception gives you the same information, but under your control, so you can log it, show a friendly message, or decide how to recover.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">static int Divide(int a, int b)
+{
+    return a / b;                 // line 3
+}
+
+static int Calculate(int x)
+{
+    return Divide(x, 0);          // line 8
+}
+
+static void Main()
+{
+    Console.WriteLine(Calculate(10)); // line 13
+}</code></pre>
+    <p>Running this produces:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.85rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Unhandled exception. System.DivideByZeroException: Attempted to divide by zero.
+   at Program.Divide(Int32 a, Int32 b) in Program.cs:line 3
+   at Program.Calculate(Int32 x) in Program.cs:line 8
+   at Program.Main() in Program.cs:line 13</code></pre>
+    <p><strong>Reading it:</strong> the topmost frame says line 3, inside <code>Divide</code> — that's exactly the <code>a / b</code> statement. Below it, line 8 inside <code>Calculate</code> shows that <code>Calculate</code> called <code>Divide</code> with a <code>0</code>. Below that, line 13 in <code>Main</code> shows the entire chain started with <code>Calculate(10)</code>. You didn't need a debugger at all — the trace alone tells you exactly what happened and in what order.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Picture a small order-processing console app. A customer support ticket says "the app crashed when I tried to view my order history." The developer runs it locally and reproduces this trace:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.85rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Unhandled exception. System.NullReferenceException: Object reference not set to an instance of an object.
+   at OrderSystem.OrderHistoryView.FormatOrderLine(Order order) in /src/OrderHistoryView.cs:line 33
+   at OrderSystem.OrderHistoryView.Render(List`1 orders) in /src/OrderHistoryView.cs:line 15
+   at OrderSystem.Program.ShowHistory(Customer customer) in /src/Program.cs:line 47
+   at OrderSystem.Program.Main(String[] args) in /src/Program.cs:line 9</code></pre>
+    <p>Following the reading order from this lesson:</p>
+    <ol style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Type + message: a <code>NullReferenceException</code> — something was expected to have a value and didn't.</li>
+        <li style="margin-bottom:0.4rem;">Top frame: <code>OrderHistoryView.cs</code>, line 33, inside <code>FormatOrderLine</code>. Open that file, jump straight to line 33 — no need to read the other three files at all yet.</li>
+        <li style="margin-bottom:0.4rem;">Line 33 turns out to be <code>order.ShippingAddress.City</code> — and it turns out some historical orders were placed for digital products with no shipping address at all, so <code>ShippingAddress</code> is <code>null</code> for those.</li>
+        <li style="margin-bottom:0.4rem;">The rest of the trace (<code>Render</code> → <code>ShowHistory</code> → <code>Main</code>) confirms this happens on the normal "view order history" path — not some obscure edge case — which tells the developer this needs a real fix, not a one-off patch.</li>
+    </ol>
+    <p>The fix — checking whether <code>ShippingAddress</code> is null before formatting, or making digital orders carry a sensible default — took two minutes to write. Finding <em>where</em> to make that fix took about ten seconds, because the stack trace pointed straight at line 33.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📞</span> A stack trace is a phone call transcript</div>
+        <p>Imagine a customer service call that gets escalated: the front-line rep can't solve it, so they transfer to a supervisor, who transfers to a specialist, who finally discovers the actual problem. If you only heard the specialist say "found it, the account was flagged" you'd have no idea how it got to them.</p>
+        <p>A full transcript — "Rep A took the call, transferred to Supervisor B, who transferred to Specialist C, who found the flag" — is exactly what a stack trace gives you. The <em>last</em> person to touch the issue (the specialist) is where the trace starts (the topmost frame); the <em>first</em> person who answered the phone (the front desk) is where the trace ends (the bottom frame, usually <code>Main</code>). Reading top to bottom retraces the whole call, in reverse order of who handled it.</p>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "The exception message tells me the same thing as the stack trace" — not quite</h3>
+    <p>The <strong>message</strong> is a human-readable description of what went wrong ("Object reference not set to an instance of an object"). The <strong>stack trace</strong> is <em>where</em> and <em>how</em> it happened. You often need both: the message narrows the type of problem, the trace narrows the exact location.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "The topmost line is where the bug was introduced" — not always</h3>
+    <p>The topmost frame is where the exception was <em>thrown</em>, which is often, but not always, the same place the <em>real</em> mistake was made. In the <code>NullReferenceException</code> example above, the crash happened in <code>FormatOrderLine</code>, but the actual root cause — an order being created without a shipping address — happened much earlier, somewhere else entirely. The stack trace tells you where the symptom appeared; understanding <em>why</em> the data got into that state is a separate, follow-up question.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "throw ex;" vs "throw;" inside a catch block</h3>
+    <p>This is a classic trap tied directly to stack traces. If you catch an exception and want to re-throw it after logging, the way you do it matters enormously:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">catch (Exception ex)
+{
+    LogError(ex);
+    throw ex;    // ❌ resets the stack trace to THIS line
+    // throw;    // ✅ preserves the ORIGINAL stack trace
+}</code></pre>
+    <p><code>throw ex;</code> quietly rewrites the stack trace to start at this <code>catch</code> block, erasing the record of where the exception actually originated. A bare <code>throw;</code> re-throws the same exception object untouched, keeping the original trace intact. Since the entire point of this lesson is that the stack trace is valuable, never destroy it by accident.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Only reading the exception message and ignoring the trace</h4>
+    <p>❌ Seeing "Object reference not set to an instance of an object" and immediately searching the entire codebase for anything that could possibly be null.</p>
+    <p>✅ The stack trace's top frame already tells you the exact file and line — start there, not with a codebase-wide search.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Stopping at the outer exception and never checking <code>InnerException</code></h4>
+    <p>❌ Seeing a generic <code>InvalidOperationException: "Failed to load report"</code> and treating that message as the actual cause.</p>
+    <p>✅ Always check whether <code>InnerException</code> is set — the outer exception is often just a wrapper; the real cause (a missing file, a bad connection string, invalid JSON) lives one level deeper.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Swallowing exceptions with an empty catch block</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">try
+{
+    LoadCustomerData();
+}
+catch (Exception)
+{
+    // ❌ nothing here — the exception, and its stack trace, just vanish
+}</code></pre>
+    <p>✅ At minimum, log the exception (including its stack trace) before swallowing it. Otherwise the bug still exists, but now it fails silently, with none of the information you'd need to find it later.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 4 — Using <code>throw ex;</code> instead of <code>throw;</code></h4>
+    <p>❌ As shown above, this silently discards the original stack trace, making the exception look like it started at your <code>catch</code> block rather than wherever it truly began.</p>
+    <p>✅ Use a bare <code>throw;</code> to re-throw the current exception with its original trace preserved.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Any time your program crashes</strong> — reading the trace top-down is always the first move, before reaching for a debugger.</li>
+        <li style="margin-bottom:0.4rem;"><strong>When reviewing production logs</strong> — a captured stack trace in a log file tells you exactly what to reproduce locally.</li>
+        <li style="margin-bottom:0.4rem;"><strong>When wrapping exceptions</strong> — always pass the original exception as the inner exception (<code>throw new SomeException("...", ex);</code>) so future readers can still trace back to the true cause.</li>
+        <li style="margin-bottom:0.4rem;">A stack trace is <strong>less useful</strong> for logic bugs that don't throw an exception at all — a wrong total that doesn't crash the program won't show up in any trace; that's when the debugger from the previous lesson becomes essential again.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Top frame</strong> = where it actually broke.<br />
+        <strong>Bottom frame</strong> = where the program started.<br />
+        <strong>Each line in between</strong> = "this method called that one."<br />
+        <strong>InnerException</strong> = the real cause, hiding one layer deeper than the wrapper you're looking at.<br /><br />
+        <strong>Remember:</strong><br />
+        · Read top-down: type, message, top frame, then follow the chain.<br />
+        · Always dig into <code>InnerException</code> if one is present.<br />
+        · Use <code>throw;</code>, never <code>throw ex;</code>, to keep the trail intact.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <strong>stack trace</strong> lists every method call that was active when an exception was thrown, from where it happened (top) back to where the program started (bottom).</li>
+            <li style="margin-bottom:0.4rem;">Always read the <strong>exception type and message</strong> first, then jump to the <strong>topmost "at" line</strong> — that's exactly where to start looking.</li>
+            <li style="margin-bottom:0.4rem;"><strong><code>InnerException</code></strong> often holds the real root cause when an exception has been wrapped in a more descriptive one.</li>
+            <li style="margin-bottom:0.4rem;">Use <code>throw;</code>, never <code>throw ex;</code>, inside a <code>catch</code> block to preserve the original trace.</li>
+            <li style="margin-bottom:0.4rem;">A stack trace shows you <em>where</em> and <em>how</em> a crash happened — it complements, but doesn't replace, the debugging skills from the previous lesson for bugs that don't throw at all.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've learned to read a .NET stack trace from top to bottom, and to follow <code>InnerException</code> to the real cause. Let's check it stuck.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> In a printed stack trace, which frame tells you the exact line where the exception was thrown?</p>
+        <ul class="options">
+            <li>A) The bottommost "at" line</li>
+            <li>B) The topmost "at" line</li>
+            <li>C) Whichever line mentions <code>Main</code></li>
+            <li>D) The exception message, not any "at" line</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The topmost "at" line is the innermost frame — the method and line number that was actually executing when the exception was thrown.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The bottommost line is usually the entry point (like <code>Main</code>), which is where the call chain started, not where it broke.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>Main</code> will almost always appear near the bottom regardless of where the actual failure occurred.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The message describes <em>what</em> went wrong in words; the location comes from the "at" lines, specifically the top one.</p>
+                <p><strong>Reinforcement:</strong> Always start reading a stack trace from the top.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> You catch a <code>FileLoadException</code> whose message is generic, but its <code>InnerException</code> is a <code>UnauthorizedAccessException</code>. What does this tell you?</p>
+        <ul class="options">
+            <li>A) The two exceptions are unrelated and only the outer one matters</li>
+            <li>B) The real root cause is a permissions problem, wrapped by the more general <code>FileLoadException</code></li>
+            <li>C) The program will automatically retry the operation</li>
+            <li>D) <code>InnerException</code> is always null unless you set it manually and this is a bug</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> When code catches a low-level exception and wraps it in a more descriptive one, the original is preserved as <code>InnerException</code>. Here, the true cause — a file access permission problem — is nested one level deep.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> They're directly related; the inner exception is exactly why the outer one was thrown.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Nothing about an inner exception implies automatic retry behavior; that would require explicit retry logic in the code.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>InnerException</code> is a completely normal, commonly used mechanism for wrapping exceptions with additional context.</p>
+                <p><strong>Reinforcement:</strong> Always check <code>InnerException</code> — the outer exception's message is often just a friendlier summary of a more specific underlying problem.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> What is the problem with writing <code>throw ex;</code> instead of <code>throw;</code> inside a <code>catch</code> block?</p>
+        <ul class="options">
+            <li>A) <code>throw ex;</code> does not compile in C#</li>
+            <li>B) <code>throw ex;</code> resets the stack trace to start at that line, hiding where the exception originally occurred</li>
+            <li>C) <code>throw ex;</code> automatically logs the exception, which is unwanted</li>
+            <li>D) There is no difference; both behave identically</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>throw ex;</code> re-throws the exception as if it originated at that exact <code>throw</code> statement, overwriting the original stack trace. A bare <code>throw;</code> re-throws the same exception object with its original trace intact.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> It compiles fine — it's a valid but usually undesirable pattern.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Neither form logs anything automatically; logging must be done explicitly.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> They behave differently specifically with respect to the preserved stack trace, which matters a great deal when debugging later.</p>
+                <p><strong>Reinforcement:</strong> Use a bare <code>throw;</code> whenever you want to re-throw the exact same exception you just caught.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A crash report shows the top frame inside <code>FormatOrderLine</code>, but investigation reveals the actual mistake was made much earlier, when an order was created without required data. What does this illustrate?</p>
+        <ul class="options">
+            <li>A) The stack trace was wrong and cannot be trusted</li>
+            <li>B) The topmost frame shows where the exception was thrown, which is not always the same place the underlying mistake was introduced</li>
+            <li>C) <code>FormatOrderLine</code> must be deleted to fix the bug</li>
+            <li>D) This can only happen with <code>NullReferenceException</code>, never other exception types</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The stack trace correctly shows where the exception was thrown, but that's the location of the <em>symptom</em>, not necessarily the <em>root cause</em>. Tracking down why the data got into a bad state in the first place is a separate investigative step.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The trace was entirely accurate about where the crash occurred; accuracy about the symptom's location doesn't guarantee it's also the root cause.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Deleting the method that surfaced the bug wouldn't fix the underlying data problem; it would just hide the crash somewhere else.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This gap between "where it crashed" and "where the mistake happened" can occur with any exception type, not just null references.</p>
+                <p><strong>Reinforcement:</strong> A stack trace tells you exactly where the failure surfaced — understanding why the data got there is a separate, often more important, question.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> Which of these is the best practice when you catch a low-level exception and want to surface a more meaningful one to your caller?</p>
+        <ul class="options">
+            <li>A) Throw a new exception with a friendlier message and pass the original exception as the inner exception</li>
+            <li>B) Throw a new exception with a friendlier message and discard the original exception entirely</li>
+            <li>C) Catch it and do nothing, so the caller never learns anything went wrong</li>
+            <li>D) Modify the original exception's <code>Message</code> property directly</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> Wrapping the original exception as the inner exception (<code>throw new InvalidOperationException("...", ex);</code>) gives callers a clear, high-level message while preserving the full original stack trace for anyone who needs to dig deeper.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Discarding the original exception throws away exactly the diagnostic information this lesson is about preserving.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Swallowing the exception silently hides the failure entirely, which is worse than either wrapping or letting it propagate.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>Exception.Message</code> is read-only by design in .NET; you cannot reassign it after construction.</p>
+                <p><strong>Reinforcement:</strong> Wrap, don't discard — passing the original exception as the inner exception keeps the full trail available.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 That wall of red text isn't scary anymore — it's a map, and now you know how to read it.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
