@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>156 - Exception Handling in Async · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        An exception thrown inside an async method doesn't happen "somewhere else." It's captured on the Task, waiting quietly, until something awaits it.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You've already used <code class="icode">try</code>/<code class="icode">catch</code> around <code class="icode">await</code> several times in this module, and it just worked — exactly like ordinary synchronous code. That's not an accident, and it's worth understanding precisely <em>why</em> it works, because the moment you step outside a plain <code class="icode">await</code> — blocking with <code class="icode">.Result</code>, or awaiting a combined <code class="icode">Task.WhenAll</code> — the exception behavior gets noticeably less intuitive.</p>
+    <p><strong>In this lesson, you'll learn exactly how an exception thrown inside an async method travels: how it gets captured on the Task instead of thrown immediately, how it's rethrown the moment something awaits that Task, why blocking synchronously wraps it in a confusing <code class="icode">AggregateException</code> instead, and what happens to an exception nobody ever bothers to observe at all.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>When code inside an <code class="icode">async</code> method throws, that exception doesn't propagate up the call stack the instant it happens, the way it would in ordinary synchronous code — there's no "call stack" to unwind in the usual sense, because the calling method may have already moved on to do other things while this one was suspended. Instead, the exception gets <strong>stored on the Task</strong> that represents this method's work. It stays there until some other code actually <code class="icode">await</code>s that Task — at which point it gets thrown again, right at the <code class="icode">await</code> expression, as if it had just happened.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A Task that has thrown is said to be in the <strong>faulted</strong> state (you saw this state briefly in the Task and Task&lt;T&gt; lesson). A faulted Task's exception is stored internally, wrapped in an <code class="icode">AggregateException</code> (a container that can hold one or more exceptions), and exposed via the Task's <code class="icode">.Exception</code> property. Critically, <strong><code class="icode">await</code> unwraps that container for you</strong>: it re-throws only the first inner exception directly — not the <code class="icode">AggregateException</code> wrapper — which is exactly why <code class="icode">try</code>/<code class="icode">catch (HttpRequestException ex)</code> around an <code class="icode">await</code> works naturally, catching the real, original exception type.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> The rule that explains everything in this lesson</div>
+        <p><strong><code class="icode">await</code> unwraps the exception for you. Blocking (<code class="icode">.Result</code>, <code class="icode">.Wait()</code>) does not.</strong> Every confusing behavior in this lesson traces back to that single asymmetry.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — An Exception Needs Somewhere to Go When Nobody's Listening Yet</h3>
+    <p>In ordinary synchronous code, an exception is thrown and immediately propagates up the currently-executing call stack. But an async method might throw its exception at a moment when nothing is actively "listening" — the caller may have already returned control further up, gone off to do other work, and only comes back to check on this Task's outcome later, via <code class="icode">await</code>. There's no live call stack to unwind into at the instant the exception actually occurs.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is somewhere durable to hold onto that exception until the caller actually comes back to check the result — and a way to deliver it back to the caller that feels exactly like an ordinary, immediate exception once they do.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Capture on the Task, Rethrow at await</h3>
+    <p>The Task object itself becomes the exception's holding place. Whenever code later awaits that Task, the compiler-generated logic behind <code class="icode">await</code> checks: did this Task fault? If so, it unwraps and rethrows the original exception right there — preserving its original type and message — so that ordinary <code class="icode">try</code>/<code class="icode">catch</code> around the <code class="icode">await</code> catches it exactly as if the whole thing had run synchronously and thrown directly.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🟢 await — clean, unwrapped</h4>
+            <ul>
+                <li>try/catch works exactly like synchronous code</li>
+                <li>The original exception type is preserved (HttpRequestException, etc.)</li>
+                <li>Only the first exception is rethrown, even from a multi-failure combinator like WhenAll</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🔴 .Result / .Wait() — wrapped, awkward</h4>
+            <ul>
+                <li>Any fault is wrapped in an AggregateException</li>
+                <li>catch (HttpRequestException) won't match — you'd need catch (AggregateException)</li>
+                <li>Carries deadlock risk in certain contexts too (previous lesson)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">FROM throw TO catch — THE FULL PATH</div>
+        <div class="flow-step">
+            <div class="step-label">Step 1 — Code inside the async method throws</div>
+            <pre><code>public async Task&lt;Order&gt; GetOrderAsync(int id)
+{
+    var response = await httpClient.GetAsync($"/orders/{id}");
+    response.EnsureSuccessStatusCode(); // throws HttpRequestException on failure
+    return await response.Content.ReadFromJsonAsync&lt;Order&gt;();
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 2 — The compiler-generated state machine catches it internally</div>
+            <ul><li>Instead of letting the exception escape normally, the state machine catches it and stores it on the Task it's returning — transitioning that Task to the <strong>Faulted</strong> state.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 3 — GetOrderAsync's Task sits there, faulted, until observed</div>
+            <ul><li>If nothing ever awaits (or otherwise checks) this Task, the exception simply waits — see "unobserved exceptions" below.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 4 — The caller awaits it</div>
+            <pre><code>try
+{
+    Order order = await GetOrderAsync(id);
+}
+catch (HttpRequestException ex)
+{
+    // Caught here, exactly like a normal synchronous throw
+}</code></pre>
+            <ul><li>await sees the Task is faulted, unwraps the AggregateException automatically, and rethrows the original HttpRequestException — right at this line.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>The exact same failure, handled two different ways, to make the asymmetry concrete:</p>
+
+    <div class="code-block"><code>async Task&lt;string&gt; FailingCallAsync()
+{
+    await Task.Delay(10);
+    throw new InvalidOperationException("Something went wrong.");
+}
+
+// ── Using await — the natural, recommended way ──
+try
+{
+    string result = await FailingCallAsync();
+}
+catch (InvalidOperationException ex)
+{
+    Console.WriteLine($"Caught cleanly: {ex.Message}");
+}
+
+// ── Using .Result — blocking, wrapped ──
+try
+{
+    string result = FailingCallAsync().Result;
+}
+catch (AggregateException ex)
+{
+    // ex.InnerException is the real InvalidOperationException
+    Console.WriteLine($"Caught wrapped: {ex.InnerException?.Message}");
+}
+// A catch (InvalidOperationException ex) block here would NOT match —
+// the exception that actually escapes .Result is an AggregateException.</code></div>
+    <p>Same failing method, same underlying exception — but the <code class="icode">catch</code> clause that actually matches is different depending on how the Task was consumed. This is one more concrete reason (beyond the deadlock risk from the previous lessons) to always prefer <code class="icode">await</code> over blocking.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Recall the <code class="icode">Task.WhenAll</code> lesson's product-page example, where pricing and reviews could both fail independently. Here's the full picture of how exception handling actually plays out for a multi-task fan-out, in an ASP.NET Core controller:</p>
+
+    <div class="code-block"><code>[HttpGet("/products/{id}/page")]
+public async Task&lt;IActionResult&gt; GetProductPageAsync(int id, CancellationToken ct)
+{
+    Task&lt;PriceInfo&gt; priceTask = _pricingService.GetPriceAsync(id, ct);
+    Task&lt;List&lt;Review&gt;&gt; reviewsTask = _reviewService.GetTopReviewsAsync(id, ct);
+
+    try
+    {
+        await Task.WhenAll(priceTask, reviewsTask);
+    }
+    catch
+    {
+        // Only ONE exception was rethrown here — but BOTH tasks may have faulted.
+        // A real, production-quality handler inspects every task individually:
+        if (priceTask.IsFaulted)
+            _logger.LogError(priceTask.Exception, "Pricing lookup failed for product {Id}", id);
+        if (reviewsTask.IsFaulted)
+            _logger.LogError(reviewsTask.Exception, "Reviews lookup failed for product {Id}", id);
+
+        if (priceTask.IsFaulted)
+            return StatusCode(502, "Pricing is temporarily unavailable.");
+
+        // Reviews failing isn't critical — degrade gracefully instead of failing the whole page
+    }
+
+    return Ok(new ProductPageViewModel(priceTask.Result, reviewsTask.Result));
+}</code></code></div>
+    <p>This ties the WhenAll exception behavior from the previous lesson directly to the mechanism taught here: <code class="icode">await Task.WhenAll(...)</code> rethrows only one exception at the <code class="icode">await</code> point, unwrapped. Production code that genuinely needs to distinguish "which of several concurrent calls failed" has to go check each task's own <code class="icode">.IsFaulted</code>/<code class="icode">.Exception</code> explicitly — the single rethrown exception alone isn't enough information.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📮</span> A Sealed Envelope Waiting in a Mailbox</div>
+        <p>Imagine an assistant working on a task for you off-site. If something goes wrong, they don't call and interrupt you the instant it happens — you might not even be reachable. Instead, they write up exactly what went wrong, seal it in an envelope, and drop it in your mailbox (the Task). The bad news is sitting there, patiently, whether or not you've checked your mail yet.</p>
+        <p>When you finally check the mailbox (<code class="icode">await</code> the Task), you open the envelope and read the note directly — it reads exactly like they're telling you in person right now, even though the problem actually happened earlier while you were off doing something else. That's the "rethrown as if it just happened" experience <code class="icode">await</code> gives you. Blocking with <code class="icode">.Result</code>, by contrast, is like demanding the mailbox hand you back the entire, unopened, sealed <em>box</em> of correspondence (<code class="icode">AggregateException</code>) instead of the actual letter inside — technically all the information is there, but you have to unwrap it yourself.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>Recall from the async/await lesson that an <code class="icode">async</code> method's body is compiled into a state machine. Part of that generated code wraps the method's logic in an implicit <code class="icode">try</code>/<code class="icode">catch</code>: if any exception escapes while the state machine is running, it's caught there and handed to the underlying <code class="icode">Task</code> (technically, its <code class="icode">TaskCompletionSource</code>) via a method that marks the Task faulted and stores the exception — rather than letting the exception propagate out of the state machine's own driving code.</p>
+    <p><code class="icode">await</code>'s generated code, on the other side, checks the awaited Task's status once it completes. If faulted, it retrieves the stored exception and re-throws it directly — using .NET's exception-rethrowing machinery in a way that also preserves the original stack trace information from where the exception first occurred, not just from the await point. This is what makes debugging an awaited exception feel like debugging a normal, synchronously-thrown one, even though real suspension and resumption happened in between.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Unobserved Task Exceptions</h3>
+    <p>What if a Task faults and <em>nothing</em> ever awaits it or checks its <code class="icode">.Exception</code>? In older .NET, an exception that was never "observed" this way could eventually crash the entire process when the Task was garbage-collected. Since .NET 4.5, that's no longer the default — an unobserved faulted Task's exception is instead reported through the <code class="icode">TaskScheduler.UnobservedTaskException</code> event and then silently swallowed, rather than crashing your application. This is more forgiving, but it's a double-edged sword: a genuinely important failure can go completely unnoticed if nothing ever awaits the Task that captured it. The practical lesson is the same one repeated throughout this whole module — <strong>always await your Tasks</strong> (or otherwise deliberately observe them); don't let one silently go unwatched.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "AggregateException means something used multiple threads" — not necessarily</h3>
+    <p><code class="icode">AggregateException</code> is just a container that <em>can</em> hold multiple exceptions — from something like <code class="icode">Task.WhenAll</code> observed via <code class="icode">.Result</code>, where several tasks genuinely failed. But even a single failing Task, observed via <code class="icode">.Result</code> or <code class="icode">.Wait()</code>, gets wrapped in an <code class="icode">AggregateException</code> containing just that one inner exception. Seeing an <code class="icode">AggregateException</code> tells you "this was observed by blocking, not by awaiting" — it doesn't by itself tell you how many things actually failed.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. A synchronous exception thrown before the first await still ends up on the Task</h3>
+    <p>Even code that throws <em>before</em> reaching the first <code class="icode">await</code> in an <code class="icode">async</code> method doesn't throw immediately out of the method call the way you might expect from a normal synchronous method — the compiler still wraps the whole method body, so the exception is captured onto the returned Task exactly the same way. Calling an <code class="icode">async Task</code> method never throws directly at the call site; the exception always surfaces at the point where that Task is later awaited (or otherwise observed).</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Catching the original exception type after blocking with .Result</h4>
+    <p>❌ <strong>Wrong</strong> — this catch block will never match:</p>
+    <div class="code-block"><code>try
+{
+    var order = GetOrderAsync(id).Result;
+}
+catch (HttpRequestException ex) // never matches — the real exception is wrapped
+{
+    // unreachable when the failure actually happens
+}</code></div>
+    <p>✅ <strong>Correct</strong> — await it instead, and the original type is preserved naturally:</p>
+    <div class="code-block"><code>try
+{
+    var order = await GetOrderAsync(id);
+}
+catch (HttpRequestException ex)
+{
+    // matches correctly
+}</code></div>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming await Task.WhenAll's single caught exception is the whole story</h4>
+    <p>❌ Logging only the one exception a <code class="icode">catch</code> block around <code class="icode">await Task.WhenAll(...)</code> received, and assuming that's everything that went wrong.</p>
+    <p>✅ When multiple concurrent tasks might fail independently and you need to know about all of them, inspect each task's own <code class="icode">.IsFaulted</code>/<code class="icode">.Exception</code> explicitly, as shown in the real-world example above.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Starting a Task and never awaiting or otherwise observing it</h4>
+    <p>❌ Calling an async method, discarding its returned Task entirely, and moving on — if it fails, that failure may go completely unnoticed (reported only to <code class="icode">TaskScheduler.UnobservedTaskException</code>, easy to miss in practice).</p>
+    <p>✅ Always await a Task (or explicitly and deliberately decide to fire-and-forget with clear justification and its own error handling — a pattern examined critically in the capstone lesson of this module).</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">✅</span>
+            <div class="label">try/catch around await</div>
+            <div class="desc">The default, natural way to handle failures from any awaited async call.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🔍</span>
+            <div class="label">Inspect .Exception explicitly</div>
+            <div class="desc">When a combinator (WhenAll) may hide more than one failure behind a single rethrow.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🚫</span>
+            <div class="label">Avoid catch (AggregateException)</div>
+            <div class="desc">A sign you're blocking instead of awaiting — fix the root cause, not the catch clause.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">⚠️</span>
+            <div class="label">Never leave a Task unobserved</div>
+            <div class="desc">An un-awaited faulted Task's exception can silently vanish.</div>
+        </div>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>An async exception</strong> = "Caught, stored on the Task, and held — waiting to be rethrown once someone awaits it."<br /><br />
+        <strong>Remember:</strong><br />
+        · <code>await</code> unwraps and rethrows the original exception, cleanly.<br />
+        · <code>.Result</code>/<code>.Wait()</code> wrap it in an <code>AggregateException</code> instead — one more reason to always prefer <code>await</code>.<br />
+        · A Task nobody ever awaits can lose its exception silently — always observe your Tasks.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">An exception thrown inside an async method is captured onto its Task, not thrown immediately — it's rethrown, unwrapped, the moment something awaits that Task.</li>
+            <li style="margin-bottom:0.4rem;">This is exactly why <code>try</code>/<code>catch</code> around <code>await</code> works naturally, catching the original exception type.</li>
+            <li style="margin-bottom:0.4rem;">Blocking with <code>.Result</code> or <code>.Wait()</code> wraps the fault in an <code>AggregateException</code> instead — <code>catch</code> clauses for the original type won't match.</li>
+            <li style="margin-bottom:0.4rem;"><code>await Task.WhenAll(...)</code> rethrows only one of potentially several captured exceptions — inspect each task individually to see them all.</li>
+            <li style="margin-bottom:0.4rem;">A Task's exception that's never observed (never awaited or checked) is reported to <code>TaskScheduler.UnobservedTaskException</code> and otherwise silently lost — always await your Tasks.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen exactly how an async exception travels from throw to catch. Let's check the details that most affect real code.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> An async method throws an InvalidOperationException before its caller has awaited the returned Task. What happens to the exception at that moment?</p>
+        <ul class="options">
+            <li>A) It's thrown immediately out of the method call, exactly like a synchronous method</li>
+            <li>B) It's captured and stored on the returned Task, which transitions to the Faulted state — nothing is thrown yet at the call site</li>
+            <li>C) It's silently discarded because nothing awaited it yet</li>
+            <li>D) It crashes the application immediately</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The compiler-generated state machine catches the exception internally and stores it on the Task, marking it Faulted. The exception waits there until something actually awaits (or otherwise observes) that Task.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Calling an async Task-returning method never throws directly at the call site — even a synchronous-looking failure early in the method still ends up captured on the Task.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> It's not discarded at this point — it's held on the Task, ready to be observed later (though it can eventually go unobserved if nothing ever checks it, as covered later in the lesson).</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing crashes immediately — the exception is safely captured, not left to propagate uncontrolled.</p>
+                <p><strong>Reinforcement:</strong> An async method's exceptions always travel through the Task — never directly out of the call itself.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why does catch (HttpRequestException ex) fail to match when a Task is observed via .Result, even though the underlying failure genuinely is an HttpRequestException?</p>
+        <ul class="options">
+            <li>A) .Result changes the exception's actual type internally</li>
+            <li>B) .Result wraps the original exception inside an AggregateException, and it's the AggregateException that actually escapes — not the original type directly</li>
+            <li>C) HttpRequestException can only be caught inside async methods, never in regular code</li>
+            <li>D) .Result doesn't throw exceptions at all — it returns a null result instead</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Unlike await, .Result and .Wait() don't unwrap the stored exception — they let an AggregateException (containing the real exception as an inner exception) escape directly. A catch clause targeting the original type won't match an AggregateException.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The original exception object and its type are preserved unchanged — it's simply wrapped inside another exception, not transformed.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Exception types work the same everywhere in C# — the issue here is specifically about wrapping, not about where catch blocks are allowed.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> .Result does throw — it just throws the wrapped AggregateException rather than the unwrapped original.</p>
+                <p><strong>Reinforcement:</strong> await unwraps; blocking does not — this single fact explains the mismatched catch clause.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Three tasks are passed to Task.WhenAll, and two of them fail. Your code awaits Task.WhenAll inside a try/catch and logs only the exception the catch block receives. What's the risk?</p>
+        <ul class="options">
+            <li>A) There's no risk — await Task.WhenAll always surfaces every failure in the caught exception</li>
+            <li>B) The catch block only receives one of the two failures; the other failure's details are silently missed unless the individual tasks are inspected explicitly</li>
+            <li>C) The program will crash before reaching the catch block</li>
+            <li>D) Task.WhenAll automatically retries failed tasks, so logging isn't necessary</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> await only ever rethrows a single exception, even when the underlying WhenAll combinator captured more than one. Relying solely on that one caught exception for logging means the second failure's specific details go unrecorded unless the code checks each task's own IsFaulted/Exception.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is the exact misconception this lesson addresses — only one exception is rethrown by await, regardless of how many tasks actually failed.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The try/catch handles the fault normally — there's no crash, just incomplete information if only the caught exception is logged.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Task.WhenAll has no retry behavior at all — it purely reports completion, success or failure, of the tasks you give it.</p>
+                <p><strong>Reinforcement:</strong> When multiple independent tasks might fail, inspect each one's own exception state rather than relying on the single exception a plain await surfaces.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A fire-and-forget call starts an async method without ever awaiting its returned Task, and that method later throws. What is the modern (.NET 4.5+) default behavior?</p>
+        <ul class="options">
+            <li>A) The exception immediately crashes the entire application process</li>
+            <li>B) The exception is reported through TaskScheduler.UnobservedTaskException and then effectively lost — the process keeps running, silently unaware of the failure</li>
+            <li>C) The exception is automatically logged to the console with a full stack trace</li>
+            <li>D) The method call throws synchronously at the point it was originally invoked</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Since .NET 4.5, an unobserved faulted Task no longer crashes the process by default — the runtime raises TaskScheduler.UnobservedTaskException and then moves on, meaning the failure can go completely unnoticed unless something is actively listening for that event.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That was the behavior in older .NET versions, but it changed — modern .NET does not crash the process by default for this.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Nothing automatically logs it anywhere visible by default — that's precisely the danger of fire-and-forget code.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> An async method call never throws synchronously at its call site — the exception is always tied to the Task, which in this scenario nobody is watching.</p>
+                <p><strong>Reinforcement:</strong> Fire-and-forget async calls risk silently losing genuine failures — always await your Tasks, or handle fire-and-forget deliberately with its own explicit error handling.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand precisely how exceptions travel through async code — captured, held, and unwrapped at await. Next up: a different shape of async problem entirely — producing a sequence of items over time, with async streams.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

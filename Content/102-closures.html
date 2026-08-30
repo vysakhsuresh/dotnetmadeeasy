@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>102 - Closures · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        What happens when a lambda reaches outside itself and grabs a variable from where it was born — and why that variable is a live reference, not a snapshot.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Every lambda so far has been self-contained — its only inputs were its own parameters. But what happens when a lambda uses a variable that isn't one of its parameters, one that belongs to the method around it?</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">int threshold = 100;
+Func&lt;int, bool&gt; isExpensive = price =&gt; price &gt; threshold; // uses "threshold" — not a parameter!</code></pre>
+    <p><code>threshold</code> isn't a parameter of the lambda — it's a local variable from the surrounding method. Somehow, the lambda can still see it, even later, even after the method that declared <code>threshold</code> has already returned. This is a <strong>closure</strong>, and understanding exactly how it works — including one classic trap — is essential before you touch LINQ.</p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>closure</strong> is a lambda (or anonymous method) that "closes over" — captures and remembers — one or more variables from the scope where it was created, so it can keep using them even after that scope has technically finished running.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>When a lambda references a variable declared outside its own parameter list, that variable is called a <strong>captured variable</strong>. The lambda, together with the captured variables it needs, forms a closure — the lambda's code plus the environment it depends on, bundled together so it keeps working no matter where the resulting delegate ends up being called from.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Delegates Often Need Outside Context</h3>
+    <p>A callback rarely operates in total isolation. A validation rule needs a configured threshold. A retry handler needs a counter to track how many attempts have happened. An event handler needs to know which order it belongs to. If lambdas could only see their own parameters, you'd be forced to smuggle every bit of outside context through extra parameters or global state — clumsy, and it defeats the whole point of writing small, inline, self-explanatory logic.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Automatic Capture</h3>
+    <p>C# lets a lambda simply reference any variable that's in scope where it's written — a local variable, a method parameter, even <code>this</code> inside an instance method — and the compiler automatically arranges for that variable to survive as long as the lambda (and any delegate built from it) survives. You don't write any special syntax to opt in; it happens the instant you reference an outer variable inside a lambda body.</p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight</div>
+        <p>Closures are what make lambdas genuinely useful as callbacks and deferred logic — logic you hand off to run later, possibly much later, possibly on a different call stack entirely. Without closures, a huge fraction of the delegate-passing patterns from lessons 098–100 wouldn't work.</p>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">HOW A VARIABLE BECOMES CAPTURED</div>
+        <div class="flow-step">
+            <div class="step-label">ENCLOSING METHOD SCOPE</div>
+            <ul><li><code>int threshold = 100;</code> — an ordinary local variable</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">LAMBDA REFERENCES IT</div>
+            <ul><li><code>price =&gt; price &gt; threshold</code> — <code>threshold</code> is not a parameter, so the compiler must capture it</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">CLOSURE FORMED</div>
+            <ul><li>The lambda + <code>threshold</code>, bundled together, keep working even after the enclosing method returns</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">CAPTURE BY REFERENCE, NOT BY VALUE</div>
+        <div class="flow-step">
+            <div class="step-label">1. THE VARIABLE ITSELF IS CAPTURED, NOT ITS CURRENT VALUE</div>
+            <ul><li>The lambda doesn't take a snapshot of <code>threshold</code> at the moment it's written — it keeps a live link to the actual variable.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. LATER MUTATIONS ARE VISIBLE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">int count = 0;
+Action increment = () =&gt; count++;
+increment();
+increment();
+Console.WriteLine(count); // 2 — the outer variable itself changed</code></pre>
+            <ul><li>If <code>count</code> were captured "by value," this would print <code>0</code>. It doesn't — closures capture the variable's storage location, not a copy.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE VARIABLE'S LIFETIME EXTENDS TO MATCH THE CLOSURE</div>
+            <ul><li>Normally, a local variable dies when its method returns. A captured variable instead lives as long as any delegate referencing it is still reachable — potentially far longer than the method that declared it.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+class Program
+{
+    static Func&lt;int&gt; CreateCounter()
+    {
+        int count = 0;              // local to CreateCounter
+        return () =&gt; ++count;       // captures "count" — closure formed
+    }                                 // CreateCounter's stack frame ends here...
+                                      // ...but "count" lives on inside the closure
+
+    static void Main()
+    {
+        Func&lt;int&gt; counter1 = CreateCounter();
+        Func&lt;int&gt; counter2 = CreateCounter(); // a completely separate "count"
+
+        Console.WriteLine(counter1()); // 1
+        Console.WriteLine(counter1()); // 2
+        Console.WriteLine(counter1()); // 3
+        Console.WriteLine(counter2()); // 1 — counter2 has its own captured "count"
+    }
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>count</code> is a local variable inside <code>CreateCounter</code>, yet it keeps incrementing across calls to <code>counter1()</code> long after <code>CreateCounter</code> has returned. Each call to <code>CreateCounter</code> creates a <em>fresh</em> <code>count</code>, so <code>counter1</code> and <code>counter2</code> track entirely independent state.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A retry helper (like <code>Retrier.RunWithRetry</code> from lesson 098) is a natural place for closures: the lambda passed as <code>operation</code> often needs to reach outside itself to report progress or use configuration from the calling method.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+class Program
+{
+    static void ProcessOrder(string orderId, int maxAttempts)
+    {
+        int attemptsUsed = 0; // captured below — the caller wants to know this afterward
+
+        Retrier.RunWithRetry(
+            operation: () =&gt;
+            {
+                attemptsUsed++;                     // mutating the captured variable
+                Console.WriteLine($"Processing order {orderId}, attempt {attemptsUsed}");
+                if (attemptsUsed &lt; 3)
+                    throw new InvalidOperationException("Simulated transient failure");
+            },
+            maxAttempts: maxAttempts,
+            onAttemptFailed: msg =&gt; Console.WriteLine($"[{orderId}] {msg}") // captures "orderId" too
+        );
+
+        Console.WriteLine($"Order {orderId} succeeded after {attemptsUsed} attempt(s).");
+    }
+
+    static void Main() =&gt; ProcessOrder("ORD-4471", maxAttempts: 5);
+}</code></pre>
+    <p>Both lambdas here — <code>operation</code> and <code>onAttemptFailed</code> — capture variables from <code>ProcessOrder</code>'s scope (<code>orderId</code>, <code>attemptsUsed</code>). Because <code>attemptsUsed</code> is captured by reference, the final <code>Console.WriteLine</code> after <code>RunWithRetry</code> returns sees the true, updated attempt count — even though the increments happened inside a lambda passed several calls deep.</p>
+
+    <!-- ====== THE LOOP VARIABLE GOTCHA ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Classic Trap — Capturing a Loop Variable</h2>
+    <p>Because closures capture the variable itself, not its value at closure-creation time, capturing a loop counter is where beginners get burned. The behavior depends entirely on <strong>which kind of loop</strong> you use — and modern C# has changed this for the better.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>⚠️ Classic <code>for</code> Loop — Still a Real Trap</h4>
+            <ul>
+                <li>One mutable <code>i</code> exists for the <strong>entire loop</strong></li>
+                <li>Every lambda created inside the loop captures <strong>the same variable</strong></li>
+                <li>By the time any lambda runs, <code>i</code> has already reached its final value</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Modern <code>foreach</code> Loop — Safe Since C# 5</h4>
+            <ul>
+                <li>Each iteration gets its <strong>own, fresh</strong> loop variable</li>
+                <li>Every lambda created inside the loop captures a <strong>different variable</strong></li>
+                <li>Each lambda sees exactly the value it "should" — no surprises</li>
+            </ul>
+        </div>
+    </div>
+
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+using System.Collections.Generic;
+
+class Program
+{
+    static void Main()
+    {
+        // ── The trap: classic `for` loop, capturing the loop variable directly ──
+        var brokenActions = new List&lt;Action&gt;();
+        for (int i = 0; i &lt; 3; i++)
+        {
+            brokenActions.Add(() =&gt; Console.WriteLine($"for-loop lambda sees i = {i}"));
+        }
+        foreach (var action in brokenActions) action();
+        // for-loop lambda sees i = 3
+        // for-loop lambda sees i = 3
+        // for-loop lambda sees i = 3
+        // ^ All three captured the SAME "i" — by the time they run, the loop already finished at i == 3.
+
+        Console.WriteLine();
+
+        // ── The fix: copy the loop variable into a fresh local INSIDE the loop body ──
+        var fixedActions = new List&lt;Action&gt;();
+        for (int i = 0; i &lt; 3; i++)
+        {
+            int local = i; // a brand-new variable, created fresh on every iteration
+            fixedActions.Add(() =&gt; Console.WriteLine($"fixed for-loop lambda sees local = {local}"));
+        }
+        foreach (var action in fixedActions) action();
+        // fixed for-loop lambda sees local = 0
+        // fixed for-loop lambda sees local = 1
+        // fixed for-loop lambda sees local = 2
+
+        Console.WriteLine();
+
+        // ── foreach: safe by default, no workaround needed ──
+        var foreachActions = new List&lt;Action&gt;();
+        foreach (int n in new[] { 0, 1, 2 })
+        {
+            foreachActions.Add(() =&gt; Console.WriteLine($"foreach lambda sees n = {n}"));
+        }
+        foreach (var action in foreachActions) action();
+        // foreach lambda sees n = 0
+        // foreach lambda sees n = 1
+        // foreach lambda sees n = 2
+        // ^ Correct out of the box — each iteration of a foreach gets its own "n" since C# 5.
+    }
+}</code></pre>
+    <p>Be precise about this: it's not that "loops and closures don't mix." It's that a classic <code>for</code> loop declares exactly <strong>one</strong> loop variable and mutates it every iteration, so every lambda created inside that loop shares that one variable. A <code>foreach</code> loop, since C# 5 (2012), instead creates a <strong>new</strong> iteration variable on every pass — so capturing it "just works" the way most people intuitively expect. Older C# tutorials (and .NET Framework code predating C# 5) may still describe <code>foreach</code> as having the same trap — that was true before C# 5, but is no longer accurate for any C# version you'll write today.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📺</span> A Live Feed, Not a Photograph</div>
+        <p>Capturing a variable is like wiring a lambda to a live security camera feed of that variable's location, not handing it a printed photograph. A photograph (capture by value) freezes what the variable looked like at that instant, forever. A live feed (capture by reference) shows whatever is happening at that location <em>right now</em> — including changes made after the photo would have been taken. That's exactly why the broken <code>for</code>-loop example above prints <code>3</code> three times: every lambda is watching the same live feed of <code>i</code>, and by the time anyone checks the feed, the loop has already moved <code>i</code> to its final value.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>When the compiler detects that a lambda captures one or more outer variables, it can no longer store those variables as ordinary stack-allocated locals — a stack frame disappears once its method returns, but the closure might need to outlive it. Instead, the compiler generates a hidden class (informally called a <strong>display class</strong>) with a field for each captured variable. The enclosing method's references to those variables are silently rewritten to go through an instance of this hidden class, and the lambda itself becomes an instance method on that same class. The delegate you end up holding wraps <em>that instance</em> as its target — which is precisely why the captured variable's storage lives on the heap, as long as anything keeps the delegate (or the hidden class instance) reachable, instead of dying with the stack frame.</p>
+    <p>This also explains the loop trap precisely: for a classic <code>for</code> loop, the compiler creates <strong>one</strong> display-class instance for the whole loop, because there's genuinely only one <code>i</code> variable across all iterations. For a <code>foreach</code> loop (since C# 5) and for a <code>for</code> loop where you declare a fresh local inside the loop body, the compiler creates a <strong>new</strong> display-class instance (or field value) each iteration, because a genuinely new variable exists each time. Multiple lambdas capturing the <em>same</em> display-class instance — as in the retry example above, where both lambdas captured <code>attemptsUsed</code> and <code>orderId</code> from the same method call — share that instance, which is why mutating a captured variable from one lambda is visible to another lambda that captured the same variable.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Captured by value" is a common but wrong assumption</h3>
+    <p>Many developers coming from languages with different capture semantics assume a lambda snapshots a variable's value the moment it's written. In C#, it does not — it captures the variable itself, by reference. If you genuinely want a frozen snapshot, you must deliberately copy the value into a new local variable before the lambda captures it (exactly the <code>int local = i;</code> fix above).</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "foreach still has the loop trap" — true before C# 5, false today</h3>
+    <p>This is one of the most common pieces of outdated advice still floating around. Before C# 5 (2012), <code>foreach</code> genuinely did reuse one variable across all iterations, just like <code>for</code>. Since C# 5, each iteration gets a fresh variable. On any modern .NET project, you can trust <code>foreach</code> captures to behave intuitively — the trap is specific to a classic <code>for</code> loop's single mutable counter.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Capturing a <code>for</code> loop's counter directly</h4>
+    <p>❌ <code>for (int i = 0; i &lt; list.Count; i++) actions.Add(() =&gt; Use(i));</code> — every lambda ends up seeing the loop's final value of <code>i</code>.</p>
+    <p>✅ Copy the counter into a fresh local declared inside the loop body first: <code>int local = i; actions.Add(() =&gt; Use(local));</code>. Or, when possible, iterate the collection itself with <code>foreach</code> instead of indexing with <code>for</code>.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Unintentionally keeping large objects alive</h4>
+    <p>❌ A lambda captures an entire large object (or <code>this</code>) just to read one small field off it, then that lambda is stored somewhere long-lived (a static event, a cache). The whole object — not just the field — is kept alive as long as the lambda is reachable, because the closure holds a reference to the object, not a copy of the field.</p>
+    <p>✅ Be deliberate about what a long-lived lambda captures. If only one field is truly needed, consider extracting it into a small local variable before the lambda is created, so the closure captures the smaller value rather than the whole containing object.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Closures aren't something you "opt into" — they happen automatically whenever a lambda references outer state. Recognize when you're relying on one, especially for callbacks that run later or elsewhere: event handlers, retry logic, deferred LINQ queries (coming up soon).</li>
+        <li style="margin-bottom:0.4rem;">Be intentional when a captured variable needs to accumulate state across calls (a running counter, a cache) — that's a legitimate, common use of closures.</li>
+        <li style="margin-bottom:0.4rem;">Be cautious inside loops that build up a collection of lambdas — always double-check whether each lambda should see a shared, mutating variable or its own independent snapshot.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        A closure = a lambda + a "backpack" of the outer variables it needs, carried by reference.<br />
+        Change the variable later → the lambda sees the change, because it's watching the same variable, not a copy.<br />
+        A classic <code>for</code> loop shares <strong>one</strong> variable across every iteration; <code>foreach</code> (since C# 5) gives every iteration its <strong>own</strong>.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A closure is a lambda that captures one or more variables from its enclosing scope, keeping them alive and usable beyond the normal lifetime of that scope.</li>
+            <li style="margin-bottom:0.4rem;">Captured variables are captured <strong>by reference</strong> — a live link to the variable's storage, not a frozen snapshot of its value.</li>
+            <li style="margin-bottom:0.4rem;">A classic <code>for</code> loop has one mutable loop variable shared by every lambda created inside it — capture the counter directly and every lambda sees the loop's final value; copy it into a fresh local first to fix it.</li>
+            <li style="margin-bottom:0.4rem;">A <code>foreach</code> loop, since C# 5, creates a fresh iteration variable every pass — closures over it behave intuitively with no workaround needed.</li>
+            <li style="margin-bottom:0.4rem;">Under the hood, captured variables move from the stack to a compiler-generated class on the heap, which is why they can outlive the method that declared them.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">Closures — especially the loop variable trap — are one of the most common sources of subtle bugs. Let's confirm the details are solid.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> How does a C# lambda capture an outer variable?</p>
+        <ul class="options">
+            <li>A) By value — it copies the variable's current value at the moment the lambda is written</li>
+            <li>B) By reference — it keeps a live link to the variable itself, seeing any later changes</li>
+            <li>C) It cannot capture outer variables at all — only its own parameters</li>
+            <li>D) By serializing the variable to a string and parsing it back when the lambda runs</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> C# closures capture variables by reference — the lambda watches the actual variable's storage, so any change made to it after the lambda was created (from inside or outside the lambda) is visible the next time the lambda runs.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is the classic misconception. If capture were by value, the counter example (<code>Action increment = () =&gt; count++;</code>) would never accumulate across calls — but it does.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Capturing outer variables is exactly what makes a lambda a closure — it's a core, well-supported capability, not a limitation.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no serialization involved — capture is handled by the compiler generating a class with a field for the variable, accessed directly.</p>
+                <p><strong>Reinforcement:</strong> Always assume a captured variable is a live reference, not a frozen copy, unless you deliberately copy it first.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What does this code print?</p>
+        <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;margin-bottom:0.8rem;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">var actions = new List&lt;Action&gt;();
+for (int i = 0; i &lt; 3; i++)
+{
+    actions.Add(() =&gt; Console.Write(i));
+}
+foreach (var a in actions) a();</code></pre>
+        <ul class="options">
+            <li>A) <code>012</code></li>
+            <li>B) <code>333</code></li>
+            <li>C) <code>000</code></li>
+            <li>D) A compile-time error</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A classic <code>for</code> loop has exactly one <code>i</code> variable, mutated across all three iterations. All three lambdas capture that same variable. By the time any of them run (after the loop has finished), <code>i</code> equals <code>3</code>.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That would be the result if each lambda captured its own independent snapshot at creation time — which is what <code>foreach</code> gives you, but not a classic <code>for</code> loop capturing the counter directly.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>i</code> is never reset to <code>0</code> after the loop; it ends at <code>3</code>, the value that fails the loop condition.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This code compiles fine — the behavior is a runtime surprise, not a compile-time error, which is exactly what makes it a dangerous trap.</p>
+                <p><strong>Reinforcement:</strong> A classic <code>for</code> loop's counter is one shared variable — capturing it directly inside the loop body is the textbook closure trap.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> How would you fix the previous question's code so it prints <code>012</code> instead?</p>
+        <ul class="options">
+            <li>A) Change <code>Action</code> to <code>Func&lt;int&gt;</code></li>
+            <li>B) Copy <code>i</code> into a new local variable declared inside the loop body, and capture that local instead</li>
+            <li>C) Move the <code>foreach</code> that invokes the actions to before the <code>for</code> loop</li>
+            <li>D) It cannot be fixed — <code>for</code> loops are fundamentally incompatible with lambdas</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>int local = i;</code> written inside the loop body creates a brand-new variable on every single iteration. Each lambda then captures its own distinct <code>local</code>, frozen at that iteration's value, rather than the one shared <code>i</code>.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Changing the delegate type doesn't change what variable is captured — the same sharing problem would occur regardless of <code>Action</code> vs <code>Func&lt;int&gt;</code>.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The actions must run after being added to the list for this scenario to make sense; running them before they're created isn't a meaningful fix, and it wouldn't be possible here since the actions don't exist yet.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>for</code> loops and lambdas work together fine — you just need to be deliberate about what gets captured, exactly as this fix demonstrates.</p>
+                <p><strong>Reinforcement:</strong> When you need each lambda to see a different, frozen value from a <code>for</code> loop, copy the loop variable into a fresh local first.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> If the loop in Question 2 were rewritten as <code>foreach (int i in new[] { 0, 1, 2 })</code> instead of a classic <code>for</code> loop, what would it print, assuming modern C#?</p>
+        <ul class="options">
+            <li>A) <code>333</code> — same trap applies to <code>foreach</code></li>
+            <li>B) <code>012</code> — each iteration gets its own fresh variable since C# 5</li>
+            <li>C) A compile-time error, since <code>foreach</code> variables cannot be captured</li>
+            <li>D) <code>000</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Since C# 5, a <code>foreach</code> loop creates a brand-new iteration variable on every pass. Each lambda captures a distinct variable holding that iteration's value, so the output matches the intuitive expectation.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That was true for <code>foreach</code> before C# 5, but is no longer the case in any current version of C#.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>foreach</code> variables can absolutely be captured by lambdas — that's a normal, well-supported pattern.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing resets the values to <code>0</code>; each closure correctly retains the value from its own iteration.</p>
+                <p><strong>Reinforcement:</strong> The loop-variable trap is specific to a classic <code>for</code> loop's single shared counter — <code>foreach</code> has been safe since C# 5.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand exactly how closures capture state — and the one loop-variable trap worth remembering forever. Next: local functions, a named alternative to lambdas that changes how (and whether) capturing happens at all.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

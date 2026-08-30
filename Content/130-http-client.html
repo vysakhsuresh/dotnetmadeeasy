@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>130 - HTTP Client · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The object your app uses to talk to the outside world is exactly the kind of thing you should never construct by hand.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Your app needs to fetch live prices from a supplier's API, or send a notification to a payment gateway, or check a shipping carrier's tracking status. All of these are the same fundamental need: making an outbound HTTP call from your .NET code. The obvious first instinct is <code>new HttpClient()</code>, right where you need it, use it, and move on. This works — for a demo. In a real, long-running application, it's one of the most common ways to quietly exhaust a server's network resources and take the whole app down under load, for a reason that isn't obvious until you've been bitten by it.</p>
+    <p><strong>In this lesson, you'll learn what <code>HttpClient</code> is, why creating one per request is a real production hazard (the socket exhaustion problem), how <code>IHttpClientFactory</code> and typed clients solve it the idiomatic way, and how to make basic GET and POST requests.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong><code>HttpClient</code></strong> is .NET's class for sending HTTP requests — GET, POST, PUT, DELETE, and so on — to other servers over the network, and reading back their responses. <strong><code>IHttpClientFactory</code></strong> is the recommended way to obtain and manage <code>HttpClient</code> instances in a real application, instead of constructing them yourself with <code>new</code>.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><code>HttpClient</code> (in <code>System.Net.Http</code>) wraps an underlying HTTP message handler pipeline that actually opens sockets, performs DNS lookups, negotiates TLS, and sends bytes over the wire. <code>IHttpClientFactory</code>, registered via <code>builder.Services.AddHttpClient()</code> in the generic host, is a factory service that creates and manages the lifetime of the underlying handlers <code>HttpClient</code> instances use, pooling and reusing network connections behind the scenes so your code never has to think about connection management directly.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ new HttpClient() everywhere</h4>
+            <ul>
+                <li>Each instance opens its own connection pool</li>
+                <li>Disposing it doesn't release the underlying socket immediately</li>
+                <li>Under load, this exhausts available sockets — <strong>socket exhaustion</strong></li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ IHttpClientFactory</h4>
+            <ul>
+                <li>Manages and reuses underlying connection pools centrally</li>
+                <li>Handles DNS changes by recycling handlers periodically</li>
+                <li>The idiomatic, DI-friendly way to get an <code>HttpClient</code></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — new HttpClient() Looks Safe and Isn't</h3>
+    <p><code>HttpClient</code> implements <code>IDisposable</code>, so the natural instinct — trained by years of "always dispose disposable things" — is to write <code>using var client = new HttpClient();</code> around every call that needs one. This is exactly backwards for <code>HttpClient</code>. Disposing an <code>HttpClient</code> disposes its underlying connection handler, but the underlying TCP socket doesn't close immediately — it lingers in a <code>TIME_WAIT</code> state for a period determined by the operating system. Create-and-dispose an <code>HttpClient</code> per request under any real load, and you exhaust the pool of available outbound sockets faster than the OS can clean them up. The app starts throwing <code>SocketException</code>s — not because the remote server is down, but because your own machine has run out of sockets to open new connections with.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Share Connections, Not Instances</h3>
+    <p>The fix isn't "never dispose it" either — a single, permanently shared <code>static HttpClient</code> avoids socket exhaustion but introduces a different bug: it never notices when a DNS entry changes, because it holds onto the same resolved connection indefinitely. <code>IHttpClientFactory</code> solves both problems at once: it manages a pool of underlying handlers centrally, reuses connections efficiently, and periodically recycles handlers in the background so DNS changes are eventually picked up — all while your code just asks the factory for a client whenever it needs one, without worrying about any of this.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">WITHOUT IHttpClientFactory
+
+Request 1 → new HttpClient() → open socket → dispose → socket lingers
+Request 2 → new HttpClient() → open socket → dispose → socket lingers
+Request 3 → new HttpClient() → open socket → dispose → socket lingers
+    ↓ (under real load, sockets accumulate faster than the OS reclaims them)
+SocketException: too many open connections
+
+
+WITH IHttpClientFactory
+
+Request 1 → factory hands out client → shares pooled connection
+Request 2 → factory hands out client → shares pooled connection
+Request 3 → factory hands out client → shares pooled connection
+    ↓
+Connections reused, pool size stays bounded, handlers recycled periodically</code></pre>
+    <p>The behavior your code writes barely changes — you still call <code>GetAsync</code>, <code>PostAsync</code>, and so on. What changes is <em>where the <code>HttpClient</code> comes from</em>: DI-managed and pooled, instead of constructed fresh every time you need to make a call.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">FROM REGISTRATION TO A LIVE HTTP CALL</div>
+        <div class="flow-step">
+            <div class="step-label">1. REGISTER HTTP CLIENT SUPPORT ONCE, AT STARTUP</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddHttpClient();</code></pre>
+            <ul><li>This registers <code>IHttpClientFactory</code> itself in the DI container — a one-time setup call, not something you repeat per feature.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. INJECT IHttpClientFactory (OR A TYPED CLIENT) WHERE YOU NEED IT</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class PricingService(IHttpClientFactory httpClientFactory)
+{
+    public async Task&lt;string&gt; GetRawQuoteAsync()
+    {
+        var client = httpClientFactory.CreateClient();
+        var response = await client.GetAsync("https://api.example.com/quote");
+        return await response.Content.ReadAsStringAsync();
+    }
+}</code></pre>
+            <ul><li><code>CreateClient()</code> returns an <code>HttpClient</code> instance that's safe to use for this call — you don't dispose it yourself; the factory manages the underlying handler's lifetime.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. SEND THE REQUEST AND AWAIT THE RESPONSE</div>
+            <ul><li><code>GetAsync</code>, <code>PostAsync</code>, and similar methods are all asynchronous — network calls are exactly the kind of I/O-bound work <code>async</code>/<code>await</code> exists for, so you never block a thread waiting on the network.</li><li>The response comes back as an <code>HttpResponseMessage</code>, with a status code, headers, and a content stream you read separately.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>A basic GET request, registered and consumed through <code>IHttpClientFactory</code>:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddHttpClient();
+builder.Services.AddTransient&lt;WeatherClient&gt;();
+
+using var host = builder.Build();
+var weatherClient = host.Services.GetRequiredService&lt;WeatherClient&gt;();
+Console.WriteLine(await weatherClient.GetForecastRawAsync());
+
+public class WeatherClient(IHttpClientFactory httpClientFactory)
+{
+    public async Task&lt;string&gt; GetForecastRawAsync()
+    {
+        var client = httpClientFactory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync("https://api.weather.example.com/forecast");
+
+        response.EnsureSuccessStatusCode(); // throws if status is not 2xx
+        return await response.Content.ReadAsStringAsync();
+    }
+}</code></pre>
+    <p>A basic POST, sending a JSON body built manually with <code>StringContent</code>:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task PostRawAsync(IHttpClientFactory httpClientFactory)
+{
+    var client = httpClientFactory.CreateClient();
+
+    var json = """{"itemId": 42, "quantity": 3}""";
+    var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+    HttpResponseMessage response = await client.PostAsync("https://api.example.com/cart-items", content);
+    response.EnsureSuccessStatusCode();
+}</code></pre>
+    <div class="callout">
+        <strong>💡 Note:</strong> Building JSON by hand like this works but is tedious and error-prone. Lesson 131 covers <code>GetFromJsonAsync</code> and <code>PostAsJsonAsync</code> — extension methods that handle the JSON serialization for you directly on top of <code>HttpClient</code>.
+    </div>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A <strong>typed client</strong> takes this further: instead of injecting <code>IHttpClientFactory</code> and calling <code>CreateClient()</code> yourself, you define a class that itself wraps <code>HttpClient</code>, and register that class directly with <code>AddHttpClient&lt;T&gt;()</code>. A payment-integration client for a background worker is a good example:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class PaymentGatewayClient(HttpClient httpClient)
+{
+    public async Task&lt;bool&gt; ChargeAsync(string cardToken, decimal amount)
+    {
+        var json = $$"""{"token": "{{cardToken}}", "amount": {{amount}}}""";
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        var response = await httpClient.PostAsync("charges", content);
+        return response.IsSuccessStatusCode;
+    }
+}
+
+// Registration — configures the base address and default headers ONCE, in one place
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddHttpClient&lt;PaymentGatewayClient&gt;(client =&gt;
+{
+    client.BaseAddress = new Uri("https://payments.example.com/api/");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddHostedService&lt;PaymentWorker&gt;();
+
+// Consuming it — inject the typed client directly, HttpClient never appears in this class at all
+public class PaymentWorker(PaymentGatewayClient paymentClient, ILogger&lt;PaymentWorker&gt; logger) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var success = await paymentClient.ChargeAsync("tok_abc123", 49.99m);
+        logger.LogInformation("Charge result: {Success}", success);
+    }
+}</code></pre>
+    <p><code>AddHttpClient&lt;PaymentGatewayClient&gt;</code> registers <code>PaymentGatewayClient</code> itself in DI, automatically constructing it with a factory-managed <code>HttpClient</code> already injected — with the base address and headers configured once, centrally, instead of repeated at every call site. <code>PaymentWorker</code> never sees <code>HttpClient</code> or <code>IHttpClientFactory</code> at all; it just depends on <code>PaymentGatewayClient</code> like any other service.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">☎️</span> A Shared Phone Line vs. a New Line Per Call</div>
+        <p>Imagine a company where every employee, for every single phone call, has the phone company install a brand-new physical line, makes the call, and then has it disconnected. Installing and tearing down a line takes time and resources, and disconnected lines don't instantly free up the wiring — they stay reserved for a while. Do this a thousand times an hour and the building runs out of wiring capacity, even though at any given moment only a few calls are actually happening.</p>
+        <p>A shared switchboard is the better model: a fixed set of lines that get reused, call after call, managed centrally. That's what <code>IHttpClientFactory</code> is — a switchboard for outbound HTTP connections, instead of installing (and slowly un-installing) a new line for every single request.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">HttpClient, SocketsHttpHandler, AND CONNECTION POOLING</div>
+        <div class="flow-step">
+            <div class="step-label">1. HttpClient IS A THIN WRAPPER — SocketsHttpHandler DOES THE REAL WORK</div>
+            <ul><li>Modern <code>HttpClient</code> delegates the actual socket management, DNS resolution, and connection pooling to an internal <code>SocketsHttpHandler</code>. Disposing an <code>HttpClient</code> instance does not necessarily tear down that underlying handler and its open connections immediately — that's the root of the socket exhaustion problem.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. IHttpClientFactory POOLS HANDLERS, NOT JUST HttpClient INSTANCES</div>
+            <ul><li>The factory maintains an internal pool of <code>SocketsHttpHandler</code> instances, keyed by client name/type. Calling <code>CreateClient()</code> hands you a lightweight <code>HttpClient</code> wrapper around a <em>pooled, shared</em> handler — the expensive part (the connection pool itself) is reused across many logical "clients."</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. HANDLERS ARE RECYCLED PERIODICALLY, NOT HELD FOREVER</div>
+            <ul><li>By default, the factory rotates out a handler roughly every couple of minutes, creating a fresh one to replace it — this is the deliberate middle ground between "new handler per request" (socket exhaustion) and "one static handler forever" (never notices DNS changes). Existing in-flight requests on the old handler are allowed to complete before it's discarded.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"It's IDisposable, so I must dispose it after every use" — not for HttpClient</h3>
+    <p>The instinct to wrap every disposable resource in a <code>using</code> block is correct almost everywhere else in .NET — but <code>HttpClient</code> is a well-known, deliberately called-out exception. An <code>HttpClient</code> obtained from <code>IHttpClientFactory</code> is designed to be short-lived <em>as an object</em> (fine to let it go out of scope; no need to explicitly dispose it yourself) while the connections underneath it are long-lived and shared. Disposing it yourself doesn't cause a bug by itself, but reasoning "I should create-and-dispose one per call, like everything else" is exactly the reasoning that leads to socket exhaustion.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">A single static HttpClient "fixes" exhaustion but breaks DNS updates</h3>
+    <p>Before <code>IHttpClientFactory</code> existed, the recommended workaround was a single <code>static readonly HttpClient</code> shared for the app's whole lifetime. This does avoid socket exhaustion — but because the underlying handler resolves and caches a connection, a static client can keep talking to an old IP address even after the target server's DNS record changes (common with load balancers and cloud services that rotate IPs). <code>IHttpClientFactory</code>'s periodic handler recycling is specifically designed to avoid this failure mode too.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — new HttpClient() inside a method that runs per-request</h4>
+    <p>❌ <code>using var client = new HttpClient(); await client.GetAsync(url);</code> inside a hot path — this is the exact pattern that causes socket exhaustion under real load.</p>
+    <p>✅ Register <code>AddHttpClient()</code> (or a typed client) once at startup, and obtain instances through <code>IHttpClientFactory</code> or constructor injection.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Not calling EnsureSuccessStatusCode (or checking IsSuccessStatusCode)</h4>
+    <p>❌ Reading <code>response.Content</code> directly without checking the status code first — a 404 or 500 response still has a body (often an error message), and blindly parsing it as if it were successful data leads to confusing downstream failures.</p>
+    <p>✅ Call <code>response.EnsureSuccessStatusCode()</code> (throws on non-2xx) or check <code>response.IsSuccessStatusCode</code> explicitly before trusting the response body.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Setting BaseAddress or headers separately at every call site</h4>
+    <p>❌ Repeating <code>client.BaseAddress = new Uri(...)</code> and default headers inline, scattered across every method that happens to make an HTTP call — easy to get inconsistent, easy to forget.</p>
+    <p>✅ Configure a typed or named client's base address, default headers, and timeout <em>once</em>, in the <code>AddHttpClient</code> registration — every consumer automatically gets the same, correctly configured client.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Use <code>IHttpClientFactory</code> — plain <code>AddHttpClient()</code> or a typed client — for essentially any real application that makes outbound HTTP calls, from a single quick integration to a service that calls several different APIs.</li>
+        <li style="margin-bottom:0.4rem;">Prefer a <strong>typed client</strong> (<code>AddHttpClient&lt;TClient&gt;()</code>) when you're consistently calling one specific external service — it centralizes the base address, headers, and endpoint-shaping logic in one class instead of scattering raw HTTP calls across your codebase.</li>
+        <li style="margin-bottom:0.4rem;">Use a plain, unnamed <code>IHttpClientFactory.CreateClient()</code> for occasional, ad-hoc calls to arbitrary URLs that don't warrant their own dedicated wrapper class.</li>
+        <li style="margin-bottom:0.4rem;">A genuinely tiny, one-shot script that makes a single HTTP call and exits immediately is one of the few places <code>new HttpClient()</code> without a factory is harmless — the socket exhaustion problem is specifically about repeated creation under sustained load.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>HttpClient</strong> = the object you call <code>GetAsync</code>/<code>PostAsync</code> on<br />
+        <strong>IHttpClientFactory</strong> = the pool manager that hands out clients backed by shared, reused connections<br />
+        <strong>Typed client</strong> = your own class, wrapping HttpClient, registered and configured once<br /><br />
+        <strong>Remember:</strong><br />
+        · Never <code>new HttpClient()</code> per request — that's how you exhaust sockets under load.<br />
+        · Never one giant static <code>HttpClient</code> forever, either — that's how you miss DNS changes.<br />
+        · <code>IHttpClientFactory</code> is the deliberate middle ground: pooled, reused, periodically recycled.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><code>HttpClient</code> sends HTTP requests and reads back responses; it's <code>IDisposable</code>, but that does not mean create-and-dispose-per-call is the right pattern.</li>
+            <li style="margin-bottom:0.4rem;">Creating a new <code>HttpClient</code> per request under real load causes <strong>socket exhaustion</strong> — disposal doesn't immediately release the underlying socket.</li>
+            <li style="margin-bottom:0.4rem;"><code>IHttpClientFactory</code> (registered via <code>AddHttpClient()</code>) is the idiomatic fix — it pools and reuses connection handlers, and periodically recycles them so DNS changes are still picked up.</li>
+            <li style="margin-bottom:0.4rem;">A <strong>typed client</strong> (<code>AddHttpClient&lt;TClient&gt;()</code>) wraps <code>HttpClient</code> in your own class, with base address/headers configured once and injected cleanly via DI.</li>
+            <li style="margin-bottom:0.4rem;">Always check <code>IsSuccessStatusCode</code> or call <code>EnsureSuccessStatusCode()</code> before trusting a response's content.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen why creating a fresh HttpClient per call is a trap. Let's confirm you understand the real mechanism behind it.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why is <code>using var client = new HttpClient();</code> inside a method that runs on every incoming request considered a serious problem under real load?</p>
+        <ul class="options">
+            <li>A) HttpClient doesn't support async methods, so it would block every request</li>
+            <li>B) Disposing an HttpClient doesn't immediately release its underlying socket, so repeated creation can exhaust the pool of available outbound sockets — socket exhaustion</li>
+            <li>C) HttpClient objects are extremely large in memory and cause out-of-memory errors</li>
+            <li>D) It's actually fine — this concern only applied to very old .NET Framework versions</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The underlying socket lingers after disposal instead of being freed instantly. Creating and disposing many <code>HttpClient</code>s in quick succession, under sustained load, can exhaust the machine's available sockets faster than the OS reclaims them — producing <code>SocketException</code>s unrelated to the remote server's actual health.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>HttpClient</code> fully supports async methods like <code>GetAsync</code> — that's not the issue here.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The problem is socket/connection exhaustion, not raw object memory size.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a real, current concern in modern .NET too — it's precisely why <code>IHttpClientFactory</code> exists and is the recommended approach today.</p>
+                <p><strong>Reinforcement:</strong> Use <code>IHttpClientFactory</code> to get pooled, reused connections instead of constructing <code>HttpClient</code> yourself in hot paths.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A team's earlier fix for socket exhaustion was a single <code>static readonly HttpClient</code> shared for the app's entire lifetime. What downside does this approach have that <code>IHttpClientFactory</code> avoids?</p>
+        <ul class="options">
+            <li>A) A static HttpClient cannot make POST requests, only GET</li>
+            <li>B) A static HttpClient's cached connection can miss DNS changes (e.g. a load balancer rotating IPs), since it never rotates its underlying handler</li>
+            <li>C) A static HttpClient is not thread-safe and crashes under concurrent use</li>
+            <li>D) A static HttpClient requires manual disposal on every application exit</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A single long-lived static client holds onto its resolved connection/handler indefinitely, so it can keep talking to a stale IP address after DNS changes — a real problem for services behind load balancers or cloud infrastructure that rotate endpoints. <code>IHttpClientFactory</code>'s periodic handler recycling exists specifically to address this.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A static <code>HttpClient</code> supports every HTTP verb identically to any other instance.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>HttpClient</code> instance methods are safe to call concurrently from multiple threads — that's not the issue with the static approach.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A static client living for the app's lifetime is actually the point of that pattern — disposal isn't the concern being described here.</p>
+                <p><strong>Reinforcement:</strong> <code>IHttpClientFactory</code> is the deliberate middle ground between "new client every time" (socket exhaustion) and "one client forever" (stale DNS).</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> What is the main advantage of a <strong>typed client</strong> (e.g. <code>AddHttpClient&lt;PaymentGatewayClient&gt;()</code>) over injecting <code>IHttpClientFactory</code> directly and calling <code>CreateClient()</code> in every consuming class?</p>
+        <ul class="options">
+            <li>A) Typed clients are faster at the network level than factory-created clients</li>
+            <li>B) Base address, headers, and endpoint logic are centralized in one class instead of duplicated at every call site that needs to talk to that service</li>
+            <li>C) Typed clients don't need to be registered in the DI container at all</li>
+            <li>D) Typed clients automatically retry failed requests without any extra configuration</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A typed client wraps <code>HttpClient</code> in a dedicated class with the base address, default headers, and request-shaping logic defined once, at registration — every consumer just depends on that class, instead of each consumer repeating raw <code>HttpClient</code> configuration and calls itself.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Both approaches use the same pooled connections underneath; there's no inherent network-level speed difference.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Typed clients are still registered — via <code>AddHttpClient&lt;TClient&gt;()</code> — just with a different, more structured registration API.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Automatic retries require explicitly configuring a resilience/retry policy on top; they aren't a built-in default of typed clients.</p>
+                <p><strong>Reinforcement:</strong> Typed clients are about code organization and encapsulation, layered on top of the same connection-pooling benefits <code>IHttpClientFactory</code> already provides.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A method calls <code>await client.GetAsync(url)</code> and immediately does <code>var data = await response.Content.ReadAsStringAsync();</code> without checking the status code. The remote API returns a 500 error with an error message body. What's the risk?</p>
+        <ul class="options">
+            <li>A) ReadAsStringAsync throws automatically on any non-2xx status, so this is actually safe</li>
+            <li>B) The code will treat the error message body as if it were valid successful data, since it never checked whether the response actually succeeded</li>
+            <li>C) The application crashes immediately with an unhandled exception</li>
+            <li>D) HttpClient automatically retries on 500 errors, so this code never actually sees the failure</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A non-2xx response still has content — often an error message or problem-details payload — and <code>ReadAsStringAsync()</code> reads it regardless of status code. Without checking <code>IsSuccessStatusCode</code> or calling <code>EnsureSuccessStatusCode()</code> first, the code has no way to distinguish "successful data" from "an error message that happens to be text."</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>ReadAsStringAsync()</code> doesn't inspect or throw based on status code at all — it just reads whatever content is present.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> No exception is thrown here; that's exactly the danger — it fails silently by returning bad data as if it were good.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>HttpClient</code> has no built-in automatic retry behavior for any status code by default.</p>
+                <p><strong>Reinforcement:</strong> Always check the response status before trusting its content — <code>EnsureSuccessStatusCode()</code> is the simplest guard against this exact mistake.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand why IHttpClientFactory exists, how it avoids socket exhaustion, and how to use typed clients for real outbound HTTP calls.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

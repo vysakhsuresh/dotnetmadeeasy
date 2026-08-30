@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>155 - Task.WhenAny · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Task.WhenAll waits for the whole team to finish. Task.WhenAny only cares who crosses the finish line first.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Sometimes you don't need every result — you need the <em>first</em> one. Maybe you're calling a payment gateway that should respond within two seconds, and if it doesn't, you'd rather show a "please try again" message than let the user stare at a spinner indefinitely. Or maybe you're querying two regional mirrors of the same data and you genuinely don't care which one answers — you just want whichever comes back first.</p>
+    <p><code class="icode">Task.WhenAll</code>, from the previous lesson, can't help here — it insists on waiting for <em>everything</em>. <strong>In this lesson, you'll learn <code class="icode">Task.WhenAny</code>: how to race several tasks against each other and proceed as soon as the first one finishes, and the two real patterns this unlocks — enforcing a timeout, and taking the first successful response from redundant sources.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><code class="icode">Task.WhenAny</code> takes a collection of running Tasks and gives you back a Task that completes as soon as <em>any one</em> of them finishes — first past the post wins. The others are left running; <code class="icode">WhenAny</code> doesn't stop them, it just stops waiting for them.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <div class="code-block"><code>public static Task&lt;Task&gt; WhenAny(IEnumerable&lt;Task&gt; tasks);
+public static Task&lt;Task&gt; WhenAny(params Task[] tasks);
+
+public static Task&lt;Task&lt;TResult&gt;&gt; WhenAny&lt;TResult&gt;(IEnumerable&lt;Task&lt;TResult&gt;&gt; tasks);
+public static Task&lt;Task&lt;TResult&gt;&gt; WhenAny&lt;TResult&gt;(params Task&lt;TResult&gt;[] tasks);</code></div>
+    <p>Notice the return type: <code class="icode">Task&lt;Task&gt;</code> — a Task <em>of</em> a Task. That's not a typo. Awaiting <code class="icode">Task.WhenAny</code> doesn't hand you the winning result directly — it hands you back the <em>winning Task itself</em>. You then have to await <em>that</em> one too, to actually get its result (or observe its exception, if it failed).</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> A Task of a Task — why the double wrapping?</div>
+        <p><code class="icode">await Task.WhenAny(tasks)</code> gives you "the task that finished first" — but that winning task might itself have completed successfully, faulted, or been canceled. Handing you the Task object (rather than just its raw result) lets you inspect exactly which of those happened, and handle each case, before deciding to unwrap its actual value with a second <code class="icode">await</code>.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Sometimes "All of Them" Is the Wrong Question</h3>
+    <p>Not every scenario needs every result. Consider enforcing a maximum wait time on a slow external API: you don't want to wait for the API call <em>and</em> a separate timeout — you want whichever happens first to decide the outcome. <code class="icode">Task.WhenAll</code> is the wrong tool entirely here; it would happily wait for both the real call <em>and</em> the timeout to both finish, which defeats the purpose.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is a way to start several tasks — the real operation, and something else that will complete on its own after a limit, or a genuine alternative source of the same data — and proceed the instant whichever one finishes first actually does, without waiting on the rest.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Task.WhenAny</h3>
+    <p><code class="icode">Task.WhenAny</code> races the tasks you give it and resolves the instant the fastest one completes — success, failure, or cancellation, it doesn't matter which; "completed" is enough to win the race. Everything else about the losing tasks is left entirely up to you.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>WhenAll</th><th>WhenAny</th></tr></thead>
+            <tbody>
+                <tr><td>Waits for <strong>every</strong> task to complete</td><td>Waits for <strong>the first</strong> task to complete</td></tr>
+                <tr><td>Returns all results, in input order</td><td>Returns the winning <em>Task itself</em> — you await it separately for its result</td></tr>
+                <tr><td>Total time ≈ the slowest task</td><td>Total time ≈ the fastest task</td></tr>
+                <tr><td>Use for: "I need everything before I can proceed"</td><td>Use for: "I need whichever comes back first"</td></tr>
+                <tr><td>Loser tasks don't matter — all succeeded eventually</td><td>Loser tasks keep running in the background unless you cancel them yourself</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">STEP BY STEP — THE TIMEOUT PATTERN</div>
+        <div class="flow-step">
+            <div class="step-label">Step 1 — Start the real operation and a "timeout clock" side by side</div>
+            <pre><code>Task&lt;string&gt; realCallTask = httpClient.GetStringAsync(url);
+Task timeoutTask = Task.Delay(TimeSpan.FromSeconds(2));</code></pre>
+            <ul><li><code>Task.Delay</code> returns a Task that simply completes after the given duration — it doesn't do any real work, it's purely a clock.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 2 — Race them with Task.WhenAny</div>
+            <pre><code>Task winner = await Task.WhenAny(realCallTask, timeoutTask);</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 3 — Check which one actually won</div>
+            <pre><code>if (winner == timeoutTask)
+{
+    throw new TimeoutException("The call took too long.");
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 4 — If the real call won, await it to get its result</div>
+            <pre><code>string result = await realCallTask; // already completed — this returns immediately</code></pre>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Putting the timeout pattern together into a small, reusable method:</p>
+
+    <div class="code-block"><code>public async Task&lt;string&gt; GetWithTimeoutAsync(string url, TimeSpan timeout)
+{
+    Task&lt;string&gt; callTask = httpClient.GetStringAsync(url);
+    Task delayTask = Task.Delay(timeout);
+
+    Task winner = await Task.WhenAny(callTask, delayTask);
+
+    if (winner == delayTask)
+    {
+        throw new TimeoutException($"Request to {url} exceeded {timeout}.");
+    }
+
+    return await callTask; // the call won — safe to read its result
+}</code></div>
+    <p>Walking through it:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Both <code class="icode">callTask</code> and <code class="icode">delayTask</code> start immediately and run concurrently — same "start before awaiting" principle from the WhenAll lesson.</li>
+        <li style="margin-bottom:0.4rem;">Whichever finishes first becomes <code class="icode">winner</code>; reference equality (<code class="icode">==</code>) is how you tell which one it was.</li>
+        <li style="margin-bottom:0.4rem;">If the real call actually finished, awaiting <code class="icode">callTask</code> again just returns its already-computed result instantly — no additional wait.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A pricing service that queries two regional mirrors of the same exchange-rate API and uses whichever responds first — a common "redundant sources, first response wins" pattern for latency-sensitive lookups:</p>
+
+    <div class="code-block"><code>public async Task&lt;decimal&gt; GetExchangeRateAsync(string currencyPair, CancellationToken ct)
+{
+    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+    Task&lt;decimal&gt; primaryTask = _primaryRegionClient.GetRateAsync(currencyPair, cts.Token);
+    Task&lt;decimal&gt; secondaryTask = _secondaryRegionClient.GetRateAsync(currencyPair, cts.Token);
+
+    Task&lt;decimal&gt; winner = await Task.WhenAny(primaryTask, secondaryTask);
+
+    cts.Cancel(); // stop whichever mirror is still in flight — we no longer need it
+
+    return await winner;
+}</code></div>
+    <p>Both regional calls start at the same time. Whichever mirror answers first "wins," and its result is returned. Critically, this example calls <code class="icode">cts.Cancel()</code> on a shared, linked token the instant a winner is known — telling the still-running loser to stop, rather than letting it burn bandwidth and server resources for a result nobody will use. That's the responsible way to use <code class="icode">Task.WhenAny</code>: <strong>losing tasks don't stop on their own.</strong></p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🏁</span> Calling Two Taxi Companies at Once</div>
+        <p>You need a ride urgently, so you call two different taxi companies at the same time and tell each "send a car." Whichever car actually pulls up to your curb first is the one you get in — you don't wait for the second car to arrive too. That's <code class="icode">Task.WhenAny</code>: multiple requests in flight, and you act the instant the first one comes through.</p>
+        <p>But here's the part people forget: the <em>other</em> taxi company doesn't know you've already left. Unless you call them back and cancel, their driver is still on the way, burning gas, for a fare that's no longer needed. That's exactly why real <code class="icode">Task.WhenAny</code> code should explicitly cancel the losing task once a winner is known — nobody does that automatically for you.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>Like <code class="icode">Task.WhenAll</code>, <code class="icode">Task.WhenAny</code> doesn't start anything and doesn't use extra threads on its own. It registers a lightweight continuation on every task you pass in; the very first one to report completion causes the combined <code class="icode">Task&lt;Task&gt;</code> to complete, carrying a reference to whichever task just finished. The other tasks aren't touched in any way by this — they keep executing exactly as if <code class="icode">WhenAny</code> had never been called, which is precisely why explicit cancellation of the losers is your responsibility, not the runtime's.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "WhenAny automatically cancels the losers" — it does not</h3>
+    <p>This is the single most important thing to internalize about <code class="icode">Task.WhenAny</code>. It only stops <em>waiting</em> — it never stops the losing tasks from actually running. If you don't explicitly pass a shared <code class="icode">CancellationToken</code> into every candidate task and cancel it once a winner is known, every "losing" operation keeps consuming resources — network connections, database connections, memory — until it finishes (or fails) entirely on its own, completely unobserved.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "The winning task completing successfully" isn't guaranteed</h3>
+    <p>"First to complete" includes a task that finishes by <em>faulting</em>. If the fastest of three calls happens to be the one that immediately throws an exception, that faulted task is your "winner" — awaiting it will rethrow that exception. Don't assume the winner necessarily has a usable result; check its status, or simply await it inside a try/catch, before trusting its output.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Forgetting to cancel the losing task(s)</h4>
+    <p>❌ <strong>Wrong</strong> — the timeout "wins," but the real HTTP call keeps running in the background forever, unobserved:</p>
+    <div class="code-block"><code>Task winner = await Task.WhenAny(callTask, Task.Delay(timeout));
+if (winner != callTask) throw new TimeoutException();
+// callTask is still out there running — nothing ever cancels it</code></div>
+    <p>✅ <strong>Correct</strong> — pass a shared token into the real call, so a timeout can actually cancel it, not just stop waiting on it:</p>
+    <div class="code-block"><code>using var cts = new CancellationTokenSource();
+Task&lt;string&gt; callTask = httpClient.GetStringAsync(url, cts.Token);
+Task delayTask = Task.Delay(timeout);
+
+Task winner = await Task.WhenAny(callTask, delayTask);
+if (winner == delayTask)
+{
+    cts.Cancel(); // actually stop the in-flight call
+    throw new TimeoutException();
+}</code></div>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Awaiting the outer WhenAny and expecting the actual result directly</h4>
+    <p>❌ <code class="icode">var result = await Task.WhenAny(taskA, taskB);</code> — this compiles, but <code class="icode">result</code> is a <code class="icode">Task&lt;T&gt;</code>, not a <code class="icode">T</code>. Using it as if it were the value directly is a type mismatch waiting to happen (or, worse, a confusing runtime surprise if you store it loosely typed).</p>
+    <p>✅ Await twice: once for <code class="icode">WhenAny</code> to learn who won, once more on the winner itself to unwrap the actual value: <code class="icode">var result = await await Task.WhenAny(taskA, taskB);</code> (or, more readably, split across two lines as shown in earlier examples).</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for WhenAny when you actually need every result</h4>
+    <p>❌ Using <code class="icode">Task.WhenAny</code> in a loop to "process everything as it finishes" without realizing you're throwing away every result except the very first — the rest just keep running, forgotten.</p>
+    <p>✅ If every result actually matters, that's <code class="icode">Task.WhenAll</code>'s job (previous lesson), not <code class="icode">Task.WhenAny</code>'s.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">⏱️</span>
+            <div class="label">Timeout pattern</div>
+            <div class="desc">Race a real operation against Task.Delay to cap how long you'll wait.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🏁</span>
+            <div class="label">First-successful-response-wins</div>
+            <div class="desc">Query redundant sources for the same data and use whichever answers first.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🚫</span>
+            <div class="label">Not when you need every result</div>
+            <div class="desc">If all results matter, that's Task.WhenAll — WhenAny discards the losers.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">⚠️</span>
+            <div class="label">Always cancel the losers</div>
+            <div class="desc">Pass a shared CancellationToken so a winner can actually stop the rest.</div>
+        </div>
+    </div>
+    <div class="callout">
+        <strong>💡 A simpler alternative for pure timeouts:</strong> If all you need is "cancel this one operation after N seconds," a timed <code class="icode">CancellationTokenSource(TimeSpan)</code> (from the previous lesson) is often more direct than manually racing against <code class="icode">Task.Delay</code>. <code class="icode">Task.WhenAny</code> shines when you specifically need to <em>inspect which of several tasks</em> actually won — not just enforce a cutoff.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Task.WhenAny</strong> = "Tell me the instant ANY one of these finishes — I'll decide what to do about the rest."<br /><br />
+        <strong>Remember:</strong><br />
+        · The result is the winning <em>Task</em> itself — await it again to get its actual value.<br />
+        · "Winning" just means "completed first" — that includes finishing by faulting.<br />
+        · Losing tasks keep running until <em>you</em> cancel them — WhenAny never does it for you.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><code>Task.WhenAny</code> returns as soon as the first of several running Tasks completes — success, failure, or cancellation all count as "completed."</li>
+            <li style="margin-bottom:0.4rem;">It returns the winning <code>Task</code> itself, not the raw result — you must await it a second time to get the value.</li>
+            <li style="margin-bottom:0.4rem;">Two real patterns: racing an operation against <code>Task.Delay</code> for a timeout, and querying redundant sources for whichever answers first.</li>
+            <li style="margin-bottom:0.4rem;"><strong>WhenAny never cancels the losing tasks for you</strong> — pass a shared <code>CancellationToken</code> and cancel it explicitly once a winner is known.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how Task.WhenAny races tasks and returns the first one to finish. Let's check the details that trip people up most.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What does await Task.WhenAny(taskA, taskB) actually give you?</p>
+        <ul class="options">
+            <li>A) The raw result value of whichever task finished first</li>
+            <li>B) The Task object of whichever task finished first — you must await it separately to get its result</li>
+            <li>C) A combined array containing both results</li>
+            <li>D) A boolean indicating whether taskA finished before taskB</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Task.WhenAny returns Task&lt;Task&gt; (or Task&lt;Task&lt;TResult&gt;&gt;) — awaiting it gives you back the winning Task itself, which you then await again to get its actual result or observe its exception.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That's a common assumption, but it's wrong — you get the Task wrapper, not the unwrapped value, requiring a second await.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> That describes Task.WhenAll's generic overload, which is a fundamentally different method with different semantics.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> WhenAny doesn't return a boolean — it returns the actual winning Task object, letting you inspect or compare it.</p>
+                <p><strong>Reinforcement:</strong> Remember the "Task of a Task" shape — it's the most distinctive, easy-to-forget detail of WhenAny.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In the timeout pattern (racing a real call against Task.Delay), what happens to the real call if the Task.Delay task wins the race?</p>
+        <ul class="options">
+            <li>A) The real call is automatically canceled by Task.WhenAny</li>
+            <li>B) The real call keeps running in the background until it finishes on its own, unless you explicitly cancel it yourself</li>
+            <li>C) The real call immediately throws a TimeoutException</li>
+            <li>D) The runtime pauses the real call until the next WhenAny is called</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Task.WhenAny only stops waiting for the losing tasks — it does nothing to actually stop them. Unless you passed a CancellationToken into the real call and explicitly cancel it once you know the delay won, it keeps running to completion (or failure) on its own, unobserved.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There is no automatic cancellation — this is precisely the trap this lesson warns about.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The real call has no idea a timeout occurred unless your code explicitly cancels it — it will run to its natural conclusion.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no such pausing mechanism — tasks aren't controlled by WhenAny once they've been passed to it.</p>
+                <p><strong>Reinforcement:</strong> Always pass a shared CancellationToken and cancel it explicitly once a winner is known — WhenAny never does this for you.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Of three tasks passed to Task.WhenAny, the fastest one to complete does so by throwing an exception. What happens?</p>
+        <ul class="options">
+            <li>A) Task.WhenAny automatically skips faulted tasks and waits for the next one to finish instead</li>
+            <li>B) The faulted task is still the "winner" — awaiting the returned Task will rethrow that exception</li>
+            <li>C) The program crashes immediately when the exception occurs, before WhenAny can even return</li>
+            <li>D) Task.WhenAny silently converts the fault into a default value</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> "First to complete" includes completing by faulting — a faulted task is still a completed task. It becomes the winner, and awaiting it a second time surfaces its exception exactly as awaiting any faulted Task normally would.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> WhenAny has no special handling for faulted tasks — completion is completion, regardless of how it happened.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> An exception inside a Task doesn't crash the process on its own — it's captured on the Task and only surfaces when something awaits (or otherwise observes) that Task.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing is silently converted — the exception is preserved and rethrown when you await the winning task.</p>
+                <p><strong>Reinforcement:</strong> Don't assume the winner of a WhenAny race necessarily succeeded — check its outcome (or await it inside a try/catch) before trusting its result.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> You want to process the results of five independent tasks as each one finishes, keeping every result. Is Task.WhenAny the right tool?</p>
+        <ul class="options">
+            <li>A) Yes — call Task.WhenAny once and it will return all five results in completion order</li>
+            <li>B) No — Task.WhenAny only ever gives you the single first winner; the other four results would be discarded unless handled separately (e.g., by looping and removing the winner each time, or using Task.WhenAll if order of processing doesn't matter)</li>
+            <li>C) No — Task.WhenAny cannot be used with more than two tasks at once</li>
+            <li>D) Yes, because WhenAny is just an alias for WhenAll with different ordering</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A single Task.WhenAny call only ever surfaces one winner. To react to each of five tasks as it finishes while keeping every result, you'd need to repeatedly call WhenAny in a loop (removing the winner from the candidate set each time) — or, if you don't need per-completion reactions and just want everything eventually, Task.WhenAll is the simpler, correct tool.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A single WhenAny call surfaces exactly one winner, not all five in order.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> WhenAny accepts any number of tasks, not just two.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> WhenAny and WhenAll have fundamentally different completion semantics — one is not simply a reordering of the other.</p>
+                <p><strong>Reinforcement:</strong> Reach for WhenAny specifically when you only care about the first result — for "give me everything," WhenAll remains the right choice.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know how to race tasks against each other and handle the winner correctly — including cancelling the losers. Next up: a closer, more precise look at how exceptions actually propagate through async code, including the WhenAll/WhenAny cases you just saw.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
