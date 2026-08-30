@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>093 - IEquatable&lt;T&gt; · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Equals(object) forces a struct into a box just to compare it. IEquatable&lt;T&gt; exists so it never has to.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You just wrote a correct <code>Equals(object?)</code>/<code>GetHashCode()</code> pair in the previous lesson, and it works perfectly. So why does .NET also define a whole separate interface, <code>IEquatable&lt;T&gt;</code>, that seemingly does the exact same job? The answer only becomes visible when the type doing the comparing is a <code>struct</code>:</p>
+    <div class="code-block"><code>public struct Coordinate
+{
+    public double Latitude, Longitude;
+    public override bool Equals(object? obj) =&gt;
+        obj is Coordinate c &amp;&amp; Latitude == c.Latitude &amp;&amp; Longitude == c.Longitude;
+    public override int GetHashCode() =&gt; HashCode.Combine(Latitude, Longitude);
+}
+
+var a = new Coordinate { Latitude = 40.7, Longitude = -74.0 };
+var b = new Coordinate { Latitude = 40.7, Longitude = -74.0 };
+
+bool areEqual = a.Equals(b);   // ✅ works correctly — but every call boxes both structs first</code></div>
+    <p>That comparison is correct, but it's quietly wasteful — <code>Equals(object?)</code> takes an <code>object</code> parameter, and passing a <code>struct</code> where an <code>object</code> is expected means boxing it, exactly the heap-allocation overhead you learned to watch for back in the value-vs-reference-types lesson. Every single equality check on this struct pays that cost, even though nothing about comparing two coordinates should ever need the heap.</p>
+    <p><strong>In this lesson, you'll learn why <code>IEquatable&lt;T&gt;</code> exists specifically to eliminate that boxing, how to implement it correctly alongside <code>Equals</code> and <code>GetHashCode</code>, and why it matters most for value types — though classes benefit too, for different reasons.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><code>IEquatable&lt;T&gt;</code> is a second, more specific way for a type to say "here's how you compare me to another instance of my own exact type" — instead of the general-purpose <code>Equals(object?)</code>, which has to accept literally anything and figure out the type at runtime, <code>IEquatable&lt;T&gt;.Equals(T)</code> already knows exactly what type it's comparing against, checked at compile time.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><code>IEquatable&lt;T&gt;</code> is a generic interface with exactly one member:</p>
+    <div class="code-block"><code>public interface IEquatable&lt;T&gt;
+{
+    bool Equals(T? other);
+}</code></div>
+    <p>This is an <em>overload</em>, not an override — a type implementing <code>IEquatable&lt;T&gt;</code> ends up with two <code>Equals</code> methods side by side: the inherited <code>Equals(object?)</code> (which you should still override, for consistency, exactly as in the previous lesson) and this new, strongly-typed <code>Equals(T?)</code>. The compiler picks whichever overload matches the compile-time type of the argument, and for a <code>struct</code>, calling the <code>T</code>-typed overload never requires boxing either argument.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem</h3>
+    <p>Recall from the value-vs-reference-types lesson: a value type gets boxed the moment it's assigned to something typed as <code>object</code>, and every boxing operation is a heap allocation with real, measurable cost. <code>object.Equals(object?)</code>'s parameter is literally typed <code>object</code> — so calling it on a <code>struct</code> boxes <em>both</em> the receiver and the argument, every single time:</p>
+    <div class="code-block"><code>Coordinate a = new() { Latitude = 40.7, Longitude = -74.0 };
+Coordinate b = new() { Latitude = 40.7, Longitude = -74.0 };
+
+bool result = a.Equals(b);   // without IEquatable&lt;T&gt;: b is boxed to satisfy Equals(object?)
+                               // — a heap allocation, just to run one comparison</code></div>
+    <p>Now imagine this comparison running inside a tight loop — deduplicating a million <code>Coordinate</code> values, say, or as the comparison callback for a <code>HashSet&lt;Coordinate&gt;</code>. A million unnecessary boxing allocations is a real, avoidable performance cost, and it's entirely a side effect of <code>Equals(object?)</code>'s parameter type — nothing about comparing two coordinates fundamentally requires the heap.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution</h3>
+    <p><code>IEquatable&lt;T&gt;.Equals(T? other)</code> takes its parameter as the concrete type <code>T</code> — for <code>Coordinate</code>, that's <code>Equals(Coordinate other)</code> — so neither the receiver nor the argument ever needs to become an <code>object</code>. .NET's own generic collections (<code>List&lt;T&gt;.Contains</code>, <code>Dictionary&lt;TKey,TValue&gt;</code>, <code>HashSet&lt;T&gt;</code>, and more) all check whether <code>T</code> implements <code>IEquatable&lt;T&gt;</code> and, if so, call the strongly-typed overload automatically — meaning implementing this one extra method can make an entire codebase's worth of comparisons on your type boxing-free, without changing any calling code.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            WITHOUT IEquatable&lt;T&gt; vs WITH IEquatable&lt;T&gt; (STRUCT)
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-dark,#0B0E14);padding:0.8rem;border-radius:8px;text-align:center;">
+                <div style="font-weight:600;color:var(--text-main,#E2E8F0);">Without — Equals(object?) only</div>
+                <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);margin-top:0.4rem;">
+                    <code>a.Equals(b)</code><br />↓<br />
+                    <code>b</code> is boxed to fit the <code>object</code> parameter<br />↓<br />
+                    heap allocation, every call
+                </div>
+            </div>
+            <div style="background:var(--bg-dark,#0B0E14);padding:0.8rem;border-radius:8px;text-align:center;">
+                <div style="font-weight:600;color:var(--text-main,#E2E8F0);">With — IEquatable&lt;Coordinate&gt;</div>
+                <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);margin-top:0.4rem;">
+                    <code>a.Equals(b)</code><br />↓<br />
+                    compiler picks <code>Equals(Coordinate)</code> — no boxing needed<br />↓<br />
+                    no heap allocation at all
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">IMPLEMENTING IEquatable&lt;T&gt; CORRECTLY, STEP BY STEP</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. IMPLEMENT THE STRONGLY-TYPED Equals(T?)</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public struct Coordinate : IEquatable&lt;Coordinate&gt;
+{
+    public double Latitude, Longitude;
+
+    public bool Equals(Coordinate other) =&gt;
+        Latitude == other.Latitude &amp;&amp; Longitude == other.Longitude;
+    // ...
+}</code></pre>
+            <ul>
+                <li>This is where the real comparison logic lives — no boxing anywhere in this method, since both <code>this</code> and <code>other</code> stay strongly typed as <code>Coordinate</code> throughout.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. OVERRIDE Equals(object?) TO DELEGATE TO IT</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public override bool Equals(object? obj) =&gt;
+    obj is Coordinate other &amp;&amp; Equals(other);   // reuses the strongly-typed version above</code></pre>
+            <ul>
+                <li>Still required — plenty of code paths (older APIs, non-generic collections, reflection-based logic) only know about <code>object.Equals</code>. Delegating avoids duplicating comparison logic in two places, which could otherwise drift out of sync.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. OVERRIDE GetHashCode() — SAME RULES AS THE PREVIOUS LESSON</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public override int GetHashCode() =&gt; HashCode.Combine(Latitude, Longitude);</code></pre>
+            <ul>
+                <li>The Equals/GetHashCode contract from the previous lesson still applies in full — <code>IEquatable&lt;T&gt;</code> adds a third method to the picture, it doesn't relax the contract between the other two.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. GENERIC COLLECTIONS PICK UP THE BOXING-FREE PATH AUTOMATICALLY</div>
+            <ul>
+                <li><code>List&lt;Coordinate&gt;.Contains</code>, <code>HashSet&lt;Coordinate&gt;</code>, and <code>Dictionary&lt;Coordinate, TValue&gt;</code> all detect <code>IEquatable&lt;Coordinate&gt;</code> at their internal comparer level and use it instead of falling back to <code>object.Equals</code> — no extra code required on your part beyond implementing the interface.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+
+    <div class="code-block"><code>public struct Coordinate : IEquatable&lt;Coordinate&gt;
+{
+    public double Latitude { get; init; }
+    public double Longitude { get; init; }
+
+    public bool Equals(Coordinate other) =&gt;
+        Latitude == other.Latitude &amp;&amp; Longitude == other.Longitude;
+
+    public override bool Equals(object? obj) =&gt;
+        obj is Coordinate other &amp;&amp; Equals(other);
+
+    public override int GetHashCode() =&gt; HashCode.Combine(Latitude, Longitude);
+}
+
+var a = new Coordinate { Latitude = 40.7, Longitude = -74.0 };
+var b = new Coordinate { Latitude = 40.7, Longitude = -74.0 };
+
+bool viaTyped = a.Equals(b);            // ✅ compiler picks Equals(Coordinate) — no boxing
+object boxed = b;
+bool viaObject = a.Equals(boxed);       // still works — falls through to Equals(object?), which delegates back
+
+var seen = new HashSet&lt;Coordinate&gt;();
+seen.Add(a);
+Console.WriteLine(seen.Contains(b));    // True — HashSet&lt;T&gt; uses IEquatable&lt;Coordinate&gt; internally, boxing-free</code></div>
+
+    <p><strong>Code → Meaning → Result:</strong></p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><code>a.Equals(b)</code> resolves to the strongly-typed overload at compile time, since both sides are known to be <code>Coordinate</code> — no boxing happens.</li>
+        <li style="margin-bottom:0.4rem;">Explicitly boxing <code>b</code> and calling <code>Equals(object?)</code> still works correctly — it just delegates straight back to the strongly-typed version, so the logic is never duplicated.</li>
+        <li style="margin-bottom:0.4rem;"><code>HashSet&lt;Coordinate&gt;</code> automatically uses the strongly-typed <code>Equals</code> internally — the boxing-free path is the <em>default</em> once you've implemented the interface, with zero changes to how you use the collection.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A location-tracking feature that deduplicates thousands of GPS coordinate readings per second is a realistic scenario where the boxing avoided by <code>IEquatable&lt;T&gt;</code> genuinely matters — not as a micro-optimization nobody would notice, but as the difference between a responsive real-time feature and one that stutters under GC pressure from constant boxing.</p>
+
+    <div class="code-block"><code>public readonly struct GpsReading : IEquatable&lt;GpsReading&gt;
+{
+    public double Latitude { get; init; }
+    public double Longitude { get; init; }
+    public DateTime Timestamp { get; init; }
+
+    // Two readings are "the same location" if lat/long match — timestamp is deliberately excluded
+    public bool Equals(GpsReading other) =&gt;
+        Latitude == other.Latitude &amp;&amp; Longitude == other.Longitude;
+
+    public override bool Equals(object? obj) =&gt; obj is GpsReading other &amp;&amp; Equals(other);
+    public override int GetHashCode() =&gt; HashCode.Combine(Latitude, Longitude);
+}
+
+public class LocationDeduplicator
+{
+    private readonly HashSet&lt;GpsReading&gt; _seenLocations = new();
+
+    // Called potentially thousands of times per second from a live GPS feed
+    public bool IsNewLocation(GpsReading reading) =&gt; _seenLocations.Add(reading);
+}
+
+var deduplicator = new LocationDeduplicator();
+var reading1 = new GpsReading { Latitude = 40.7128, Longitude = -74.0060, Timestamp = DateTime.UtcNow };
+var reading2 = new GpsReading { Latitude = 40.7128, Longitude = -74.0060, Timestamp = DateTime.UtcNow.AddSeconds(1) };
+
+Console.WriteLine(deduplicator.IsNewLocation(reading1));   // True — first time seeing this location
+Console.WriteLine(deduplicator.IsNewLocation(reading2));   // False — same lat/long, even though the timestamp differs</code></div>
+
+    <p>Every call to <code>_seenLocations.Add(reading)</code> internally compares the incoming <code>GpsReading</code> against existing entries — without <code>IEquatable&lt;GpsReading&gt;</code>, each of those comparisons would box the struct being compared. At thousands of readings per second, that's thousands of unnecessary heap allocations per second, adding real, avoidable pressure on the garbage collector. Implementing the interface removes that cost entirely.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📄</span> A Photocopy vs the Original Document</div>
+        <p>Think of boxing a struct the way you'd think of photocopying a document just to compare it against another one — you didn't need a copy at all, but the comparison process demanded one anyway, so you made one, used it once, and threw it away. Do that a million times and you've wasted a million sheets of paper for no real benefit.</p>
+        <p><code>IEquatable&lt;T&gt;</code> is the shortcut that lets you compare the two original documents directly, side by side, with no photocopier involved at all. The comparison itself works identically either way — the only difference is whether you paid the cost of making an unnecessary copy first.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">WHY REFERENCE TYPES BENEFIT TOO — JUST DIFFERENTLY</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. CLASSES DON'T BOX — SO WHAT'S THE BENEFIT THERE?</div>
+            <ul>
+                <li>A reference type passed as <code>object</code> is never boxed — a reference is a reference either way, so there's no heap-allocation cost to avoid. The benefit for classes is different: <code>Equals(T)</code> avoids the runtime type check and cast that <code>Equals(object?)</code> has to perform (<code>obj is T other</code>), which is a small but real CPU cost the strongly-typed overload skips entirely.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">2. GENERIC COLLECTIONS CHECK FOR IEquatable&lt;T&gt; VIA EqualityComparer&lt;T&gt;.Default</div>
+            <ul>
+                <li>Internally, .NET's generic collections don't call <code>.Equals()</code> directly on your elements — they go through <code>EqualityComparer&lt;T&gt;.Default</code>, which inspects <code>T</code> once and picks the fastest available comparison strategy: <code>IEquatable&lt;T&gt;</code> if present, falling back to boxed <code>object.Equals</code> only if it isn't. This is exactly the mechanism that makes implementing the interface transparently speed up every collection operation, with no other code changes.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">3. RECORDS AND RECORD STRUCTS IMPLEMENT IT FOR YOU</div>
+            <ul>
+                <li>Just as with <code>Equals(object?)</code> and <code>GetHashCode()</code>, both <code>record</code> and <code>record struct</code> automatically generate a correct <code>IEquatable&lt;T&gt;</code> implementation as part of their synthesized equality members — one more reason records are the default recommendation whenever a type is fundamentally data.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. <code>Equals(T)</code> and <code>Equals(object?)</code> are two separate methods, not one overriding the other</h3>
+    <p>A common mistake is thinking <code>IEquatable&lt;T&gt;.Equals(T)</code> "replaces" <code>object.Equals(object?)</code> the way an override would. It doesn't — they coexist as two overloads of the same method name, and the compiler picks whichever one matches the compile-time type of the argument. That's exactly why you still need to override <code>Equals(object?)</code> separately, and why delegating it to <code>Equals(T)</code> is the recommended pattern.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Implementing <code>IEquatable&lt;T&gt;</code> alone doesn't fix hash-based collections — <code>GetHashCode</code> still has to be right</h3>
+    <p>It's tempting to think adding <code>IEquatable&lt;T&gt;</code> is a complete equality solution on its own. It isn't — the contract from the previous lesson (equal objects must produce equal hash codes) still applies in full, regardless of how many <code>Equals</code> overloads exist. All three methods — <code>Equals(T)</code>, <code>Equals(object?)</code>, and <code>GetHashCode()</code> — need to agree with each other.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. The boxing benefit is specifically a value-type story — don't expect the same magnitude of gain on a class</h3>
+    <p>As covered in "Under the Hood," classes never boxed in the first place, so <code>IEquatable&lt;T&gt;</code>'s benefit there is a smaller type-check/cast savings, not a heap-allocation savings. The dramatic performance story — avoiding a heap allocation on every comparison — is specific to structs, which is exactly why this lesson leaned on <code>Coordinate</code> and <code>GpsReading</code> as its examples.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Implementing <code>Equals(T)</code> and <code>Equals(object?)</code> with inconsistent logic</h4>
+    <p>❌ <strong>Wrong</strong> — the two methods disagree, which is confusing and can produce different results depending on which overload happens to be called:</p>
+    <div class="code-block"><code>public bool Equals(Coordinate other) =&gt; Latitude == other.Latitude &amp;&amp; Longitude == other.Longitude;
+public override bool Equals(object? obj) =&gt; obj is Coordinate c &amp;&amp; Latitude == c.Latitude;   // ❌ forgot Longitude!</code></div>
+    <p>✅ <strong>Correct</strong> — always have <code>Equals(object?)</code> delegate to <code>Equals(T)</code>, so there's exactly one source of truth:</p>
+    <div class="code-block"><code>public override bool Equals(object? obj) =&gt; obj is Coordinate other &amp;&amp; Equals(other);</code></div>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Implementing <code>IEquatable&lt;T&gt;</code> but forgetting <code>GetHashCode</code></h4>
+    <p>❌ This reintroduces exactly the contract violation from the previous lesson — a struct can be "equal" via <code>IEquatable&lt;T&gt;</code> while still hashing inconsistently, breaking <code>HashSet&lt;T&gt;</code> and dictionary lookups in the same silent way. ✅ All three methods — <code>Equals(T)</code>, <code>Equals(object?)</code>, <code>GetHashCode()</code> — are a package deal; implement all three together.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming <code>IEquatable&lt;T&gt;</code> matters equally for every type</h4>
+    <p>❌ Chasing this optimization on a reference type that's rarely compared, or on a struct that's rarely used in hot paths or large collections — added complexity for negligible real benefit. ✅ Prioritize implementing it on <code>struct</code> types that will realistically be compared frequently, especially inside collections or tight loops, exactly like the GPS example.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Implement IEquatable&lt;T&gt; when</h4>
+            <ul>
+                <li>You're defining a <code>struct</code> that will realistically be compared often — used as a dictionary key, stored in a <code>HashSet&lt;T&gt;</code>, or compared inside a hot loop.</li>
+                <li>You're already overriding <code>Equals</code>/<code>GetHashCode</code> on a class — adding <code>IEquatable&lt;T&gt;</code> too is a small, worthwhile addition for the type-check savings.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ Don't bother when</h4>
+            <ul>
+                <li>You're using a <code>record</code> or <code>record struct</code> — you already get this for free.</li>
+                <li>The type is rarely, if ever, compared for equality — there's no meaningful cost to avoid.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> For a hand-written <code>struct</code> that will live in a collection or be compared frequently, treat <code>IEquatable&lt;T&gt;</code> as part of the same package as <code>Equals</code>/<code>GetHashCode</code> — implement all three together, with <code>Equals(object?)</code> simply delegating to <code>Equals(T)</code>.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Equals(object?)</strong> = the general-purpose overload — boxes a struct to compare it<br />
+        <strong>IEquatable&lt;T&gt;.Equals(T?)</strong> = the strongly-typed overload — no boxing needed for a struct<br />
+        <strong>EqualityComparer&lt;T&gt;.Default</strong> = what collections actually use — picks IEquatable&lt;T&gt; automatically when available<br /><br />
+        <strong>Remember:</strong><br />
+        · Implement all three together: <code>Equals(T)</code>, <code>Equals(object?)</code> delegating to it, and <code>GetHashCode()</code>.<br />
+        · The boxing savings is a struct story specifically — classes benefit from a smaller type-check savings instead.<br />
+        · Records and record structs already implement this correctly — no manual work needed.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><code>IEquatable&lt;T&gt;</code> adds a strongly-typed <code>Equals(T?)</code> overload alongside <code>object.Equals(object?)</code> — for a <code>struct</code>, this avoids boxing on every comparison.</li>
+            <li style="margin-bottom:0.4rem;">Always delegate <code>Equals(object?)</code> to <code>Equals(T)</code>, so comparison logic exists in exactly one place.</li>
+            <li style="margin-bottom:0.4rem;">.NET's generic collections use <code>EqualityComparer&lt;T&gt;.Default</code> internally, which automatically prefers <code>IEquatable&lt;T&gt;</code> when it's available — implementing it speeds up every collection operation on that type transparently.</li>
+            <li style="margin-bottom:0.4rem;">Classes benefit too, though more modestly — skipping the type-check-and-cast that <code>Equals(object?)</code> requires.</li>
+            <li style="margin-bottom:0.4rem;">Records and record structs generate a correct <code>IEquatable&lt;T&gt;</code> implementation automatically, alongside the <code>Equals</code>/<code>GetHashCode</code> pair from the previous lesson.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've learned why IEquatable&lt;T&gt; exists specifically to avoid boxing. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why does calling <code>Equals(object?)</code> on a <code>struct</code> involve a heap allocation, while <code>IEquatable&lt;T&gt;.Equals(T?)</code> does not?</p>
+        <ul class="options">
+            <li>A) <code>Equals(object?)</code> is simply implemented less efficiently in the runtime</li>
+            <li>B) <code>Equals(object?)</code>'s parameter is typed <code>object</code>, so passing a struct requires boxing it onto the heap first; <code>Equals(T?)</code>'s parameter is the concrete struct type, so no boxing is needed</li>
+            <li>C) Structs are always stored on the heap, regardless of which overload is called</li>
+            <li>D) <code>IEquatable&lt;T&gt;</code> disables garbage collection during the comparison</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As explained in "Why Does It Exist?", boxing happens specifically because <code>object</code>-typed parameters force a value type onto the heap — <code>IEquatable&lt;T&gt;</code>'s strongly-typed parameter sidesteps that requirement entirely.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This isn't an implementation quality issue — it's an inherent consequence of the parameter type being <code>object</code> versus <code>T</code>.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Structs are stack-allocated (or embedded within their containing object) by default — boxing is specifically what forces a struct onto the heap, and it only happens when required, such as being passed as <code>object</code>.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>IEquatable&lt;T&gt;</code> has no effect on garbage collection settings — it simply avoids generating garbage (a boxed copy) in the first place.</p>
+                <p><strong>Reinforcement:</strong> The boxing cost comes directly from the parameter type of the method being called, not from anything inherent to comparing structs in general.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A type implements <code>IEquatable&lt;T&gt;.Equals(T)</code> but its <code>Equals(object?)</code> override uses different comparison logic that checks fewer fields. What problem does this create?</p>
+        <ul class="options">
+            <li>A) No problem — the two methods are allowed to disagree since they have different signatures</li>
+            <li>B) The two overloads can produce inconsistent results depending on which one happens to be called, which is confusing and can silently break code that expects one consistent notion of equality</li>
+            <li>C) The code fails to compile</li>
+            <li>D) <code>IEquatable&lt;T&gt;</code> automatically overrides and replaces <code>Equals(object?)</code>, so this scenario can't actually occur</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As covered in "Common Mistakes," having two independently-written comparison implementations invites exactly this kind of drift — the fix is always delegating <code>Equals(object?)</code> to <code>Equals(T)</code>, so there's only one source of truth.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> While technically legal to compile, this is a real correctness bug — callers reasonably expect one consistent notion of "equal" regardless of which overload gets selected.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Both methods can be implemented independently without any compile error — the problem is a logical inconsistency, not a syntax error.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> As covered in "Common Confusion," the two are separate overloads, not an override relationship — implementing one does not automatically affect the other.</p>
+                <p><strong>Reinforcement:</strong> Always keep exactly one source of truth for equality logic by having <code>Equals(object?)</code> delegate to <code>Equals(T)</code>.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why does implementing <code>IEquatable&lt;T&gt;</code> on a type automatically speed up operations like <code>HashSet&lt;T&gt;.Contains</code>, without changing any code that calls <code>Contains</code>?</p>
+        <ul class="options">
+            <li>A) <code>Contains</code> is rewritten by the compiler whenever <code>IEquatable&lt;T&gt;</code> is detected</li>
+            <li>B) Generic collections use <code>EqualityComparer&lt;T&gt;.Default</code> internally, which automatically detects and prefers <code>IEquatable&lt;T&gt;</code> over the boxed <code>object.Equals</code> path when it's available</li>
+            <li>C) <code>HashSet&lt;T&gt;</code> ignores <code>Equals</code> entirely once <code>IEquatable&lt;T&gt;</code> is implemented</li>
+            <li>D) This description is inaccurate — implementing <code>IEquatable&lt;T&gt;</code> has no effect on collection performance</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As explained in "Under the Hood," <code>EqualityComparer&lt;T&gt;.Default</code> is the mechanism collections actually use for comparisons — it inspects <code>T</code> once and automatically prefers the strongly-typed, boxing-free path whenever <code>IEquatable&lt;T&gt;</code> is present.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> No code rewriting happens — the selection logic lives inside <code>EqualityComparer&lt;T&gt;.Default</code>, evaluated once, not by regenerating <code>Contains</code> itself.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>Equals</code> is still very much used — just the faster, strongly-typed overload instead of the boxed one.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is precisely backwards — the whole point of this lesson is that implementing <code>IEquatable&lt;T&gt;</code> transparently improves collection performance for value types.</p>
+                <p><strong>Reinforcement:</strong> <code>EqualityComparer&lt;T&gt;.Default</code> is the hidden mechanism that makes implementing one interface improve performance everywhere that type is compared, without touching any calling code.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand equality, hashing, ordering, and how to avoid boxing on comparisons — the full toolkit for well-behaved custom types. Next: the capstone of this module — building your own collection type from scratch with IEnumerable&lt;T&gt; and yield return, tying generics, iteration, and equality together.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
