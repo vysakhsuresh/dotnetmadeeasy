@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>110 - IEnumerable and IQueryable · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        IEnumerable&lt;T&gt; runs your query in memory. IQueryable&lt;T&gt; ships your query somewhere else to be run.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Every LINQ example so far has queried a plain <code>List&lt;Product&gt;</code> already sitting in memory. But what happens when your data lives somewhere else — a database table with a million rows? Pulling the entire table into memory just to filter it down to five rows with <code>Where</code> would be wasteful and slow. .NET solves this with a second interface, <code>IQueryable&lt;T&gt;</code>, that looks almost identical to <code>IEnumerable&lt;T&gt;</code> on the surface but behaves completely differently underneath.</p>
+    <p><strong>This lesson is conceptual — it explains the difference so that when you meet <code>IQueryable&lt;T&gt;</code> later (fully, with Entity Framework Core, in Intermediate Part VI), you already understand why it exists. Every other lesson in this LINQ module stays entirely with <code>IEnumerable&lt;T&gt;</code> and in-memory data.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong><code>IEnumerable&lt;T&gt;</code></strong> means "this data is already here, in memory — walk through it item by item, running your logic directly in this process." Every LINQ operator you've used against a <code>List&lt;T&gt;</code> or array works this way: it's ordinary C# code, compiled and running right now, right here.</p>
+    <p><strong><code>IQueryable&lt;T&gt;</code></strong> means "this data lives somewhere else — a database, a remote API. Don't run your filter here; instead, build a description of what you want, so it can be translated and sent to run <em>there</em>, close to the data." Only the final, already-filtered, already-narrowed result travels back to your application.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><code>IEnumerable&lt;T&gt;</code>'s LINQ operators (in <code>System.Linq.Enumerable</code>) take ordinary delegates — <code>Func&lt;T,bool&gt;</code> for <code>Where</code>, for example. A delegate is already-compiled executable code; there's no way to "read" what it does short of running it. So an <code>IEnumerable&lt;T&gt;</code> query can only ever run right here, in the current process, against data already sitting in memory.</p>
+    <p><code>IQueryable&lt;T&gt;</code>'s LINQ operators (in <code>System.Linq.Queryable</code>) look identical at the call site, but instead of a delegate they take an <strong><code>Expression&lt;Func&lt;T,bool&gt;&gt;</code></strong> — an <em>expression tree</em> — a data structure that represents your lambda's logic as inspectable pieces (a comparison, a property access, a constant) rather than as compiled code. Because that tree can be inspected rather than just executed, a <em>query provider</em> (like Entity Framework Core's SQL provider) can walk it and translate it into another language entirely — SQL, most commonly — send that translated query to the actual data source, and bring back only the matching rows.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🌳</span> The Key Difference in One Sentence</div>
+        <p><code>IEnumerable&lt;T&gt;</code> operators receive a compiled <strong>delegate</strong> they can only run. <code>IQueryable&lt;T&gt;</code> operators receive an <strong>expression tree</strong> they can inspect and translate before anything runs at all. Everything else about how the two behave flows from that one distinction.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Filtering After Fetching Everything Is Wasteful</h3>
+    <p>Imagine a database table of a million orders, and you want just this week's orders for one customer — maybe five rows. If querying that table only ever gave you an <code>IEnumerable&lt;Order&gt;</code>, the only way to run <code>Where</code> on it would be to first load all one million rows into your application's memory, and <em>then</em> filter down to five. That means pulling a million rows across the network, deserializing every one of them, just to throw 999,995 of them straight in the trash.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Translate the Query, Don't Transfer the Data</h3>
+    <p><code>IQueryable&lt;T&gt;</code> lets your <code>.Where(o => o.CustomerId == 42 && o.Date >= startOfWeek)</code> be turned into a <code>WHERE CustomerId = 42 AND OrderDate >= @startOfWeek</code> SQL clause, run by the database engine itself — which already has indexes and is built for exactly this. Only the five matching rows ever cross the network. The filtering intent is identical to LINQ to Objects; only <em>where</em> it executes, and how much data moves, changes.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">WHERE THE FILTER ACTUALLY RUNS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;margin-bottom:0.5rem;">IEnumerable&lt;T&gt;</div>
+                <div style="font-size:0.85rem;line-height:1.7;text-align:center;">
+                    Data already in memory<br />↓<br />
+                    <code>.Where(...)</code> compiled to a delegate<br />↓<br />
+                    Delegate runs <strong>here</strong>, item by item, in this process
+                </div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;margin-bottom:0.5rem;">IQueryable&lt;T&gt;</div>
+                <div style="font-size:0.85rem;line-height:1.7;text-align:center;">
+                    Data lives in a database<br />↓<br />
+                    <code>.Where(...)</code> compiled to an expression tree<br />↓<br />
+                    Provider translates it to SQL, sent to run <strong>there</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">AN IQueryable&lt;T&gt; QUERY, STEP BY STEP (CONCEPTUAL)</div>
+        <div class="flow-step">
+            <div class="step-label">1. YOU WRITE A LINQ QUERY AGAINST AN IQueryable&lt;T&gt; SOURCE</div>
+            <ul><li>e.g. <code>dbContext.Orders.Where(o =&gt; o.CustomerId == 42)</code> — this doesn't run anything yet.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE COMPILER BUILDS AN EXPRESSION TREE, NOT COMPILED CODE</div>
+            <ul><li>Your lambda becomes a data structure describing "compare property <code>CustomerId</code> to constant <code>42</code>" — inspectable, not yet executable in the usual sense.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE QUERY PROVIDER TRANSLATES THE TREE</div>
+            <ul><li>Only when the query is enumerated does the provider (e.g. EF Core) walk the tree and generate the equivalent SQL text.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. THE TRANSLATED QUERY RUNS AT THE SOURCE</div>
+            <ul><li>The database executes the SQL and returns only the matching rows, which are then materialized into C# objects back in your application.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Here's the same-looking query written against each kind of source, to show how identical the code looks at the call site — and how different what actually happens is.</p>
+    <div class="code-block"><code>// ─── IEnumerable&lt;T&gt; — LINQ to Objects (this module's entire focus) ───
+List&lt;Product&gt; products = LoadAllProductsIntoMemory();
+
+IEnumerable&lt;Product&gt; expensiveInMemory =
+    products.Where(p =&gt; p.Price &gt; 100);
+// The lambda is compiled to a delegate.
+// Filtering happens item-by-item, right here, in this C# process.
+
+// ─── IQueryable&lt;T&gt; — LINQ to Entities (conceptual preview only) ───
+IQueryable&lt;Product&gt; catalog = dbContext.Products; // not loaded yet
+
+IQueryable&lt;Product&gt; expensiveInDatabase =
+    catalog.Where(p =&gt; p.Price &gt; 100);
+// The lambda is compiled to an Expression&lt;Func&lt;Product, bool&gt;&gt;.
+// Nothing has run yet — this just builds a query description.
+
+var results = expensiveInDatabase.ToList();
+// ONLY NOW does EF Core translate the tree into SQL,
+// e.g. SELECT * FROM Products WHERE Price &gt; 100,
+// send it to the database, and bring back matching rows.</code></div>
+    <p><strong>Code → Meaning → Result:</strong> Both snippets read almost identically — that's deliberate; it's the whole point of LINQ being one unified vocabulary. But <code>expensiveInMemory</code> filters a list already sitting in your process's memory, while <code>expensiveInDatabase</code> builds a translatable query that isn't executed — anywhere — until you materialize it with something like <code>ToList()</code>.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A typical ASP.NET Core web API endpoint for "get a customer's recent orders" looks roughly like this once EF Core is involved (this is conceptual context, not a lesson on EF Core itself):</p>
+    <div class="code-block"><code>[HttpGet("customers/{id}/orders")]
+public async Task&lt;IActionResult&gt; GetRecentOrders(int id)
+{
+    var recentOrders = await dbContext.Orders
+        .Where(o =&gt; o.CustomerId == id)
+        .Where(o =&gt; o.OrderDate &gt;= DateTime.Today.AddDays(-30))
+        .OrderByDescending(o =&gt; o.OrderDate)
+        .ToListAsync(); // translated to SQL and executed here
+
+    return Ok(recentOrders);
+}</code></div>
+    <p>Both <code>Where</code> calls and the <code>OrderByDescending</code> get combined by EF Core into a single SQL statement with a <code>WHERE</code> and an <code>ORDER BY</code> clause — the database does the filtering and sorting using its indexes, and only the relevant handful of rows for that one customer, that one month, ever reach the API process. This is the entire reason <code>IQueryable&lt;T&gt;</code> exists: the same familiar LINQ syntax, but with the heavy lifting happening where the data already lives.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📬</span> Reading a Letter vs Mailing Instructions</div>
+        <p><code>IEnumerable&lt;T&gt;</code> is like reading a letter someone already handed you: the content is already in front of you, and you process it word by word, right where you're standing.</p>
+        <p><code>IQueryable&lt;T&gt;</code> is like writing a letter of instructions and mailing it to a librarian in a distant archive: "please find me every book published after 2020 by this author." You don't send someone to bring back the entire library so you can search it yourself — you send a precise, translatable request, and only the matching books come back to you.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">DELEGATE vs EXPRESSION TREE</div>
+        <div class="flow-step">
+            <div class="step-label">1. <code>Func&lt;Product, bool&gt;</code> — WHAT IEnumerable&lt;T&gt; RECEIVES</div>
+            <ul><li>The lambda <code>p =&gt; p.Price &gt; 100</code> is compiled straight to IL, wrapped in a delegate. You can invoke it. You cannot ask it "what comparison are you doing?" — it's opaque, already-compiled logic.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. <code>Expression&lt;Func&lt;Product, bool&gt;&gt;</code> — WHAT IQueryable&lt;T&gt; RECEIVES</div>
+            <ul><li>The exact same-looking lambda is instead compiled into a tree of objects: a <code>BinaryExpression</code> node representing "greater than," with a <code>MemberExpression</code> child for <code>p.Price</code> and a <code>ConstantExpression</code> child for <code>100</code>. This tree can be walked and read by ordinary code.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE PROVIDER DOES THE TRANSLATING, NOT LINQ ITSELF</div>
+            <ul><li><code>IQueryable&lt;T&gt;</code> and its operators are provider-agnostic — LINQ itself has no idea what SQL is. It's EF Core's specific query provider that walks the expression tree and knows how to turn "greater than a property" into SQL syntax. A different provider could translate the same tree into a completely different target language.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "IQueryable&lt;T&gt; is just a faster IEnumerable&lt;T&gt;" — no, they solve different problems</h3>
+    <p><code>IQueryable&lt;T&gt;</code> isn't a performance optimization of the same in-memory mechanism — it's a fundamentally different execution model, where the query gets translated and shipped elsewhere. Since <code>IQueryable&lt;T&gt;</code> extends <code>IEnumerable&lt;T&gt;</code>, you <em>can</em> always enumerate one — but doing so triggers the translate-and-execute-remotely process, not an in-memory loop.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Calling a method that can't be translated silently breaks the "runs at the source" promise</h3>
+    <p>If you call a C# method inside an <code>IQueryable&lt;T&gt;</code> query that the provider has no SQL equivalent for (a custom C# helper method, for instance), one of two things happens: either you get a runtime exception saying the expression couldn't be translated, or — in older/looser configurations — the provider silently falls back to pulling more data into memory than you intended and filtering there. Either way, this is a genuine, well-known gotcha with real-world EF Core code, and it's exactly why understanding this distinction matters even before you write a line of EF Core.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Calling <code>.ToList()</code> too early, then filtering in memory</h4>
+    <p>❌ <code>dbContext.Orders.ToList().Where(o => o.CustomerId == id)</code> pulls the <em>entire</em> table into memory first, then filters in C# — defeating the entire purpose of <code>IQueryable&lt;T&gt;</code>. ✅ Keep the <code>Where</code> before <code>ToList()</code>, so it's part of the translated query: <code>dbContext.Orders.Where(o => o.CustomerId == id).ToList()</code>.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming every LINQ operator works identically on both</h4>
+    <p>❌ Not every C# expression can be translated to SQL — complex custom logic, certain string methods, and arbitrary method calls may not have a translation. ✅ Keep <code>IQueryable&lt;T&gt;</code> query logic simple and translatable; do complex in-memory-only processing <em>after</em> materializing the results with <code>ToList()</code>.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ You're working with IEnumerable&lt;T&gt; when</h4>
+            <ul>
+                <li>Your data is already a <code>List&lt;T&gt;</code>, array, or other in-memory collection.</li>
+                <li>You're doing LINQ to Objects — the entire subject of this module.</li>
+                <li>Every example in this LINQ module, unless stated otherwise.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>📡 You're working with IQueryable&lt;T&gt; when</h4>
+            <ul>
+                <li>You query through Entity Framework Core, or another LINQ provider targeting an external source.</li>
+                <li>You want filtering, sorting, and paging to happen at the data source, not in your application's memory.</li>
+                <li>The full mechanics — deferred translation, change tracking, <code>Include</code> — are covered later, in Intermediate Part VI.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> If you're not sure which one you have, check the type of the source. <code>List&lt;T&gt;.AsEnumerable()</code>-style sources are <code>IEnumerable&lt;T&gt;</code>; a <code>DbSet&lt;T&gt;</code> from an EF Core <code>DbContext</code> is <code>IQueryable&lt;T&gt;</code>. Everywhere else in this module, assume <code>IEnumerable&lt;T&gt;</code> and in-memory data.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>IEnumerable&lt;T&gt;</strong> = "run this logic here, on data already in memory"<br />
+        <strong>IQueryable&lt;T&gt;</strong> = "translate this logic and run it there, where the data lives"<br /><br />
+        <strong>Remember:</strong><br />
+        · Same LINQ vocabulary at the call site — <code>Where</code>, <code>Select</code>, <code>OrderBy</code> — completely different execution underneath.<br />
+        · The difference comes down to delegate (already-compiled code) vs. expression tree (inspectable, translatable description).<br />
+        · This module's lessons all use <code>IEnumerable&lt;T&gt;</code>; full <code>IQueryable&lt;T&gt;</code>/EF Core mechanics come in Intermediate Part VI.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><strong><code>IEnumerable&lt;T&gt;</code></strong> queries run in-process, against data already in memory, using compiled delegates.</li>
+            <li style="margin-bottom:0.4rem;"><strong><code>IQueryable&lt;T&gt;</code></strong> queries build an expression tree describing what you want, which a provider translates and sends to run at the data source — most commonly, a database as SQL.</li>
+            <li style="margin-bottom:0.4rem;">Both share the same LINQ method names and syntax, which is exactly why the distinction is easy to miss until you understand what's happening underneath.</li>
+            <li style="margin-bottom:0.4rem;">Calling <code>ToList()</code> too early on an <code>IQueryable&lt;T&gt;</code> forfeits translation and pulls everything into memory first — a real and common performance bug.</li>
+            <li style="margin-bottom:0.4rem;">This module stays entirely with <code>IEnumerable&lt;T&gt;</code> / LINQ to Objects — the full <code>IQueryable&lt;T&gt;</code> and EF Core story is a later module.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how <code>IEnumerable&lt;T&gt;</code> and <code>IQueryable&lt;T&gt;</code> differ conceptually. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What is the fundamental technical difference between how <code>IEnumerable&lt;T&gt;</code> and <code>IQueryable&lt;T&gt;</code> LINQ operators receive a lambda like <code>p =&gt; p.Price &gt; 100</code>?</p>
+        <ul class="options">
+            <li>A) There is no difference; both receive the exact same compiled delegate</li>
+            <li>B) <code>IEnumerable&lt;T&gt;</code> receives a compiled delegate (<code>Func&lt;T,bool&gt;</code>); <code>IQueryable&lt;T&gt;</code> receives an inspectable expression tree (<code>Expression&lt;Func&lt;T,bool&gt;&gt;</code>)</li>
+            <li>C) <code>IQueryable&lt;T&gt;</code> receives a compiled delegate; <code>IEnumerable&lt;T&gt;</code> receives an expression tree</li>
+            <li>D) Both receive raw SQL text</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the core distinction the whole lesson is built on — a delegate can only be run; an expression tree can be inspected and translated before it runs anywhere.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The two really do compile to different underlying representations — that's precisely what makes translation to SQL (or any other target) possible for <code>IQueryable&lt;T&gt;</code> and impossible for <code>IEnumerable&lt;T&gt;</code>.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This reverses the actual mapping.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Neither receives raw SQL directly — SQL is only produced later, by the provider, from the expression tree.</p>
+                <p><strong>Reinforcement:</strong> Delegate = opaque, run-only code. Expression tree = inspectable data describing code. That's the whole story.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why does querying a huge database table through <code>IQueryable&lt;T&gt;</code> avoid pulling every row into memory, while doing the same filter on an in-memory <code>IEnumerable&lt;T&gt;</code> would require the data to already be there?</p>
+        <ul class="options">
+            <li>A) Because <code>IQueryable&lt;T&gt;</code> is simply faster hardware-accelerated code</li>
+            <li>B) Because <code>IQueryable&lt;T&gt;</code>'s expression tree can be translated into a query (like SQL) that the data source itself executes, returning only matching rows — <code>IEnumerable&lt;T&gt;</code> can only run compiled code against data already present</li>
+            <li>C) Because <code>IEnumerable&lt;T&gt;</code> is deprecated for large datasets</li>
+            <li>D) There's no actual difference in how much data moves</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the "Why Does It Exist?" problem/solution from this lesson — translating the query to run at the source avoids transferring irrelevant data at all.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> It's not about raw hardware speed — it's about where the filtering computation happens and how much data crosses the network.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>IEnumerable&lt;T&gt;</code> isn't deprecated at all — it's the correct, standard choice for in-memory data, which is most of what this module covers.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The amount of data transferred is exactly what differs — that's the entire motivating problem for <code>IQueryable&lt;T&gt;</code>'s existence.</p>
+                <p><strong>Reinforcement:</strong> Less data crossing the wire is the direct, practical payoff of query translation.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A developer writes <code>dbContext.Orders.ToList().Where(o =&gt; o.CustomerId == id)</code> against an EF Core <code>DbSet&lt;Order&gt;</code> (an <code>IQueryable&lt;Order&gt;</code>). What's the problem with this code?</p>
+        <ul class="options">
+            <li>A) There's no problem — <code>Where</code> always runs identically regardless of position</li>
+            <li>B) Calling <code>ToList()</code> before <code>Where</code> materializes the entire table into memory first, so the filter runs in C# afterward instead of being translated into SQL and run at the database</li>
+            <li>C) <code>Where</code> cannot be called after <code>ToList()</code> — it's a compiler error</li>
+            <li>D) <code>ToList()</code> only works on <code>IEnumerable&lt;T&gt;</code>, never on <code>IQueryable&lt;T&gt;</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As covered in Common Mistakes, this is one of the most common real-world <code>IQueryable&lt;T&gt;</code> performance bugs — <code>ToList()</code> forces immediate materialization of everything up to that point, so any <code>Where</code> that comes after it runs in memory, on the full dataset, not translated to SQL at all.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Position matters enormously for <code>IQueryable&lt;T&gt;</code> — operators chained before materialization get translated; operators chained after run in-memory as ordinary <code>IEnumerable&lt;T&gt;</code> LINQ.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> It compiles fine — <code>List&lt;T&gt;</code> supports <code>Where</code> too, via <code>IEnumerable&lt;T&gt;</code>'s LINQ to Objects operators — it's just semantically wasteful here, not illegal.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>IQueryable&lt;T&gt;</code> extends <code>IEnumerable&lt;T&gt;</code> and supports <code>ToList()</code> too — that's precisely what triggers materialization.</p>
+                <p><strong>Reinforcement:</strong> Keep filtering operators before materialization calls like <code>ToList()</code> so they get translated and run at the source.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Which statement best describes the relationship between LINQ, <code>IEnumerable&lt;T&gt;</code>, and <code>IQueryable&lt;T&gt;</code>?</p>
+        <ul class="options">
+            <li>A) LINQ is only for <code>IQueryable&lt;T&gt;</code>; <code>IEnumerable&lt;T&gt;</code> has its own separate query system</li>
+            <li>B) LINQ provides matching operator sets for both interfaces — the same vocabulary, but with different execution models (in-process vs. translate-and-run-elsewhere) underneath</li>
+            <li>C) <code>IQueryable&lt;T&gt;</code> and <code>IEnumerable&lt;T&gt;</code> are unrelated interfaces with no shared inheritance</li>
+            <li>D) <code>IEnumerable&lt;T&gt;</code> can only be used with arrays, never with <code>List&lt;T&gt;</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> LINQ to Objects (<code>System.Linq.Enumerable</code>) targets <code>IEnumerable&lt;T&gt;</code>; LINQ to Entities/providers (<code>System.Linq.Queryable</code>) target <code>IQueryable&lt;T&gt;</code> — same method names, different execution underneath, as this whole lesson explained.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> It's the reverse — <code>IEnumerable&lt;T&gt;</code> LINQ to Objects is the one this entire module is built on; <code>IQueryable&lt;T&gt;</code> is the specialized extension for translatable sources.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>IQueryable&lt;T&gt;</code> actually extends <code>IEnumerable&lt;T&gt;</code> — every <code>IQueryable&lt;T&gt;</code> is also an <code>IEnumerable&lt;T&gt;</code>, which is why you can still <code>foreach</code> over query results directly.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> As established back in Foundations, <code>List&lt;T&gt;</code>, dictionaries, and virtually every collection type implement <code>IEnumerable&lt;T&gt;</code> — it's not array-specific at all.</p>
+                <p><strong>Reinforcement:</strong> Same vocabulary, two execution models — that's the single idea to carry out of this lesson.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand the conceptual difference between <code>IEnumerable&lt;T&gt;</code> and <code>IQueryable&lt;T&gt;</code>. From here on, this module stays entirely in LINQ to Objects territory — starting with filtering.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

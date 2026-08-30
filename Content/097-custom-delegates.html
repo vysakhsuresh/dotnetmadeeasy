@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>097 - Custom Delegates · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        A delegate variable doesn't have to hold just one method — it can hold a whole list of them, and call every one.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>In the last lesson you defined a delegate type and pointed a single variable at a single method. That's already useful — but real applications often need more: <em>several</em> independent pieces of code reacting to the same thing.</p>
+    <p>Think about saving a document. You might want to: write the file to disk, update the "last saved" timestamp in the UI, and log the save for auditing. Three unrelated actions, all triggered by the same moment. Do you really want <code>Save()</code> to know about the UI and the logger and the disk, all mixed together?</p>
+    <p>C# delegates have a feature built in for exactly this: a single delegate variable can reference <strong>more than one method at once</strong>, and invoking it runs all of them in order. This is called a <strong>multicast delegate</strong>, and it's the mechanism that makes C# events possible.</p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>custom delegate</strong> is simply a delegate type you declare yourself, with a signature that matches your specific need — you saw this already with <code>MathOperation</code>. A <strong>multicast delegate</strong> is a delegate variable holding not one method, but a chain of them, all with the same signature. Invoking it calls each one, in the order they were added.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Every delegate type you declare in C# actually derives from <code>System.MulticastDelegate</code>, which itself derives from <code>System.Delegate</code>. This means <em>every</em> delegate you create can hold multiple methods in its <strong>invocation list</strong> — a single method is just the special case of an invocation list with one entry.</p>
+    <p>You build up that list with the <code>+=</code> operator (add a method) and shrink it with <code>-=</code> (remove a method):</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public delegate void Notify(string message);
+
+Notify onSave = LogSave;
+onSave += UpdateUi;
+onSave += AuditSave;
+
+onSave("Document saved."); // calls LogSave, then UpdateUi, then AuditSave</code></pre>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — One Trigger, Many Independent Reactions</h3>
+    <p>Without multicast delegates, "notify several unrelated pieces of code that something happened" means either:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Hardcoding every reaction inside the triggering method (tight coupling — <code>Save()</code> now has to know about logging, UI, and auditing directly).</li>
+        <li style="margin-bottom:0.4rem;">Maintaining your own <code>List&lt;SomeDelegate&gt;</code> and looping over it manually to call each one.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Built-In Subscriber Lists</h3>
+    <p>Multicast delegates give you that "list of subscribers" behavior for free. <code>+=</code> and <code>-=</code> are just operator overloads that add to or remove from the invocation list — no manual list management required. This is exactly the plumbing that C#'s <code>event</code> keyword (covered in lesson 105) builds on: an event <em>is</em> a multicast delegate with extra access restrictions.</p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight</div>
+        <p>Multicast delegates let one action trigger many independent reactions, without any of those reactions knowing about each other, and without the triggering code knowing what they do. This is the seed of <strong>publish/subscribe</strong> — a pattern you'll use constantly once you reach events.</p>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            ONE INVOCATION → MANY METHODS
+        </div>
+        <div style="padding-left:0.5rem;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.4rem 0.8rem;border-radius:4px;margin:0.3rem 0;font-weight:500;color:var(--text-main,#E2E8F0);text-align:center;">
+                onSave("Document saved.")
+            </div>
+            <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.6rem;">
+                <div style="background:var(--bg-dark,#0B0E14);padding:0.5rem;border-radius:6px;text-align:center;font-size:0.85rem;color:var(--text-main,#E2E8F0);">1. <code>LogSave</code></div>
+                <div style="background:var(--bg-dark,#0B0E14);padding:0.5rem;border-radius:6px;text-align:center;font-size:0.85rem;color:var(--text-main,#E2E8F0);">2. <code>UpdateUi</code></div>
+                <div style="background:var(--bg-dark,#0B0E14);padding:0.5rem;border-radius:6px;text-align:center;font-size:0.85rem;color:var(--text-main,#E2E8F0);">3. <code>AuditSave</code></div>
+            </div>
+            <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);text-align:center;margin-top:0.6rem;">Invoked in the order they were added, one after another, on the same thread.</div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">BUILDING AND USING A MULTICAST DELEGATE</div>
+        <div class="flow-step">
+            <div class="step-label">1. DECLARE THE DELEGATE TYPE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public delegate void Notify(string message);</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. ADD SUBSCRIBERS WITH +=</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Notify onSave = null;
+onSave += LogSave;
+onSave += UpdateUi;</code></pre>
+            <ul>
+                <li>The very first <code>+=</code> on a <code>null</code> delegate works fine — it initializes the invocation list</li>
+                <li>Each <code>+=</code> appends the method to the end of the list</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. INVOKE — RUNS EVERY SUBSCRIBER IN ORDER</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">onSave("Document saved.");
+// LogSave runs, then UpdateUi runs</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. REMOVE A SUBSCRIBER WITH -=</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">onSave -= UpdateUi;
+onSave("Document saved."); // only LogSave runs now</code></pre>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+public delegate void Notify(string message);
+
+class Program
+{
+    static void LogSave(string message) => Console.WriteLine($"[LOG] {message}");
+    static void UpdateUi(string message) => Console.WriteLine($"[UI] Showing: {message}");
+    static void AuditSave(string message) => Console.WriteLine($"[AUDIT] Recorded: {message}");
+
+    static void Main()
+    {
+        Notify onSave = LogSave;
+        onSave += UpdateUi;
+        onSave += AuditSave;
+
+        onSave("Document saved.");
+        // [LOG] Document saved.
+        // [UI] Showing: Document saved.
+        // [AUDIT] Recorded: Document saved.
+
+        onSave -= UpdateUi; // stop updating the UI
+        Console.WriteLine("--- after removing UpdateUi ---");
+        onSave("Document saved again.");
+        // [LOG] Document saved again.
+        // [AUDIT] Recorded: Document saved again.
+    }
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> Each <code>+=</code> appends a method to <code>onSave</code>'s invocation list. A single call, <code>onSave(...)</code>, fans out to every subscriber currently on the list, in the order they were added. Removing a subscriber with <code>-=</code> takes it out of future invocations without touching the others.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Consider a background job runner that needs to report progress to multiple listeners — a console logger, a progress bar, and a metrics collector — without knowing any of them exist.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+public delegate void ProgressHandler(int percentComplete);
+
+public class FileImportJob
+{
+    public ProgressHandler? OnProgress; // multicast delegate field
+
+    public void Run()
+    {
+        for (int percent = 0; percent <= 100; percent += 25)
+        {
+            // simulate work...
+            OnProgress?.Invoke(percent); // notify every subscriber, safely
+        }
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var job = new FileImportJob();
+
+        job.OnProgress += p => Console.WriteLine($"Console: {p}% done");
+        job.OnProgress += p => Console.Title = $"Importing... {p}%";
+        job.OnProgress += RecordMetric;
+
+        job.Run();
+    }
+
+    static void RecordMetric(int percent)
+    {
+        if (percent == 100)
+            Console.WriteLine("Metrics: import completed.");
+    }
+}</code></pre>
+    <p>Notice <code>OnProgress?.Invoke(percent)</code> — the null-conditional operator guards against the field still being <code>null</code> if nobody has subscribed yet, avoiding the classic <code>NullReferenceException</code> from the previous lesson's "Common Mistakes." This pattern is everywhere in real event-driven code.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📣</span> A Mailing List</div>
+        <p>A single-method delegate is like a letter addressed to one person. A multicast delegate is a <strong>mailing list</strong>: you <code>+=</code> to subscribe an address, <code>-=</code> to unsubscribe, and sending one message (invoking the delegate) delivers a copy to every address currently on the list — in signup order.</p>
+        <p>The sender doesn't maintain the list of subscribers by hand, and doesn't know or care who's on it. That's exactly the decoupling multicast delegates provide.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">THE INVOCATION LIST</div>
+        <div class="flow-step">
+            <div class="step-label">1. DELEGATES ARE IMMUTABLE</div>
+            <ul>
+                <li>A <code>Delegate</code> instance in .NET is immutable — <code>+=</code> doesn't mutate the existing object.</li>
+                <li>Instead, <code>onSave += UpdateUi</code> creates a <strong>brand-new</strong> multicast delegate instance whose invocation list is the old list plus the new method, and assigns it back to <code>onSave</code>.</li>
+                <li>This is why <code>+=</code> and <code>-=</code> only work as an assignment (<code>x += y</code>, shorthand for <code>x = x + y</code>) — you're always creating and reassigning, never editing in place.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. GetInvocationList()</div>
+            <ul>
+                <li>You can inspect the chain yourself: <code>onSave.GetInvocationList()</code> returns a <code>Delegate[]</code> — one entry per subscribed method, in call order.</li>
+                <li>Each entry is itself a single-method delegate you could invoke individually.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. INVOCATION IS SEQUENTIAL, ON ONE THREAD</div>
+            <ul>
+                <li>Calling a multicast delegate loops through the invocation list and calls each entry, one after another, synchronously, on the calling thread.</li>
+                <li>If one subscriber throws an exception, the remaining subscribers in the list are <strong>never called</strong> — the exception propagates immediately and interrupts the chain.</li>
+                <li>If the delegate has a non-<code>void</code> return type, invoking it directly only gives you the return value of the <strong>last</strong> subscriber in the list — the others' return values are discarded (you'd have to use <code>GetInvocationList()</code> to inspect them all).</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "+= modifies the delegate" — not exactly</h3>
+    <p>It looks like mutation, but as explained above, each <code>+=</code> produces a new delegate object under the hood. This matters if you ever capture a delegate reference in another variable before adding a subscriber — that older reference still points at the shorter, original invocation list.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. An unhandled exception in one subscriber kills the rest</h3>
+    <p>Because invocation is a simple sequential loop, a throwing subscriber stops the chain — subscribers registered after it never run. If you need every subscriber to run regardless of failures, you must call <code>GetInvocationList()</code> and invoke each one yourself inside a <code>try</code>/<code>catch</code>.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. Removing a method you never exactly added does nothing (silently)</h3>
+    <p><code>-=</code> removes the <em>last matching</em> entry from the invocation list based on target + method — if the method you're trying to remove isn't in the list, <code>-=</code> is a silent no-op, not an error.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Relying on a non-void multicast delegate's return value</h4>
+    <p>❌ Assuming <code>result = multicastFunc(x)</code> reflects all subscribers when only the last one's return value actually comes through.</p>
+    <p>✅ For multicast scenarios, prefer <code>void</code>-returning delegates (or <code>event</code>s, covered soon). If you truly need every result, call <code>GetInvocationList()</code> and collect each one explicitly.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forgetting to unsubscribe</h4>
+    <p>❌ Adding a subscriber with <code>+=</code> and never removing it when the subscribing object is no longer needed keeps that object alive (referenced) — a common source of memory leaks in long-lived publishers (more in lesson 106).</p>
+    <p>✅ Pair every <code>+=</code> with a matching <code>-=</code> once the subscriber no longer needs to listen.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Not guarding against a null invocation list before invoking</h4>
+    <p>❌ Calling <code>onSave("x")</code> directly on a field that no one has subscribed to yet throws a <code>NullReferenceException</code>.</p>
+    <p>✅ Use <code>onSave?.Invoke("x")</code> — it's a habit worth building now, before you reach events, where it's essential.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">When multiple independent pieces of code need to react to the <strong>same</strong> occurrence — progress reporting, notifications, plugin hooks.</li>
+        <li style="margin-bottom:0.4rem;">As the plumbing beneath <strong>events</strong> — you'll almost always reach for <code>event</code> rather than a bare public multicast field in real application code, but understanding the mechanism first makes events far less mysterious.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Avoid</strong> multicast delegates when you actually need a single, reliable return value from exactly one handler — a <code>Func&lt;T&gt;</code> called once is simpler and clearer there.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        Every delegate is secretly a <strong>list</strong> of methods, even when it holds only one.<br />
+        <code>+=</code> appends. <code>-=</code> removes.<br />
+        Invoking it calls every method on the list, in order, on the calling thread.<br /><br />
+        This "one trigger, many subscribers" mechanism is exactly what powers C# events.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Every C# delegate is technically a <strong>multicast delegate</strong> — it can hold a chain of methods, not just one.</li>
+            <li style="margin-bottom:0.4rem;"><code>+=</code> adds a method to the invocation list; <code>-=</code> removes it. Both create a new delegate instance rather than mutating the existing one.</li>
+            <li style="margin-bottom:0.4rem;">Invoking the delegate runs every subscriber in order, on the same thread — a thrown exception stops the remaining subscribers.</li>
+            <li style="margin-bottom:0.4rem;">Always guard invocation with the null-conditional operator (<code>onSave?.Invoke(...)</code>) when subscribers might not exist yet.</li>
+            <li style="margin-bottom:0.4rem;">This "list of subscribers" behavior is exactly what the <code>event</code> keyword is built on top of, coming up later in this module.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how a single delegate can hold and invoke multiple methods. Let's check what you've learned.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What does the <code>+=</code> operator do to a delegate variable?</p>
+        <ul class="options">
+            <li>A) It mutates the existing delegate object, appending the method to its internal list</li>
+            <li>B) It creates a new delegate instance whose invocation list is the old list plus the new method, and assigns it back to the variable</li>
+            <li>C) It replaces the entire invocation list with just the new method</li>
+            <li>D) It only works on delegate types that return <code>void</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Delegate instances are immutable in .NET. <code>+=</code> is shorthand for combining delegates with <code>Delegate.Combine</code> and reassigning the result to the variable.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing about the original delegate object is mutated; a new one is produced.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> That would discard existing subscribers, which is not what <code>+=</code> does — it appends.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>+=</code> works on any delegate type, regardless of return type, though only the last subscriber's return value is observable through direct invocation.</p>
+                <p><strong>Reinforcement:</strong> Delegate immutability is why <code>+=</code> and <code>-=</code> must be assignments, not in-place mutations.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A multicast delegate has three subscribers: A, B, and C, added in that order. Subscriber B throws an exception when invoked. What happens?</p>
+        <ul class="options">
+            <li>A) A runs, B throws and the exception is swallowed, then C runs</li>
+            <li>B) A runs, B throws, and C never runs — the exception propagates to the caller</li>
+            <li>C) All three run in parallel, so B's exception doesn't affect A or C</li>
+            <li>D) The delegate automatically retries B before moving on to C</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Multicast delegate invocation is a simple sequential loop on the calling thread. An unhandled exception in one subscriber stops the loop immediately and propagates out — subsequent subscribers are never reached.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing in the default invocation mechanism swallows exceptions; you'd need to invoke each subscriber yourself with individual <code>try</code>/<code>catch</code> blocks to get that behavior.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Subscribers run sequentially on one thread by default, not in parallel.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There is no automatic retry mechanism built into delegate invocation.</p>
+                <p><strong>Reinforcement:</strong> If you need all subscribers to run regardless of individual failures, iterate <code>GetInvocationList()</code> and wrap each call yourself.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why is <code>onSave?.Invoke("message")</code> generally preferred over <code>onSave("message")</code> for a multicast delegate field?</p>
+        <ul class="options">
+            <li>A) It runs subscribers in parallel instead of sequentially</li>
+            <li>B) It avoids a <code>NullReferenceException</code> when no subscribers have been added yet</li>
+            <li>C) It automatically catches exceptions thrown by subscribers</li>
+            <li>D) It guarantees every subscriber's return value is captured</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> If nobody has subscribed, the delegate field is still <code>null</code>. Calling it directly throws; the null-conditional operator short-circuits to doing nothing instead.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The null-conditional operator has no effect on the sequential-vs-parallel execution model.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> It has nothing to do with exception handling inside subscribers.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Return value capture behavior (only the last subscriber's result) is unaffected by null-conditional invocation.</p>
+                <p><strong>Reinforcement:</strong> Guarding invocation with <code>?.Invoke(...)</code> is standard practice for any delegate field that might have zero subscribers.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> You need a delegate call that must return a value from every one of several subscribers, not just the last one. What should you do?</p>
+        <ul class="options">
+            <li>A) Just call the multicast delegate directly — all return values are automatically collected</li>
+            <li>B) Use <code>GetInvocationList()</code> to get each individual delegate and invoke them one at a time, collecting each result</li>
+            <li>C) This is impossible in C# regardless of approach</li>
+            <li>D) Switch the delegate's return type to <code>void</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>GetInvocationList()</code> exposes each subscriber as an individual delegate; invoking them separately lets you capture every return value.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Direct invocation of a multicast delegate only surfaces the return value of the last subscriber called; the rest are discarded.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> It's entirely possible — it just requires the explicit invocation-list approach rather than a single direct call.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Making the delegate <code>void</code> means there's no return value at all, which doesn't solve the stated problem.</p>
+                <p><strong>Reinforcement:</strong> Direct invocation is convenient but lossy for non-void multicast delegates — <code>GetInvocationList()</code> is the escape hatch when every result matters.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand multicast delegates — the exact mechanism behind C# events. Next, you'll learn about <code>Action</code>, the built-in delegate type that means you'll rarely need to declare a custom <code>void</code>-returning delegate again.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

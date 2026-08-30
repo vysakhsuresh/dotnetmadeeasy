@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>125 - Service Lifetimes · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Registering a service is only half the story — how long it lives is the other half.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>In lesson 124 you learned to register services with lines like <code>builder.Services.AddSingleton&lt;IEmailSender, SmtpEmailSender&gt;()</code>. But there were three possible words there — <code>AddSingleton</code>, <code>AddScoped</code>, <code>AddTransient</code> — and they are not interchangeable. Pick the wrong one, and you can end up with a database connection shared across every user in your app, a configuration object that never picks up changes, or — the classic gotcha — a background service silently holding onto stale, disposed data forever.</p>
+    <p><strong>In this lesson, you'll learn what each of the three service lifetimes actually means, when to reach for each one, and how to spot and avoid the "captive dependency" mistake that trips up almost every developer the first time they meet DI lifetimes.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>service lifetime</strong> tells the DI container: "when someone asks for this service, should I hand them a brand new object every time, reuse the same object for a while, or reuse the exact same object forever?" It's a policy about instance reuse, decided once at registration time.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>.NET's built-in container supports exactly three lifetimes:</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>⚡ Transient</h4>
+            <ul>
+                <li>A <strong>new instance</strong> every single time it's resolved</li>
+                <li>Registered with <code>AddTransient&lt;T&gt;()</code></li>
+                <li>Cheapest to reason about — no sharing, no state to worry about</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🔄 Scoped</h4>
+            <ul>
+                <li><strong>One instance per scope</strong> (e.g. one HTTP request)</li>
+                <li>Registered with <code>AddScoped&lt;T&gt;()</code></li>
+                <li>Same instance reused within that scope, fresh instance for the next</li>
+            </ul>
+        </div>
+    </div>
+    <div class="comparison-grid" style="margin-top:1rem;">
+        <div class="comparison-card">
+            <h4>🌐 Singleton</h4>
+            <ul>
+                <li><strong>One instance for the entire application lifetime</strong></li>
+                <li>Registered with <code>AddSingleton&lt;T&gt;()</code></li>
+                <li>Created once (either eagerly or on first resolution), reused forever</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🧭 A quick way to remember</h4>
+            <ul>
+                <li>Transient = <strong>every ask</strong> gets a new one</li>
+                <li>Scoped = <strong>every unit of work</strong> gets one shared instance</li>
+                <li>Singleton = <strong>the whole app</strong> shares one instance</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — "New Object" Isn't Always Right</h3>
+    <p>If the container always created a brand new instance for every dependency, you'd have serious problems:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">A <strong>database connection</strong> created fresh for every single class that needs one, even within the same request — wasteful and potentially unable to share a transaction.</li>
+        <li style="margin-bottom:0.4rem;">An <strong>in-memory cache</strong> that gets recreated on every resolution would be useless — it would never actually cache anything across calls.</li>
+        <li style="margin-bottom:0.4rem;">A <strong>per-request "current user" context</strong> object created once per app and shared across every user would leak one user's data into another's request — a serious bug and security issue.</li>
+    </ul>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Let the Registration Declare Reuse Policy</h3>
+    <p>By letting you choose Transient, Scoped, or Singleton per service, the container gives you precise control: expensive, stateless, thread-safe services can be shared broadly (Singleton); per-unit-of-work state (like "the current request") gets its own bubble (Scoped); and lightweight, cheap-to-create, possibly-mutable objects get a fresh instance every time (Transient).</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            THREE RESOLUTIONS OF THE SAME SERVICE, THREE LIFETIMES
+        </div>
+        <pre style="background:var(--bg-dark,#0B0E14);padding:0.6rem 1rem;border-radius:8px;color:var(--text-main,#E2E8F0);font-size:0.85rem;overflow-x:auto;">Resolve #1   Resolve #2   Resolve #3   (within one scope)
+Transient:   Instance A    Instance B    Instance C   ← always new
+Scoped:      Instance A    Instance A    Instance A   ← same, this scope
+Singleton:   Instance A    Instance A    Instance A   ← same, forever
+
+                          --- new scope begins ---
+
+Resolve #1   Resolve #2   (within the NEW scope)
+Transient:   Instance D    Instance E   ← still always new
+Scoped:      Instance B    Instance B   ← NEW instance for new scope
+Singleton:   Instance A    Instance A   ← still the very first one</pre>
+    </div>
+    <p>Notice: Transient never repeats. Scoped repeats within a scope but resets for a new scope. Singleton never resets, ever — same object from app startup to shutdown.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHAT "A SCOPE" ACTUALLY IS</div>
+        <div class="flow-step">
+            <div class="step-label">1. IN ASP.NET CORE</div>
+            <ul><li>The framework creates a new <code>IServiceScope</code> automatically for every incoming HTTP request.</li><li>All scoped services resolved while handling that request share one instance; the next request gets a new scope, and new instances.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. IN A CONSOLE APP / WORKER SERVICE (NO AUTOMATIC HTTP REQUEST SCOPE)</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using IServiceScope scope = host.Services.CreateScope();
+var worker = scope.ServiceProvider.GetRequiredService&lt;OrderProcessor&gt;();</code></pre>
+            <ul><li>There's no HTTP request to auto-create a scope, so you create one explicitly with <code>CreateScope()</code> — typically once per "unit of work" (e.g. once per queue message processed, once per batch job run).</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. SINGLETON HAS NO SCOPE AT ALL</div>
+            <ul><li>It's built once — either the first time it's requested, or eagerly if you register an already-constructed instance — and lives in the root container for the process's entire lifetime.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>A tiny service that reports its own identity via a GUID makes the lifetime differences visible:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class InstanceIdReporter
+{
+    public Guid Id { get; } = Guid.NewGuid();
+}
+
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddTransient&lt;InstanceIdReporter&gt;();
+
+using var host = builder.Build();
+
+using var scope1 = host.Services.CreateScope();
+var a = scope1.ServiceProvider.GetRequiredService&lt;InstanceIdReporter&gt;();
+var b = scope1.ServiceProvider.GetRequiredService&lt;InstanceIdReporter&gt;();
+Console.WriteLine(a.Id == b.Id); // False — Transient: always a new instance</code></pre>
+    <p>Change only the registration line to <code>AddScoped&lt;InstanceIdReporter&gt;()</code>, and <code>a.Id == b.Id</code> becomes <code>true</code> within the same scope — but resolving from a second, separate scope gives a different Id again. Change it to <code>AddSingleton&lt;InstanceIdReporter&gt;()</code>, and every resolution, from any scope, anywhere in the app, returns the exact same Id.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A notification worker processes a queue of orders. It needs a database context (should not be shared across concurrent messages — Scoped), an <code>HttpClient</code>-based pricing API client (safe to share, expensive to build repeatedly — often Singleton via <code>IHttpClientFactory</code>, covered in lesson 130), and a small DTO mapper (cheap, stateless, no reason to share — Transient).</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">builder.Services.AddScoped&lt;OrderDbContext&gt;();          // one per unit of work
+builder.Services.AddSingleton&lt;IPricingApiClient, PricingApiClient&gt;(); // shared, thread-safe
+builder.Services.AddTransient&lt;IOrderDtoMapper, OrderDtoMapper&gt;();     // cheap, stateless
+
+public class OrderQueueWorker(IServiceScopeFactory scopeFactory)
+{
+    public async Task ProcessMessageAsync(OrderMessage message)
+    {
+        // Each message gets its own scope, so its own fresh OrderDbContext —
+        // messages processed concurrently never share a DbContext.
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService&lt;OrderDbContext&gt;();
+        var mapper = scope.ServiceProvider.GetRequiredService&lt;IOrderDtoMapper&gt;();
+
+        var order = mapper.ToEntity(message);
+        db.Orders.Add(order);
+        await db.SaveChangesAsync();
+    }
+}</code></pre>
+    <p>This is a very common real-world pattern: a long-running Singleton worker that deliberately creates a new scope <em>per unit of work</em> so that Scoped dependencies (like a DbContext, which is not safe to share across concurrent operations) get fresh instances each time.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🏨</span> The Hotel</div>
+        <p><strong>Transient</strong> is like a disposable paper cup at the hotel bar — you get a brand new one every single time you order a drink, no matter how many times you ask.</p>
+        <p><strong>Scoped</strong> is like your hotel room key — issued fresh when you check in (start of a "stay" — a scope), reused for everything during that one stay, and completely invalidated for the next guest (the next scope) who checks in.</p>
+        <p><strong>Singleton</strong> is like the hotel's front desk — there's exactly one, it opened when the hotel opened, and every single guest, across every stay, interacts with that same front desk for the entire time the hotel operates.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">CAPTIVE DEPENDENCIES — THE #1 LIFETIME MISTAKE</div>
+        <div class="flow-step">
+            <div class="step-label">THE SETUP</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">builder.Services.AddSingleton&lt;ReportCacheService&gt;();
+builder.Services.AddScoped&lt;OrderDbContext&gt;();
+
+public class ReportCacheService(OrderDbContext db) // ⚠️ Scoped injected into Singleton
+{
+    // ...
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">WHAT ACTUALLY HAPPENS</div>
+            <ul>
+                <li><code>ReportCacheService</code> is built exactly once, the first time it's resolved — as part of that construction, the container also resolves an <code>OrderDbContext</code> for it, right then.</li>
+                <li>That single <code>OrderDbContext</code> instance gets permanently "captured" inside the Singleton's field, and is reused for the lifetime of the whole app.</li>
+                <li>A <code>DbContext</code> is meant to represent one short unit of work and is explicitly <strong>not thread-safe</strong> for concurrent use — but now every request in the app is sharing that one captured instance, concurrently. Crashes, data corruption, and "why is this DbContext disposed" exceptions follow.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">THE FIX</div>
+            <ul>
+                <li>Never inject a Scoped or Transient service directly into a Singleton's constructor.</li>
+                <li>Instead, inject <code>IServiceScopeFactory</code> (or <code>IServiceProvider</code>) into the Singleton, and create a new scope — and resolve the Scoped dependency from it — each time you actually need it, exactly as shown in the worker example above.</li>
+            </ul>
+        </div>
+    </div>
+    <p>The built-in container actually helps here: by default (in ASP.NET Core apps) it performs <strong>scope validation</strong> and throws an exception at startup if it detects a Scoped service being injected directly into a Singleton — turning a subtle runtime bug into a loud, immediate failure.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Singleton" here isn't the Singleton design pattern</h3>
+    <p>The classic Gang-of-Four Singleton pattern uses a private constructor and a static field to guarantee exactly one instance can ever exist, anywhere, enforced by the type itself. A DI Singleton lifetime is much softer: the <em>container</em> promises to hand out the same instance whenever <em>it</em> is asked — but nothing stops you from writing <code>new MyService()</code> elsewhere in code and getting a second instance outside the container's control. It's "one instance per container," not "one instance, period."</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Scoped" doesn't only mean "per HTTP request"</h3>
+    <p>ASP.NET Core happens to create one scope per request automatically, which is why people equate "Scoped" with "per-request." But the real definition is "per <code>IServiceScope</code>." In a worker service or console app, you decide what a scope represents — often "per queue message" or "per batch job."</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — The captive dependency (covered above)</h4>
+    <p>❌ Injecting a Scoped or Transient service straight into a Singleton's constructor. ✅ Inject <code>IServiceScopeFactory</code> and create scopes on demand.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Making everything Singleton "for performance"</h4>
+    <p>❌ Registering everything as Singleton because "fewer object allocations must be faster." This introduces hidden shared mutable state and thread-safety bugs, and risks captive dependencies.</p>
+    <p>✅ Default to Transient or Scoped for anything with per-operation state; reserve Singleton for genuinely stateless, thread-safe, or intentionally-shared services (caches, configuration snapshots, HTTP client wrappers).</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming Transient means "cheap" regardless of what's inside it</h4>
+    <p>❌ Registering an expensive-to-construct object (one that opens a network connection, loads a large file) as Transient, not realizing it gets rebuilt every single time it's resolved — including deep inside a request handling many transient dependencies.</p>
+    <p>✅ Match the lifetime to the actual construction cost and statefulness of the service, not just habit.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Transient</strong> — lightweight, stateless services with no expensive setup (mappers, validators, small helper classes). Default choice when in doubt and the service holds no state.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Scoped</strong> — anything representing "one unit of work": a database context, a per-request current-user context, a unit-of-work/transaction wrapper.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Singleton</strong> — expensive-to-build, thread-safe, genuinely shareable state: configuration snapshots, in-memory caches, an <code>HttpClient</code> wrapper (via <code>IHttpClientFactory</code>), a connection pool.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> A service is only safe as a Singleton if it is either stateless, or its shared state is explicitly designed to be thread-safe. If you're not sure, default to Scoped or Transient — it's much easier to promote a service to Singleton later than to debug a subtle concurrency bug caused by an accidental one.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Transient</strong> = a fresh cup every time<br />
+        <strong>Scoped</strong> = one room key per stay<br />
+        <strong>Singleton</strong> = one front desk for the whole hotel<br /><br />
+        <strong>Remember:</strong><br />
+        · Never let a Singleton hold a captured reference to a Scoped or Transient service.<br />
+        · When a Singleton needs Scoped data, it should create a scope on demand via <code>IServiceScopeFactory</code>, not capture one dependency forever.<br />
+        · Lifetime mismatches are a runtime/concurrency problem, not a compile-time one — the container can only catch some of them for you.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><strong>Transient</strong>: new instance every resolution. <strong>Scoped</strong>: one instance per scope. <strong>Singleton</strong>: one instance for the app's whole lifetime.</li>
+            <li style="margin-bottom:0.4rem;">A scope is created automatically per HTTP request in ASP.NET Core, and explicitly via <code>CreateScope()</code> elsewhere (console apps, workers).</li>
+            <li style="margin-bottom:0.4rem;">The captive dependency mistake — injecting a Scoped/Transient service into a Singleton — silently pins short-lived state for the entire app lifetime and causes concurrency bugs.</li>
+            <li style="margin-bottom:0.4rem;">Fix captive dependencies by injecting <code>IServiceScopeFactory</code> into the Singleton and creating scopes on demand, rather than capturing the dependency in the constructor.</li>
+            <li style="margin-bottom:0.4rem;">Choose lifetimes based on statefulness and thread-safety, not "what feels efficient."</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen the three lifetimes and the captive dependency trap. Let's see if you can reason through some scenarios.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Two different HTTP requests each resolve a service registered with <code>AddScoped&lt;T&gt;()</code>. What should you expect?</p>
+        <ul class="options">
+            <li>A) Both requests get the exact same instance</li>
+            <li>B) Each request gets its own instance, but multiple resolutions within the same request share one instance</li>
+            <li>C) A brand new instance is created every single time it's resolved, even within one request</li>
+            <li>D) Only the first request ever gets an instance; the second gets null</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> ASP.NET Core creates a new scope per request. Scoped means "one instance per scope" — so within one request, repeated resolutions share an instance, but a different request (different scope) gets a fresh one.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That describes Singleton behavior, not Scoped.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> That describes Transient behavior.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The container doesn't stop handing out instances after the first request.</p>
+                <p><strong>Reinforcement:</strong> Scoped = shared within a scope, reset between scopes.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What exactly is a "captive dependency"?</p>
+        <ul class="options">
+            <li>A) A service that has too many constructor parameters</li>
+            <li>B) A shorter-lived (Scoped or Transient) service that gets permanently captured inside a longer-lived (Singleton) service's field</li>
+            <li>C) A service that fails to resolve because it wasn't registered</li>
+            <li>D) A service that depends on itself, causing infinite recursion</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> When a Singleton is constructed once, any Scoped or Transient dependency injected into its constructor gets resolved at that moment and stored in a field — effectively becoming "trapped" at Singleton lifetime, even though it was meant to be short-lived.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Constructor size is a separate design concern (possibly a sign of too many responsibilities), not what "captive dependency" refers to.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> That's a missing-registration error, an unrelated failure mode.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> That describes a circular dependency, a different DI problem entirely.</p>
+                <p><strong>Reinforcement:</strong> Captive dependency = a short-lived service accidentally living as long as a Singleton.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A Singleton <code>NotificationDispatcher</code> needs to use a Scoped <code>OrderDbContext</code> each time it dispatches a batch. What's the correct approach?</p>
+        <ul class="options">
+            <li>A) Inject <code>OrderDbContext</code> directly into <code>NotificationDispatcher</code>'s constructor</li>
+            <li>B) Change <code>OrderDbContext</code>'s registration to Singleton so the types match</li>
+            <li>C) Inject <code>IServiceScopeFactory</code> into <code>NotificationDispatcher</code>, and create a new scope (resolving a fresh <code>OrderDbContext</code> from it) each time a batch is dispatched</li>
+            <li>D) Make <code>NotificationDispatcher</code> Transient instead</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> This is exactly the documented fix for the captive dependency problem — the Singleton stays a Singleton, but it obtains fresh Scoped instances on demand by creating a scope each time it needs one, instead of capturing a single instance forever.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the captive dependency mistake — it would capture one <code>OrderDbContext</code> for the app's whole lifetime.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Making a <code>DbContext</code> a Singleton is dangerous — it's not thread-safe and represents one unit of work; sharing it across all requests risks data corruption.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Changing <code>NotificationDispatcher</code>'s own lifetime doesn't address the underlying problem of how it obtains the Scoped dependency, and may not fit its intended shared, long-lived role at all.</p>
+                <p><strong>Reinforcement:</strong> <code>IServiceScopeFactory</code> is the standard escape hatch for a Singleton that needs short-lived, per-operation dependencies.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why is it risky to register everything as Singleton purely to avoid the overhead of creating new objects?</p>
+        <ul class="options">
+            <li>A) Singleton services are always slower than Transient ones</li>
+            <li>B) It can introduce hidden shared mutable state and concurrency bugs, and creates the risk of captive dependencies</li>
+            <li>C) The C# compiler rejects more than one Singleton per project</li>
+            <li>D) Singleton services cannot use constructor injection</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Sharing one instance across the whole app means any mutable state inside it is now shared across every concurrent operation — a recipe for race conditions, and it's easy to accidentally end up with a captured Scoped dependency along the way.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Singletons are typically faster per-resolution (no reconstruction) — the concern isn't speed, it's correctness under concurrency.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such compiler restriction; you can register as many Singletons as you like.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Singletons use constructor injection exactly like any other lifetime.</p>
+                <p><strong>Reinforcement:</strong> Lifetime choice is a correctness decision (statefulness, thread-safety), not primarily a performance one.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand the three DI lifetimes and can spot — and avoid — the captive dependency trap before it bites you in production.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>124 - Dependency Injection · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Stop building your own dependencies. Let someone hand them to you.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Imagine every time you wanted a coffee, you had to grow the beans yourself, build a roaster, and manufacture a coffee machine before you could brew a cup. That's insane — you just want the coffee. You walk into a café, and the barista hands you a finished cup. You didn't build the machine; someone else provided it, and you simply <em>used</em> it.</p>
+    <p>A lot of C# code is written the "grow your own beans" way. A class needs a logger, so it does <code>new ConsoleLogger()</code> right inside itself. It needs to send email, so it does <code>new SmtpEmailSender()</code>. Every class becomes responsible for manufacturing everything it touches — which means every class is welded to specific, concrete implementations, and none of it can be swapped, mocked, or reconfigured without editing that class's source code.</p>
+    <p><strong>In this lesson, you'll learn what Dependency Injection actually is, why the .NET runtime ships a built-in container for it, and how to register and resolve services using the modern generic host — the foundation every real .NET application (web app, worker service, or console tool) is built on.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Dependency Injection (DI)</strong> is a technique where a class doesn't create the objects it depends on — it <em>receives</em> them from the outside, usually through its constructor. The class declares "I need an <code>ILogger</code>," and something else — a framework, a container — figures out which concrete logger to hand it and builds it for it.</p>
+    <p>Break the phrase into its two words:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Dependency</strong> — something a class needs in order to do its job (a logger, a database repository, an email sender).</li>
+        <li style="margin-bottom:0.4rem;"><strong>Injection</strong> — the act of supplying that dependency from outside, rather than the class constructing it itself.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Dependency Injection is a specific application of the <strong>Dependency Inversion Principle</strong> — the "D" in SOLID, covered in lesson 081. Dependency Inversion says: high-level code should depend on abstractions (interfaces), not on concrete, low-level implementations. Dependency Injection is <em>how</em> you make that happen at runtime: an external mechanism constructs the concrete implementation and passes it into the class that depends on the abstraction, typically through the constructor.</p>
+    <p>In .NET, this external mechanism is usually the built-in <strong><code>Microsoft.Extensions.DependencyInjection</code></strong> package — a lightweight <strong>Inversion of Control (IoC) container</strong>. You register your services with it once, at startup, and it takes responsibility for constructing them (and everything <em>they</em> depend on) whenever they're needed.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🔧 Dependency Inversion (the principle)</h4>
+            <ul>
+                <li>A <strong>design idea</strong> — a rule about which direction dependencies should point</li>
+                <li>"Depend on abstractions, not concretions"</li>
+                <li>You can follow it even in a five-line script</li>
+                <li>Doesn't require any tooling or framework</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>💉 Dependency Injection (the mechanism)</h4>
+            <ul>
+                <li>A <strong>runtime technique</strong> that implements the principle</li>
+                <li>Something external constructs and supplies dependencies</li>
+                <li>Usually powered by a container (like <code>IServiceCollection</code>)</li>
+                <li>Makes the principle practical at application scale</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Classes That Build Their Own Dependencies</h3>
+    <p>Picture an <code>OrderService</code> that needs to log activity and send confirmation emails:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class OrderService
+{
+    private readonly ConsoleLogger _logger = new ConsoleLogger();
+    private readonly SmtpEmailSender _emailSender = new SmtpEmailSender("smtp.mycorp.com");
+
+    public void PlaceOrder(Order order)
+    {
+        _logger.Log($"Placing order {order.Id}");
+        _emailSender.Send(order.CustomerEmail, "Order placed!");
+    }
+}</code></pre>
+    <p>This looks harmless, but it quietly creates several real problems:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>You can't test it in isolation.</strong> Every unit test for <code>OrderService</code> will send a real SMTP email, because there's no way to substitute a fake sender.</li>
+        <li style="margin-bottom:0.4rem;"><strong>You can't swap implementations.</strong> Want to log to a file instead of the console in production? You have to edit <code>OrderService</code>'s source code.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Configuration is buried.</strong> The SMTP server address is hardcoded inside a class that has nothing conceptually to do with SMTP servers.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Object graphs don't scale.</strong> As your app grows, every class ends up wiring up its own tree of dependencies by hand, and that logic gets duplicated everywhere.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Let Something Else Supply the Dependencies</h3>
+    <p>Dependency Injection flips the responsibility. <code>OrderService</code> stops knowing <em>how</em> to build a logger or an email sender — it only knows it needs <em>something</em> that satisfies <code>ILogger</code> and <code>IEmailSender</code>. A container, configured once at startup, is responsible for building the right concrete objects and wiring them together.</p>
+    <div class="callout">
+        <strong>💡 The payoff:</strong> Classes become small, focused, and easy to test in isolation. Swapping an implementation (real email sender → fake test double) becomes a one-line change at the composition point, not a hunt through your codebase.
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            WITHOUT DI vs WITH DI
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.1rem;">❌ Without DI</div>
+                <div style="margin:0.6rem 0;font-size:0.88rem;line-height:1.9;">
+                    <code>OrderService</code><br />↓ creates<br /><code>new SmtpEmailSender()</code><br />↓<br /><strong>tightly coupled</strong>
+                </div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.1rem;">✅ With DI</div>
+                <div style="margin:0.6rem 0;font-size:0.88rem;line-height:1.9;">
+                    <code>OrderService</code><br />↓ receives<br /><code>IEmailSender</code><br />↓ supplied by container<br /><strong>loosely coupled</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p>Zoomed out, this is the flow of a DI-powered app:</p>
+    <div class="flow-container">
+        <div class="flow-title">THE DI PICTURE</div>
+        <div class="flow-step"><div class="step-label">Application starts</div><ul><li>You build a host and get an <code>IServiceCollection</code></li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">You register services</div><ul><li>"When something asks for <code>IEmailSender</code>, give it a <code>SmtpEmailSender</code>"</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">Container builds the service provider</div><ul><li>The registrations become a resolvable graph</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">Something asks for OrderService</div><ul><li>Container sees its constructor needs <code>IEmailSender</code> and <code>ILogger&lt;OrderService&gt;</code></li><li>Container builds those first, then builds <code>OrderService</code>, passing them in</li></ul></div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">SETTING UP THE HOST AND CONTAINER</div>
+        <div class="flow-step">
+            <div class="step-label">1. CREATE THE APPLICATION BUILDER</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">var builder = Host.CreateApplicationBuilder(args);</code></pre>
+            <ul><li><code>Host.CreateApplicationBuilder</code> is the modern, unified entry point for console apps, worker services, and (under the hood) web apps.</li><li>It exposes <code>builder.Services</code>, an <code>IServiceCollection</code> — a list of service registrations.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. REGISTER SERVICES</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">builder.Services.AddSingleton&lt;IEmailSender, SmtpEmailSender&gt;();
+builder.Services.AddTransient&lt;OrderService&gt;();</code></pre>
+            <ul><li>Each call maps an abstraction (<code>IEmailSender</code>) to a concrete type (<code>SmtpEmailSender</code>).</li><li><code>Add&lt;Lifetime&gt;</code> also controls <em>how often</em> a new instance is created — covered fully in lesson 125.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. BUILD THE HOST</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using var host = builder.Build();</code></pre>
+            <ul><li><code>Build()</code> compiles all your registrations into a working <code>IServiceProvider</code> — the actual container that can construct objects on demand.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. RESOLVE AND RUN</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">var orderService = host.Services.GetRequiredService&lt;OrderService&gt;();
+orderService.PlaceOrder(new Order(1, "customer@example.com"));</code></pre>
+            <ul><li><code>GetRequiredService&lt;T&gt;()</code> asks the container for a fully-built <code>OrderService</code>.</li><li>The container inspects <code>OrderService</code>'s constructor, sees it needs <code>IEmailSender</code>, resolves that first, then constructs <code>OrderService</code> and hands it back.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Here's the full, runnable picture — an abstraction, an implementation, a class that depends on the abstraction via <strong>constructor injection</strong> (using a primary constructor), and the wiring at startup.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ─── The abstraction ───
+public interface IEmailSender
+{
+    void Send(string to, string message);
+}
+
+// ─── The concrete implementation ───
+public class SmtpEmailSender : IEmailSender
+{
+    public void Send(string to, string message) =>
+        Console.WriteLine($"[SMTP] To: {to} — {message}");
+}
+
+// ─── A class that DEPENDS on the abstraction ───
+// Primary constructor: the parameter list *is* the constructor.
+public class OrderService(IEmailSender emailSender, ILogger&lt;OrderService&gt; logger)
+{
+    public void PlaceOrder(int orderId, string customerEmail)
+    {
+        logger.LogInformation("Placing order {OrderId}", orderId);
+        emailSender.Send(customerEmail, $"Your order {orderId} has been placed!");
+    }
+}
+
+// ─── Program.cs — composing the app ───
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.AddSingleton&lt;IEmailSender, SmtpEmailSender&gt;();
+builder.Services.AddTransient&lt;OrderService&gt;();
+
+using var host = builder.Build();
+
+var orderService = host.Services.GetRequiredService&lt;OrderService&gt;();
+orderService.PlaceOrder(1001, "sam@example.com");</code></pre>
+    <p><strong>What just happened:</strong> <code>OrderService</code> never wrote <code>new SmtpEmailSender()</code> anywhere. It simply declared, through its constructor, "I need an <code>IEmailSender</code> and a logger." The container matched that request against the registration and supplied the concrete object. <code>OrderService</code> doesn't even know <code>SmtpEmailSender</code> exists.</p>
+    <p>Note also that <code>logger</code> was never explicitly registered — <code>ILogger&lt;T&gt;</code> is provided automatically by the generic host's built-in logging infrastructure (lesson 128 covers this in depth).</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Consider a background <strong>worker service</strong> that polls a payment provider every minute, checks for failed payments, and notifies a support channel. It needs several collaborators: a payment API client, a notification service, and a repository to track which payments it has already handled.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IPaymentClient
+{
+    Task&lt;IReadOnlyList&lt;FailedPayment&gt;&gt; GetFailedPaymentsAsync();
+}
+
+public interface INotificationService
+{
+    Task NotifyAsync(string message);
+}
+
+public class PaymentMonitorWorker(
+    IPaymentClient paymentClient,
+    INotificationService notifications,
+    ILogger&lt;PaymentMonitorWorker&gt; logger) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var failures = await paymentClient.GetFailedPaymentsAsync();
+            foreach (var failure in failures)
+            {
+                logger.LogWarning("Payment {PaymentId} failed", failure.Id);
+                await notifications.NotifyAsync($"Payment {failure.Id} failed for {failure.Amount:C}");
+            }
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        }
+    }
+}
+
+// ─── Composition root ───
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddHttpClient&lt;IPaymentClient, StripePaymentClient&gt;();
+builder.Services.AddSingleton&lt;INotificationService, SlackNotificationService&gt;();
+builder.Services.AddHostedService&lt;PaymentMonitorWorker&gt;();
+
+using var host = builder.Build();
+await host.RunAsync();</code></pre>
+    <p><code>PaymentMonitorWorker</code> is completely decoupled from Stripe and Slack. In a test project, you register fake implementations of <code>IPaymentClient</code> and <code>INotificationService</code> instead, and the worker's logic runs against them without a single change to <code>PaymentMonitorWorker</code> itself. That's the entire point.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🍽️</span> The Restaurant Kitchen</div>
+        <p>A chef (your class) needs ingredients (dependencies) to cook a dish. A bad kitchen makes the chef leave the restaurant, drive to a farm, and grow the vegetables personally every single time. A well-run kitchen has a <strong>supplier</strong> (the DI container) that delivers exactly the ingredients ordered, already prepped, right when the chef needs them.</p>
+        <p>The chef doesn't care whether the tomatoes came from Farm A or Farm B — just that they satisfy "tomato." Swap suppliers, and the chef's recipe doesn't change at all. That's constructor injection: the class specifies <em>what</em> it needs (the interface), and the container decides <em>which</em> supplier fulfills it.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">RESOLVING A DEPENDENCY GRAPH</div>
+        <div class="flow-step">
+            <div class="step-label">1. YOU ASK FOR OrderService</div>
+            <ul><li><code>GetRequiredService&lt;OrderService&gt;()</code> triggers resolution.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. CONTAINER INSPECTS THE CONSTRUCTOR VIA REFLECTION</div>
+            <ul><li>It reads <code>OrderService</code>'s constructor parameters: <code>IEmailSender</code>, <code>ILogger&lt;OrderService&gt;</code>.</li><li>It looks up each parameter type in its internal registration table (a dictionary of service descriptors).</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. IT RECURSIVELY RESOLVES EACH DEPENDENCY FIRST</div>
+            <ul><li>To build <code>OrderService</code>, it must first have a real <code>IEmailSender</code> instance — so it resolves <code>SmtpEmailSender</code> (which itself might have dependencies, resolved the same way, all the way down).</li><li>This is why it's called a <strong>dependency graph</strong> — resolving one object can cascade into constructing a whole tree of objects.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. IT CONSTRUCTS THE OBJECT AND (FOR SCOPED/SINGLETON) CACHES IT</div>
+            <ul><li>Depending on the registered lifetime, the instance may be cached for reuse within a scope, cached forever, or thrown away after this one use.</li><li>The finished object is handed back to you.</li></ul>
+        </div>
+    </div>
+    <p>This constructor-reflection approach means the container is largely unopinionated about <em>your</em> code — it just needs a public constructor whose parameter types it can resolve. If it can't find or build a registration for some required type, it throws an <code>InvalidOperationException</code> at resolution time (usually app startup), not silently returning null.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Dependency Injection" ≠ "Dependency Inversion"</h3>
+    <p>These are two different, related ideas, and beginners routinely conflate them:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Dependency Inversion Principle</strong> (lesson 081) is a <em>design rule</em>: depend on abstractions, not concrete types. You can follow this rule with zero frameworks — just by typing an interface parameter.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Dependency Injection</strong> is a <em>runtime technique</em> for actually supplying those abstractions — usually via a container. You can technically do DI by hand (passing a concrete <code>new SmtpEmailSender()</code> into a constructor that takes <code>IEmailSender</code>) without ever touching a container. The container is a convenience that automates it at scale.</li>
+    </ul>
+    <p>In short: Dependency Inversion is the "what and why," Dependency Injection is one common "how."</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"The container" isn't magic — it's a dictionary and reflection</h3>
+    <p>It's tempting to think of <code>IServiceProvider</code> as some mysterious black box. It isn't — it's a lookup table mapping types to instructions for building them, plus a bit of reflection to read constructors. Understanding this demystifies most DI errors: if resolution fails, it's because a type wasn't registered, or one of its dependencies wasn't.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — The "Service Locator" anti-pattern</h4>
+    <p>❌ Injecting the whole <code>IServiceProvider</code> and pulling services out of it manually inside a class, instead of declaring real constructor dependencies.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class OrderService(IServiceProvider provider)
+{
+    public void PlaceOrder()
+    {
+        var emailSender = provider.GetRequiredService&lt;IEmailSender&gt;(); // hides the real dependency
+    }
+}</code></pre>
+    <p>✅ Declare <code>IEmailSender</code> directly as a constructor parameter. This keeps the class's true dependencies visible and honest, and lets the compiler (and the reader) verify them at a glance.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forgetting to register a type and only finding out at runtime</h4>
+    <p>❌ DI resolution failures happen at <em>runtime</em>, not compile time. Forgetting <code>builder.Services.AddTransient&lt;OrderService&gt;()</code> compiles fine and blows up the moment you try to resolve it.</p>
+    <p>✅ Resolve your top-level services (like hosted services or entry points) as early as possible in <code>Program.cs</code>/startup so registration mistakes surface immediately in development, not in production.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Injecting concrete classes instead of interfaces</h4>
+    <p>❌ <code>public OrderService(SmtpEmailSender sender)</code> — this defeats the whole purpose. You can still register and resolve it, but now <code>OrderService</code> is coupled to SMTP specifically, and you've lost the ability to swap implementations or mock it cleanly in tests.</p>
+    <p>✅ Depend on the interface (<code>IEmailSender</code>), and let the registration decide which concrete type fulfills it.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Use DI when:</h3>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">You're building any real ASP.NET Core app, worker service, or console tool with more than a handful of classes.</li>
+        <li style="margin-bottom:0.4rem;">You want your business logic to be unit-testable in isolation, with fakes/mocks standing in for real dependencies.</li>
+        <li style="margin-bottom:0.4rem;">You have cross-cutting concerns (logging, configuration, HTTP clients) that many classes need but shouldn't each construct themselves.</li>
+        <li style="margin-bottom:0.4rem;">You expect implementations to change per environment (a mock email sender in tests, a real SMTP sender in production).</li>
+    </ul>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">You may not need a full container when:</h3>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">You're writing a tiny script or one-off tool with no meaningful object graph.</li>
+        <li style="margin-bottom:0.4rem;">Manual constructor passing (plain "poor man's DI" — just calling <code>new</code> at one composition point) is simple enough and the app will never grow.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Every ASP.NET Core and worker-service template already wires up a DI container for you — in modern .NET, you're almost always using it, even without deciding to. Learning to register and resolve services deliberately is what turns that default plumbing into a tool you control.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Dependency</strong> = something my class needs<br />
+        <strong>Injection</strong> = someone else provides it<br /><br />
+        <strong>Dependency Injection</strong> = my class receives what it needs through its constructor, instead of creating it itself<br /><br />
+        <strong>Remember:</strong><br />
+        · Register once with <code>IServiceCollection</code>, resolve anywhere via the container.<br />
+        · The class declares an interface; the registration decides the implementation.<br />
+        · Constructor injection is the default and preferred style — dependencies are visible, honest, and required.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Dependency Injection is the runtime mechanism that implements the Dependency Inversion Principle: dependencies are supplied from outside, not built inside.</li>
+            <li style="margin-bottom:0.4rem;"><code>Microsoft.Extensions.DependencyInjection</code> is .NET's built-in IoC container, exposed through <code>IServiceCollection</code> (for registering) and <code>IServiceProvider</code> (for resolving).</li>
+            <li style="margin-bottom:0.4rem;"><code>Host.CreateApplicationBuilder(args)</code> is the standard modern entry point for wiring up services in console apps, worker services, and web apps alike.</li>
+            <li style="margin-bottom:0.4rem;">Constructor injection — declaring dependencies as constructor parameters — is the default, preferred style; avoid the service-locator anti-pattern of injecting <code>IServiceProvider</code> itself.</li>
+            <li style="margin-bottom:0.4rem;">The container resolves a whole dependency graph recursively via reflection, throwing at resolution time if something can't be satisfied.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how Dependency Injection lets a class receive what it needs instead of building it. Let's check whether the mental model has stuck.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What is the core difference between the Dependency Inversion Principle and Dependency Injection?</p>
+        <ul class="options">
+            <li>A) They are two names for exactly the same thing</li>
+            <li>B) Dependency Inversion is a design principle (depend on abstractions); Dependency Injection is a runtime technique that implements it</li>
+            <li>C) Dependency Injection only applies to ASP.NET Core; Dependency Inversion applies everywhere</li>
+            <li>D) Dependency Inversion requires a container; Dependency Injection does not</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Dependency Inversion is the design rule from SOLID — depend on abstractions, not concretions. Dependency Injection is one practical way to make that happen at runtime: something external supplies the concrete implementation.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> They're related but distinct — one is a principle, the other a technique.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> DI is used across console apps, worker services, and web apps — it's not ASP.NET Core-specific.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> It's actually backwards — you can follow Dependency Inversion with zero tooling, but a container is a convenience for doing DI at scale.</p>
+                <p><strong>Reinforcement:</strong> Principle vs. mechanism — Inversion is the "why," Injection is a "how."</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In <code>builder.Services.AddSingleton&lt;IEmailSender, SmtpEmailSender&gt;();</code>, what does this line actually do?</p>
+        <ul class="options">
+            <li>A) Immediately constructs a <code>SmtpEmailSender</code> and stores it in a variable</li>
+            <li>B) Registers a mapping in the container: whenever something asks for <code>IEmailSender</code>, supply a <code>SmtpEmailSender</code></li>
+            <li>C) Deletes any existing registration for <code>IEmailSender</code></li>
+            <li>D) Makes <code>SmtpEmailSender</code> inherit from <code>IEmailSender</code> at runtime</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Registration is just adding an entry to the container's lookup table. No object is built yet — construction happens later, on demand, when something actually resolves <code>IEmailSender</code>.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Registration is lazy — construction is deferred until resolution (and for singletons, until first resolution).</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Nothing is deleted; this simply adds a new registration.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>SmtpEmailSender</code> must already implement <code>IEmailSender</code> in code — DI doesn't rewrite type relationships, it just wires already-compatible types together.</p>
+                <p><strong>Reinforcement:</strong> Registration is declarative wiring, not immediate construction.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why is constructor injection preferred over having a class pull dependencies out of an injected <code>IServiceProvider</code> (the service locator pattern)?</p>
+        <ul class="options">
+            <li>A) Service locator is faster at runtime</li>
+            <li>B) Constructor injection makes a class's real dependencies visible and explicit; service locator hides them inside method bodies</li>
+            <li>C) IServiceProvider cannot be registered in the container</li>
+            <li>D) There's no meaningful difference — both are equally recommended</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> With constructor injection, anyone reading the class signature immediately knows what it depends on. With service locator, dependencies are hidden inside method bodies and only discoverable by reading every line of implementation — and it becomes easy to accidentally resolve a service that was never intended to be a real dependency.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Performance is not the deciding factor here; clarity and testability are.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>IServiceProvider</code> is automatically available for injection — the problem isn't that it can't be injected, it's that using it to fetch dependencies manually is an anti-pattern.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The DI community and Microsoft's own guidance strongly favor constructor injection as the default.</p>
+                <p><strong>Reinforcement:</strong> Explicit, visible dependencies beat hidden ones every time.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> You call <code>host.Services.GetRequiredService&lt;OrderService&gt;()</code> but never registered <code>OrderService</code> with the container. What happens?</p>
+        <ul class="options">
+            <li>A) The compiler refuses to build the project</li>
+            <li>B) The container silently returns null</li>
+            <li>C) An exception is thrown at runtime, when resolution is attempted</li>
+            <li>D) The container automatically registers it using a default constructor</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> DI registration mistakes are a runtime concern, not a compile-time one — <code>GetRequiredService</code> throws an <code>InvalidOperationException</code> if the type (or one of its dependencies) has no registration.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The compiler has no visibility into your DI registrations; it type-checks code, not container configuration.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> That's what <code>GetService&lt;T&gt;()</code> (not <code>GetRequiredService</code>) would do — return null instead of throwing. <code>GetRequiredService</code> is explicit about requiring a result.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The container never auto-registers types you didn't explicitly register.</p>
+                <p><strong>Reinforcement:</strong> This is exactly why resolving key services early in <code>Program.cs</code> catches registration mistakes fast, during startup.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A <code>PaymentMonitorWorker</code> depends on <code>IPaymentClient</code>. In your unit tests, you want to verify the worker's retry logic without calling a real payment API. What does using DI make possible here?</p>
+        <ul class="options">
+            <li>A) Nothing — DI doesn't affect testing</li>
+            <li>B) You register a fake/mock <code>IPaymentClient</code> in the test's container (or pass one directly to the constructor) instead of the real Stripe client</li>
+            <li>C) You must still call the real Stripe API, but DI makes the calls faster</li>
+            <li>D) DI automatically generates unit tests for you</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Because <code>PaymentMonitorWorker</code> only knows about the <code>IPaymentClient</code> abstraction, you can construct it directly with a test double in unit tests — no container even required for the test itself, just pass a fake implementation to the constructor.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Testability is one of the biggest practical benefits of DI — it's precisely what makes isolated unit testing possible.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The entire point is to avoid calling the real API in tests.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> DI is an architectural technique, not a test-generation tool.</p>
+                <p><strong>Reinforcement:</strong> Depending on abstractions is what makes swapping in test doubles trivial — this is the payoff of everything this lesson covered.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand what Dependency Injection is, why it exists, and how to wire it up with the modern generic host — the foundation for everything else in this module.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

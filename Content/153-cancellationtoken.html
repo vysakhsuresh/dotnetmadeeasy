@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>153 - CancellationToken · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Cancellation in .NET is cooperative — nobody can forcibly kill an async operation from the outside. You can only politely ask it to stop, and it has to check.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>A user types into a search box, and your app kicks off an asynchronous search against a slow API for every keystroke. They type "lap," and a search starts. Before it finishes, they type another letter, "laptop." Now a second search starts. If nothing stops the first one, you'll get two results coming back — possibly with the outdated "lap" results arriving <em>after</em> the "laptop" results, overwriting the correct answer on screen with a stale one.</p>
+    <p>What you actually want is a way to say "that first search doesn't matter anymore — stop it." That's exactly what <code class="icode">CancellationToken</code> is for. <strong>In this lesson, you'll learn the cooperative cancellation pattern in .NET: how a <code class="icode">CancellationTokenSource</code> creates a token, how that token is threaded through an async call chain, and how a real operation — a search, an upload — checks it and stops cleanly.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <code class="icode">CancellationToken</code> is a small, passable signal — think of it as a "has someone asked me to stop?" flag — that you hand into a long-running operation. The operation itself is responsible for periodically checking that flag and, if it's been set, stopping what it's doing gracefully. Nothing forcibly interrupts the operation from the outside; it has to check and cooperate.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><code class="icode">CancellationToken</code> is a lightweight, readonly struct that represents a cancellation signal. You don't create one directly — you get it from a <code class="icode">CancellationTokenSource</code>, the object responsible for actually <em>triggering</em> cancellation via its <code class="icode">Cancel()</code> method. The source and its tokens are linked: calling <code class="icode">Cancel()</code> on the source flips every token it produced into a canceled state, which any code holding that token can observe through <code class="icode">token.IsCancellationRequested</code> or by calling <code class="icode">token.ThrowIfCancellationRequested()</code>.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> Source vs. Token — who does what</div>
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;margin:0.3rem 0;">
+            <li style="margin-bottom:0.4rem;"><code class="icode">CancellationTokenSource</code> — the "trigger." You call <code class="icode">.Cancel()</code> on this. Owned and controlled by whoever might decide to cancel (a UI event handler, a timeout, an incoming HTTP request being aborted).</li>
+            <li style="margin-bottom:0.4rem;"><code class="icode">CancellationToken</code> — the "listener." Obtained from <code class="icode">source.Token</code>. Passed down into the operation that might need to stop. Read-only — code holding a token can observe cancellation, but cannot trigger it.</li>
+        </ul>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Async Operations Can Outlive Their Usefulness</h3>
+    <p>Once you start an asynchronous operation, it's out there running — a network request in flight, a large file being uploaded, a database query executing. But the circumstances that justified starting it can change: the user navigated away, they clicked "cancel," a newer request superseded it, or a timeout elapsed. Without a way to signal "stop," that operation just runs to completion regardless — wasting time, bandwidth, server resources, and potentially overwriting fresher results with stale ones.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is a standard, consistent way to signal "please stop" into any async operation — one that works whether that operation is a single async method or a whole chain of nested async calls three layers deep, without forcibly and dangerously terminating a thread mid-operation (which can leave things in a corrupted, half-finished state).</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Cooperative Cancellation</h3>
+    <p>.NET's answer is <strong>cooperative</strong> cancellation: pass a <code class="icode">CancellationToken</code> into the operation. The operation itself checks the token at safe, sensible points and stops cleanly when asked — closing any open resources, leaving data in a consistent state — rather than being yanked out from under itself mid-step. Many built-in async APIs (<code class="icode">HttpClient</code>, EF Core, <code class="icode">Stream</code> methods) already accept a <code class="icode">CancellationToken</code> parameter and honor it automatically.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">THE TOKEN TRAVELS DOWN THE CALL CHAIN</div>
+        <div class="flow-step">
+            <div class="step-label">A CancellationTokenSource is created — usually near the "top" (a UI event, an incoming request)</div>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Its .Token is passed as a parameter into the operation that might run long</div>
+            <pre><code>await SearchProductsAsync("laptop", cancellationTokenSource.Token);</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">That method passes the same token further down, into every async call it makes</div>
+            <pre><code>await httpClient.GetAsync(searchUrl, token);
+await dbContext.Products.ToListAsync(token);</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Something calls source.Cancel() — the trigger point</div>
+            <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);">e.g., the user types another character, or an HTTP request is aborted by the browser.</div>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">✅ Every method holding that same token observes it's now canceled, and stops cleanly</div>
+        </div>
+    </div>
+    <p>The same token, passed by value along the entire chain, lets a single <code class="icode">Cancel()</code> call reach every layer of nested async work at once — without any of those layers needing to know about each other directly.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">Step 1 — Create a CancellationTokenSource</div>
+            <pre><code>using var cts = new CancellationTokenSource();</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 2 — Pass its Token into the operation</div>
+            <pre><code>await UploadFileAsync(filePath, cts.Token);</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 3 — The operation checks the token periodically</div>
+            <pre><code>public async Task UploadFileAsync(string path, CancellationToken token)
+{
+    using var stream = File.OpenRead(path);
+    byte[] buffer = new byte[81920];
+    int bytesRead;
+    while ((bytesRead = await stream.ReadAsync(buffer, token)) > 0)
+    {
+        token.ThrowIfCancellationRequested(); // stop cleanly if asked
+        await _httpClient.PostChunkAsync(buffer, bytesRead, token);
+    }
+}</code></pre>
+            <ul>
+                <li><code>ThrowIfCancellationRequested()</code> throws an <code>OperationCanceledException</code> (specifically <code>TaskCanceledException</code> for Task-based APIs) the moment it's called, if cancellation was requested.</li>
+                <li>Many async APIs (like <code>ReadAsync</code> and <code>PostChunkAsync</code> here) accept the token directly and check it internally too — you don't always have to call <code>ThrowIfCancellationRequested()</code> yourself if every operation in the loop already honors the token.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 4 — Someone calls Cancel()</div>
+            <pre><code>cancelButton.Click += (_, _) => cts.Cancel();</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 5 — The next check sees the cancellation and stops</div>
+            <ul><li>The thrown <code>OperationCanceledException</code> propagates up like any exception (see the exception-handling lesson) — the caller can catch it specifically and treat it as an expected, graceful stop, not an error.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Cancelling an operation after a fixed timeout — a very common, self-contained use of <code class="icode">CancellationTokenSource</code>:</p>
+
+    <div class="code-block"><code>using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)); // auto-cancels after 5s
+
+try
+{
+    string result = await httpClient.GetStringAsync(url, cts.Token);
+    Console.WriteLine(result);
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("The request took too long and was canceled.");
+}</code></code></div>
+    <p>Walking through it:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">The <code class="icode">CancellationTokenSource(TimeSpan)</code> constructor overload automatically calls <code class="icode">Cancel()</code> after the given duration — a built-in timeout mechanism.</li>
+        <li style="margin-bottom:0.4rem;"><code class="icode">GetStringAsync</code> accepts the token directly and honors it internally, throwing <code class="icode">OperationCanceledException</code> if the timeout is hit before it finishes.</li>
+        <li style="margin-bottom:0.4rem;">Catching <code class="icode">OperationCanceledException</code> specifically treats cancellation as an expected, distinct outcome — not lumped in with genuine errors.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Back to the search box scenario from the hook: every time the user types a new character, cancel whatever search is still in flight before starting a new one — a very common "debounce the latest request" pattern:</p>
+
+    <div class="code-block"><code>public class ProductSearchViewModel
+{
+    private CancellationTokenSource? _searchCts;
+
+    public async Task OnSearchTextChangedAsync(string query)
+    {
+        // Cancel any search still running from a previous keystroke
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+
+        try
+        {
+            var results = await _productService.SearchAsync(query, _searchCts.Token);
+            DisplayResults(results);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected — a newer keystroke superseded this search. Nothing to do.
+        }
+    }
+}</code></div>
+    <p>Every keystroke cancels the previous search's token before starting a new one. Because the token was passed all the way down into <code class="icode">SearchAsync</code> (and, inside it, into the underlying HTTP call), a single <code class="icode">Cancel()</code> here reaches through every layer of that in-flight work — no matter how deep the async call chain got. The stale search stops cleanly, and only the latest, relevant search result ever reaches <code class="icode">DisplayResults</code>.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🚦</span> A Relay Runner Checking for a Red Flag</div>
+        <p>Imagine a relay race where each runner, at regular checkpoints along their leg, glances over at a flag pole. If the race official raises a red flag (<code class="icode">source.Cancel()</code>), every runner who glances over and sees it (<code class="icode">token.IsCancellationRequested</code>) stops running at their next checkpoint, rather than forcibly being tackled mid-stride.</p>
+        <p>The official can't reach out and physically stop a runner mid-sprint — that would be dangerous and messy. Instead, every runner has agreed, ahead of time, to check for the flag and stop themselves cooperatively. That's exactly cooperative cancellation: nothing forcibly kills an async operation; it has to check the token and choose to stop.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>A <code class="icode">CancellationTokenSource</code> internally tracks a flag and a list of registered callbacks. Calling <code class="icode">Cancel()</code> flips that flag and synchronously invokes every callback that anything registered via <code class="icode">token.Register(...)</code> — this is how, for example, a <code class="icode">Stream.ReadAsync(buffer, token)</code> call is able to actually stop an in-progress read almost immediately, rather than only noticing cancellation the next time your own code happens to check it. Many built-in async APIs internally register such a callback the moment you pass them a token, so cancellation can interrupt them promptly even in the middle of an I/O wait — not just at the top of a loop.</p>
+    <p><code class="icode">CancellationToken</code> itself is a lightweight, cheap-to-copy struct precisely because it's designed to be passed around constantly — as a parameter into practically every async method in a call chain — without any real overhead.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Cancel() immediately stops the operation" — not exactly</h3>
+    <p><code class="icode">Cancel()</code> only <em>requests</em> cancellation. It flips a flag; it doesn't reach into the running operation and forcibly halt it. The operation still has to reach a point where it checks the token — whether that's your own explicit <code class="icode">ThrowIfCancellationRequested()</code> call, or an internal check inside a framework method you're awaiting — before it actually stops. A poorly written operation that never checks its token will simply ignore cancellation and run to completion regardless.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. CancellationToken.None isn't "no cancellation support" — it's "never cancel"</h3>
+    <p>When a method requires a <code class="icode">CancellationToken</code> parameter but you genuinely have nothing to cancel with, you pass <code class="icode">CancellationToken.None</code> (or, in modern C#, often just omit it if the parameter has a default value) — a valid token that simply never becomes canceled. It's not an error state; it's the deliberate "this operation can't be canceled here" choice.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Accepting a token parameter but never actually using it</h4>
+    <p>❌ <strong>Wrong</strong>:</p>
+    <div class="code-block"><code>public async Task ProcessItemsAsync(List&lt;Item&gt; items, CancellationToken token)
+{
+    foreach (var item in items)
+    {
+        await ProcessOneAsync(item); // token never passed or checked — this loop can't be canceled!
+    }
+}</code></div>
+    <p>✅ <strong>Correct</strong>: pass the token everywhere it can be honored, and check it explicitly in tight loops that don't otherwise touch anything token-aware.</p>
+    <div class="code-block"><code>public async Task ProcessItemsAsync(List&lt;Item&gt; items, CancellationToken token)
+{
+    foreach (var item in items)
+    {
+        token.ThrowIfCancellationRequested();
+        await ProcessOneAsync(item, token);
+    }
+}</code></div>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Not disposing a CancellationTokenSource</h4>
+    <p>❌ Creating a <code class="icode">CancellationTokenSource</code> and never disposing it — it holds internal timer and callback resources.</p>
+    <p>✅ Wrap it in a <code class="icode">using</code> declaration (as in the examples above) so it's cleaned up once you're done with it.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Treating a canceled operation as an unexpected error</h4>
+    <p>❌ Logging every <code class="icode">OperationCanceledException</code> as a critical error, flooding logs with noise every time a user simply navigates away or types another search keystroke.</p>
+    <p>✅ Catch <code class="icode">OperationCanceledException</code> specifically and treat it as an expected, routine outcome — it's not a bug, it's the cancellation mechanism working exactly as intended.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">🔍</span>
+            <div class="label">Superseded work</div>
+            <div class="desc">A new search, request, or input makes an in-flight operation's result irrelevant.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">⏱️</span>
+            <div class="label">Timeouts</div>
+            <div class="desc">An operation shouldn't be allowed to run indefinitely — cap it with a timed token.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🖱️</span>
+            <div class="label">User-initiated cancel</div>
+            <div class="desc">A "Cancel" button on a long-running upload, download, or report generation.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🌐</span>
+            <div class="label">Any public async API</div>
+            <div class="desc">As a default, accept and honor a CancellationToken parameter — callers may want the option even if you don't need it yourself.</div>
+        </div>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Any async method that could realistically take "a while" and might reasonably need to be abandoned should accept a <code class="icode">CancellationToken</code> parameter — even if the caller often just passes <code class="icode">CancellationToken.None</code>. It's a lot easier to add cancellation support from the start than to retrofit it deep into a call chain later.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>CancellationTokenSource</strong> = "The button that requests a stop."<br />
+        <strong>CancellationToken</strong> = "The flag that gets checked — pass it everywhere the work happens."<br />
+        <strong>Cancellation is cooperative</strong> = nothing is forcibly killed; the operation has to check and choose to stop.<br /><br />
+        <strong>Remember:</strong><br />
+        · Pass the same token all the way down through every layer of an async call chain.<br />
+        · <code>ThrowIfCancellationRequested()</code> is how code voluntarily says "okay, stopping now."<br />
+        · Catch <code>OperationCanceledException</code> as an expected outcome, not an error.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">.NET cancellation is <strong>cooperative</strong> — operations must check the token and choose to stop; nothing is forcibly terminated.</li>
+            <li style="margin-bottom:0.4rem;"><code>CancellationTokenSource</code> triggers cancellation via <code>Cancel()</code>; <code>CancellationToken</code> (from <code>source.Token</code>) is passed into the operation to observe it.</li>
+            <li style="margin-bottom:0.4rem;">Pass the same token through every layer of an async call chain so a single <code>Cancel()</code> reaches all of them.</li>
+            <li style="margin-bottom:0.4rem;"><code>ThrowIfCancellationRequested()</code> throws <code>OperationCanceledException</code> when cancellation was requested — catch it as an expected, routine outcome.</li>
+            <li style="margin-bottom:0.4rem;">Real uses: superseding stale searches, enforcing timeouts, and honoring a user's explicit "Cancel" action.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how cooperative cancellation works end to end. Let's check that it's sunk in.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What does calling <code>Cancel()</code> on a CancellationTokenSource actually do?</p>
+        <ul class="options">
+            <li>A) It immediately and forcibly terminates the running operation, wherever it currently is</li>
+            <li>B) It sets a flag that any code holding the associated token can observe and choose to respond to</li>
+            <li>C) It deletes the CancellationToken object entirely</li>
+            <li>D) It pauses the operation until Cancel() is called a second time</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Cancellation is cooperative. Cancel() flips a flag (and invokes any registered callbacks); it's up to the running operation to check that flag — directly or through a token-aware API it's using — and decide to stop.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing forcibly halts execution — that's precisely the design choice that avoids leaving things in a corrupted, half-finished state.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The token object still exists; it simply now reports IsCancellationRequested as true.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no "pause" state — cancellation is a one-way signal, not a toggle.</p>
+                <p><strong>Reinforcement:</strong> Cancel() requests cancellation; the operation itself must cooperate by checking and responding.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A method three layers deep in an async call chain needs to respect cancellation, but the token was only checked in the outermost method. What's wrong with this design?</p>
+        <ul class="options">
+            <li>A) Nothing — CancellationToken automatically applies to every method in the call stack</li>
+            <li>B) The token must be explicitly passed as a parameter into each method down the chain — checking it only at the top does not propagate cancellation into deeper calls</li>
+            <li>C) CancellationToken can only be used in the method where the CancellationTokenSource was created</li>
+            <li>D) You need a separate CancellationTokenSource for each method in the chain</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A CancellationToken doesn't magically reach every method in a call stack — it has to be explicitly passed as a parameter into each async method that should honor it, all the way down. Checking it only at the outermost layer means deeper, already-started work keeps running regardless.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no implicit propagation — it's plain parameter passing, just like any other value.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A token is a simple, cheap-to-copy struct — it can be passed anywhere, to any method, freely.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The same single source (and its one token) is meant to be shared across the whole chain — that's exactly what lets one Cancel() call reach everywhere.</p>
+                <p><strong>Reinforcement:</strong> Thread the same CancellationToken through every layer of the call chain that should be able to observe cancellation.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A user cancels an in-progress file upload. What is the correct way to handle the resulting exception?</p>
+        <ul class="options">
+            <li>A) Catch OperationCanceledException specifically and treat it as an expected, routine outcome — no error logging needed</li>
+            <li>B) Catch it as a generic Exception and log it as a critical failure</li>
+            <li>C) Let it crash the application, since cancellation is unrecoverable</li>
+            <li>D) Ignore all exceptions from an upload operation entirely</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> A user-initiated cancellation is an expected, deliberate outcome, not a bug or a failure. Catching OperationCanceledException specifically lets you handle it gracefully — updating the UI, cleaning up partial uploads — without treating it as an error condition.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Logging routine, expected cancellations as critical errors creates noisy, misleading logs and obscures genuine problems.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Cancellation is a normal, recoverable outcome — there's no reason it should crash the application.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Silently swallowing all exceptions (not just the cancellation) would also hide genuine upload failures that deserve attention.</p>
+                <p><strong>Reinforcement:</strong> Distinguish cancellation (expected, routine) from genuine failures (unexpected, worth logging) by catching OperationCanceledException specifically.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why does <code>new CancellationTokenSource(TimeSpan.FromSeconds(5))</code> behave as a built-in timeout mechanism?</p>
+        <ul class="options">
+            <li>A) It blocks the calling thread for exactly 5 seconds before returning</li>
+            <li>B) It automatically calls Cancel() on itself once 5 seconds have elapsed, without any additional code needed</li>
+            <li>C) It limits the operation to using only 5% of the CPU</li>
+            <li>D) It retries the operation every 5 seconds until it succeeds</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This constructor overload starts an internal timer; when it elapses, the source cancels itself automatically — no manual timeout-tracking code required. Any operation holding that token then observes cancellation exactly as if something had called Cancel() manually.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Creating the source doesn't block anything — it just schedules a future automatic cancellation.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> CancellationTokenSource has nothing to do with CPU throttling.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> It cancels once after the timeout — it doesn't retry anything.</p>
+                <p><strong>Reinforcement:</strong> The timed constructor overload is a convenient, self-contained way to enforce a maximum duration on an operation.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A method loops over 10,000 items doing pure in-memory CPU work with no awaited calls inside the loop, and accepts a CancellationToken parameter that it never checks. What's the practical consequence?</p>
+        <ul class="options">
+            <li>A) The loop is automatically canceled by the runtime regardless</li>
+            <li>B) Calling Cancel() on the associated source will have no effect on this loop — it will run to completion even after cancellation was requested</li>
+            <li>C) The method will throw a compiler error for not using the token</li>
+            <li>D) The token parameter is ignored entirely and can safely be removed with no behavior change</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Since cancellation is cooperative, if nothing inside the loop ever checks the token (e.g., via ThrowIfCancellationRequested()) and there are no token-aware awaited calls to do it internally, the loop has no way to notice cancellation was requested — it simply keeps running to completion.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The runtime never automatically cancels anything on your behalf — that would violate the entire cooperative design.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Not checking an unused parameter is, at most, a style warning in some tooling — it's not a compiler error.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The parameter isn't harmful to keep, but as written it's genuinely non-functional — this describes the bug, not a safe simplification.</p>
+                <p><strong>Reinforcement:</strong> Accepting a CancellationToken parameter is not the same as honoring it — the operation must actually check it (directly or via a token-aware call) for cancellation to take effect.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand cooperative cancellation end to end. Next up: running several independent async operations concurrently — instead of one after another — with Task.WhenAll.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
