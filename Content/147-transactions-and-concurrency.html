@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>147 - Transactions and Concurrency · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        SaveChanges() is already safer than you might think — but two separate saves, or two people editing the same row, need you to reach for a bit more.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Remember the bank transfer scenario from the ADO.NET transactions lesson — $500 vanishing forever if a crash happens between two separate <span class="icode">UPDATE</span> statements? EF Core actually protects you from a version of that automatically, every time you call <span class="icode">SaveChangesAsync()</span> — but only within that one call. The moment your business logic needs <em>two separate</em> <span class="icode">SaveChangesAsync()</span> calls to succeed or fail together, or two different users can edit the same row at nearly the same moment, you need to explicitly reach for the tools this lesson covers.</p>
+    <p><strong>In this lesson, you'll learn about EF Core's implicit per-<span class="icode">SaveChanges()</span> transaction, how to wrap multiple <span class="icode">SaveChanges()</span> calls in one explicit transaction, and how optimistic concurrency with a <span class="icode">RowVersion</span> token protects against two users overwriting each other's edits.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>This lesson covers two related but different problems. A <strong>transaction</strong> makes sure a group of database changes happen together, all-or-nothing — the ADO.NET transactions lesson's problem, now in EF Core's context. <strong>Concurrency control</strong> makes sure that when two separate operations try to change the <em>same row</em> around the same time, one of them doesn't silently overwrite the other's work without anyone noticing.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>EF Core wraps every call to <span class="icode">SaveChanges()</span> in an <strong>implicit transaction</strong> automatically — every <span class="icode">INSERT</span>/<span class="icode">UPDATE</span>/<span class="icode">DELETE</span> generated from one call either all commit or all roll back together. For multiple <span class="icode">SaveChanges()</span> calls that need to succeed or fail as one unit, you create an <strong>explicit transaction</strong> with <span class="icode">context.Database.BeginTransactionAsync()</span>. For the "two users, same row" problem, EF Core supports <strong>optimistic concurrency</strong>: a <strong>concurrency token</strong> property (commonly a <span class="icode">byte[] RowVersion</span>, marked <span class="icode">[Timestamp]</span>) that the database automatically changes on every update, letting EF Core detect — and refuse — a save based on stale data.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Multi-Step Saves Can Half-Fail, and Simultaneous Edits Can Silently Clash</h3>
+    <p>Two distinct failure modes, both common in real applications: First, a business operation sometimes genuinely needs more than one <span class="icode">SaveChanges()</span> call — perhaps because different parts of a larger workflow save independently — and if the process crashes between them, you're left with a half-completed operation, exactly the "$500 vanished" problem from before. Second — and this one has nothing to do with crashes — imagine two support agents both open the same customer's account, both see "Balance: $1,000," Agent A changes it to $900 and saves, then Agent B (still looking at their now-stale $1,000 view) changes it to $1,200 and saves. Agent B's save silently wipes out Agent A's change entirely — not because anything crashed, but simply because two people edited the same row without either knowing about the other.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Explicit Transactions, and a Version Check on Every Save</h3>
+    <p>Explicit transactions solve the first problem the same way ADO.NET transactions always have — group the operations, commit or roll back together. Optimistic concurrency solves the second: every row carries a hidden "version" value that changes every time it's updated; every <span class="icode">UPDATE</span> EF Core generates includes a check — "only update this row if its version still matches what I originally read" — and if that check fails, EF Core throws instead of silently overwriting, giving your application a chance to tell the user "someone else changed this — please reload and try again."</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">THREE LEVELS OF PROTECTION, LAYERED</div>
+        <div class="flow-step">
+            <div class="step-label">1. Implicit transaction — automatic, every single SaveChanges() call</div>
+            <ul><li>All statements from one <span class="icode">SaveChanges()</span> call commit or roll back together. No code required — EF Core always does this.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. Explicit transaction — opt-in, when you need MULTIPLE SaveChanges() calls to be atomic together</div>
+            <ul><li><span class="icode">context.Database.BeginTransactionAsync()</span> ... several <span class="icode">SaveChangesAsync()</span> calls ... <span class="icode">transaction.CommitAsync()</span>.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. Optimistic concurrency — opt-in, per entity, for rows that can be edited by more than one actor at once</div>
+            <ul><li>A <span class="icode">RowVersion</span> concurrency token on the entity, checked automatically on every update.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS: TRANSACTIONS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Transactions</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The implicit transaction — you already have it</h3>
+    <p>If a single <span class="icode">SaveChangesAsync()</span> call needs to update three different entities, all three <span class="icode">UPDATE</span> statements EF Core generates are wrapped in one database transaction automatically. If the third one fails, the first two are rolled back — you never have to write <span class="icode">BeginTransaction</span> for this case at all:</p>
+    <div class="code-block"><code>order.Status = OrderStatus.Shipped;
+customer.LoyaltyPoints += 50;
+inventory.Stock -= order.Quantity;
+
+await context.SaveChangesAsync();
+// All three updates commit together, or none of them do — automatically.</code></div>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Explicit transactions — spanning multiple SaveChanges() calls</h3>
+    <p>Sometimes a workflow genuinely needs to call <span class="icode">SaveChangesAsync()</span> more than once — say, saving a new <span class="icode">Order</span> first (to get its generated <span class="icode">Id</span> back from the database) before creating a related audit-log record that needs that <span class="icode">Id</span>. Without an explicit transaction, a failure after the first save leaves the order saved but the audit entry missing — half-done. Wrap both in an explicit transaction to make them atomic together:</p>
+    <div class="code-block"><code>await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync();
+try
+{
+    context.Orders.Add(order);
+    await context.SaveChangesAsync();          // 1st save — order.Id is now populated
+
+    context.AuditLogs.Add(new AuditLog
+    {
+        OrderId = order.Id,
+        Message = $"Order {order.Id} created"
+    });
+    await context.SaveChangesAsync();          // 2nd save — same transaction as the 1st
+
+    await transaction.CommitAsync();           // both saves become permanent together
+}
+catch
+{
+    await transaction.RollbackAsync();         // undo both, as if neither ran
+    throw;
+}</code></div>
+    <p>This is the exact same <span class="icode">BeginTransaction</span> / <span class="icode">Commit</span> / <span class="icode">Rollback</span> pattern from the ADO.NET transactions lesson — EF Core's <span class="icode">Database.BeginTransactionAsync()</span> simply gives you an <span class="icode">IDbContextTransaction</span> that every <span class="icode">SaveChangesAsync()</span> call made through this context automatically joins, instead of each getting its own separate implicit transaction.</p>
+
+    <!-- ====== HOW IT WORKS: CONCURRENCY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Optimistic Concurrency</h2>
+    <p>Add a <span class="icode">RowVersion</span> property to any entity that might be edited concurrently, marked as a concurrency token:</p>
+    <div class="code-block"><code>public class Account
+{
+    public int Id { get; set; }
+    public decimal Balance { get; set; }
+
+    [Timestamp]                        // SQL Server: an auto-updating rowversion column
+    public byte[] RowVersion { get; set; } = null!;
+}</code></div>
+    <p>The database automatically changes this value every time the row is updated — you never set it yourself. EF Core includes it in every generated <span class="icode">UPDATE</span>'s <span class="icode">WHERE</span> clause:</p>
+    <div class="code-block"><code>UPDATE Accounts
+SET Balance = @newBalance
+WHERE Id = @id AND RowVersion = @originalRowVersion;</code></div>
+    <p>If another update already changed the row (and therefore its <span class="icode">RowVersion</span>) since you read it, this statement matches zero rows — and EF Core detects that mismatch and throws <span class="icode">DbUpdateConcurrencyException</span> instead of quietly reporting success.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — Handling the Conflict</h2>
+    <div class="code-block"><code>Account account = await context.Accounts.FirstAsync(a =&gt; a.Id == accountId);
+account.Balance -= 100m;
+
+try
+{
+    await context.SaveChangesAsync();
+}
+catch (DbUpdateConcurrencyException)
+{
+    // Someone else changed this row since we read it.
+    // Reload the current values and let the caller decide what to do.
+    await context.Entry(account).ReloadAsync();
+    throw new InvalidOperationException(
+        "This account was modified by someone else. Please review the current balance and try again.");
+}</code></div>
+    <p>Catching <span class="icode">DbUpdateConcurrencyException</span> is not optional plumbing — without it, an unhandled exception bubbles straight up and the user sees a raw error instead of a meaningful "someone else changed this" message. <span class="icode">context.Entry(account).ReloadAsync()</span> refreshes the entity with the current database values so the application (or the user) can see what actually changed before deciding to retry.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Two Support Agents, One Account</h2>
+    <p>The exact scenario from the "Why Does It Exist?" section, now with the protection in place. Two support agents load the same <span class="icode">Account</span> at nearly the same time, and both try to save a change:</p>
+    <div class="code-block"><code>[HttpPut("{id}/balance")]
+public async Task&lt;IActionResult&gt; UpdateBalance(int id, [FromBody] UpdateBalanceRequest request)
+{
+    Account? account = await context.Accounts.FindAsync(id);
+    if (account is null)
+        return NotFound();
+
+    account.Balance = request.NewBalance;
+    context.Entry(account).Property(a =&gt; a.RowVersion).OriginalValue = request.RowVersionAtLoadTime;
+
+    try
+    {
+        await context.SaveChangesAsync();
+        return NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Conflict(new
+        {
+            Message = "This account was updated by someone else since you loaded it. Reload and try again."
+        });
+    }
+}</code></div>
+    <p>Agent A's request runs first and succeeds — the <span class="icode">RowVersion</span> in the database updates. Agent B's request then arrives with the <em>original</em> <span class="icode">RowVersion</span> (from before Agent A's change) — the <span class="icode">WHERE RowVersion = @original</span> clause matches nothing, EF Core throws <span class="icode">DbUpdateConcurrencyException</span>, and the API returns <span class="icode">409 Conflict</span> instead of silently letting Agent B erase Agent A's update. This is optimistic concurrency working exactly as intended: it doesn't prevent the conflict from happening, but it guarantees the conflict is <em>detected and surfaced</em>, rather than silently lost.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📝</span> Editing a Shared Document by Its Last-Saved Timestamp</div>
+        <p>Imagine an old-fashioned shared document with no live collaborative editing — you open it, it shows "last saved 2:00 PM," you make changes, and when you try to save, the system checks: is it still 2:00 PM's version? If someone else saved a change at 2:15 PM while you were editing, your save is rejected — not silently overwritten, not silently merged, just flatly refused with "this document changed since you opened it, please reload." That's optimistic concurrency: it assumes conflicts are rare enough not to lock the document while you edit (that would be <em>pessimistic</em> concurrency), but it always checks the timestamp before committing, and refuses rather than guesses when it's stale.</p>
+        <p>An explicit transaction, by contrast, is like stapling two separate save operations together and telling the system "these two saves are really one save — either file both pages, or file neither." It's about atomicity across steps, not about detecting who else touched the document.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHY IT'S CALLED "OPTIMISTIC" CONCURRENCY</div>
+        <div class="flow-step">
+            <div class="step-label">1. Optimistic: no lock is held while you're editing</div>
+            <ul><li>Between reading a row and saving your change, nothing prevents another process from reading and updating the same row too — EF Core optimistically assumes that's fine, and only checks for a conflict at the moment of the actual <span class="icode">UPDATE</span>.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. The alternative — pessimistic concurrency — locks the row up front</div>
+            <ul><li>A pessimistic approach would lock the row the instant it's read, forcing every other reader/writer to wait. That avoids conflicts entirely but at a real cost: locks held across a whole user interaction (someone reading a form, thinking, then submitting) can devastate throughput on a busy system. EF Core doesn't provide this out of the box — optimistic concurrency (few actual conflicts, cheaply detected) fits the vast majority of real applications far better.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. The RowVersion column is maintained entirely by the database, not your code</div>
+            <ul><li>SQL Server's <span class="icode">rowversion</span> type auto-increments on every update to that row — your application never sets it; it only ever reads and forwards it.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Transactions and optimistic concurrency solve the same problem"</h3>
+    <p>They solve two genuinely different problems that happen to both live in this lesson because they're both about safe, multi-actor data changes. A transaction is about <strong>atomicity across statements within one logical operation</strong> — nothing to do with other users. Optimistic concurrency is about <strong>detecting when two different operations touched the same row</strong> — nothing to do with whether either individual operation was atomic. A banking transfer needs a transaction even if only one person on Earth ever uses the system; a shared, frequently-edited row needs a concurrency token even if every single update is, on its own, perfectly atomic.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "SaveChanges() has no transaction unless I write BeginTransaction myself"</h3>
+    <p>This is backwards — every single <span class="icode">SaveChanges()</span> call already runs inside an implicit transaction automatically, with zero code from you. You only need <span class="icode">BeginTransaction</span> explicitly when <em>multiple</em> <span class="icode">SaveChanges()</span> calls need to be atomic together — a narrower, less common need than people often assume.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Wrapping a single SaveChanges() call in an explicit transaction "to be safe"</h4>
+    <p>❌ <span class="icode">BeginTransaction()</span>, one <span class="icode">SaveChangesAsync()</span> call, then <span class="icode">Commit()</span> — this adds complexity and a small amount of overhead for no benefit, since that single call was already fully atomic on its own via the implicit transaction. ✅ Reach for an explicit transaction only when more than one <span class="icode">SaveChanges()</span> call genuinely needs to succeed or fail together.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Adding a RowVersion token everywhere "just in case"</h4>
+    <p>❌ Putting a concurrency token on every single entity in the system, including reference data that's essentially never edited concurrently — this adds a column, a bit of overhead per update, and error-handling complexity for rows where conflicts basically never happen. ✅ Reserve concurrency tokens for rows that are genuinely likely to be edited by more than one actor around the same time — shared records, collaborative data, financial balances — not blanket-applied everywhere.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Not catching DbUpdateConcurrencyException at all</h4>
+    <p>❌ Adding a <span class="icode">RowVersion</span> token and assuming that's the whole job done — an uncaught <span class="icode">DbUpdateConcurrencyException</span> just becomes an unhandled 500 error, giving the user no useful information and no path to actually resolve the conflict. ✅ Always catch it explicitly and decide what to do — reload and show the current data, ask the user to retry, or apply a defined conflict-resolution rule — the token only detects the conflict; your code decides how to respond.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Situation</th><th>Use</th></tr></thead>
+            <tbody>
+                <tr><td>One <span class="icode">SaveChanges()</span> call, any number of entity changes</td><td>Nothing — the implicit transaction already covers this</td></tr>
+                <tr><td>A workflow that must call <span class="icode">SaveChanges()</span> more than once, and all calls must succeed or fail together</td><td>An explicit transaction via <span class="icode">Database.BeginTransactionAsync()</span></td></tr>
+                <tr><td>A row multiple users/processes could plausibly edit around the same time (shared accounts, collaborative records, inventory counts)</td><td>A <span class="icode">RowVersion</span> concurrency token, with <span class="icode">DbUpdateConcurrencyException</span> handled explicitly</td></tr>
+                <tr><td>Reference/lookup data essentially never edited concurrently</td><td>Neither — the overhead isn't worth it</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Trust the implicit transaction for single <span class="icode">SaveChanges()</span> calls. Add an explicit transaction only when a workflow spans multiple calls that must succeed or fail as one unit. Add a concurrency token only to rows genuinely at risk of simultaneous edits — and always handle <span class="icode">DbUpdateConcurrencyException</span> once you do.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Implicit transaction</strong> = one SaveChanges() call is always all-or-nothing, automatically.<br />
+        <strong>Explicit transaction</strong> = stapling several SaveChanges() calls together into one all-or-nothing unit.<br />
+        <strong>Optimistic concurrency</strong> = "check the version before you commit" — refuses a stale save instead of silently overwriting someone else's work.<br /><br />
+        <strong>Remember:</strong> transactions are about atomicity within one operation; concurrency tokens are about noticing when two operations collided.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Every <span class="icode">SaveChanges()</span> call already runs inside an <strong>implicit transaction</strong> — no code required.</li>
+            <li style="margin-bottom:0.4rem;">Use an <strong>explicit transaction</strong> (<span class="icode">Database.BeginTransactionAsync()</span>) only when multiple <span class="icode">SaveChanges()</span> calls must succeed or fail together.</li>
+            <li style="margin-bottom:0.4rem;">A <strong>concurrency token</strong> (typically a <span class="icode">[Timestamp] byte[] RowVersion</span>) lets EF Core detect when a row changed since it was read, instead of silently overwriting.</li>
+            <li style="margin-bottom:0.4rem;">EF Core uses <strong>optimistic</strong> concurrency — no locking while editing, only a version check at save time — which fits most real applications far better than locking rows up front.</li>
+            <li style="margin-bottom:0.4rem;">Always catch <span class="icode">DbUpdateConcurrencyException</span> explicitly and decide how to respond — the token detects the conflict, your code resolves it.</li>
+            <li style="margin-bottom:0.4rem;">Apply both tools selectively — neither belongs on every operation or every entity by default.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how EF Core protects a single save automatically, and what it takes to protect multi-step saves and simultaneous edits. Let's confirm the reasoning stuck.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A method modifies three different tracked entities and calls SaveChangesAsync() exactly once. Does this code need an explicit transaction to guarantee all three changes commit together?</p>
+        <ul class="options">
+            <li>A) Yes — without BeginTransactionAsync(), the three changes could partially fail</li>
+            <li>B) No — a single SaveChangesAsync() call already runs inside an implicit transaction automatically; all statements it generates commit or roll back together</li>
+            <li>C) Yes, but only if the three entities belong to different DbSet properties</li>
+            <li>D) No, because EF Core only ever generates one SQL statement per SaveChangesAsync() call regardless of how many entities changed</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> EF Core wraps every SaveChanges() call in an implicit transaction automatically, regardless of how many entities or statements it involves. No explicit transaction code is needed for atomicity within a single call.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is the common misconception the lesson calls out directly — the implicit transaction already provides this guarantee without any BeginTransactionAsync() call.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Which DbSet properties the entities come from has no bearing on this — the implicit transaction covers every statement generated by one SaveChanges() call regardless of entity type.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> EF Core typically generates one SQL statement per changed entity (or batches them), not a single combined statement — but they're still wrapped in one transaction together, which is what actually provides the guarantee.</p>
+                <p><strong>Reinforcement:</strong> Explicit transactions are for spanning multiple SaveChanges() calls — a single call is already atomic by default.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What specific problem does adding a RowVersion concurrency token to the Account entity solve, that an explicit transaction does not?</p>
+        <ul class="options">
+            <li>A) It prevents the application from crashing mid-save</li>
+            <li>B) It detects when a row was already changed by someone else since it was read, so a save based on stale data is rejected instead of silently overwriting that other change</li>
+            <li>C) It makes SaveChangesAsync() run faster by skipping validation</li>
+            <li>D) It automatically merges two users' conflicting changes into one combined result</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A concurrency token addresses the "two users editing the same row" problem specifically — it lets EF Core detect, via a WHERE clause check against the row's current version, that the row changed since it was read, and refuse the stale save with DbUpdateConcurrencyException instead of silently overwriting the other change.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Crash protection during a save is what transactions (implicit or explicit) provide — a concurrency token addresses a completely different problem (simultaneous edits, not partial failure).</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A concurrency token adds a small amount of overhead (an extra WHERE clause condition) — it doesn't skip any validation or improve save performance.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> EF Core's optimistic concurrency does not merge conflicting changes automatically — it detects the conflict and throws, leaving the actual resolution (retry, show current data, merge manually) to your application code.</p>
+                <p><strong>Reinforcement:</strong> Concurrency tokens detect conflicts between separate operations touching the same row — a fundamentally different concern from transactional atomicity within one operation.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why is EF Core's approach called "optimistic" concurrency rather than locking the row the moment it's read?</p>
+        <ul class="options">
+            <li>A) Because it assumes conflicts are rare and only checks for one at save time, rather than blocking every other reader/writer of that row for the whole editing duration — which would hurt throughput on a busy system</li>
+            <li>B) Because it always resolves conflicts in favor of whichever save is optimistic about succeeding</li>
+            <li>C) Because "optimistic" just means EF Core retries the save automatically until it succeeds</li>
+            <li>D) Because it only applies to entities without a primary key</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> Optimistic concurrency assumes conflicts are uncommon, so it doesn't lock the row while someone is editing — it only checks whether the row's version still matches at the moment of the actual update. This avoids the throughput cost of locking, which is the tradeoff pessimistic (lock-up-front) concurrency would make instead.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> There's no notion of one save being "more optimistic" than another — the term describes the strategy (check late, don't lock early), not an outcome-favoring rule.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> EF Core does not automatically retry a failed concurrency check — it throws DbUpdateConcurrencyException and leaves retry logic entirely to your application code.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Concurrency tokens work alongside a primary key, not instead of one — every entity in this lesson's examples still has a normal primary key plus a separate RowVersion token.</p>
+                <p><strong>Reinforcement:</strong> "Optimistic" describes not locking upfront and only detecting conflicts at save time — the alternative, locking rows on read, is pessimistic concurrency, which EF Core doesn't provide out of the box because it fits far fewer real applications.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know how to keep multi-step saves atomic and how to protect shared rows from silent overwrites. Next up: the capstone of this module — deciding whether a repository layer belongs on top of everything you've learned.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

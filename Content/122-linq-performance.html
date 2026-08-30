@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>122 - LINQ Performance · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The capstone of this module: everything you've learned about LINQ, now examined for what it actually costs.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Every lesson in this module has built toward the same quiet promise: LINQ reads clearly and hides the looping. But "hides" is doing real work in that sentence — the looping is still happening, allocations still occur, and every operator you've learned still costs real CPU cycles and real memory. This capstone lesson pulls together deferred execution, immediate execution, and method syntax into one final, practical question: how do you write LINQ that's both readable <em>and</em> genuinely efficient?</p>
+    <p><strong>This lesson covers multiple enumeration pitfalls, <code>Count()</code> vs the <code>.Count</code> property, unnecessary <code>ToList()</code> calls, ordering operators to filter before projecting or sorting, and — the most important judgment call — when LINQ's readability is worth its cost versus when a hand-written loop genuinely serves you better.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>LINQ performance is about recognizing the handful of patterns where writing a query the "obvious" way quietly does far more work than necessary — re-running the same filter twice, allocating a list nobody needed, or sorting ten thousand items before throwing away all but three of them.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Every LINQ operator ultimately reduces to ordinary work: iterator objects being allocated, <code>MoveNext()</code> being called, delegates being invoked, and — whenever a forcing operator like <code>ToList()</code> runs — memory being allocated for a new collection. None of this is free, and none of it is exotic; it's the exact same cost a hand-written loop would pay for equivalent work. The performance patterns in this lesson are entirely about avoiding <em>redundant</em> work — the same items enumerated more times than needed, the same allocation happening more times than needed — not about LINQ carrying some hidden, mysterious tax.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <p>LINQ's biggest strength — hiding the looping mechanics behind clean, declarative method calls — is also exactly what makes its costs easy to miss. A hand-written loop makes every pass over the data visually obvious; a chain of LINQ calls can quietly hide a second (or third) full pass behind what looks like a single, simple line:</p>
+    <div class="code-block"><code>// ❌ Looks like ONE operation. Is actually TWO full passes over expensiveQuery.
+var expensiveQuery = products.Where(p =&gt; ExpensiveCheck(p)); // deferred — nothing has run yet
+if (expensiveQuery.Any())                 // pass #1 — enumerates until first match
+{
+    foreach (var p in expensiveQuery)     // pass #2 — enumerates the WHOLE thing again
+        Console.WriteLine(p.Name);
+}</code></div>
+    <div class="code-block"><code>// ✅ ONE pass, explicitly, because it was forced exactly once
+var results = products.Where(p =&gt; ExpensiveCheck(p)).ToList();
+if (results.Count &gt; 0)
+{
+    foreach (var p in results)
+        Console.WriteLine(p.Name);
+}</code></div>
+    <p>This entire lesson exists because LINQ's readability makes it genuinely easy to accidentally write the first version without noticing — and because a handful of specific, well-known patterns account for the overwhelming majority of real-world LINQ performance problems. Learning to recognize them takes minutes; the payoff lasts for every query you write afterward.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">THE FIVE PATTERNS THIS LESSON COVERS</div>
+        <div class="feature-grid">
+            <div class="feature-card"><span class="emoji">🔁</span><span class="label">Multiple Enumeration</span><span class="desc">Same deferred query, run more than once</span></div>
+            <div class="feature-card"><span class="emoji">🔢</span><span class="label">Count() vs .Count</span><span class="desc">A method call vs. a stored property</span></div>
+            <div class="feature-card"><span class="emoji">📋</span><span class="label">Unnecessary ToList()</span><span class="desc">Materializing when nothing needed it</span></div>
+            <div class="feature-card"><span class="emoji">🔀</span><span class="label">Operator Order</span><span class="desc">Filtering before sorting/projecting</span></div>
+        </div>
+        <div style="text-align:center;font-size:0.85rem;color:var(--text-muted,#94A3B8);padding-top:0.8rem;">Plus the judgment call that ties them together: when a hand-written loop genuinely beats LINQ.</div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Pitfall 1 — Multiple Enumeration</h3>
+    <p>This is the same gotcha the Deferred Execution lesson introduced, now framed as a performance problem: every additional enumeration of a deferred query re-runs its <em>entire</em> chain, from scratch, against the source.</p>
+    <div class="code-block"><code>public record Product(int Id, string Name, decimal Price, int Stock);
+
+IEnumerable&lt;Product&gt; GetDiscountedProducts(List&lt;Product&gt; catalog)
+    =&gt; catalog.Where(p =&gt; p.Price &gt; 100).Select(p =&gt; p with { Price = p.Price * 0.9m });
+
+var discounted = GetDiscountedProducts(products);
+
+// ❌ Each of these lines re-runs the ENTIRE Where + Select chain, independently
+Console.WriteLine($"Count: {discounted.Count()}");     // pass #1
+Console.WriteLine($"Total: {discounted.Sum(p =&gt; p.Price)}"); // pass #2
+foreach (var p in discounted) Console.WriteLine(p.Name);      // pass #3</code></div>
+    <div class="code-block"><code>// ✅ Force once, reuse the materialized result for everything after
+var discounted = GetDiscountedProducts(products).ToList();
+Console.WriteLine($"Count: {discounted.Count}");        // reads the stored list
+Console.WriteLine($"Total: {discounted.Sum(p =&gt; p.Price)}"); // one pass over the list, cheap
+foreach (var p in discounted) Console.WriteLine(p.Name);      // reads the stored list</code></div>
+    <p>Three full re-executions of the filter and projection became one — this is exactly the <code>ToList()</code> pattern the Immediate Execution lesson taught, applied here specifically as a performance fix rather than a correctness one.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Pitfall 2 — <code>Count()</code> the Method vs <code>.Count</code>/<code>.Length</code> the Property</h3>
+    <p>Every collection type carries a meaningfully different cost here. <code>List&lt;T&gt;.Count</code> and <code>T[].Length</code> are <strong>properties</strong> — the count is already tracked internally and reading it is instant, O(1), no matter how many items are in the collection. <code>Enumerable.Count()</code> is a LINQ <strong>method</strong> — and while it's smart enough to check whether its source implements <code>ICollection&lt;T&gt;</code> ("if it already knows its own count, just ask it" — an O(1) shortcut), that optimization is only available when the source is <em>still</em> a concrete collection type. The moment a deferred operator like <code>Where</code> sits in front of it, that shortcut is gone — <code>Count()</code> has to fall back to walking every single item, an O(n) operation:</p>
+    <div class="code-block"><code>List&lt;Product&gt; products = GetLargeProductList(); // say, 50,000 items
+
+int a = products.Count;                          // O(1) — property, instant
+int b = products.Count();                         // O(1) too — Enumerable.Count() detects ICollection&lt;T&gt; and shortcuts
+int c = products.Where(p =&gt; p.Stock &gt; 0).Count();  // O(n) — Where's result ISN'T a List&lt;T&gt; anymore; the shortcut is gone</code></div>
+    <p>The lesson here isn't "never call <code>Count()</code>" — it's to recognize that the O(1) shortcut silently disappears the instant any deferred operator comes before it in the chain. When you already hold a concrete <code>List&lt;T&gt;</code> or array and just need its size, reach for <code>.Count</code>/<code>.Length</code> directly rather than habitually calling <code>Count()</code>.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Pitfall 3 — Unnecessary <code>ToList()</code> Calls Mid-Chain</h3>
+    <p>Already covered as a Common Mistake in the Immediate Execution lesson, worth restating here as a genuine performance cost, not just a stylistic one: every <code>ToList()</code> call allocates a new internal array and copies every item into it. Calling it more than once in a single chain multiplies that allocation cost for zero benefit.</p>
+    <div class="code-block"><code>// ❌ TWO allocations, TWO full copies — the middle ToList() serves no purpose
+var result = products
+    .Where(p =&gt; p.Stock &gt; 0)
+    .ToList()                          // wasted allocation #1
+    .Where(p =&gt; p.Price &lt; 100)
+    .ToList();                          // allocation #2
+
+// ✅ ONE allocation, at the very end, once everything is fully chained
+var result = products
+    .Where(p =&gt; p.Stock &gt; 0)
+    .Where(p =&gt; p.Price &lt; 100)
+    .ToList();</code></div>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Pitfall 4 — Operator Order: Filter Before You Sort or Project</h3>
+    <p><code>Where</code> can shrink a sequence before the next, potentially more expensive operator has to touch it. Reversing the order does needless extra work:</p>
+    <div class="code-block"><code>// ❌ Sorts ALL 50,000 products (an O(n log n) pass), THEN throws most of them away
+var slow = products
+    .OrderBy(p =&gt; p.Price)
+    .Where(p =&gt; p.Category == "Electronics"); // only ~5,000 of the 50,000 survive — too late, already sorted everything
+
+// ✅ Filters down to ~5,000 FIRST, so the sort only has to handle those
+var fast = products
+    .Where(p =&gt; p.Category == "Electronics")
+    .OrderBy(p =&gt; p.Price);</code></div>
+    <p>The same logic applies to projecting: running <code>Select</code> before <code>Where</code> transforms every item, including the ones about to be discarded — wasted work if the projection does anything nontrivial. As a general rule, put <code>Where</code> as early in a chain as the query's logic allows, so every operator after it has less data to process.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>One more common pitfall, tying back to the very first lesson of this module — using <code>Where(...).First()</code> instead of <code>First(predicate)</code> directly:</p>
+    <div class="code-block"><code>// ❌ Builds a whole deferred filter, THEN asks for the first match through it
+var product = products.Where(p =&gt; p.Id == 42).First();
+
+// ✅ First(predicate) stops the instant it finds a match — no intermediate Where needed
+var product = products.First(p =&gt; p.Id == 42);</code></div>
+    <p><strong>Code → Meaning → Result:</strong> Both versions return the identical product. But <code>First(predicate)</code> is implemented to short-circuit — it stops enumerating the moment a match is found, exactly like <code>Any(predicate)</code> does — while <code>Where(...).First()</code> builds an extra iterator layer for no real benefit. This is a small cost individually, but it's a habit worth building since it appears constantly in real code.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>An e-commerce catalog search endpoint, showing every pitfall from this lesson stacked together — then fixed, one at a time:</p>
+    <div class="code-block"><code>// ❌ BEFORE — five separate performance problems in one method
+public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category, decimal maxPrice)
+{
+    var results = catalog
+        .OrderBy(p =&gt; p.Price)                       // (4) sorts everything before filtering
+        .Select(p =&gt; new ProductDto(p.Name, p.Price)) // projects everything before filtering
+        .Where(p =&gt; p.Price &lt;= maxPrice);             // filter runs LAST, too late to help
+
+    if (results.Any())                                // (1) pass #1 over the whole chain
+    {
+        var list = results.ToList();                  // pass #2 — re-runs everything again
+        int total = results.Count();                   // (2) pass #3 — Count() can't shortcut here, source isn't a collection
+        return new SearchResponse(list, total);
+    }
+    return new SearchResponse([], 0);
+}</code></div>
+    <div class="code-block"><code>// ✅ AFTER — filter first, project after, materialize exactly once, reuse the result
+public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category, decimal maxPrice)
+{
+    var results = catalog
+        .Where(p =&gt; p.Category == category &amp;&amp; p.Price &lt;= maxPrice) // filter FIRST — shrinks the set immediately
+        .OrderBy(p =&gt; p.Price)
+        .Select(p =&gt; new ProductDto(p.Name, p.Price))
+        .ToList();                                    // forced ONCE
+
+    return new SearchResponse(results, results.Count); // .Count property — O(1), no re-enumeration
+}</code></div>
+    <p>The "after" version enumerates the catalog exactly once, sorts and projects only the items that survived filtering, and reads the final count from the materialized list's <code>.Count</code> property instead of calling <code>Count()</code> against a still-deferred query. Every one of the five pitfalls above maps directly onto one specific fix in this rewrite.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📦</span> Sort the Boxes You're Keeping, Not All of Them</div>
+        <p>Imagine moving apartments: a hundred boxes sit in the old place, and only twenty are actually going to the new one. Sorting all hundred boxes alphabetically before figuring out which twenty to keep wastes enormous effort on boxes about to be left behind. The efficient approach is obvious once stated: pick the twenty first, <em>then</em> sort just those. That's exactly "filter before you sort" — LINQ doesn't know which items you'll eventually keep until <code>Where</code> tells it, so give <code>Where</code> the earliest possible say in the chain.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHERE THE COST ACTUALLY COMES FROM</div>
+        <div class="flow-step">
+            <div class="step-label">1. EVERY yield return OPERATOR ALLOCATES A SMALL ITERATOR OBJECT</div>
+            <ul><li>As Deferred Execution and Method Syntax both covered, each <code>Where</code>, <code>Select</code>, or custom extension in a chain is a state machine object. Building a five-call chain allocates five small objects — genuinely negligible on modern .NET for ordinary collection sizes, but it's real, measurable cost, which is why "LINQ has zero overhead versus a loop" is an overstatement, even if the overhead is usually irrelevant in practice.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. DELEGATE INVOCATION HAS A SMALL, FIXED COST PER CALL</div>
+            <ul><li>Every predicate or selector passed as a lambda is invoked through a delegate call for every single item — slightly more indirection than a raw inlined <code>if</code> statement inside a hand-written loop. Again, small per call, but it multiplies by however many items pass through it.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. MATERIALIZING OPERATORS (ToList, ToArray) ALLOCATE AND COPY</div>
+            <ul><li>As the Immediate Execution lesson covered, <code>ToList()</code> grows an internal array and copies every produced item into it — real, visible allocation. This is precisely why calling it more than once in a chain, or calling it when nothing downstream actually needed a materialized result, is worth avoiding.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "LINQ is always slower than a loop" — a real myth, not a rule</h3>
+    <p>For the overwhelming majority of everyday code — reasonably sized in-memory collections, queries run once — the difference between a well-written LINQ chain and an equivalent hand-written loop is immaterial, often unmeasurable outside of a microbenchmark. The pitfalls in this lesson are about avoiding <em>redundant</em> work (the same data processed more times than necessary), not about LINQ being inherently, unavoidably slower than a loop doing the identical amount of work.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Premature optimization vs. these specific patterns</h3>
+    <p>None of the five patterns in this lesson require profiling to justify — filtering before sorting, avoiding multiple enumeration, and not calling <code>ToList()</code> twice in a row are simply the correct way to write the query the first time, at no cost in readability. That's different from micro-optimizing a loop by hand before you have any evidence it's a bottleneck — this lesson is about writing clean LINQ well, not about abandoning LINQ preemptively.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Using <code>Count() > 0</code> instead of <code>Any()</code></h4>
+    <p>❌ <code>if (products.Where(p =&gt; p.Stock &gt; 0).Count() &gt; 0)</code> forces a full count of every matching item, just to check whether at least one exists. ✅ <code>if (products.Any(p =&gt; p.Stock &gt; 0))</code> stops at the very first match — for a sequence with thousands of matches, this is the difference between checking one item and checking all of them.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Rewriting a simple, single-pass loop as an over-engineered LINQ chain</h4>
+    <p>❌ Forcing a genuinely simple accumulation ("sum these, but also log every tenth one") through several chained LINQ calls with side effects smuggled into a <code>Select</code>, just because "LINQ is more idiomatic." ✅ When a loop needs multiple side effects per iteration, or the logic doesn't cleanly decompose into filter/project/sort, a plain <code>foreach</code> loop is often clearer <em>and</em> just as fast — this is exactly the judgment call the next section covers.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <p>The most important skill in this lesson isn't memorizing five rules — it's the judgment to know when LINQ's readability is worth its (usually small) cost, and when it isn't:</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ LINQ is the right default when</h4>
+            <ul>
+                <li>The logic is a clean filter/project/sort/group/aggregate pipeline — LINQ's entire vocabulary, built across this module, exists exactly for this shape.</li>
+                <li>Readability and correctness matter more than shaving the last few percent off a rarely-hot code path.</li>
+                <li>The collection sizes involved are ordinary — hundreds, thousands, even tens of thousands of in-memory items, not a proven hot loop running millions of times per second.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ A hand-written loop may serve better when</h4>
+            <ul>
+                <li>Profiling has actually identified this specific code as a genuine bottleneck — never optimize away from LINQ on a guess.</li>
+                <li>The logic needs multiple, distinct side effects per iteration that don't map cleanly onto filter/project/select.</li>
+                <li>You need to break out of the iteration early based on complex, multi-step conditions that don't reduce to a single predicate.</li>
+            </ul>
+        </div>
+    </div>
+    <div class="callout">
+        <strong>💡 The practical rule:</strong> Write it in LINQ first — clean, one operator per line, filter before you sort or project, materialize exactly once at the end. Only reach for a hand-written loop after profiling shows this specific piece of code genuinely needs it. Across nearly all real-world business code, "write it well in LINQ" and "write it fast" turn out to be the very same advice.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>LINQ performance</strong> = "do the same amount of real work a loop would — never more, never redundantly"<br /><br />
+        <strong>Remember:</strong><br />
+        · Enumerate a deferred query once; materialize with <code>ToList()</code> before touching it a second time.<br />
+        · <code>.Count</code>/<code>.Length</code> is O(1) on a concrete collection — <code>Count()</code> loses that shortcut the moment a deferred operator comes before it.<br />
+        · Filter early, sort and project late — shrink the sequence before doing the expensive work on it.<br />
+        · Materialize exactly once, at the very end of a chain, never mid-chain.<br />
+        · Write clean LINQ first; reach for a hand-written loop only after profiling actually justifies it.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><strong>Multiple enumeration</strong> silently re-runs an entire deferred chain each time — materialize once with <code>ToList()</code> when a result is used more than once.</li>
+            <li style="margin-bottom:0.4rem;"><strong><code>.Count</code>/<code>.Length</code></strong> are O(1) properties on concrete collections; <strong><code>Count()</code></strong> loses its own O(1) shortcut the moment a deferred operator precedes it in the chain.</li>
+            <li style="margin-bottom:0.4rem;">Call <strong><code>ToList()</code></strong> exactly once, at the end of a chain — never mid-chain, where it only adds a wasted allocation.</li>
+            <li style="margin-bottom:0.4rem;">Put <strong><code>Where</code> early</strong> — filtering before sorting or projecting means every later operator handles less data.</li>
+            <li style="margin-bottom:0.4rem;">LINQ is the right default for nearly all real-world filter/project/sort/group code — reach for a hand-written loop only once profiling actually justifies it.</li>
+        </ul>
+    </div>
+    <p style="color:var(--text-main,#E2E8F0);">That closes out Part IV — LINQ. From <code>Where</code> and <code>Select</code> through deferred execution, both syntaxes, custom extensions, and now performance, you have the complete, practical toolkit for querying data in C# the way it's actually written in production code every day.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've learned the key LINQ performance patterns that close out this module. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A deferred query is stored in a variable, then enumerated three separate times later in the method — once with <code>Any()</code>, once with <code>Count()</code>, and once with <code>foreach</code>. What's the performance concern?</p>
+        <ul class="options">
+            <li>A) There is no concern — LINQ automatically caches results after the first enumeration</li>
+            <li>B) Each enumeration re-runs the entire query chain from scratch against the source — three full passes instead of one</li>
+            <li>C) The code will throw an <code>InvalidOperationException</code> on the second enumeration</li>
+            <li>D) Only the <code>foreach</code> loop actually executes; <code>Any()</code> and <code>Count()</code> are no-ops on a deferred query</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in How It Works (Pitfall 1) and Why Does It Exist?, a deferred query has no memory of previous enumerations — each one independently re-runs the entire chain, tripling the real work in this scenario.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> LINQ never caches deferred query results automatically — that's precisely why <code>ToList()</code> exists, to force and store a result deliberately.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Re-enumerating a deferred query multiple times is completely valid, exception-free C# — it's just potentially wasteful, not an error.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> All three — <code>Any()</code>, <code>Count()</code>, and <code>foreach</code> — genuinely enumerate the query and run real work each time.</p>
+                <p><strong>Reinforcement:</strong> Whenever a query result will be touched more than once, materialize it with <code>ToList()</code> first.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why is <code>products.Where(p => p.Stock > 0).Count()</code> an O(n) operation, while <code>products.Count()</code> (with no <code>Where</code>) is O(1)?</p>
+        <ul class="options">
+            <li>A) <code>Count()</code> is always O(n); the second example is a coincidence</li>
+            <li>B) <code>Enumerable.Count()</code> can shortcut to a stored count only when its source directly implements <code>ICollection&lt;T&gt;</code> — <code>Where</code>'s deferred result no longer does, so <code>Count()</code> must fall back to walking every item</li>
+            <li>C) <code>Where</code> always throws an exception when combined with <code>Count()</code></li>
+            <li>D) There's no actual difference — both are O(n) in every case</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As explained in How It Works (Pitfall 2), <code>Count()</code>'s O(1) shortcut depends on its source still being a concrete <code>ICollection&lt;T&gt;</code> like <code>List&lt;T&gt;</code> — <code>Where</code>'s output is a lazy iterator, not a collection, so that shortcut is unavailable and <code>Count()</code> must enumerate everything to produce an answer.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>products.Count()</code> with no <code>Where</code> genuinely does get the O(1) shortcut, as shown directly in the code example — it isn't a coincidence, it's a documented behavior of <code>Enumerable.Count()</code>.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This combination compiles and runs correctly — it's simply less efficient than it might look, not erroneous.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The whole point of this pitfall is that the cost genuinely differs based on what precedes <code>Count()</code> in the chain.</p>
+                <p><strong>Reinforcement:</strong> The O(1) shortcut for <code>Count()</code> quietly disappears the moment any deferred operator sits between the source collection and the call.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Which reordering improves performance, and why: <code>products.OrderBy(p => p.Price).Where(p => p.Category == "Electronics")</code> vs. <code>products.Where(p => p.Category == "Electronics").OrderBy(p => p.Price)</code>?</p>
+        <ul class="options">
+            <li>A) They perform identically — order of <code>Where</code> and <code>OrderBy</code> never matters</li>
+            <li>B) Filtering first, then sorting, is faster — it shrinks the sequence before the more expensive sort has to process it, instead of sorting everything and only then discarding most of it</li>
+            <li>C) Sorting first is always faster, since it makes later filtering a binary search</li>
+            <li>D) Neither order matters, because <code>OrderBy</code> is also deferred and never actually runs</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in How It Works (Pitfall 4) and the Analogy, sorting the entire source before filtering wastes effort sorting items that are about to be discarded — filtering first means the sort only ever has to handle the smaller, already-narrowed set.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The order genuinely changes how much work each operator does — this is the entire point of the pitfall.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>Where</code> does not perform binary search regardless of prior sorting — it always checks the predicate against each item in sequence.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>OrderBy</code> is deferred at the call site, but as the Sorting lesson established, it still must pull the entire source through and fully sort it the moment enumeration actually begins — it isn't skipped.</p>
+                <p><strong>Reinforcement:</strong> Put <code>Where</code> as early in a chain as the query's logic allows, so every operator after it works with less data.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> When, according to this lesson, should you reach for a hand-written loop instead of LINQ?</p>
+        <ul class="options">
+            <li>A) Always — hand-written loops are inherently better practice than LINQ</li>
+            <li>B) Never — LINQ should be used for every possible piece of iteration logic, without exception</li>
+            <li>C) Only after profiling has identified a specific piece of code as a genuine bottleneck, or when the logic needs multiple distinct side effects that don't cleanly map onto filter/project/sort</li>
+            <li>D) Whenever the collection has more than 100 items</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> As stated directly in When Should I Use It?, the practical rule is to write clean LINQ first and only switch to a hand-written loop once profiling actually justifies it, or when the logic's shape (multiple side effects, complex early-exit conditions) doesn't map cleanly onto LINQ's vocabulary.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This lesson explicitly pushes back on "LINQ is always slower" as a myth — hand-written loops aren't automatically better.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> The lesson explicitly acknowledges cases — complex side effects, proven bottlenecks — where a loop genuinely serves better.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> No specific item-count threshold was given anywhere in this lesson — the decision is about proven bottlenecks and code shape, not an arbitrary size cutoff.</p>
+                <p><strong>Reinforcement:</strong> "Write it well in LINQ first, optimize only with evidence" is the single most important habit this capstone lesson teaches.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> What is the core difference between <code>products.Where(p => p.Id == 42).First()</code> and <code>products.First(p => p.Id == 42)</code>?</p>
+        <ul class="options">
+            <li>A) They return different products</li>
+            <li>B) The second throws an exception if no match is found, while the first returns <code>null</code></li>
+            <li>C) They return the same result, but <code>First(predicate)</code> avoids building an unnecessary intermediate <code>Where</code> iterator, since it can search and stop at the first match directly</li>
+            <li>D) <code>Where(...).First()</code> is required whenever the predicate uses <code>&amp;&amp;</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> As shown in Simple Example, both produce the identical matching product — the difference is purely one of avoiding an unneeded intermediate step, since <code>First(predicate)</code> can search and stop directly, without constructing a separate <code>Where</code> layer first.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Both expressions locate the exact same item under the exact same condition.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Both throw <code>InvalidOperationException</code> when nothing matches — <code>First</code> (as opposed to <code>FirstOrDefault</code>) never returns <code>null</code> in either form.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no such requirement — <code>First(predicate)</code> accepts any boolean-returning lambda, <code>&amp;&amp;</code> included, exactly like <code>Where</code> does.</p>
+                <p><strong>Reinforcement:</strong> Prefer the predicate-overload versions (<code>First</code>, <code>Any</code>, <code>Single</code>) directly over combining <code>Where</code> with a parameterless call — a small, easy habit with a real, if modest, payoff.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 Congratulations — you've completed Part IV: LINQ. You can now filter, project, sort, group, join, and aggregate data fluently, understand exactly when your queries actually run, write them in either syntax, extend LINQ with your own operators, and write all of it with real performance awareness.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

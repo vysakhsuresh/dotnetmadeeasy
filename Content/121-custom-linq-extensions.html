@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>121 - Custom LINQ Extensions · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Where and Select aren't magic language features — they're just extension methods somebody wrote. You can write your own.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Every LINQ operator used across this entire module is, mechanically, nothing more than a static extension method on <code>IEnumerable&lt;T&gt;</code> — the previous lesson said so directly. Microsoft doesn't have some private compiler trick unavailable to you. If <code>Where</code> and <code>Select</code> are just methods, you can write a method exactly like them, that chains into a LINQ query exactly the way they do — and once your codebase has a filtering pattern it repeats constantly, that's precisely when you should.</p>
+    <p><strong>This lesson covers writing your own LINQ-style extension method on <code>IEnumerable&lt;T&gt;</code> — using a practical <code>WhereNotNull</code> helper as the running example — how it connects back to the extension methods from Intermediate Part III, and how to preserve deferred execution correctly using <code>yield return</code>.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>custom LINQ extension</strong> is your own static method, written the same way <code>Where</code> or <code>Select</code> is, that extends <code>IEnumerable&lt;T&gt;</code> and can be dot-chained into a LINQ query alongside every built-in operator — because to the compiler, there's no difference between yours and Microsoft's.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>An extension method requires exactly three things: a <code>static</code> method, inside a <code>static</code> class, whose first parameter is marked with <code>this</code>:</p>
+    <div class="code-block"><code>public static class EnumerableExtensions
+{
+    public static IEnumerable&lt;T&gt; WhereNotNull&lt;T&gt;(this IEnumerable&lt;T?&gt; source)
+        where T : class
+    {
+        foreach (var item in source)
+        {
+            if (item is not null)
+                yield return item;
+        }
+    }
+}</code></div>
+    <p>The <code>this IEnumerable&lt;T?&gt; source</code> parameter is what lets you call it as <code>products.WhereNotNull()</code> instead of <code>EnumerableExtensions.WhereNotNull(products)</code> — identical to how the compiler treats every built-in LINQ method, as the previous lesson's "Under the Hood" section explained.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <p>Some filtering and shaping patterns show up over and over across a codebase, but LINQ has no built-in operator for them. Without a custom extension, that repeated logic gets copy-pasted, or buried inline, every single time:</p>
+    <div class="code-block"><code>// ❌ The same "skip the nulls" logic, rewritten inline, again and again
+var validNames = rawNames.Where(n =&gt; n is not null).Select(n =&gt; n!); // needs a null-forgiving operator too
+var validEmails = rawEmails.Where(e =&gt; e is not null).Select(e =&gt; e!);
+var validAddresses = rawAddresses.Where(a =&gt; a is not null).Select(a =&gt; a!);</code></div>
+    <div class="code-block"><code>// ✅ Written once, reused everywhere, and the compiler now KNOWS the result has no nulls
+var validNames = rawNames.WhereNotNull();
+var validEmails = rawEmails.WhereNotNull();
+var validAddresses = rawAddresses.WhereNotNull();</code></div>
+    <p>Beyond avoiding repetition, <code>WhereNotNull()</code> genuinely improves on the manual version: it returns <code>IEnumerable&lt;T&gt;</code> (not <code>T?</code>) after filtering, so the compiler's nullable reference type analysis correctly understands that every remaining item is guaranteed non-null — no null-forgiving <code>!</code> operator required downstream. A well-designed custom extension doesn't just save keystrokes; it can express an intent LINQ's built-in operators don't capture on their own.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">A CUSTOM EXTENSION SLOTS INTO A CHAIN LIKE ANY BUILT-IN ONE</div>
+        <div style="text-align:center;font-size:0.9rem;color:var(--text-muted,#94A3B8);line-height:1.9;">
+            <code>rawEmails</code>
+            <span style="color:var(--accent-purple,#8B5CF6);"> .WhereNotNull()</span> <span style="font-size:0.8rem;">— YOUR method</span>
+            <span style="color:var(--accent-purple,#8B5CF6);"> .Where(e =&gt; e.EndsWith(".com"))</span> <span style="font-size:0.8rem;">— Microsoft's method</span>
+            <span style="color:var(--accent-purple,#8B5CF6);"> .OrderBy(e =&gt; e)</span> <span style="font-size:0.8rem;">— Microsoft's method</span><br />
+            <span style="font-size:0.8rem;">To the compiler, and to anyone reading the chain, there's no visible seam between them.</span>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">WRITING A CUSTOM LINQ EXTENSION, STEP BY STEP</div>
+        <div class="flow-step"><div class="step-label">1. PUT IT IN A static CLASS</div><ul><li>Extension methods must live in a top-level (non-nested), <code>static</code> class — by convention, often named <code>{Type}Extensions</code>, like <code>EnumerableExtensions</code>.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">2. MAKE THE METHOD static, WITH this ON THE FIRST PARAMETER</div><ul><li><code>this IEnumerable&lt;T&gt; source</code> is what makes it callable as <code>source.YourMethod()</code> rather than <code>YourClass.YourMethod(source)</code>.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">3. USE yield return TO PRESERVE DEFERRED EXECUTION AND STREAMING</div><ul><li>Building the method body with <code>yield return</code> — instead of eagerly building a <code>List&lt;T&gt;</code> and returning that — keeps your extension behaving exactly like the built-in ones: lazy, and able to produce results one at a time as it's enumerated.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">4. CHAIN IT LIKE ANY OTHER LINQ OPERATOR</div><ul><li>Once compiled, <code>source.YourMethod().Where(...)</code> works exactly the same as <code>source.Where(...).Select(...)</code> — there's no special registration step or interface to implement beyond the method signature itself.</li></ul></div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <div class="code-block"><code>public static class EnumerableExtensions
+{
+    // A custom, LINQ-style extension — filters out nulls, and tells the
+    // compiler the result type no longer contains any
+    public static IEnumerable&lt;T&gt; WhereNotNull&lt;T&gt;(this IEnumerable&lt;T?&gt; source)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return WhereNotNullIterator(source);
+    }
+
+    // The actual iterator lives in a separate, private method — explained in Under the Hood
+    private static IEnumerable&lt;T&gt; WhereNotNullIterator&lt;T&gt;(IEnumerable&lt;T?&gt; source)
+        where T : class
+    {
+        foreach (var item in source)
+        {
+            if (item is not null)
+                yield return item;
+        }
+    }
+}
+
+string?[] rawNames = ["Ana", null, "Ben", null, "Cara"];
+
+IEnumerable&lt;string&gt; validNames = rawNames.WhereNotNull();
+
+foreach (var name in validNames)
+    Console.WriteLine(name);
+// Ana
+// Ben
+// Cara</code></div>
+    <p><strong>Code → Meaning → Result:</strong> Notice the two-method split — a public method that validates arguments immediately, and a private method holding the actual <code>yield return</code> loop. That split isn't cosmetic; it fixes a real, subtle bug that's the centerpiece of this lesson's Under the Hood section below.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Chained Straight Into a Real Query</h3>
+    <div class="code-block"><code>public record Product(int Id, string Name, string? PromoCode);
+
+List&lt;Product&gt; products =
+[
+    new(1, "Wireless Mouse",  "SAVE10"),
+    new(2, "Standing Desk",   null),
+    new(3, "Desk Lamp",       "SAVE5"),
+];
+
+// WhereNotNull sits comfortably alongside Where, Select, and OrderBy —
+// the compiler treats it no differently
+var activePromos = products
+    .Select(p =&gt; p.PromoCode)
+    .WhereNotNull()
+    .OrderBy(code =&gt; code);
+
+foreach (var code in activePromos)
+    Console.WriteLine(code);
+// SAVE10
+// SAVE5</code></div>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A products catalog frequently needs to check whether an item is genuinely purchasable — in stock, and not discontinued. Rather than repeat that two-part condition in every query across the codebase, wrap it in a domain-specific extension:</p>
+    <div class="code-block"><code>public record Product(int Id, string Name, decimal Price, int Stock, bool IsDiscontinued);
+
+public static class ProductQueryExtensions
+{
+    // A domain-specific filter — reads like business language, not raw conditions
+    public static IEnumerable&lt;Product&gt; WherePurchasable(this IEnumerable&lt;Product&gt; products)
+    {
+        ArgumentNullException.ThrowIfNull(products);
+        return WherePurchasableIterator(products);
+    }
+
+    private static IEnumerable&lt;Product&gt; WherePurchasableIterator(IEnumerable&lt;Product&gt; products)
+    {
+        foreach (var p in products)
+        {
+            if (p.Stock &gt; 0 &amp;&amp; !p.IsDiscontinued)
+                yield return p;
+        }
+    }
+}
+
+// Used across the codebase — search, recommendations, checkout validation, etc.
+var searchResults = catalog.WherePurchasable().Where(p =&gt; p.Name.Contains(searchTerm));
+var recommendations = catalog.WherePurchasable().OrderByDescending(p =&gt; p.Price).Take(5);</code></div>
+    <p>The business rule "purchasable means in stock and not discontinued" is now defined in exactly one place. If that rule ever changes — say, a new "temporarily unavailable" flag is added — there's a single method to update, instead of hunting down every scattered <code>p.Stock &gt; 0 &amp;&amp; !p.IsDiscontinued</code> condition across the codebase. This is precisely the same DRY motivation behind extension methods generally, from Intermediate Part III, applied directly to LINQ.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧱</span> A Custom LEGO Brick That Still Snaps In</div>
+        <p>Every LEGO brick, official or not, follows the exact same stud spacing — that's what lets any two bricks connect. If you 3D-print your own brick shaped for a purpose the official sets don't cover, as long as you match the standard stud pattern, it snaps into the same builds as any official piece, indistinguishable in how it connects. Writing a custom LINQ extension is exactly this: match the required shape (a <code>static</code> method, <code>this IEnumerable&lt;T&gt;</code>, returning another <code>IEnumerable&lt;T&gt;</code>), and it snaps into any LINQ chain exactly like a built-in piece.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">THE HIDDEN GOTCHA: DEFERRED ARGUMENT VALIDATION</div>
+        <div class="flow-step">
+            <div class="step-label">1. A yield return METHOD BODY BECOMES AN ENTIRE STATE MACHINE — INCLUDING YOUR VALIDATION CODE</div>
+            <ul><li>As the Deferred Execution lesson explained, the compiler rewrites an entire <code>yield return</code> method body into a state machine class. If you put <code>ArgumentNullException.ThrowIfNull(source)</code> directly inside a method that also contains <code>yield return</code>, that check gets swept into the state machine too — meaning it doesn't run when the method is called, only when the result is first enumerated.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. WHY THAT'S A REAL BUG, NOT JUST A THEORETICAL CONCERN</div>
+            <ul><li>A caller passing <code>null</code> to a naive, single-method version of <code>WhereNotNull</code> would get <em>no exception at all</em> at the call site — the bug would only surface much later, possibly far away in the code, the moment something finally does a <code>foreach</code> over the result. That's a genuinely confusing debugging experience: the stack trace points to the enumeration site, not the actual mistake.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE FIX — SPLIT VALIDATION FROM ITERATION, THE PATTERN USED IN EVERY EXAMPLE ABOVE</div>
+            <ul><li>An outer, ordinary (non-iterator) method validates arguments <em>eagerly</em>, the instant it's called, then delegates to a separate, private <code>yield return</code> method for the actual lazy work. This is exactly the pattern used in every example in this lesson — and it's the same pattern the real <code>Enumerable.Where</code> implementation in .NET itself uses internally, for precisely this reason.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. Extension methods vs. instance methods on your own types</h3>
+    <p>If you own the <code>Product</code> class yourself, you could add a regular instance method to it. Extension methods matter specifically because <code>IEnumerable&lt;T&gt;</code> is an interface you don't own and can't modify — you cannot add a method directly to it. Extension methods are the only way to make <em>any</em> sequence, regardless of its underlying concrete type, gain a new chainable operation, which is exactly why this is how all of LINQ itself is built.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. A custom extension that builds a <code>List&lt;T&gt;</code> internally isn't really "LINQ-style" anymore</h3>
+    <p>Nothing stops you from writing <code>public static IEnumerable&lt;T&gt; MyFilter&lt;T&gt;(this IEnumerable&lt;T&gt; source, ...) { var result = new List&lt;T&gt;(); foreach(...) ... return result; }</code> — it compiles, and it even works. But it silently breaks the "lazy, streaming" contract every built-in LINQ operator honors: it forces the entire source to be consumed the moment it's called, rather than deferring, and it can't short-circuit for something like an infinite sequence combined with <code>Take</code>. Using <code>yield return</code>, as this lesson's examples do, is what keeps a custom extension behaving indistinguishably from a real LINQ operator.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Putting argument validation directly inside a <code>yield return</code> method</h4>
+    <p>❌ <code>public static IEnumerable&lt;T&gt; WhereNotNull&lt;T&gt;(this IEnumerable&lt;T?&gt; source) where T : class { ArgumentNullException.ThrowIfNull(source); foreach (...) if (...) yield return item; }</code> — the null check is silently deferred along with everything else. ✅ Split the method in two, exactly as shown throughout this lesson: an outer method that validates immediately and calls a private iterator method for the <code>yield return</code> logic.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Naming a custom extension the same as an existing LINQ method, with different behavior</h4>
+    <p>❌ Writing your own <code>Where</code> extension that behaves subtly differently from <code>Enumerable.Where</code> — extremely confusing for anyone reading the code, since they'll assume the standard, well-known behavior. ✅ Give custom extensions distinct, descriptive names — <code>WhereNotNull</code>, <code>WherePurchasable</code> — that make it obvious this isn't one of the built-in operators.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Write a custom LINQ extension when</h4>
+            <ul>
+                <li>The same filtering, projecting, or shaping logic is repeated across multiple places in a codebase.</li>
+                <li>A domain-specific concept (like "purchasable") deserves a name of its own, more expressive than the raw condition.</li>
+                <li>You want a query to read as clearly and fluently as one built entirely from standard LINQ operators.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ Skip it when</h4>
+            <ul>
+                <li>The logic is used exactly once — an inline <code>Where(...)</code> lambda is simpler and doesn't need a name.</li>
+                <li>A built-in LINQ operator (or a combination of a few) already expresses the same thing clearly.</li>
+                <li>The behavior is genuinely one-off and unlikely to ever be reused elsewhere.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Custom LINQ extension</strong> = "a method shaped exactly like <code>Where</code>, that snaps into a chain exactly like <code>Where</code>"<br /><br />
+        <strong>Remember:</strong><br />
+        · <code>static</code> class, <code>static</code> method, <code>this IEnumerable&lt;T&gt;</code> first parameter — that's the whole recipe.<br />
+        · Use <code>yield return</code> to keep it lazy and streaming, matching every built-in operator's behavior.<br />
+        · Split eager validation from the lazy iterator — validate in an outer method, iterate in a private one.<br />
+        · Reach for one when a pattern repeats or a domain concept deserves a readable name of its own.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <strong>custom LINQ extension</strong> is a <code>static</code> method with a <code>this IEnumerable&lt;T&gt;</code> first parameter — the exact same shape every built-in LINQ operator uses.</li>
+            <li style="margin-bottom:0.4rem;">Build it with <code>yield return</code> to preserve deferred execution and streaming, exactly like <code>Where</code> and <code>Select</code>.</li>
+            <li style="margin-bottom:0.4rem;">Splitting eager argument validation from the lazy iterator body avoids a real, subtle bug: validation silently deferred until first enumeration.</li>
+            <li style="margin-bottom:0.4rem;">A well-named custom extension (<code>WhereNotNull</code>, <code>WherePurchasable</code>) captures a repeated pattern or domain concept in one reusable, chainable place.</li>
+            <li style="margin-bottom:0.4rem;">Once written, a custom extension is indistinguishable, at the call site, from any operator Microsoft shipped — that's the entire point.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've learned how to write your own LINQ-style extension method. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What are the three requirements for a method to be usable as <code>source.MyMethod()</code>, exactly like a built-in LINQ operator?</p>
+        <ul class="options">
+            <li>A) It must be declared inside the <code>Product</code> class itself</li>
+            <li>B) It must be a <code>static</code> method, inside a <code>static</code> class, with its first parameter marked <code>this</code></li>
+            <li>C) It must implement <code>IEnumerable&lt;T&gt;</code> directly</li>
+            <li>D) It must be registered in a special LINQ configuration file</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in What Is It? and How It Works, these three requirements — <code>static</code> method, <code>static</code> class, <code>this</code> on the first parameter — are the entire, complete recipe for an extension method in C#, with no additional registration step of any kind.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The entire point of extension methods, as covered in Common Confusion, is extending a type you don't own — <code>IEnumerable&lt;T&gt;</code> — not adding a method inside a class you control.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The extension method itself doesn't implement any interface — it operates <em>on</em> a parameter typed as <code>IEnumerable&lt;T&gt;</code>.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There is no registration file or step — the compiler discovers extension methods purely from their signature and an appropriate <code>using</code> directive for their containing namespace.</p>
+                <p><strong>Reinforcement:</strong> Match this exact shape, and any method becomes chainable into a LINQ query just like a built-in operator.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why does this lesson split <code>WhereNotNull</code> into two methods — a public one and a private <code>WhereNotNullIterator</code> — instead of writing it as a single method?</p>
+        <ul class="options">
+            <li>A) C# requires every extension method to have a matching private helper method</li>
+            <li>B) It makes the code run faster</li>
+            <li>C) If the argument validation were inside the same method as the <code>yield return</code> loop, the compiler would sweep it into the generated state machine too, deferring it until first enumeration instead of running it immediately when the method is called</li>
+            <li>D) It's purely a stylistic preference with no functional difference</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> As explained in Under the Hood, an entire method body containing <code>yield return</code> becomes a state machine — any validation code inside it runs only once <code>MoveNext()</code> is first called, not when the method itself is invoked. Splitting into an eager outer method and a lazy inner iterator fixes exactly this.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no such language requirement — a single-method version compiles and runs; it just has the deferred-validation bug this lesson explains.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> The split has no meaningful runtime performance effect — it's purely about when the argument-null check actually executes.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a real, functional bug fix, not a stylistic choice — it changes exactly when an exception is thrown for invalid input, and where in the code that failure is reported.</p>
+                <p><strong>Reinforcement:</strong> Whenever you write a <code>yield return</code> method that also needs eager validation, split it into a public validating method and a private iterator — this is the same pattern .NET's own <code>Enumerable.Where</code> uses internally.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A custom extension is written that eagerly builds and returns a <code>List&lt;T&gt;</code> internally, instead of using <code>yield return</code>. What's the practical downside?</p>
+        <ul class="options">
+            <li>A) It won't compile — extension methods must use <code>yield return</code></li>
+            <li>B) It silently breaks the lazy, streaming behavior every built-in LINQ operator has — it forces the entire source to be consumed the moment it's called, rather than deferring, unlike <code>Where</code> or <code>Select</code></li>
+            <li>C) It will throw a runtime exception whenever it's chained with another LINQ operator</li>
+            <li>D) There is no downside — both approaches behave identically in every situation</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As covered in Common Confusion, building an internal <code>List&lt;T&gt;</code> forces immediate, full enumeration of the source the instant the method is called — breaking the "recipe, not a result" deferred behavior every other operator in this module has consistently had.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> It compiles and runs perfectly fine — <code>yield return</code> is a choice for preserving good behavior, not a compiler requirement.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> It doesn't throw — it simply behaves differently (eagerly instead of lazily), which can cause subtle bugs or performance surprises rather than a crash.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The behavioral difference — eager vs. deferred — is exactly the point being tested; they are not identical.</p>
+                <p><strong>Reinforcement:</strong> Using <code>yield return</code> is what keeps a custom extension truly indistinguishable from a built-in LINQ operator, not just similarly named.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team keeps repeating <code>p.Stock &gt; 0 &amp;&amp; !p.IsDiscontinued</code> across dozens of different LINQ queries throughout the codebase. What does this lesson recommend?</p>
+        <ul class="options">
+            <li>A) Leave it as inline conditions everywhere — repetition is a normal and unavoidable part of LINQ code</li>
+            <li>B) Wrap the condition in a custom, well-named extension method like <code>WherePurchasable()</code>, so the business rule is defined in exactly one place and reads as domain language wherever it's used</li>
+            <li>C) Rewrite <code>Where</code> itself so it applies this condition automatically to every query</li>
+            <li>D) Move the condition into the <code>Product</code> record's constructor so invalid products can never be created</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in the Real-World Example, wrapping a repeated business condition in a custom extension like <code>WherePurchasable()</code> centralizes the rule in one place and gives it a readable, domain-specific name — exactly the DRY motivation this lesson connects back to extension methods generally.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the repetition problem the Why Does It Exist? section identifies as the reason to write a custom extension in the first place.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> You cannot redefine or override the built-in <code>Where</code> method itself — and doing so would silently change the behavior of ordinary <code>Where</code> calls everywhere else in the codebase, which is far more dangerous than the repetition it would "solve."</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A record's constructor validates whether an object can be <em>created</em> at all — it has nothing to do with querying whether an already-valid, existing product happens to be purchasable <em>right now</em>, which can change over time (stock running out, for instance).</p>
+                <p><strong>Reinforcement:</strong> A custom LINQ extension is the idiomatic fix for a repeated, meaningful condition — it turns a scattered rule into a single, named, reusable piece of vocabulary.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You can now extend LINQ with your own reusable, chainable operators. Next up, and closing out this module: what actually costs performance in LINQ code, and how to write it well.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

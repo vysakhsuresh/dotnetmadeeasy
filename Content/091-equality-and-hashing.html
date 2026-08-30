@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>091 - Equality and Hashing · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Equals and GetHashCode aren't two independent methods you can override at your leisure — they're one contract, and breaking it corrupts every hash-based collection silently.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>The previous lesson ended on a cliffhanger: "a poorly-written <code>GetHashCode()</code> silently degrades dictionary performance." But there's a worse failure mode than slow — <em>wrong</em>. Consider this, with a plain custom class:</p>
+    <div class="code-block"><code>public class Point { public int X; public int Y; }
+
+var a = new Point { X = 1, Y = 2 };
+var b = new Point { X = 1, Y = 2 };
+
+Console.WriteLine(a.Equals(b));   // False — even though X and Y are identical!
+
+var seen = new HashSet&lt;Point&gt;();
+seen.Add(a);
+Console.WriteLine(seen.Contains(b));   // False — b is treated as a completely different point</code></div>
+    <p>Two points holding the exact same coordinates, and C# insists they're not equal. This isn't a bug — it's the default, and it's actually the <em>correct</em> default for a plain class. But it means anyone using <code>Point</code> as a dictionary key, or checking for duplicates with a <code>HashSet&lt;Point&gt;</code>, is going to get quietly wrong results unless they understand exactly what <code>Equals</code> and <code>GetHashCode</code> promise — and how to override both, correctly, together.</p>
+    <p><strong>In this lesson, you'll learn the full <code>Equals</code>/<code>GetHashCode</code> contract, why the two must always be overridden together, the difference between reference equality and value equality, and how records give you all of this automatically — connecting directly back to what you learned about records in Foundations.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Equality</strong> answers "are these two things the same?" — but "the same" can mean two different things. <strong>Reference equality</strong> asks "are these literally the same object in memory?" <strong>Value equality</strong> asks "do these hold the same data, regardless of whether they're the same object?" <strong>Hashing</strong> is the mechanism from the previous lesson — turning a value into a bucket-selecting number — and it has to agree with whichever kind of equality your type uses, or every hash-based collection built on top of it (<code>Dictionary&lt;TKey,TValue&gt;</code>, <code>HashSet&lt;T&gt;</code>) breaks in subtle, hard-to-diagnose ways.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Every type in .NET inherits <code>object.Equals(object?)</code> and <code>object.GetHashCode()</code>. By default, for a plain reference type (a class), <code>Equals</code> performs <strong>reference equality</strong> — <code>true</code> only if both references point at the exact same object — and <code>GetHashCode()</code> derives from that same object identity. The <strong>Equals/GetHashCode contract</strong>, formally, requires:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">If <code>a.Equals(b)</code> is <code>true</code>, then <code>a.GetHashCode()</code> must equal <code>b.GetHashCode()</code> — <strong>always</strong>, with no exceptions.</li>
+        <li style="margin-bottom:0.4rem;">The reverse is <em>not</em> required — two objects can share a hash code without being equal (that's an ordinary collision, from the previous lesson).</li>
+        <li style="margin-bottom:0.4rem;"><code>GetHashCode()</code> must return the same value for the same object as long as nothing relevant to equality has changed — it must be <strong>stable</strong> for the lifetime of that value's use as a key.</li>
+    </ul>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem</h3>
+    <p>Recall exactly how a dictionary lookup works: it computes a hash code to find the right bucket, <em>then</em> calls <code>Equals()</code> to confirm the match among that bucket's candidates. Now imagine a type whose <code>Equals()</code> says two values are equal, but whose <code>GetHashCode()</code> gives them <em>different</em> hash codes:</p>
+    <div class="code-block"><code>// A BROKEN example — Equals overridden, GetHashCode left at the default. Don't write this.
+public class BrokenPoint
+{
+    public int X, Y;
+    public override bool Equals(object? obj) =&gt;
+        obj is BrokenPoint p &amp;&amp; X == p.X &amp;&amp; Y == p.Y;
+    // GetHashCode() NOT overridden — still uses reference-based identity!
+}
+
+var a = new BrokenPoint { X = 1, Y = 2 };
+var b = new BrokenPoint { X = 1, Y = 2 };
+Console.WriteLine(a.Equals(b));   // True — Equals says they're the same
+
+var set = new HashSet&lt;BrokenPoint&gt;();
+set.Add(a);
+Console.WriteLine(set.Contains(b));   // False! — different hash codes send them to different buckets,
+                                        // so Equals() never even gets called to compare them</code></div>
+    <p><code>a</code> and <code>b</code> hash to different buckets (since <code>GetHashCode()</code> is still reference-based), so the dictionary or set never even looks in the bucket where <code>a</code> lives when searching for <code>b</code> — <code>Equals()</code> is never given the chance to say "these match." The contract violation doesn't throw an exception; it just silently produces wrong answers, which is far more dangerous than a crash.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution</h3>
+    <p>The contract — "equal objects must produce equal hash codes" — exists precisely to guarantee this can never happen, as long as you honor it. Whenever you override <code>Equals()</code> to compare by value, you must override <code>GetHashCode()</code> to derive from those same values, so that any two objects <code>Equals()</code> considers equal are mathematically guaranteed to land in the same bucket, giving <code>Equals()</code> the chance to actually run and confirm the match.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            REFERENCE EQUALITY vs VALUE EQUALITY
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-dark,#0B0E14);padding:0.8rem;border-radius:8px;text-align:center;">
+                <div style="font-weight:600;color:var(--text-main,#E2E8F0);">Reference equality (default, plain class)</div>
+                <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);margin-top:0.4rem;">
+                    "Are you literally the same object?"<br />
+                    Two separate <code>new Point()</code> calls → never equal, even with identical fields
+                </div>
+            </div>
+            <div style="background:var(--bg-dark,#0B0E14);padding:0.8rem;border-radius:8px;text-align:center;">
+                <div style="font-weight:600;color:var(--text-main,#E2E8F0);">Value equality (records, overridden classes, structs)</div>
+                <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);margin-top:0.4rem;">
+                    "Do you hold the same data?"<br />
+                    Two separate values with identical fields → equal, regardless of object identity
+                </div>
+            </div>
+        </div>
+        <div style="text-align:center;font-size:0.9rem;color:var(--text-muted,#94A3B8);padding-top:0.5rem;">
+            <code>GetHashCode()</code> must always agree with whichever notion of equality <code>Equals()</code> actually implements.
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">OVERRIDING Equals AND GetHashCode CORRECTLY, STEP BY STEP</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. OVERRIDE Equals(object?) TO COMPARE THE RELEVANT FIELDS</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public override bool Equals(object? obj) =&gt;
+    obj is Point other &amp;&amp; X == other.X &amp;&amp; Y == other.Y;</code></pre>
+            <ul>
+                <li>Check the type first (via the <code>is</code> pattern, which also handles <code>null</code> gracefully — <code>null is Point</code> is <code>false</code>), then compare every field that participates in equality.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. OVERRIDE GetHashCode() USING EXACTLY THE SAME FIELDS</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public override int GetHashCode() =&gt; HashCode.Combine(X, Y);</code></pre>
+            <ul>
+                <li><code>HashCode.Combine(...)</code>, a built-in .NET helper, mixes multiple values into one well-distributed hash code — it's the standard, recommended way to do this, rather than hand-rolling your own combining logic.</li>
+                <li>Notice: <em>exactly</em> the same fields, <code>X</code> and <code>Y</code>, feed both methods. This is the part that's easy to get subtly wrong — adding a field to <code>Equals</code> without also adding it to <code>GetHashCode</code> (or vice versa) reintroduces the contract violation.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. OPTIONALLY OVERLOAD == AND != TO MATCH</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public static bool operator ==(Point a, Point b) =&gt; a.Equals(b);
+public static bool operator !=(Point a, Point b) =&gt; !a.Equals(b);</code></pre>
+            <ul>
+                <li>Without this step, <code>==</code> on two <code>Point</code> instances still uses reference equality, even though <code>.Equals()</code> now uses value equality — a confusing inconsistency worth avoiding for any type meant to have value semantics.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. OR — LET THE COMPILER DO ALL OF THIS FOR YOU</div>
+            <ul>
+                <li>As you learned when records were introduced in Foundations, <code>public record Point(int X, int Y);</code> generates a correct <code>Equals</code>, <code>GetHashCode</code>, and <code>==</code>/<code>!=</code> automatically — every field-by-field consistency detail above, handled for you.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+
+    <div class="code-block"><code>public class Point
+{
+    public int X { get; }
+    public int Y { get; }
+    public Point(int x, int y) { X = x; Y = y; }
+
+    public override bool Equals(object? obj) =&gt;
+        obj is Point other &amp;&amp; X == other.X &amp;&amp; Y == other.Y;
+
+    public override int GetHashCode() =&gt; HashCode.Combine(X, Y);
+}
+
+var a = new Point(1, 2);
+var b = new Point(1, 2);   // a different object, same data
+var c = a;                  // literally the same object
+
+Console.WriteLine(a.Equals(b));           // True — value equality, correctly overridden
+Console.WriteLine(ReferenceEquals(a, b)); // False — genuinely two different objects
+Console.WriteLine(ReferenceEquals(a, c)); // True — c IS a
+
+var seen = new HashSet&lt;Point&gt;();
+seen.Add(a);
+Console.WriteLine(seen.Contains(b));      // True — now correctly recognized as a duplicate</code></div>
+
+    <p><strong>Code → Meaning → Result:</strong></p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><code>a.Equals(b)</code> is now <code>true</code> because both methods were overridden consistently, using the same two fields.</li>
+        <li style="margin-bottom:0.4rem;"><code>ReferenceEquals</code> still correctly distinguishes "same object" from "equal value" — overriding <code>Equals</code> doesn't erase that distinction, it just changes what <code>.Equals()</code> itself reports.</li>
+        <li style="margin-bottom:0.4rem;"><code>HashSet&lt;Point&gt;.Contains</code> now correctly recognizes <code>b</code> as a duplicate of <code>a</code> — exactly the fix the broken example earlier was missing.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Deduplicating customer records — a genuinely common real-world task — depends entirely on getting equality right. Two <code>CustomerRecord</code> objects imported from different data sources, with the same email address, should be recognized as the same customer.</p>
+
+    <div class="code-block"><code>public class CustomerRecord
+{
+    public string Email { get; }
+    public string Name { get; }
+
+    public CustomerRecord(string email, string name)
+    {
+        Email = email.ToLowerInvariant();   // normalize before comparing/hashing
+        Name = name;
+    }
+
+    public override bool Equals(object? obj) =&gt;
+        obj is CustomerRecord other &amp;&amp; Email == other.Email;   // dedupe by email only
+
+    public override int GetHashCode() =&gt; Email.GetHashCode();
+}
+
+List&lt;CustomerRecord&gt; imported =
+[
+    new CustomerRecord("Ana@Example.com", "Ana Lopez"),   // from source A
+    new CustomerRecord("ana@example.com", "A. Lopez"),    // from source B — same person, different casing/name
+    new CustomerRecord("ben@example.com", "Ben Cole")
+];
+
+var uniqueCustomers = new HashSet&lt;CustomerRecord&gt;(imported);
+Console.WriteLine(uniqueCustomers.Count);   // 2 — the two Ana records correctly collapsed into one</code></div>
+
+    <p>Notice the equality here is deliberately narrower than "every field matches" — it's specifically "same email," because that's what actually identifies a unique customer for this business rule. This is the real lesson: <em>you</em> decide what "equal" means for your type, and both <code>Equals</code> and <code>GetHashCode</code> must consistently reflect that decision — here, only <code>Email</code>, not <code>Name</code>, participates in either method.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🏷️</span> A Filing Label and the Folder's Contents</div>
+        <p>Think of <code>GetHashCode()</code> as the label on a filing cabinet drawer, and <code>Equals()</code> as actually opening a folder to compare its full contents. If two folders truly hold the same information (they're "equal"), but someone mislabeled one of the drawers, a clerk searching by label will open the wrong drawer entirely and never even glance at the matching folder — the mismatch between the label (hash code) and the actual contents (equality) makes the folder unfindable, even though it's sitting right there in the filing cabinet.</p>
+        <p>That's the exact failure from the "Why Does It Exist?" section: an inconsistent <code>GetHashCode()</code> doesn't cause a crash — it causes a search that confidently looks in the wrong place and reports "not found," even when the match is right there.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">WHAT RECORDS GENERATE FOR YOU, AND WHY IT'S ALWAYS CONSISTENT</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. THE COMPILER GENERATES BOTH METHODS FROM THE SAME PROPERTY LIST</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public record Point(int X, int Y);
+// roughly compiles to:
+// public override bool Equals(object? obj) =&gt; Equals(obj as Point);
+// public bool Equals(Point? other) =&gt; other is not null &amp;&amp; X == other.X &amp;&amp; Y == other.Y;
+// public override int GetHashCode() =&gt; HashCode.Combine(X, Y);</code></pre>
+            <ul>
+                <li>Because both methods are synthesized from the exact same positional parameter list, they can never drift out of sync the way hand-written overrides can — the compiler guarantees the contract holds, by construction.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">2. STRUCTS ALSO DEFAULT TOWARD VALUE EQUALITY — BUT SLOWLY, VIA REFLECTION</div>
+            <ul>
+                <li>Unlike classes, a plain <code>struct</code>'s inherited <code>Equals</code> already compares field-by-field — but the default implementation does so via reflection, which is measurably slower than a hand-written or record-generated comparison. This is exactly why <code>record struct</code> (also from Foundations) matters: it generates the same fast, direct field comparison a class-based record does, instead of falling back to reflection.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">3. HashCode.Combine MIXES BITS TO REDUCE COLLISION CLUSTERING</div>
+            <ul>
+                <li>Simply adding field hash codes together (<code>X.GetHashCode() + Y.GetHashCode()</code>) tends to produce poorly-distributed results — many different combinations end up landing in the same buckets. <code>HashCode.Combine</code> uses a proper mixing algorithm specifically designed to spread combined values well, which is why it's the recommended approach over ad-hoc combining.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. Equal hash codes do <em>not</em> mean equal objects — only the reverse is guaranteed</h3>
+    <p>The contract is a one-way street: equal objects must produce equal hash codes, but two objects sharing a hash code are not necessarily equal — that's just an ordinary collision. Never write code that treats matching hash codes as proof of equality; always let <code>Equals()</code> make the final call, exactly as .NET's own collections do internally.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. <code>ReferenceEquals</code> vs <code>.Equals()</code> vs <code>==</code> — three different questions</h3>
+    <p><code>ReferenceEquals(a, b)</code> always asks "are these literally the same object?" and can never be overridden — it's a static method with fixed behavior. <code>.Equals()</code> asks whatever question the type's override defines. <code>==</code> asks whatever question the type's <code>operator ==</code> defines (or falls back to reference equality if none is defined). For a plain, un-overridden class, all three agree. Once you override <code>Equals</code> for value semantics, <code>ReferenceEquals</code> and <code>.Equals()</code> can legitimately disagree — that's expected, not a bug.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. Reference equality is the correct default for entities — don't treat it as "the primitive version" that needs fixing</h3>
+    <p>As the records lesson noted, a type representing an entity with real identity (a live database connection, a domain object tracked by a unique ID, where two objects with identical field values should still be treated as separate) genuinely wants reference equality. Overriding <code>Equals</code> for value semantics is a deliberate choice for data-shaped types, not a universal "best practice" every class should adopt.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Overriding <code>Equals</code> without overriding <code>GetHashCode</code></h4>
+    <p>❌ <strong>Wrong</strong> — this is exactly the broken example from "Why Does It Exist?": <code>Equals</code> says two objects match, but they hash into different buckets, so hash-based collections never find the match. Most IDEs and analyzers flag this with a warning — never ignore it.</p>
+    <p>✅ <strong>Correct</strong> — always override both together, using the same fields in each:</p>
+    <div class="code-block"><code>public override bool Equals(object? obj) =&gt; obj is Point p &amp;&amp; X == p.X &amp;&amp; Y == p.Y;
+public override int GetHashCode() =&gt; HashCode.Combine(X, Y);   // same fields, every time</code></div>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Basing <code>GetHashCode</code> on mutable fields, then mutating them after use as a dictionary key</h4>
+    <p>❌ This connects directly back to the previous lesson's warning — if <code>GetHashCode()</code> depends on a field that changes after the object is already stored as a key, the object becomes effectively unfindable. ✅ Prefer immutable fields (or <code>init</code>-only properties) for anything <code>GetHashCode()</code> depends on — again, exactly why records default toward immutability.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Forgetting that <code>Equals</code> must handle <code>null</code> and the wrong type gracefully</h4>
+    <p>❌ <code>obj is Point other &amp;&amp; ...</code> looks obvious in hindsight, but a common bug is casting directly instead: <code>var other = (Point)obj; return X == other.X;</code> — this throws instead of returning <code>false</code> for a non-<code>Point</code> argument, and <code>obj is Point</code> already returns <code>false</code> safely for <code>null</code>. ✅ Always use a type-pattern check (<code>is</code>), never a direct cast, inside <code>Equals</code>.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Override Equals/GetHashCode (or use a record) when</h4>
+            <ul>
+                <li>The type represents data you'll compare by content — a coordinate, a money value, a DTO, anything you'll put in a <code>HashSet&lt;T&gt;</code> or use as a dictionary key based on its value.</li>
+                <li>You're deduplicating records from an external or untrusted source, as in the customer example.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ Leave the default (reference equality) when</h4>
+            <ul>
+                <li>The type represents identity — a service, a live connection, an entity where "same data" shouldn't mean "same thing."</li>
+                <li>You have no need to compare instances for equality at all — don't add the override speculatively.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> If your type is fundamentally "some data" rather than "some identity," reach for a <code>record</code> and get a correct, consistent <code>Equals</code>/<code>GetHashCode</code> pair for free — hand-writing this pair is worth understanding deeply (as you just did), but rarely worth doing by hand in day-to-day code when records already exist.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>The contract</strong> = equal objects MUST have equal hash codes — no exceptions, ever<br />
+        <strong>Reference equality</strong> = "are you literally the same object?" — the default for plain classes<br />
+        <strong>Value equality</strong> = "do you hold the same data?" — what records give you automatically<br /><br />
+        <strong>Remember:</strong><br />
+        · Always override <code>Equals</code> and <code>GetHashCode</code> together, using exactly the same fields in both.<br />
+        · Equal hash codes don't prove equality — only the reverse direction is guaranteed.<br />
+        · Records exist precisely to give you this contract correctly, without hand-writing it.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">The <strong>Equals/GetHashCode contract</strong>: objects that <code>Equals()</code> says are equal must always produce the same hash code — violating this silently breaks every hash-based collection.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Reference equality</strong> ("same object?") is the default for plain classes; <strong>value equality</strong> ("same data?") requires overriding both methods together, or using a record.</li>
+            <li style="margin-bottom:0.4rem;">Always use the same set of fields in both <code>Equals</code> and <code>GetHashCode</code>, combined via <code>HashCode.Combine(...)</code> for well-distributed results.</li>
+            <li style="margin-bottom:0.4rem;">Records generate a correct, always-in-sync <code>Equals</code>/<code>GetHashCode</code> pair automatically — the compiler-generated version can never drift out of sync the way hand-written overrides can.</li>
+            <li style="margin-bottom:0.4rem;">Choose reference equality for identity-bearing types, value equality for data-shaped types — it's a deliberate design decision, not a universal default to apply everywhere.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've learned why Equals and GetHashCode are one contract, not two independent methods. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A class overrides <code>Equals</code> to compare by value, but leaves <code>GetHashCode</code> at its default (reference-based) implementation. What is the most likely consequence?</p>
+        <ul class="options">
+            <li>A) The code fails to compile</li>
+            <li>B) Two objects that <code>Equals()</code> considers equal can end up in different hash buckets, causing hash-based collections like <code>HashSet&lt;T&gt;</code> to fail to recognize them as duplicates</li>
+            <li>C) <code>Equals</code> silently stops working and always returns <code>false</code></li>
+            <li>D) The program throws a <code>NotImplementedException</code> at runtime</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the "Why Does It Exist?" scenario — the two hash-mismatched-but-equal objects land in different buckets, so a hash-based collection never even calls <code>Equals()</code> to compare them, silently producing wrong results.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This compiles fine — most tooling issues a warning, but it's not a compile error.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>Equals()</code> itself keeps working correctly on its own — the failure specifically shows up in hash-based collections, not in a direct <code>a.Equals(b)</code> call.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> No exception is thrown at all — this is precisely what makes the bug so dangerous; it fails silently rather than loudly.</p>
+                <p><strong>Reinforcement:</strong> Overriding only one half of the pair produces a silent, hard-to-diagnose bug, not a compile error or an exception.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Two objects have the same hash code. What can you correctly conclude?</p>
+        <ul class="options">
+            <li>A) They are definitely equal according to <code>Equals()</code></li>
+            <li>B) Nothing for certain — they might be equal, or they might simply be a hash collision; only calling <code>Equals()</code> can confirm which</li>
+            <li>C) They are definitely different objects</li>
+            <li>D) One of them has an invalid hash code</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As covered in "Common Confusion," the contract only guarantees one direction — equal objects have equal hash codes. It says nothing about the reverse; a shared hash code is just as likely to be an ordinary collision as genuine equality.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This reverses the actual guarantee — matching hash codes never prove equality on their own.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Nothing about a shared hash code implies they're different — it's simply inconclusive either way.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Sharing a hash code is completely normal and doesn't indicate anything is broken.</p>
+                <p><strong>Reinforcement:</strong> A hash code match is a hint worth checking further, never proof of equality by itself.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why does a <code>record</code> guarantee a correct <code>Equals</code>/<code>GetHashCode</code> pair, while hand-writing the two methods on a plain class does not?</p>
+        <ul class="options">
+            <li>A) Records use a completely different, faster CPU instruction for equality</li>
+            <li>B) The compiler generates both methods from the exact same list of properties, so they can never drift out of sync the way two independently hand-written methods can</li>
+            <li>C> Records don't actually support custom equality logic at all</li>
+            <li>D) Plain classes are physically incapable of overriding <code>GetHashCode</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in "Under the Hood," because both synthesized methods are derived from the same positional parameter list, there's no way for them to end up using different fields — the consistency is structural, guaranteed by how the compiler generates the code.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no special CPU instruction involved — this is purely a matter of the generated C#/IL code being consistent by construction, not a hardware difference.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Records can still have custom logic layered on top if genuinely needed — the point is the generated default is already correct and consistent.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Plain classes absolutely can override <code>GetHashCode</code> — that's exactly what this lesson demonstrated with the hand-written <code>Point</code> class; the risk is purely human error keeping the two methods in sync.</p>
+                <p><strong>Reinforcement:</strong> The safety records provide comes from generating both methods from one shared source of truth, eliminating the human error of hand-syncing two separate overrides.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A type represents a live database connection, where two connection objects should always be treated as distinct even if they happen to point at the same database and settings. Which approach fits best?</p>
+        <ul class="options">
+            <li>A) Override <code>Equals</code> and <code>GetHashCode</code> to compare every configuration field</li>
+            <li>B) Use a <code>record</code>, since records are always the correct choice</li>
+            <li>C) Leave the default reference equality in place — two separate connection objects genuinely represent two separate things, regardless of matching configuration</li>
+            <li>D) Override only <code>GetHashCode</code>, leaving <code>Equals</code> at its default</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> As covered in "Common Confusion" and "When Should I Use It?", a type with genuine identity — like a live connection — should keep reference equality. Two connections with identical settings are still two separate, independently-managed resources; treating them as "equal" would be actively misleading.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This would incorrectly conflate "same configuration" with "same connection," which is exactly the wrong notion of equality for an identity-bearing type.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Records are excellent for data, but not a universal default — this lesson and the records lesson both explicitly warn against using them for identity-bearing types.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is the exact contract violation from Question 1, applied here for no benefit — there's no reason to override just one half when reference equality is already the correct choice.</p>
+                <p><strong>Reinforcement:</strong> Overriding for value equality is a deliberate choice for data-shaped types — identity-bearing types are correctly served by the reference-equality default.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand the full Equals/GetHashCode contract. Next: IComparable&lt;T&gt; — giving your own types a natural ordering that List&lt;T&gt;.Sort() and Array.Sort() can use directly.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

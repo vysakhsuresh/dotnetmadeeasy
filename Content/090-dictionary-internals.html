@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>090 - Dictionary Internals · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        A dictionary lookup doesn't search — it calculates exactly where to look, then checks one spot. That's the entire secret to O(1).
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You've used <code>Dictionary&lt;TKey,TValue&gt;</code> since Foundations — <code>prices["Widget"]</code>, instant answer, no matter how many thousands of entries the dictionary holds. It never seemed to matter whether the dictionary had 10 entries or 10 million; the lookup always just felt fast. That's not luck, and it's not because .NET secretly searches really quickly — it's because a dictionary lookup doesn't search at all, in the way a <code>List&lt;T&gt;</code> lookup does.</p>
+    <p><strong>In this lesson, you'll see exactly how <code>Dictionary&lt;TKey,TValue&gt;</code> achieves average O(1) lookups — hash buckets, <code>GetHashCode()</code>, collision handling — and why a poorly-written <code>GetHashCode</code>/<code>Equals</code> pair can quietly wreck that performance. This sets up the next lesson, which covers writing that pair correctly on your own types.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <code>Dictionary&lt;TKey,TValue&gt;</code> is a <strong>hash table</strong>: instead of storing entries in a line and checking each one to find a match (like a <code>List&lt;T&gt;</code> would), it runs each key through a quick calculation that turns it into a number, uses that number to jump almost directly to the small area of memory where that key's entry belongs, and only then does the actual comparison — against a tiny handful of candidates, not the whole collection.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A <strong>hash table</strong> stores entries across an internal array of <strong>buckets</strong>. Every key is passed to <code>GetHashCode()</code>, producing a 32-bit integer called its <strong>hash code</strong>. That hash code is reduced (typically via a modulo operation) to an index within the bucket array's current size, determining which bucket the entry is placed in. On lookup, the same process runs on the key you're searching for, landing you directly at the correct bucket — collapsing what would otherwise be an O(n) scan into, on average, a small constant amount of work: O(1).</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem</h3>
+    <p>Imagine looking up a key the way <code>List&lt;T&gt;.Find</code> would — walk every entry, one at a time, comparing keys until you find a match:</p>
+    <div class="code-block"><code>// A hypothetical "dictionary" backed by a plain list — O(n) lookup
+List&lt;(string Key, decimal Value)&gt; prices = [ ("Widget", 9.99m), ("Anvil", 149.99m), /* ...thousands more... */ ];
+
+decimal FindPrice(string key)
+{
+    foreach (var (k, v) in prices)
+        if (k == key) return v;   // has to check every entry, in the worst case
+    throw new KeyNotFoundException();
+}</code></div>
+    <p>With 10 entries, that's fine — nobody notices a few microseconds. With 10 million entries, every single lookup potentially walks millions of comparisons. As the collection grows, lookups get proportionally slower — that's <strong>O(n)</strong> behavior, and it doesn't scale for the kind of fast, frequent key lookups real applications constantly need (looking up a user by ID, a product by SKU, a setting by name).</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution</h3>
+    <p>A hash table sidesteps the scan entirely. Instead of asking "which of these thousands of entries matches?", it asks a single, cheap question up front — "given this key, which bucket should I even be looking in?" — and the answer to that question is a direct calculation, not a search. Once you're pointed at the right bucket, there are only ever a small handful of candidates to check, regardless of how large the dictionary as a whole has grown. This is precisely why <code>Dictionary&lt;TKey,TValue&gt;</code> lookups stay fast even as the collection scales into the millions.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">FROM KEY TO VALUE, VISUALLY</div>
+        <pre style="background:var(--bg-dark,#0B0E14);padding:0.6rem 0.8rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;margin:0 auto;max-width:560px;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">"Widget"
+    ↓ GetHashCode()
+1836792031                    (a 32-bit integer)
+    ↓ reduce to bucket count (say, 8 buckets)
+1836792031 % 8 = 7
+    ↓ jump directly to bucket 7
+[ bucket 7: ("Widget", 9.99m) ]
+    ↓ compare key with Equals() — confirms the match
+9.99m                          ← returned, without ever touching buckets 0–6</code></pre>
+        <div style="text-align:center;font-size:0.9rem;color:var(--text-muted,#94A3B8);padding-top:0.8rem;">
+            No scanning happened — the hash code told the dictionary exactly which bucket to check, in one calculation.
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">A LOOKUP, STEP BY STEP</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. COMPUTE THE KEY'S HASH CODE</div>
+            <ul>
+                <li>The dictionary calls <code>key.GetHashCode()</code>, producing a 32-bit integer. This step is fast — a good <code>GetHashCode()</code> implementation does a small, fixed amount of work regardless of how large the object is.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. MAP THE HASH CODE TO A BUCKET INDEX</div>
+            <ul>
+                <li>The raw hash code is reduced to fit within the current number of buckets (conceptually, <code>hashCode % bucketCount</code>, though .NET's actual implementation is more refined). This determines exactly which bucket the entry belongs to.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. JUMP DIRECTLY TO THAT BUCKET</div>
+            <ul>
+                <li>No other buckets are touched. Whatever entries happen to live in this one bucket are the <em>only</em> candidates that get compared.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. CONFIRM THE MATCH WITH EQUALS()</div>
+            <ul>
+                <li>A hash code alone isn't proof of a match — two different keys can share the same hash code (more on this below). So the dictionary calls <code>Equals()</code> on each candidate in the bucket to confirm which one, if any, is the real match.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. RETURN THE VALUE — OR REPORT NOT FOUND</div>
+            <ul>
+                <li>If <code>Equals()</code> confirms a match, that entry's value is returned. If the bucket is empty, or nothing in it matches, the key genuinely isn't in the dictionary.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+
+    <p>You can watch hash codes in action directly — <code>string</code> and every built-in type already override <code>GetHashCode()</code> correctly, so this works out of the box:</p>
+
+    <div class="code-block"><code>string keyA = "Widget";
+string keyB = "Anvil";
+
+Console.WriteLine(keyA.GetHashCode());   // some int, e.g. 1836792031 — varies per run for strings
+Console.WriteLine(keyB.GetHashCode());   // a different int, in almost all cases
+
+var prices = new Dictionary&lt;string, decimal&gt;
+{
+    ["Widget"] = 9.99m,
+    ["Anvil"] = 149.99m
+};
+
+// Internally: prices["Widget"] computes "Widget".GetHashCode(), maps it to a bucket,
+// jumps there directly, confirms with Equals("Widget", "Widget") == true, returns 9.99m.
+decimal price = prices["Widget"];
+Console.WriteLine(price);   // 9.99</code></div>
+
+    <p><strong>Code → Meaning → Result:</strong></p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Every key gets its own hash code — different strings almost always hash to different values, spreading entries across buckets.</li>
+        <li style="margin-bottom:0.4rem;"><code>prices["Widget"]</code> never has to compare against <code>"Anvil"</code> at all — the hash code alone routes it to the correct bucket before any string comparison happens.</li>
+        <li style="margin-bottom:0.4rem;">This is why lookups don't slow down as more unrelated keys are added — they land in different buckets and are simply never examined.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A <code>Repository&lt;T&gt;</code> caching customer records by ID relies entirely on this mechanism to stay fast, even as the cache grows to hold every customer the application has ever touched in a session.</p>
+
+    <div class="code-block"><code>public record Customer(int Id, string Name, string Email);
+
+public class CustomerCache
+{
+    private readonly Dictionary&lt;int, Customer&gt; _cache = new();
+
+    public void Add(Customer customer) =&gt; _cache[customer.Id] = customer;
+
+    public Customer? Find(int id) =&gt;
+        _cache.TryGetValue(id, out Customer? customer) ? customer : null;
+}
+
+var cache = new CustomerCache();
+for (int i = 1; i &lt;= 500_000; i++)
+    cache.Add(new Customer(i, $"Customer {i}", $"customer{i}@example.com"));
+
+// Even with half a million entries, this lookup is just as fast as it would be with 5:
+Customer? found = cache.Find(482_193);
+Console.WriteLine(found?.Name);   // Customer 482193 — near-instant, regardless of cache size</code></div>
+
+    <p>Because <code>int</code> already has a fast, well-distributed <code>GetHashCode()</code> (for a reasonably small <code>int</code>, it's essentially the value itself), <code>_cache[customer.Id]</code> spreads customers evenly across buckets, and <code>TryGetValue</code> reaches any single customer in roughly the same, tiny amount of time — whether the cache holds 5 entries or 500,000.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📮</span> A Post Office's Sorting Bins</div>
+        <p>Think of a hash table as a post office with a wall of numbered sorting bins. Instead of dumping every letter into one giant pile and reading each one's address to find yours (that's the O(n) list-scan approach), the post office looks at just the ZIP code, uses it to compute a bin number, and drops the letter straight into that bin. When you come to pick up your mail, the clerk computes the same bin number from your ZIP code, walks straight to that one bin, and only then reads the names on the (hopefully very few) letters actually inside it to find yours.</p>
+        <p>The hash code is the ZIP code — a cheap, quick-to-compute number that narrows the search from "the entire building" down to "one small bin," before any real comparison ever happens.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">COLLISIONS AND WHY GOOD HASHING MATTERS</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. TWO DIFFERENT KEYS CAN LAND IN THE SAME BUCKET — A COLLISION</div>
+            <ul>
+                <li>A 32-bit hash code has about 4 billion possible values, but a dictionary might only have a few dozen buckets at any given moment — many different hash codes inevitably map to the same bucket index. This is called a <strong>collision</strong>, and it's expected, normal behavior, not a bug.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">2. .NET'S DICTIONARY HANDLES COLLISIONS BY CHAINING WITHIN A BUCKET</div>
+            <ul>
+                <li>When multiple entries land in the same bucket, .NET keeps them linked together (conceptually a small chain) inside that bucket. A lookup that lands on a colliding bucket has to check each chained entry with <code>Equals()</code> until it finds the real match — a handful of comparisons, not a full scan of the dictionary.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">3. WHY "AVERAGE" O(1), NOT GUARANTEED O(1)</div>
+            <ul>
+                <li>If every key happened to collide into the same handful of buckets, lookups would degrade toward O(n) — you'd be back to scanning a long chain. A <strong>well-distributed</strong> hash function (one that spreads different inputs across many different hash codes) keeps chains short and lookups genuinely close to constant time. This is precisely why the quality of <code>GetHashCode()</code> matters so much — it's the difference between the fast dictionary you expect and a silently degraded one.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">4. THE DICTIONARY GROWS (RESIZES) TO KEEP CHAINS SHORT</div>
+            <ul>
+                <li>As more entries are added, .NET periodically grows the internal bucket array and re-distributes every existing entry across the new, larger set of buckets — a process called <strong>rehashing</strong>. This keeps the average number of entries per bucket low as the dictionary grows, which is what keeps lookups close to O(1) even at large scale, rather than slowly degrading as more items are added.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "O(1)" doesn't mean "instant" or "guaranteed" — it means "average constant time"</h3>
+    <p>O(1) describes how lookup time scales as the dictionary grows — it stays roughly flat, on average, rather than climbing with the number of entries, the way O(n) would. It's not a claim that every single lookup takes the exact same number of nanoseconds, nor a guarantee against the rare worst case (heavy collisions) degrading toward O(n). "Average" is doing real, important work in that phrase.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. A hash code collision is not the same thing as two keys being "equal"</h3>
+    <p>Two different keys sharing a hash code is completely normal and expected — the pigeonhole principle guarantees it will eventually happen, since there are far more possible keys than possible 32-bit hash codes. What would be a genuine bug is two keys that <code>Equals()</code> says are equal producing <em>different</em> hash codes — that specific failure is what the next lesson on the <code>Equals</code>/<code>GetHashCode</code> contract covers in full.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. Buckets don't preserve insertion order — that's why <code>Dictionary&lt;TKey,TValue&gt;</code> iteration order isn't guaranteed</h3>
+    <p>Because an entry's position is determined by its key's hash code, not by when it was added, iterating a dictionary visits entries in whatever order the buckets happen to lay them out — which can even change after a resize. If you need guaranteed order, reach for <code>SortedDictionary&lt;TKey,TValue&gt;</code> (from the previous lesson) or maintain a separate ordered structure alongside the dictionary.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Assuming dictionary iteration preserves insertion order</h4>
+    <p>❌ Relying on <code>foreach (var kv in dictionary)</code> to visit entries in the order they were added — this happens to often appear true for small dictionaries in practice, but it is explicitly <em>not</em> a documented guarantee, and can break after a resize or with different key distributions. ✅ Use <code>SortedDictionary&lt;TKey,TValue&gt;</code> if you need sorted order, or maintain a separate <code>List&lt;TKey&gt;</code> alongside the dictionary if you specifically need insertion order.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Mutating a key's fields after it's been used as a dictionary key</h4>
+    <p>❌ If a key's hash code can change after it's already placed in a bucket (say, because it's a mutable class and one of the fields <code>GetHashCode()</code> depends on gets modified), the dictionary will look for it in the <em>new</em> bucket that key would now hash to — but the entry is still sitting in the <em>old</em> bucket. The key effectively becomes unfindable.</p>
+    <div class="code-block"><code>public class MutableKey { public int Value; public override int GetHashCode() =&gt; Value; }
+var key = new MutableKey { Value = 1 };
+dict[key] = "data";
+key.Value = 2;              // ❌ hash code just changed out from under the dictionary
+dict.TryGetValue(key, out var found);   // false — looks in the wrong bucket now</code></div>
+    <p>✅ Keys should be effectively immutable — this is exactly why records and immutable value types make such natural dictionary keys.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming every custom class already has a "good" hash code</h4>
+    <p>❌ Using a plain custom class as a dictionary key without overriding <code>GetHashCode()</code> and <code>Equals()</code> — by default, they're based on the object's memory reference, not its data, so two logically identical instances won't find each other in the dictionary. ✅ The next lesson covers exactly how to write this pair correctly for your own types.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Reach for a Dictionary when</h4>
+            <ul>
+                <li>You need fast lookup by a key, and don't care about iteration order.</li>
+                <li>Your key type already has (or you've correctly written) a well-distributed <code>GetHashCode()</code>.</li>
+                <li>You're doing lookups far more often than full-collection scans.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ Reconsider when</h4>
+            <ul>
+                <li>You genuinely need entries in a specific order — reach for a sorted collection, or track order separately.</li>
+                <li>Your key type is mutable in ways that affect its hash code — fix that first, or the dictionary will silently misbehave.</li>
+                <li>You have only a handful of entries and never look them up by key — a simple list may be simpler and just as fast in practice.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> A dictionary's speed is only as good as its keys' <code>GetHashCode()</code>. Built-in types already do this well — the moment you use a custom class as a key, that responsibility becomes yours, which is exactly what the next lesson walks through.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>GetHashCode()</strong> = turns a key into a number, cheaply<br />
+        <strong>Bucket index</strong> = that number, mapped down to "which bin"<br />
+        <strong>Collision</strong> = two keys sharing a bucket — normal, handled by a short chain within the bucket<br />
+        <strong>Equals()</strong> = the final confirmation, checked only against the few candidates in that one bucket<br /><br />
+        <strong>Remember:</strong><br />
+        · A dictionary calculates where to look — it never scans the whole collection.<br />
+        · "O(1) average" assumes a well-distributed hash code — a bad one degrades toward O(n).<br />
+        · Dictionary iteration order is not guaranteed — never rely on it.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <code>Dictionary&lt;TKey,TValue&gt;</code> is a hash table — it computes each key's hash code, maps that to a bucket, and jumps straight there instead of scanning.</li>
+            <li style="margin-bottom:0.4rem;">This is why lookups stay close to <strong>O(1) on average</strong> as the dictionary grows, instead of the <strong>O(n)</strong> you'd get scanning a list.</li>
+            <li style="margin-bottom:0.4rem;">Two different keys landing in the same bucket is a <strong>collision</strong> — normal, expected, and handled by chaining a few entries together within that bucket.</li>
+            <li style="margin-bottom:0.4rem;"><code>Equals()</code> only ever needs to run against the small number of candidates in the correct bucket — the hash code already did the heavy lifting.</li>
+            <li style="margin-bottom:0.4rem;">A poorly-written <code>GetHashCode()</code> — one that clusters many different keys into the same few buckets — silently degrades average O(1) performance toward O(n), which is exactly why the next lesson matters.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen exactly how a dictionary lookup avoids scanning. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why does a <code>Dictionary&lt;TKey,TValue&gt;</code> lookup stay fast even as the number of entries grows into the millions?</p>
+        <ul class="options">
+            <li>A) It secretly scans every entry, but modern CPUs are fast enough that you don't notice</li>
+            <li>B) It computes the key's hash code, jumps directly to the corresponding bucket, and only compares against the handful of entries in that one bucket</li>
+            <li>C) It keeps a sorted copy of every key and uses binary search</li>
+            <li>D) It only stores the most recently added entries in memory</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in "How It Works," the hash code lets the dictionary calculate exactly where to look, so it never touches unrelated buckets — this is what keeps lookup time from growing as the dictionary grows.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> No full scan happens at all — that's precisely the O(n) behavior a hash table exists to avoid.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> That describes a sorted, tree-like structure such as <code>SortedDictionary&lt;TKey,TValue&gt;</code>, which is O(log n), not the hash-bucket approach <code>Dictionary&lt;TKey,TValue&gt;</code> actually uses.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A dictionary retains every entry you add — it doesn't discard older ones on its own.</p>
+                <p><strong>Reinforcement:</strong> The hash code replaces "search" with "calculate," which is exactly what makes O(1) average lookups possible.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Two different keys happen to produce the same hash code and land in the same bucket. What does this mean?</p>
+        <ul class="options">
+            <li>A) This is a bug — a correctly implemented dictionary should never let this happen</li>
+            <li>B) This is a normal, expected collision — the dictionary handles it by chaining both entries in that bucket and using <code>Equals()</code> to tell them apart</li>
+            <li>C) The dictionary will throw an exception</li>
+            <li>D) One of the two keys will be silently discarded</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As covered in "Under the Hood," collisions are expected — there are far more possible keys than 32-bit hash codes — and .NET's dictionary handles them by chaining entries within a bucket, then using <code>Equals()</code> to identify the actual match.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Collisions are a normal, anticipated part of hashing, not evidence of a broken implementation.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A collision is handled gracefully — it doesn't cause an exception, just a slightly longer (but still small) comparison within one bucket.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Both entries remain fully present and retrievable — sharing a bucket doesn't cause data loss.</p>
+                <p><strong>Reinforcement:</strong> A collision is not the same as a bug — it's an expected event that a well-implemented hash table is specifically designed to handle cheaply.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> What happens if a dictionary key's fields (which its <code>GetHashCode()</code> depends on) are mutated after the key has already been added to the dictionary?</p>
+        <ul class="options">
+            <li>A) Nothing — the dictionary automatically re-buckets the entry whenever it detects a change</li>
+            <li>B) The entry can become effectively unfindable, because the dictionary computes a new bucket location from the mutated key, while the entry itself is still sitting in the old bucket it was originally placed in</li>
+            <li>C) The dictionary throws a compile-time error</li>
+            <li>D) The value associated with the key is automatically deleted</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in "Common Mistakes," a dictionary has no way to know a key's hash-relevant fields changed — it only recomputes the bucket location at lookup time, using the key's <em>current</em> state, which no longer matches where the entry actually lives.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Dictionaries have no mechanism to detect or react to field mutations on their keys — this is exactly why the problem occurs.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is a runtime behavioral issue, not something the compiler can detect — the code compiles fine and simply misbehaves at runtime.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The entry isn't deleted — it's still stored, just unreachable through normal lookup because the dictionary is now searching in the wrong bucket.</p>
+                <p><strong>Reinforcement:</strong> Dictionary keys should be effectively immutable — mutating hash-relevant state after insertion silently breaks lookups.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> What does "O(1) on average" actually promise about dictionary lookup performance?</p>
+        <ul class="options">
+            <li>A) Every single lookup takes exactly the same, guaranteed amount of time, no matter what</li>
+            <li>B) Lookup time stays roughly flat as the dictionary grows, assuming a reasonably well-distributed hash function — it is not a hard worst-case guarantee against all collisions</li>
+            <li>C) The dictionary can hold at most one entry</li>
+            <li>D) Lookups are always faster than any other collection type, in every situation</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As explained in "Common Confusion," "average" is the key word — it describes typical behavior given a well-distributed hash function, not an absolute per-lookup guarantee, and heavy collisions can degrade performance toward O(n) in a poor implementation.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Individual lookup times can vary (a bucket with several chained entries takes marginally longer than an empty one) — O(1) describes the overall scaling trend, not identical timing every time.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This has nothing to do with Big-O notation or dictionary capacity — a dictionary can hold as many entries as memory allows.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Other structures can be faster in specific scenarios (e.g. a plain array with a known index), and a badly-hashed dictionary can even be slower than expected — O(1) average is a strong guarantee, not a universal one.</p>
+                <p><strong>Reinforcement:</strong> "Average constant time" describes how performance scales with size, not a promise that every operation takes identical, guaranteed time.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand exactly how Dictionary&lt;TKey,TValue&gt; achieves its speed. Next: writing a correct Equals/GetHashCode pair on your own types — the contract every hash-based collection depends on.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
