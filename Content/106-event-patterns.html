@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>106 - Event Patterns · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The pattern behind almost every <code>Click</code>, <code>Changed</code>, and <code>Completed</code> event you've ever subscribed to in .NET.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>In lesson 105, <code>StockTicker</code> raised its event with a bare <code>decimal</code> as the payload: <code>PriceChanged?.Invoke(this, newPrice);</code>. That works — until the day you need to also send the <em>old</em> price along with the new one. Now you have to change the event's type from <code>EventHandler&lt;decimal&gt;</code> to something else entirely, which breaks every existing subscriber's handler signature. Every one of them has to be rewritten.</p>
+    <p>This is exactly the problem the .NET Framework designers hit constantly while building <code>Button</code>, <code>FileSystemWatcher</code>, <code>Process</code>, and every other event-raising type in the BCL. Their solution became a convention so consistent that once you recognize it, you can predict the shape of almost any event in .NET before you even open the documentation: a dedicated <strong>EventArgs</strong> class for the data, and a <strong>protected virtual <code>OnXxx</code></strong> method that raises it. This lesson is that pattern, in full.</p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>The <strong>standard .NET event pattern</strong> is a small set of conventions applied on top of the <code>event</code> keyword you already know: package whatever data the event carries into its own purpose-built class, and route every "raise this event" call through one dedicated method instead of scattering <code>?.Invoke(...)</code> calls throughout the class. Follow it, and your events look and behave exactly like every other event a .NET developer has ever used.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>The pattern has three pieces:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">A class deriving from <code>System.EventArgs</code>, conventionally named <code>&lt;Something&gt;EventArgs</code>, holding whatever data the event needs to carry (or nothing at all, if the event is just a notification).</li>
+        <li style="margin-bottom:0.4rem;">A <code>public event EventHandler&lt;TEventArgs&gt;?</code> field, declared using that <code>EventArgs</code> subclass as its type parameter.</li>
+        <li style="margin-bottom:0.4rem;">A <code>protected virtual void On&lt;Something&gt;(TEventArgs e)</code> method — the <strong>raiser</strong> — that does the actual <code>?.Invoke(this, e)</code>. Every place inside the class that needs to raise the event calls this method instead of touching the event field directly.</li>
+    </ul>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class PriceChangedEventArgs : EventArgs
+{
+    public decimal OldPrice { get; }
+    public decimal NewPrice { get; }
+
+    public PriceChangedEventArgs(decimal oldPrice, decimal newPrice)
+    {
+        OldPrice = oldPrice;
+        NewPrice = newPrice;
+    }
+}
+
+public class StockTicker
+{
+    public event EventHandler&lt;PriceChangedEventArgs&gt;? PriceChanged;
+
+    protected virtual void OnPriceChanged(PriceChangedEventArgs e)
+        =&gt; PriceChanged?.Invoke(this, e); // the ONE place that raises this event
+}</code></pre>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>⚠️ Ad Hoc Payload (Lesson 105)</h4>
+            <ul>
+                <li><code>EventHandler&lt;decimal&gt;</code> — bare primitive as data</li>
+                <li>Adding a second field means changing the event's type</li>
+                <li>Every existing subscriber's handler signature breaks</li>
+                <li>No dedicated place for subclasses to extend the raise</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Full Standard Pattern</h4>
+            <ul>
+                <li><code>EventHandler&lt;PriceChangedEventArgs&gt;</code> — a named class</li>
+                <li>Add a field to the <code>EventArgs</code> class — no signature ever changes</li>
+                <li>Existing subscribers keep compiling untouched</li>
+                <li><code>protected virtual OnXxx</code> gives subclasses a hook</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Ad Hoc Event Signatures Don't Survive Change</h3>
+    <p>Once an event ships as part of a public API, its signature is a promise to every consumer who has already written a handler for it. Three concrete problems show up almost immediately if you skip the standard pattern:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>No room to grow.</strong> An event typed as <code>EventHandler&lt;decimal&gt;</code> can never carry a second piece of data without changing its type parameter — and changing it breaks every subscriber's handler signature.</li>
+        <li style="margin-bottom:0.4rem;"><strong>No extension point for subclasses.</strong> If raising is just a bare <code>PriceChanged?.Invoke(this, e);</code> scattered inline wherever it's needed, a subclass has no clean way to run code immediately before or after the event fires, or to suppress it under certain conditions, without duplicating the raising logic itself.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Inconsistency across a codebase.</strong> Without a shared convention, every developer invents their own shape for "notify me when X happens," and nobody can predict an event's signature just by knowing its name.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — One Data Class, One Raiser Method</h3>
+    <p>Wrapping the payload in a dedicated <code>EventArgs</code> subclass means the event's signature — <code>EventHandler&lt;PriceChangedEventArgs&gt;</code> — never has to change again; new data becomes a new property on the existing class. Routing every raise through a single <code>protected virtual OnXxx</code> method means there's exactly one place that decides when and how the event fires, and subclasses get a real, supported extension point: override the method, optionally call <code>base.OnXxx(e)</code>, and you're participating in the exact same mechanism the base class uses.</p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight</div>
+        <p>This pattern doesn't add new capability beyond what you already know from lesson 105 — it's still a plain <code>event</code>-qualified multicast delegate, raised with <code>?.Invoke</code>. What it buys you is <strong>stability</strong> (the signature survives new fields) and <strong>extensibility</strong> (subclasses get a real hook), both for free, just by following the convention.</p>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHO TALKS TO WHAT</div>
+        <div class="flow-step">
+            <div class="step-label">SOMETHING HAPPENS INSIDE THE CLASS</div>
+            <ul><li>e.g. <code>UpdatePrice(newPrice)</code> changes internal state</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">CLASS BUILDS THE EVENTARGS AND CALLS ITS OWN RAISER</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">OnPriceChanged(new PriceChangedEventArgs(oldPrice, newPrice));</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">RAISER RUNS — SUBCLASSES CAN INTERCEPT HERE</div>
+            <ul>
+                <li>A subclass overriding <code>OnPriceChanged</code> runs first</li>
+                <li>It optionally calls <code>base.OnPriceChanged(e)</code> to continue</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">BASE RAISER INVOKES THE EVENT — EXTERNAL SUBSCRIBERS RUN</div>
+            <ul><li>Same <code>?.Invoke(this, e)</code> and invocation-list mechanics from lesson 105</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">BUILDING THE PATTERN, STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">1. DEFINE THE EVENTARGS CLASS</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class OrderShippedEventArgs : EventArgs
+{
+    public string TrackingNumber { get; }
+    public OrderShippedEventArgs(string trackingNumber) =&gt; TrackingNumber = trackingNumber;
+}</code></pre>
+            <ul><li>Immutable, read-only properties — the data describes something that already happened.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. DECLARE THE EVENT USING THAT TYPE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public event EventHandler&lt;OrderShippedEventArgs&gt;? OrderShipped;</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. ADD THE PROTECTED VIRTUAL RAISER</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">protected virtual void OnOrderShipped(OrderShippedEventArgs e)
+    =&gt; OrderShipped?.Invoke(this, e);</code></pre>
+            <ul>
+                <li><code>protected</code> — subclasses can call and override it, external code cannot.</li>
+                <li><code>virtual</code> — subclasses can override it to hook into the raise.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. RAISE IT THROUGH THE METHOD, NEVER DIRECTLY</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">OnOrderShipped(new OrderShippedEventArgs(trackingNumber));</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. SUBSCRIBERS ATTACH — AND, JUST AS IMPORTANTLY, DETACH</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">order.OrderShipped += HandleShipped; // subscribe
+// ... later, when the handler is no longer needed:
+order.OrderShipped -= HandleShipped; // unsubscribe</code></pre>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+public class PriceChangedEventArgs : EventArgs
+{
+    public decimal OldPrice { get; }
+    public decimal NewPrice { get; }
+
+    public PriceChangedEventArgs(decimal oldPrice, decimal newPrice)
+    {
+        OldPrice = oldPrice;
+        NewPrice = newPrice;
+    }
+}
+
+public class StockTicker
+{
+    public event EventHandler&lt;PriceChangedEventArgs&gt;? PriceChanged;
+    private decimal _price;
+
+    protected virtual void OnPriceChanged(PriceChangedEventArgs e)
+        =&gt; PriceChanged?.Invoke(this, e); // the single raise point
+
+    public void UpdatePrice(decimal newPrice)
+    {
+        if (newPrice == _price) return;
+
+        var oldPrice = _price;
+        _price = newPrice;
+        OnPriceChanged(new PriceChangedEventArgs(oldPrice, newPrice)); // never invoke the field directly
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var ticker = new StockTicker();
+
+        ticker.PriceChanged += (sender, e) =&gt;
+            Console.WriteLine($"Price moved from {e.OldPrice:C} to {e.NewPrice:C}");
+
+        ticker.UpdatePrice(142.50m); // Price moved from $0.00 to $142.50
+        ticker.UpdatePrice(145.10m); // Price moved from $142.50 to $145.10
+    }
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>UpdatePrice</code> never touches the <code>PriceChanged</code> field. It builds a <code>PriceChangedEventArgs</code> carrying both the old and new price, then hands it to <code>OnPriceChanged</code> — the one method responsible for actually raising the event. Subscribers get both values from a single, stable event signature that could grow a third property tomorrow without breaking any of them.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>The <code>protected virtual</code> raiser earns its keep the moment a subclass needs to participate in the event. Consider a <code>Document</code> base class used across a suite of editor tools, and an <code>AuditedDocument</code> subclass that needs to log every save without touching <code>Document</code>'s source at all:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+public class SavedEventArgs : EventArgs
+{
+    public DateTime SavedAtUtc { get; }
+    public SavedEventArgs(DateTime savedAtUtc) =&gt; SavedAtUtc = savedAtUtc;
+}
+
+public class Document
+{
+    public event EventHandler&lt;SavedEventArgs&gt;? Saved;
+
+    protected virtual void OnSaved(SavedEventArgs e) =&gt; Saved?.Invoke(this, e);
+
+    public void Save()
+    {
+        // ... actual save logic here ...
+        OnSaved(new SavedEventArgs(DateTime.UtcNow));
+    }
+}
+
+// A subclass extends the raise WITHOUT touching Document's source
+public class AuditedDocument : Document
+{
+    protected override void OnSaved(SavedEventArgs e)
+    {
+        Console.WriteLine($"[AUDIT] Document saved at {e.SavedAtUtc:O}");
+        base.OnSaved(e); // still raises Saved for Document's own external subscribers
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var doc = new AuditedDocument();
+        doc.Saved += (sender, e) =&gt; Console.WriteLine($"External subscriber notified: {e.SavedAtUtc:O}");
+
+        doc.Save();
+        // [AUDIT] Document saved at 2026-08-30T...
+        // External subscriber notified: 2026-08-30T...
+    }
+}</code></pre>
+    <p>Notice what <code>AuditedDocument</code> did <em>not</em> need: it never touched <code>Document</code>'s source code, never re-declared the <code>Saved</code> event, and never duplicated the raising logic. It overrode one method, ran its own logic, and called <code>base.OnSaved(e)</code> to keep the original behavior intact. This is precisely why the pattern uses a method instead of raising the event inline everywhere it's needed — the method is the extension point.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📢</span> A Newsroom, Not a Bullhorn</div>
+        <p>Raising an event with a bare primitive scattered across the class is like a reporter shouting facts out a window whenever something happens — no format, no record, and if a second fact needs shouting later, everyone downstairs has to relearn what to listen for. The standard pattern is a proper newsroom: every story goes through the same editorial desk (the <code>OnXxx</code> method) in a standard format (the <code>EventArgs</code> class). A regional bureau (a subclass) can intercept the story before it goes out, add its own annotation, and forward it along — without reinventing the news wire.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Thread Safety When Raising</h3>
+    <p>A subtle race condition haunted older C# codebases that wrote the null check as a separate statement:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ The old, unsafe pattern — do NOT write this
+if (PriceChanged != null)
+{
+    // if another thread runs "PriceChanged -= lastHandler" right here,
+    // between the null check and the call below, this throws NullReferenceException
+    PriceChanged(this, e);
+}</code></pre>
+    <p>Between the null check and the invocation, another thread could unsubscribe the last remaining handler, and the field would be <code>null</code> by the time the second line runs. The <code>?.Invoke(...)</code> pattern you've been using since lesson 105 avoids this entirely: the compiler copies the delegate field into a temporary local variable first, performs the null check against that local copy, and invokes the copy — not the field. Because delegates are immutable (recall lesson 097: <code>+=</code> and <code>-=</code> always produce a <em>new</em> combined delegate instance rather than mutating one in place), that local copy can't change out from under you mid-call. <code>?.Invoke</code> isn't just a null-guard convenience — it's the thread-safe way to raise an event.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Memory Leak: Unsubscribing Matters</h3>
+    <p>Subscribing to an event creates a reference from the <strong>publisher</strong> to the <strong>subscriber</strong> — the publisher's invocation list holds the subscriber's method and, for an instance method, the subscriber object itself. If the publisher lives longer than the subscriber is supposed to (a long-lived service, a static event, a UI window that outlives a dialog it once observed) and the subscriber never calls <code>-=</code>, the garbage collector can never reclaim the subscriber: something is still holding a live reference to it, even though your code has otherwise "let go" of it. This is known as the <strong>lapsed listener problem</strong>, and it's one of the most common causes of unexplained memory growth in long-running .NET applications.</p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight</div>
+        <p>The rule is simple: <strong>any subscriber whose lifetime is shorter than the publisher's must unsubscribe.</strong> If the subscriber implements <code>IDisposable</code>, unsubscribing in <code>Dispose()</code> is the standard place to do it — it guarantees the publisher's reference is released exactly when the subscriber itself is supposed to be released, not sometime later at the GC's convenience.</p>
+    </div>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class PriceLogger : IDisposable
+{
+    private readonly StockTicker _ticker;
+
+    public PriceLogger(StockTicker ticker)
+    {
+        _ticker = ticker;
+        _ticker.PriceChanged += OnPriceChanged; // publisher now references this PriceLogger
+    }
+
+    private void OnPriceChanged(object? sender, PriceChangedEventArgs e)
+        =&gt; Console.WriteLine($"Logged: {e.NewPrice:C}");
+
+    public void Dispose()
+        =&gt; _ticker.PriceChanged -= OnPriceChanged; // release the reference explicitly
+}</code></pre>
+    <p>If <code>_ticker</code> is a long-lived, application-scoped object and many short-lived <code>PriceLogger</code> instances subscribe to it without ever calling <code>Dispose()</code>, every one of them stays alive in memory for as long as <code>_ticker</code> does — even after the rest of the application has stopped using them.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Overriding <code>OnXxx</code> is the same as subscribing with <code>+=</code>" — it isn't</h3>
+    <p>Overriding the protected <code>OnXxx</code> method is something only a <em>subclass</em> can do, at compile time, by inheriting from the class. Subscribing with <code>+=</code> is something <em>any external code holding a reference to the object</em> can do, at any point at runtime. They're two independent extension mechanisms that happen to compose together: a subclass overrides <code>OnXxx</code> to add its own behavior, and then typically calls <code>base.OnXxx(e)</code> so that external subscribers using <code>+=</code> still get notified too.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Every event needs custom data" — no, use <code>EventArgs.Empty</code></h3>
+    <p>Plenty of events genuinely carry no data beyond "it happened" — a <code>Closed</code> event, for instance. In that case, don't invent an empty subclass; use the base <code>EventArgs</code> type directly and pass the shared <code>EventArgs.Empty</code> instance instead of allocating a new one every time:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public event EventHandler? Closed;
+protected virtual void OnClosed(EventArgs e) =&gt; Closed?.Invoke(this, e);
+// raised with: OnClosed(EventArgs.Empty);</code></pre>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Never unsubscribing a short-lived listener from a long-lived publisher</h4>
+    <p>❌ Subscribing in a constructor or setup method and never calling <code>-=</code> anywhere, especially when the subscriber is meant to be temporary (a dialog, a request-scoped handler, an item in a list that gets removed).</p>
+    <p>✅ Unsubscribe exactly when the subscriber's own lifetime ends — in <code>Dispose()</code> for an <code>IDisposable</code> subscriber, or explicitly at the point the subscriber is no longer needed.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Making the raiser method <code>public</code> instead of <code>protected</code></h4>
+    <p>❌ <code>public virtual void OnPriceChanged(...)</code> — this lets <em>any</em> external code call the raiser directly and fake the event firing, exactly the encapsulation hole lesson 105's <code>event</code> keyword was designed to close.</p>
+    <p>✅ Keep the raiser <code>protected</code> — only the declaring class and its subclasses can call it; external code is restricted to <code>+=</code> and <code>-=</code>, same as any other event.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Overriding <code>OnXxx</code> and forgetting to call <code>base.OnXxx(e)</code></h4>
+    <p>❌ A subclass overrides the raiser to add its own logic, but never calls the base implementation — the event silently stops firing for every external subscriber, with no compiler warning.</p>
+    <p>✅ Unless you have a deliberate reason to suppress the event under specific conditions, always call <code>base.OnXxx(e)</code> from an override, typically as the last line, so the original raising behavior still runs.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Use the full pattern — dedicated <code>EventArgs</code> subclass plus <code>protected virtual OnXxx</code> — for any event exposed on a public class, especially one that might be subclassed, or whose payload might reasonably grow over time.</li>
+        <li style="margin-bottom:0.4rem;">The lighter approach from lesson 105 (a plain <code>EventHandler&lt;T&gt;</code> over a primitive, raised inline with <code>?.Invoke</code>) is still perfectly reasonable for a small, sealed, internal-only class where the event is raised from exactly one place and no subclass will ever need to extend it.</li>
+        <li style="margin-bottom:0.4rem;">Regardless of which shape you choose, the memory-leak discipline (unsubscribe when the subscriber's lifetime ends) and the thread-safety habit (always raise with <code>?.Invoke</code>) apply equally to both.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>EventArgs</strong> = the sealed envelope carrying the event's data — grows without breaking anyone.<br />
+        <strong><code>protected virtual OnXxx</code></strong> = the one front desk every raise passes through — subclasses can intercept there.<br />
+        <strong>Subscribing (<code>+=</code>)</strong> = borrowing a reference from the publisher — always return it with <code>-=</code> when you're done.<br />
+        <strong><code>?.Invoke</code></strong> = the thread-safe way to raise, always — it copies the delegate before checking and calling it.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">The standard .NET event pattern packages event data in a dedicated <code>EventArgs</code> subclass and routes every raise through one <code>protected virtual OnXxx</code> method.</li>
+            <li style="margin-bottom:0.4rem;">This keeps the event's signature stable as the payload grows, and gives subclasses a real, supported extension point via <code>override</code> + <code>base.OnXxx(e)</code>.</li>
+            <li style="margin-bottom:0.4rem;">Always raise with <code>?.Invoke(...)</code> — it's the thread-safe pattern, since delegates are immutable and the null-conditional operator works against a local copy of the field.</li>
+            <li style="margin-bottom:0.4rem;">Subscribing to an event creates a reference from publisher to subscriber. Any subscriber that's shorter-lived than the publisher must unsubscribe with <code>-=</code> — typically in <code>Dispose()</code> — or it leaks memory (the lapsed listener problem).</li>
+            <li style="margin-bottom:0.4rem;">Keep the raiser <code>protected</code>, never <code>public</code> — external code should only ever get <code>+=</code> / <code>-=</code>, exactly as lesson 105 established.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen the full standard event pattern and two real gotchas that come with it. Let's confirm the details.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why does the standard pattern wrap event data in a dedicated <code>EventArgs</code> subclass instead of passing a primitive value directly?</p>
+        <ul class="options">
+            <li>A) <code>EventArgs</code> subclasses run faster than primitives at invocation time</li>
+            <li>B) So new data can be added as a new property later without changing the event's signature and breaking existing subscribers</li>
+            <li>C) The C# compiler requires all events to use a class, never a primitive type</li>
+            <li>D) It allows the event to be raised from multiple threads simultaneously</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A dedicated class can grow new properties freely; the event's type — <code>EventHandler&lt;TEventArgs&gt;</code> — never has to change, so existing subscriber handler signatures keep compiling untouched.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no meaningful performance difference between invoking with a class versus a primitive — the reason is signature stability, not speed.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Lesson 105's <code>EventHandler&lt;decimal&gt;</code> example proves the compiler allows primitives just fine — this is a convention, not a language requirement.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Using a class for event data has no bearing on threading; thread safety comes from the <code>?.Invoke</code> raising pattern instead.</p>
+                <p><strong>Reinforcement:</strong> Stability under change is the whole reason for the <code>EventArgs</code> convention.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why is the raiser method (<code>OnXxx</code>) declared <code>protected virtual</code> rather than <code>public</code> or non-virtual?</p>
+        <ul class="options">
+            <li>A) <code>protected virtual</code> is required by the C# compiler for any method named starting with "On"</li>
+            <li>B) <code>protected</code> keeps external code from calling it directly (preserving the encapsulation the <code>event</code> keyword provides), and <code>virtual</code> lets subclasses override it to extend the raise</li>
+            <li>C) It has no real purpose — it's purely a naming convention with no functional effect</li>
+            <li>D) <code>public</code> methods cannot invoke delegate fields in C#</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>protected</code> means only the declaring class and its subclasses can call it, keeping external code limited to <code>+=</code>/<code>-=</code> as intended. <code>virtual</code> gives subclasses a genuine, supported extension point.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no such compiler rule — <code>OnXxx</code> is purely a naming convention; the accessibility and virtuality are deliberate design choices, not language requirements.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> It has a very real functional effect, as shown in the "Mistake 2" section — making it <code>public</code> reopens the exact encapsulation hole <code>event</code> was meant to close.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Accessibility modifiers have nothing to do with whether a method can invoke a delegate — any method can, regardless of its access level.</p>
+                <p><strong>Reinforcement:</strong> <code>protected virtual</code> is doing two separate, deliberate jobs at once: encapsulation and extensibility.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A long-lived <code>StockTicker</code> object exists for the entire lifetime of an application. A short-lived <code>PriceLogger</code> subscribes to its <code>PriceChanged</code> event but is never unsubscribed, even after the code stops using the <code>PriceLogger</code>. What happens?</p>
+        <ul class="options">
+            <li>A) The <code>PriceLogger</code> is garbage collected as soon as the application code stops referencing it, exactly as normal</li>
+            <li>B) The <code>PriceLogger</code> cannot be garbage collected for as long as <code>StockTicker</code> is alive, because <code>StockTicker</code>'s invocation list still holds a reference to it — a memory leak</li>
+            <li>C) The subscription automatically expires after a timeout set by the .NET runtime</li>
+            <li>D) A <code>NullReferenceException</code> is thrown the next time <code>PriceChanged</code> is raised</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Subscribing adds the <code>PriceLogger</code> instance to <code>StockTicker</code>'s invocation list — a live reference. As long as <code>StockTicker</code> is reachable, so is everything in its invocation list, regardless of whether anything else in the application still references the <code>PriceLogger</code>. This is the lapsed listener memory leak.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This ignores the reference held by the publisher's invocation list — the GC can't collect an object that's still reachable through any live reference, including this one.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> .NET event subscriptions never expire automatically — they last until explicitly removed with <code>-=</code> or the publisher itself becomes unreachable.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The handler is still validly subscribed and will keep running successfully every time the event fires — nothing throws; the bug is a silent memory leak, not a crash.</p>
+                <p><strong>Reinforcement:</strong> A subscriber whose lifetime is shorter than the publisher's must always unsubscribe.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why is <code>SomeEvent?.Invoke(this, e)</code> considered thread-safe, while <code>if (SomeEvent != null) SomeEvent(this, e);</code> is not?</p>
+        <ul class="options">
+            <li>A) <code>?.Invoke</code> acquires a lock on the event field before calling it</li>
+            <li>B) The compiler copies the delegate field into a local variable before the null check, and since delegates are immutable, that local copy can't be changed by another thread mid-call — the two-statement version has a gap where another thread can unsubscribe between the check and the call</li>
+            <li>C) <code>if</code> statements are inherently unsafe to use with events in C#</li>
+            <li>D) There is no real difference; both are equally safe</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>?.Invoke</code> evaluates the event field once, into a compiler-generated temporary, then checks and calls against that copy. Because <code>+=</code>/<code>-=</code> always produce a brand-new delegate instance rather than mutating one in place, the copy is safe from concurrent modification during the call.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>?.Invoke</code> does not take a lock — its safety comes from working against an immutable local copy, not from synchronization.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>if</code> statements themselves are fine; the problem is specifically the gap in time between a separate null-check statement and a separate invocation statement, which the compiler-generated local copy in <code>?.Invoke</code> eliminates.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The two-statement version has a genuine, exploitable race condition that can throw a <code>NullReferenceException</code> under concurrent unsubscription — this is a real, documented difference.</p>
+                <p><strong>Reinforcement:</strong> Always raise events with <code>?.Invoke</code> — it's not just shorter, it's the safe pattern.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know the full standard .NET event pattern — the same shape behind nearly every event in the framework. Next: pulling events out to the design level, using them to decouple independent parts of an application from each other.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>145 - LINQ with EF Core · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The same LINQ you already know doesn't run in your process against EF Core — it gets read, translated into SQL, and shipped off to the database. That translation step is powerful, and it has real edges.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You already know LINQ — <span class="icode">.Where(...)</span>, <span class="icode">.OrderBy(...)</span>, <span class="icode">.Select(...)</span> — from querying in-memory lists. Here's the thing that makes EF Core feel almost magical the first time you see it: you write <em>the exact same LINQ</em> against <span class="icode">context.Products</span>, and instead of filtering a list in memory, EF Core reads your LINQ expression and generates a <span class="icode">SELECT ... WHERE ...</span> SQL statement — filtering happens on the database server, not in your application. Same syntax, completely different execution model underneath. Understanding that difference is the key to writing EF Core queries that are both correct and fast.</p>
+    <p><strong>In this lesson, you'll learn how <span class="icode">DbSet&lt;T&gt;</span>'s <span class="icode">IQueryable&lt;T&gt;</span> nature drives LINQ-to-SQL translation, what can and can't be translated, and the classic client-vs-server evaluation gotcha that trips up even experienced developers.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>When you write LINQ against a <span class="icode">DbSet&lt;T&gt;</span>, you're not writing instructions that run immediately — you're building a description of a query, piece by piece, that EF Core reads and converts into SQL only when you finally ask for results. The C# compiler and EF Core work together to make this translation possible.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>The Simple Example lesson mentioned that <span class="icode">DbSet&lt;T&gt;</span> implements <span class="icode">IQueryable&lt;T&gt;</span> — this is where that fact matters most. <span class="icode">IQueryable&lt;T&gt;</span> is different from the <span class="icode">IEnumerable&lt;T&gt;</span> you've used for in-memory LINQ: instead of holding delegates (compiled C# code), it builds an <strong>expression tree</strong> — a data structure representing your query <em>as data</em>, still inspectable, not yet executed. EF Core's LINQ provider walks that expression tree and generates the equivalent SQL for whatever database provider you're using (SQL Server, PostgreSQL, SQLite, and so on).</p>
+    <div class="code-block"><code>IQueryable&lt;Product&gt; query = context.Products
+    .Where(p =&gt; p.Price &gt; 20)
+    .OrderBy(p =&gt; p.Name);
+// No SQL has run yet — 'query' is an expression tree describing what you want.
+
+List&lt;Product&gt; products = await query.ToListAsync();
+// NOW EF Core translates the tree to SQL and executes it.</code></div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Filtering In Memory Means Pulling the Whole Table Across the Wire First</h3>
+    <p>Imagine EF Core had no translation ability at all, and <span class="icode">context.Products</span> behaved like a regular <span class="icode">IEnumerable&lt;Product&gt;</span>. To find products over $20, you'd have to load <em>every single row</em> in the <span class="icode">Products</span> table into memory first, and only then filter with LINQ in your application process. For a table with 50 rows, that's wasteful. For a table with 50 million rows, it's not just slow — it's often simply impossible, and it throws away one of the main reasons to use a database at all: letting the database engine, which is built and indexed for exactly this, do the filtering.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Translate the Query, Don't Materialize the Data First</h3>
+    <p><span class="icode">IQueryable&lt;T&gt;</span> and expression trees let EF Core see your query's <em>intent</em> before any data moves, and rewrite it as SQL that runs where the data already lives. The database applies the <span class="icode">WHERE</span>, the <span class="icode">ORDER BY</span>, even the pagination, and only the rows you actually asked for travel back across the network. You keep writing familiar C# LINQ; EF Core does the (considerable) work of making sure it runs efficiently, server-side.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">TWO WORLDS: SERVER-SIDE vs CLIENT-SIDE EVALUATION</div>
+        <div class="flow-step">
+            <div class="step-label">Server-side evaluation (the normal, desired case)</div>
+            <ul><li>Your LINQ expression is fully translatable to SQL. EF Core converts the whole thing, sends one SQL statement, and only the matching rows come back.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Client-side evaluation (only ever inside .Select(...) projections, and only for the final shaping step)</div>
+            <ul><li>A small, specific part of your query genuinely can't map to SQL (e.g. a custom C# formatting method), so EF Core runs the server-translatable parts as SQL, then finishes that untranslatable piece in your application process, on the rows already returned.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Not translatable at all (throws, since EF Core 3.0)</div>
+            <ul><li>If a <span class="icode">.Where(...)</span> or similar filter contains something EF Core cannot express in SQL, it throws an <span class="icode">InvalidOperationException</span> rather than silently pulling the whole table into memory to filter it there — this is the classic gotcha, covered in detail below.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">FROM LINQ EXPRESSION TO ROWS IN YOUR APPLICATION</div>
+        <div class="flow-step">
+            <div class="step-label">Step 1 — You chain LINQ operators onto a DbSet&lt;T&gt;</div>
+            <pre><code>IQueryable&lt;Product&gt; q = context.Products.Where(p =&gt; p.Price &gt; 20);</code></pre>
+            <ul><li>Each call builds up the expression tree further. Nothing executes yet — this is the same deferred execution you learned for in-memory LINQ, just building SQL intent instead of a delegate chain.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 2 — You call a materializing method</div>
+            <pre><code>List&lt;Product&gt; products = await q.ToListAsync();</code></pre>
+            <ul><li><span class="icode">.ToListAsync()</span>, <span class="icode">.FirstAsync()</span>, <span class="icode">.CountAsync()</span>, a <span class="icode">foreach</span> — any of these trigger execution.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 3 — EF Core's query pipeline translates the expression tree to SQL</div>
+            <ul><li>The provider-specific translator walks the tree and generates <span class="icode">SELECT ... FROM Products WHERE Price &gt; @p0</span> (parameterized, not string-concatenated — the same safety you saw with ADO.NET parameters).</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 4 — The database executes the SQL and returns matching rows</div>
+            <ul><li>Only the rows that satisfy <span class="icode">Price &gt; 20</span> travel across the network — not the whole table.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 5 — EF Core materializes rows into Product objects</div>
+            <ul><li>Each row is mapped back into a <span class="icode">Product</span> instance, and — unless you asked otherwise — tracked by the change tracker (the subject of the next lesson).</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>A filter, a sort, and a projection — all translated into one SQL statement:</p>
+    <div class="code-block"><code>List&lt;string&gt; names = await context.Products
+    .Where(p =&gt; p.Price &gt; 20 &amp;&amp; p.Stock &gt; 0)
+    .OrderBy(p =&gt; p.Name)
+    .Select(p =&gt; p.Name)
+    .ToListAsync();</code></div>
+    <p>This becomes roughly:</p>
+    <div class="code-block"><code>SELECT p.Name
+FROM Products AS p
+WHERE p.Price &gt; @p0 AND p.Stock &gt; 0
+ORDER BY p.Name</code></div>
+    <p>Notice <span class="icode">.Select(p =&gt; p.Name)</span> even changed what column the SQL asks for — EF Core doesn't fetch every column and then discard most of them in C#; the projection is translated too, so only <span class="icode">Name</span> is ever selected from the database.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — the Classic Gotcha</h2>
+    <p>A product search endpoint needs to filter by a normalized, business-specific comparison — say, matching a search term against a product's name using a custom C# helper method that trims and normalizes text a particular way:</p>
+    <div class="code-block"><code>public static class SearchHelpers
+{
+    public static bool MatchesSearch(string productName, string term)
+        =&gt; productName.Trim().Contains(term.Trim(), StringComparison.OrdinalIgnoreCase);
+}
+
+// ❌ This throws InvalidOperationException at runtime:
+List&lt;Product&gt; results = await context.Products
+    .Where(p =&gt; SearchHelpers.MatchesSearch(p.Name, searchTerm))
+    .ToListAsync();</code></div>
+    <p>EF Core's SQL translator has no idea what <span class="icode">SearchHelpers.MatchesSearch</span> does — it's arbitrary C# code, not an expression it recognizes a SQL equivalent for. Since EF Core 3.0, it does <em>not</em> silently fall back to pulling every product into memory and running your method there — it throws, loudly, at query execution time, specifically so this mistake doesn't quietly turn into "load the entire table on every search."</p>
+    <p>The fix is to either express the same logic using translatable EF Core / LINQ methods directly:</p>
+    <div class="code-block"><code>// ✅ Translatable — EF Core maps .Contains() to SQL LIKE
+List&lt;Product&gt; results = await context.Products
+    .Where(p =&gt; p.Name.Contains(searchTerm))
+    .ToListAsync();</code></div>
+    <p>...or, when the custom logic genuinely can't be expressed in SQL, deliberately switch to client-side evaluation by materializing first, then filtering in memory — accepting the cost of pulling more rows across the wire:</p>
+    <div class="code-block"><code>// ✅ Deliberate, visible client-side filtering — you chose this, EF Core didn't hide it from you
+List&lt;Product&gt; candidates = await context.Products
+    .Where(p =&gt; p.Category == "Electronics")   // narrow down server-side first!
+    .ToListAsync();
+
+List&lt;Product&gt; results = candidates
+    .Where(p =&gt; SearchHelpers.MatchesSearch(p.Name, searchTerm))
+    .ToList();</code></div>
+    <p>The key discipline in that last version: narrow the result set as much as possible with translatable filters <em>before</em> materializing, so the untranslatable logic only runs against a small, already-filtered set of rows — not the entire table.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🗣️</span> Ordering Through a Translator</div>
+        <p>Writing LINQ against a <span class="icode">DbSet&lt;T&gt;</span> is like speaking to a chef through a translator who only knows certain kitchen terms. Say "no onions, extra spicy, medium rare" — the translator knows exactly how to relay that, and the chef prepares precisely that dish. Say something the translator has no vocabulary for — an idiom, a joke, a reference only you'd understand — and the translator can't just guess. A good translator stops and says "I can't convey that" rather than passing along something wrong or, worse, just making up a dish and hoping it's close enough.</p>
+        <p>That's exactly EF Core's LINQ provider: it translates what it recognizes, faithfully, into SQL — and rather than silently mistranslating (or, worse, secretly running the whole request themselves after asking the chef for everything in the kitchen), it tells you plainly when something can't be translated, so you can rephrase it in terms it understands.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">EXPRESSION TREES — WHY LINQ CAN BE TRANSLATED AT ALL</div>
+        <div class="flow-step">
+            <div class="step-label">1. Expression&lt;Func&lt;T, bool&gt;&gt;, not Func&lt;T, bool&gt;</div>
+            <ul><li>When you write <span class="icode">p =&gt; p.Price &gt; 20</span> against an <span class="icode">IQueryable&lt;T&gt;</span> method, the C# compiler builds it as an <span class="icode">Expression</span> object — a tree of nodes representing "a member access, then a greater-than comparison, then a constant 20" — rather than compiling it straight to IL like it would for a regular delegate.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. EF Core's query pipeline walks that tree, node by node</div>
+            <ul><li>Each recognized node (comparisons, member access, common LINQ operators, many common .NET methods like <span class="icode">string.Contains</span>) has a known SQL equivalent the provider substitutes in.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. An unrecognized node breaks the translation</div>
+            <ul><li>A call to an arbitrary method (like <span class="icode">SearchHelpers.MatchesSearch</span>) has no known SQL mapping — there's no generic way to translate arbitrary C# logic into SQL, so the pipeline can't proceed automatically.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. Since EF Core 3.0, failure to translate a query root is an exception, not a silent fallback</div>
+            <ul><li>Earlier EF Core versions would sometimes quietly run the whole query client-side when translation failed — a well-known source of accidental full-table loads. Current EF Core throws instead, forcing the untranslatable logic to be either rewritten or explicitly moved after materialization.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "IQueryable and IEnumerable are basically interchangeable"</h3>
+    <p>They share a lot of the same LINQ method names, which makes this easy to assume — but they behave completely differently underneath. Chain LINQ onto an <span class="icode">IQueryable&lt;T&gt;</span> and it stays translatable, potentially all the way to SQL. Call <span class="icode">.AsEnumerable()</span> or <span class="icode">.ToList()</span> partway through, and everything <em>after</em> that point switches to plain in-memory LINQ over objects already pulled into your process — no further translation happens, for better (you can now call any C# method) or worse (you've likely already paid for pulling more data across the wire than you needed).</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "If it compiles, it'll work at runtime"</h3>
+    <p>This is the sharpest edge of LINQ-to-SQL translation: <span class="icode">context.Products.Where(p =&gt; SearchHelpers.MatchesSearch(p.Name, term))</span> compiles perfectly fine — the C# compiler has no idea EF Core can't translate that method call. The failure only shows up at runtime, when the query actually executes and the provider tries (and fails) to translate it. This is exactly why testing real query execution, not just compilation, matters for EF Core code.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Calling .ToList() too early, then filtering in memory "just to be safe"</h4>
+    <p>❌ <span class="icode">context.Products.ToList().Where(p =&gt; p.Price &gt; 20)</span> — this pulls the <em>entire</em> <span class="icode">Products</span> table into memory first, then filters it in your process. The <span class="icode">.Where(...)</span> never gets a chance to be translated to SQL at all, because it's running against an in-memory <span class="icode">List&lt;Product&gt;</span>, not the <span class="icode">IQueryable&lt;Product&gt;</span> anymore. ✅ Chain <span class="icode">.Where(...)</span> before <span class="icode">.ToListAsync()</span>, so the filter is translated and applied on the database.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Using a custom C# method inside a query filter, expecting EF Core to "figure it out"</h4>
+    <p>❌ Calling a custom static helper or a computed property inside <span class="icode">.Where(...)</span>, as shown in the real-world example, and being surprised by a runtime <span class="icode">InvalidOperationException</span>. ✅ Either rewrite the logic using translatable expressions and built-in methods EF Core recognizes, or deliberately narrow the query first and finish the untranslatable part after materializing — the second real-world example above shows both.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Forgetting that LINQ execution is still deferred with EF Core</h4>
+    <p>❌ Building a query into a variable, then reusing that same <span class="icode">IQueryable&lt;T&gt;</span> variable multiple times expecting it to run once and cache results — each materialization (<span class="icode">.ToListAsync()</span>, a <span class="icode">foreach</span>, etc.) re-executes the query against the database again. ✅ Materialize once into a concrete list if you need to reuse the results without hitting the database again — exactly the deferred-execution discipline from the earlier LINQ lessons, still fully in effect here.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Situation</th><th>Approach</th></tr></thead>
+            <tbody>
+                <tr><td>Filtering, sorting, projecting, paging on columns/expressions EF Core recognizes</td><td>Keep it all in the <span class="icode">IQueryable&lt;T&gt;</span> chain — let it translate to SQL</td></tr>
+                <tr><td>Logic that genuinely can't be expressed in SQL (complex custom formatting, calling an external library)</td><td>Narrow with translatable filters first, materialize, then finish with plain LINQ over the (small) in-memory result</td></tr>
+                <tr><td>Unsure whether something translates</td><td>Try it and check — a runtime <span class="icode">InvalidOperationException</span> tells you immediately, rather than silently misbehaving</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Push as much filtering, sorting, and projecting as possible into the <span class="icode">IQueryable&lt;T&gt;</span> chain before ever materializing — that's where EF Core can turn your intent into efficient SQL. Only drop to client-side (in-memory) LINQ deliberately, after narrowing the result set, and never by accident.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>IQueryable&lt;T&gt;</strong> = a query described as data (an expression tree), not yet run.<br />
+        <strong>Server-side evaluation</strong> = your LINQ becomes SQL, and runs on the database.<br />
+        <strong>Client-side evaluation</strong> = LINQ runs in your process, over rows already pulled back.<br />
+        <strong>Materializing</strong> (<span class="icode">.ToListAsync()</span>, etc.) = the moment the switch from "description" to "execution" happens.<br /><br />
+        <strong>Remember:</strong> the further "left" in your query chain something sits (closer to <span class="icode">context.Products</span>), the more likely it runs on the database — push filters left, materialize last.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><span class="icode">DbSet&lt;T&gt;</span> is <span class="icode">IQueryable&lt;T&gt;</span> — LINQ against it builds an <strong>expression tree</strong>, not a delegate, so EF Core can translate it to SQL.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Server-side evaluation</strong> (SQL, on the database) is the goal — it's efficient and avoids pulling unneeded rows across the network.</li>
+            <li style="margin-bottom:0.4rem;">A LINQ expression that calls arbitrary C# methods (not recognized built-ins) cannot be translated, and EF Core throws an <span class="icode">InvalidOperationException</span> rather than silently loading the whole table.</li>
+            <li style="margin-bottom:0.4rem;">Deliberate <strong>client-side evaluation</strong> (materialize, then use plain LINQ) is a valid fallback — but always narrow with translatable filters first.</li>
+            <li style="margin-bottom:0.4rem;">Execution is still deferred — a query variable re-runs against the database every time it's materialized.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how LINQ against EF Core gets translated to SQL, and where that translation breaks down. Let's confirm the reasoning stuck.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why does context.Products.Where(p => p.Price > 20) get translated to SQL, while a regular List&lt;Product&gt;.Where(p => p.Price > 20) doesn't?</p>
+        <ul class="options">
+            <li>A) List&lt;Product&gt; doesn't support the Where method at all</li>
+            <li>B) DbSet&lt;T&gt; implements IQueryable&lt;T&gt;, which builds the lambda as an expression tree EF Core's provider can walk and translate; List&lt;T&gt; implements IEnumerable&lt;T&gt;, which compiles the lambda straight to a delegate that just runs in memory</li>
+            <li>C) SQL translation only happens for queries that use OrderBy alongside Where</li>
+            <li>D) EF Core secretly converts every List&lt;Product&gt; into a database table before querying it</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The distinction is IQueryable&lt;T&gt; vs IEnumerable&lt;T&gt;. Against IQueryable&lt;T&gt;, the compiler builds an Expression object (data describing the query) that EF Core's provider can inspect and translate to SQL. Against IEnumerable&lt;T&gt;, the same lambda compiles directly to executable IL (a Func delegate) that just runs immediately in memory — there's nothing to translate.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> List&lt;T&gt; fully supports Where — it's a standard LINQ-to-Objects operator; the difference is what happens underneath, not whether it's supported.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Translation happens for Where alone — OrderBy isn't required to trigger it.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> EF Core has no such mechanism — an in-memory List&lt;Product&gt; stays entirely in memory and is never converted into anything database-related.</p>
+                <p><strong>Reinforcement:</strong> The IQueryable&lt;T&gt; vs IEnumerable&lt;T&gt; distinction is exactly what makes LINQ-to-SQL translation possible in the first place.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A developer writes context.Products.Where(p => SearchHelpers.MatchesSearch(p.Name, term)).ToListAsync(), where MatchesSearch is a custom static C# method. What happens?</p>
+        <ul class="options">
+            <li>A) It compiles and runs fine, silently pulling every row from Products into memory before filtering, exactly like older EF Core versions used to do</li>
+            <li>B) It throws an InvalidOperationException at query execution time, because EF Core cannot translate an arbitrary custom method call into SQL</li>
+            <li>C) It fails to compile, because EF Core validates translatability at compile time</li>
+            <li>D) It runs correctly and efficiently, because EF Core automatically inlines any static method's logic into the generated SQL</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Since EF Core 3.0, a query that cannot be translated (such as one calling an unrecognized custom method inside a filter) throws an InvalidOperationException at runtime rather than silently falling back to loading everything into memory.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This describes the older, pre-3.0 EF Core behavior, which current EF Core deliberately no longer does — precisely because it caused accidental full-table loads that were hard to notice.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Translatability can only be determined by actually walking the expression tree at runtime against the specific provider — the C# compiler has no way to know this ahead of time, so the code compiles fine and fails only when run.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> EF Core has no general mechanism to inline arbitrary C# method bodies into SQL — only a known, recognized set of expressions and methods are translatable.</p>
+                <p><strong>Reinforcement:</strong> A query can compile perfectly and still fail at runtime if it contains logic EF Core's SQL translator doesn't recognize — always verify real query execution, not just compilation.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Which rewrite correctly fixes the untranslatable query from the previous question, while still minimizing the amount of data pulled from the database?</p>
+        <ul class="options">
+            <li>A) context.Products.ToList().Where(p => SearchHelpers.MatchesSearch(p.Name, term)) — materialize the whole table immediately, then filter in memory</li>
+            <li>B) context.Products.Where(p => p.Category == "Electronics").ToListAsync(), then apply SearchHelpers.MatchesSearch(...) as a second, in-memory .Where(...) on that already-narrowed result</li>
+            <li>C) Wrap SearchHelpers.MatchesSearch in a try/catch so the exception is silently ignored</li>
+            <li>D) Rename the method so EF Core's translator recognizes it automatically</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This narrows the result set as much as possible with a translatable filter (Category == "Electronics") that runs on the database, then finishes the untranslatable logic in memory — but only against the small, already-filtered set of rows, not the entire table.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This works without throwing, but defeats the purpose — it pulls every row in Products across the network before filtering anything, exactly the inefficiency this lesson is about avoiding.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Swallowing the exception doesn't fix the translation problem — it just hides a real error and leaves the query broken.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Renaming a method has no effect on translatability — EF Core recognizes specific well-known expressions and methods, not names.</p>
+                <p><strong>Reinforcement:</strong> When something can't be translated, narrow with server-side filters first, then apply the untranslatable logic to the smallest possible in-memory set — never to the whole table.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand how EF Core turns LINQ into SQL, and where that translation has real edges. Next up: what happens to the entities your queries return — tracking vs no-tracking.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

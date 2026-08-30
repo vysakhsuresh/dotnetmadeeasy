@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>157 - Async Streams · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Task&lt;T&gt; represents one value, not yet ready. IAsyncEnumerable&lt;T&gt; represents many values, arriving one at a time, over time.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Everything in this module so far has answered one question: how do I asynchronously get <em>a single result</em>? A customer record, a price, a combined array of pricing/inventory/reviews — always, in the end, one Task producing one value. But what happens when the thing you're producing isn't one value at all, but a whole <em>sequence</em> of them, and each one becomes available only after some asynchronous wait — a page of search results fetched from an API, then another page, then another; or a giant log file being read one line at a time?</p>
+    <p>You already know <code class="icode">IEnumerable&lt;T&gt;</code> from earlier in this course — the contract that lets you <code class="icode">foreach</code> over any sequence, one item at a time, via <code class="icode">MoveNext()</code>. <strong>In this lesson, you'll see exactly why that contract breaks down the moment producing the <em>next</em> item requires an asynchronous wait, and meet its async counterpart: <code class="icode">IAsyncEnumerable&lt;T&gt;</code>.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>An <strong>async stream</strong> is a sequence of values that arrive one at a time, where getting the <em>next</em> value might require waiting — for a network response, for more data to be read off disk, for another page of results to come back. <code class="icode">IAsyncEnumerable&lt;T&gt;</code> is C#'s type for exactly that: "a sequence of <code class="icode">T</code>, where asking for the next item is itself an asynchronous operation."</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Recall <code class="icode">IEnumerable&lt;T&gt;</code>'s contract from earlier in this course:</p>
+    <div class="code-block"><code>public interface IEnumerable&lt;T&gt;
+{
+    IEnumerator&lt;T&gt; GetEnumerator();
+}
+
+public interface IEnumerator&lt;T&gt;
+{
+    T Current { get; }
+    bool MoveNext();   // SYNCHRONOUS — returns immediately, true or false
+}</code></div>
+    <p><code class="icode">IAsyncEnumerable&lt;T&gt;</code> mirrors this shape almost exactly, with one deliberate, crucial change:</p>
+    <div class="code-block"><code>public interface IAsyncEnumerable&lt;T&gt;
+{
+    IAsyncEnumerator&lt;T&gt; GetAsyncEnumerator(CancellationToken cancellationToken = default);
+}
+
+public interface IAsyncEnumerator&lt;T&gt; : IAsyncDisposable
+{
+    T Current { get; }
+    ValueTask&lt;bool&gt; MoveNextAsync();   // ASYNCHRONOUS — may need to wait before it knows
+}</code></div>
+    <p>The entire idea is captured in that one line: <code class="icode">MoveNext()</code> became <code class="icode">MoveNextAsync()</code>. Advancing to the next item is no longer guaranteed to be instant — it's an operation you await, exactly like any other asynchronous call in this module.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> One change, same shape</div>
+        <p><code class="icode">IAsyncEnumerable&lt;T&gt;</code> isn't a new idea bolted onto the language — it's the exact same "walk through items one at a time" contract you already know from <code class="icode">IEnumerable&lt;T&gt;</code>, with <code class="icode">MoveNext()</code> becoming awaitable. Everything you already understand about enumeration carries over directly.</p>
+        <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);margin-top:0.4rem;">(You'll also notice it returns <code>ValueTask&lt;bool&gt;</code> rather than <code>Task&lt;bool&gt;</code> — a performance-oriented Task variant whose full details belong to a later, more advanced lesson. For now, treat it exactly like an awaitable <code>Task&lt;bool&gt;</code>.)</div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Neither Existing Tool Fits</h3>
+    <p>Say you're building a method that streams pages of search results from an external API, one page at a time. You have two existing tools, and both are the wrong shape for this job:</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ IEnumerable&lt;T&gt; — synchronous only</h4>
+            <ul>
+                <li><code>MoveNext()</code> must return immediately — no way to await a network call inside it.</li>
+                <li>You'd have to block the thread to fetch the next page, exactly the problem this whole module exists to avoid.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>❌ Task&lt;List&lt;T&gt;&gt; — all-or-nothing</h4>
+            <ul>
+                <li>Forces you to wait for <em>every</em> page before returning anything at all.</li>
+                <li>The caller can't start processing the first result the moment it arrives — everything is buffered in memory until the very end.</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is a sequence type where producing each individual item can involve an asynchronous wait, but the caller can still process items as they arrive — starting work on the first item without needing to wait for the last one, and without ever blocking a thread while waiting for the next one to show up.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — IAsyncEnumerable&lt;T&gt; and await foreach</h3>
+    <p><code class="icode">IAsyncEnumerable&lt;T&gt;</code> fills exactly this gap. On the consuming side, C# gives you a matching keyword: <code class="icode">await foreach</code>, which loops over an async stream exactly like an ordinary <code class="icode">foreach</code>, except each step to the next item is awaited — freeing the thread while it waits, exactly like every other <code class="icode">await</code> in this module, then resuming with the next item once it's actually ready.</p>
+    <div class="code-block"><code>await foreach (SearchResult result in SearchProductsStreamAsync(query))
+{
+    Console.WriteLine(result.Name); // process each item as soon as it arrives
+}</code></div>
+    <p>The full mechanics of writing the producing side of this — with <code class="icode">async IAsyncEnumerable&lt;T&gt;</code> and <code class="icode">yield return</code> — are the next lesson's focus. This lesson's job is the concept and the shape of the problem it solves.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Shape of the problem</th><th>The right tool</th></tr></thead>
+            <tbody>
+                <tr><td>One value, computed synchronously</td><td>Just return <code class="icode">T</code></td></tr>
+                <tr><td>One value, available only after waiting</td><td><code class="icode">Task&lt;T&gt;</code> — awaited once</td></tr>
+                <tr><td>Many values, all available synchronously, up front</td><td><code class="icode">IEnumerable&lt;T&gt;</code> — <code class="icode">foreach</code></td></tr>
+                <tr><td>Many values, each one available only after waiting</td><td><code class="icode">IAsyncEnumerable&lt;T&gt;</code> — <code class="icode">await foreach</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Notice the clean progression: going from "one value" to "many values" is the same jump as going from <code class="icode">T</code> to <code class="icode">IEnumerable&lt;T&gt;</code>. Going from "synchronous" to "asynchronous" is the same jump as going from a plain value to a <code class="icode">Task</code>. <code class="icode">IAsyncEnumerable&lt;T&gt;</code> is simply what you get when you make <em>both</em> jumps at once.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">WHAT await foreach REALLY DOES</div>
+        <div style="text-align:center;font-size:0.9rem;color:var(--text-muted,#94A3B8);margin-bottom:0.6rem;">You write this:</div>
+        <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.8rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;margin:0 auto 0.8rem;max-width:440px;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">await foreach (var item in stream)
+    Process(item);</code></pre>
+        <div style="text-align:center;font-size:1.2rem;color:var(--accent-purple,#8B5CF6);">▼ the compiler translates it into (conceptually) ▼</div>
+        <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.8rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;margin:0.8rem auto 0;max-width:440px;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">await using var e = stream.GetAsyncEnumerator();
+while (await e.MoveNextAsync())
+{
+    var item = e.Current;
+    Process(item);
+}</code></pre>
+    </div>
+    <p>Each <code class="icode">await e.MoveNextAsync()</code> is a genuine suspension point, exactly like any <code class="icode">await</code> you've used throughout this module — the thread is freed while the next item is being produced (waiting on a network call, more disk I/O, whatever the producer needs), and execution resumes with that item once it's ready. <code class="icode">await using</code> ensures the enumerator's async cleanup (<code class="icode">DisposeAsync()</code> — releasing a connection, closing a file) also happens properly and asynchronously when the loop ends, exactly the way a plain <code class="icode">using</code> works for synchronous disposal.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>A before/after comparison that makes the difference concrete — fetching three pages of results, "all at once" versus "as an async stream":</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🔴 BEFORE — Task&lt;List&lt;T&gt;&gt;</h4>
+            <ul>
+                <li>Caller must wait for ALL 3 pages before seeing anything</li>
+                <li>Every page is buffered in memory at once</li>
+                <li>If the caller only needed the first result, all 3 pages were fetched anyway</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🟢 AFTER — IAsyncEnumerable&lt;T&gt;</h4>
+            <ul>
+                <li>Caller sees page 1's items the moment they arrive</li>
+                <li>Only the current item needs to be in memory</li>
+                <li>Caller can stop early (e.g., break) without fetching remaining pages</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="code-block"><code>// Consuming an async stream — the producing side is next lesson's topic
+public async Task PrintFirstMatchingResultAsync(string query)
+{
+    await foreach (SearchResult result in SearchProductsStreamAsync(query))
+    {
+        if (result.IsInStock)
+        {
+            Console.WriteLine($"Found: {result.Name}");
+            break; // stops early — later pages are never even fetched
+        }
+    }
+}</code></div>
+    <p>Walking through it:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><code class="icode">await foreach</code> pulls one <code class="icode">SearchResult</code> at a time — each one might have required a fresh page fetch behind the scenes, but the calling code doesn't need to know or care about that detail.</li>
+        <li style="margin-bottom:0.4rem;">The moment a matching item is found, <code class="icode">break</code> exits the loop — and, crucially, any pages that haven't been fetched yet simply never get fetched. That's impossible to express cleanly with a method that hands back one big, fully-loaded <code class="icode">List&lt;SearchResult&gt;</code>.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A background worker that processes rows streamed out of a large database export, without ever loading the whole export into memory:</p>
+
+    <div class="code-block"><code>public async Task ProcessOrderExportAsync(IAsyncEnumerable&lt;OrderRecord&gt; exportStream, CancellationToken ct)
+{
+    int processedCount = 0;
+
+    await foreach (OrderRecord order in exportStream.WithCancellation(ct))
+    {
+        await _shippingQueue.EnqueueAsync(order, ct);
+        processedCount++;
+
+        if (processedCount % 1000 == 0)
+            _logger.LogInformation("Processed {Count} orders so far...", processedCount);
+    }
+
+    _logger.LogInformation("Export processing complete: {Count} total orders.", processedCount);
+}</code></div>
+    <p>Whether the export holds a hundred orders or ten million, this method's memory footprint stays roughly constant — only the current <code class="icode">OrderRecord</code> needs to be in memory at any moment, exactly the same benefit <code class="icode">IEnumerable&lt;T&gt;</code> gives you for large synchronous sequences, now available even when producing each record genuinely requires waiting (e.g., reading the next chunk off disk or a paginated source). <code class="icode">.WithCancellation(ct)</code> threads a <code class="icode">CancellationToken</code> into the stream itself — the deep mechanics of this are covered fully in the next lesson.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🍽️</span> A Buffet vs. Courses Brought Out One at a Time</div>
+        <p><code class="icode">Task&lt;List&lt;T&gt;&gt;</code> is like a buffet: the kitchen won't let you in until every single dish is fully prepared and laid out. You get everything at once, but you wait for the slowest dish before you can eat anything — even the dish that was ready twenty minutes ago.</p>
+        <p><code class="icode">IAsyncEnumerable&lt;T&gt;</code> is like a proper multi-course meal: the kitchen brings out each course the moment it's ready, and you start eating the appetizer while the main course is still being prepared. If you decide you're full after the second course, the kitchen never bothers finishing the third — nothing wasted. That's exactly the "process items as they arrive, and stop early if you want to" benefit async streams give you over waiting for one giant, fully-loaded collection.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>At a high level, <code class="icode">IAsyncEnumerable&lt;T&gt;</code> combines two compiler transformations you've already met separately in this course: the <strong>iterator</strong> machinery behind <code class="icode">yield return</code> (which lets a method pause and resume, remembering where it left off, to produce one item at a time) and the <strong>async state machine</strong> behind <code class="icode">async</code>/<code class="icode">await</code> (which lets a method pause and resume around an asynchronous wait, freeing the thread in the meantime). A method written as <code class="icode">async IAsyncEnumerable&lt;T&gt;</code> gets both: it can pause to <code class="icode">yield return</code> a value <em>and</em> pause to <code class="icode">await</code> something, in any combination, and the compiler generates a single state machine capable of both kinds of suspension. The full mechanics of writing one of these methods yourself are exactly what the next lesson covers.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "IAsyncEnumerable&lt;T&gt; means everything is loaded in the background while I do other stuff" — not automatically</h3>
+    <p>An async stream doesn't pre-fetch every item ahead of time on its own. Each item is typically produced exactly when <code class="icode">MoveNextAsync()</code> is called for it — not before. This is precisely what allows the "stop early and skip the rest" benefit from the earlier example: nothing has been fetched yet for items you never asked for.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. This isn't the same thing as Task.WhenAll or Task.WhenAny</h3>
+    <p>Those two lessons were about coordinating <em>several separate Tasks</em> that were all started up front. Async streams are about a <em>single ongoing sequence</em> of values, produced incrementally over time — a fundamentally different shape of problem, even though both live under the "asynchronous programming" umbrella.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Reaching for Task&lt;List&lt;T&gt;&gt; out of habit when the sequence could be huge or unbounded</h4>
+    <p>❌ Buffering an entire large or open-ended sequence (a huge export, a live feed) into one <code class="icode">List&lt;T&gt;</code> before returning it — high memory use, and the caller waits for everything before seeing anything.</p>
+    <p>✅ If the caller can meaningfully process items one at a time, and producing each one may involve waiting, <code class="icode">IAsyncEnumerable&lt;T&gt;</code> is usually the better fit.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Using a plain foreach on an IAsyncEnumerable&lt;T&gt;</h4>
+    <p>❌ This won't even compile — a plain <code class="icode">foreach</code> expects synchronous <code class="icode">IEnumerable&lt;T&gt;</code>/<code class="icode">MoveNext()</code>, and <code class="icode">IAsyncEnumerable&lt;T&gt;</code> only offers <code class="icode">MoveNextAsync()</code>.</p>
+    <p>✅ Use <code class="icode">await foreach</code> specifically — and make sure the enclosing method is itself <code class="icode">async</code>, since <code class="icode">await foreach</code> awaits internally.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">📄</span>
+            <div class="label">Paginated API results</div>
+            <div class="desc">Stream pages as they're fetched instead of loading them all first.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">📁</span>
+            <div class="label">Large files, read incrementally</div>
+            <div class="desc">Process a huge file line by line without holding the whole thing in memory.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🚫</span>
+            <div class="label">Not for a small, fixed, already-available list</div>
+            <div class="desc">If everything's ready synchronously and it's small, a plain List&lt;T&gt; is simpler.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">⏹️</span>
+            <div class="label">Consumers that might stop early</div>
+            <div class="desc">Async streams avoid wasted work when a caller only needs the first few items.</div>
+        </div>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>IEnumerable&lt;T&gt;</strong> = "many values, each one ready instantly."<br />
+        <strong>Task&lt;T&gt;</strong> = "one value, not ready yet — await it."<br />
+        <strong>IAsyncEnumerable&lt;T&gt;</strong> = "many values, and getting each next one might mean waiting."<br /><br />
+        <strong>Remember:</strong><br />
+        · Same contract as IEnumerable&lt;T&gt;, with MoveNext() becoming an awaitable MoveNextAsync().<br />
+        · Consume it with <code>await foreach</code> — never a plain <code>foreach</code>.<br />
+        · Items are produced incrementally, on demand — stopping early skips the rest of the work.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">An <strong>async stream</strong> is a sequence of values where producing the next one may require an asynchronous wait.</li>
+            <li style="margin-bottom:0.4rem;"><code>IAsyncEnumerable&lt;T&gt;</code> is the async counterpart of <code>IEnumerable&lt;T&gt;</code> — the same "walk through items one at a time" contract, with <code>MoveNext()</code> becoming awaitable <code>MoveNextAsync()</code>.</li>
+            <li style="margin-bottom:0.4rem;">Consume it with <code>await foreach</code>, which awaits each step to the next item, freeing the thread while it waits — exactly like any other <code>await</code>.</li>
+            <li style="margin-bottom:0.4rem;">It solves a real gap: neither synchronous <code>IEnumerable&lt;T&gt;</code> (can't await inside <code>MoveNext</code>) nor a single <code>Task&lt;List&lt;T&gt;&gt;</code> (forces waiting for everything) fits a sequence produced incrementally over time.</li>
+            <li style="margin-bottom:0.4rem;">Items are produced on demand — a consumer that stops early never pays for the rest.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen why a new sequence type was needed for asynchronously-produced items. Let's check the core distinction is clear.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What is the fundamental limitation of IEnumerable&lt;T&gt; that IAsyncEnumerable&lt;T&gt; was created to solve?</p>
+        <ul class="options">
+            <li>A) IEnumerable&lt;T&gt; can only hold a fixed number of items</li>
+            <li>B) IEnumerable&lt;T&gt;'s MoveNext() must return synchronously, so it can't cleanly represent "getting the next item requires an asynchronous wait"</li>
+            <li>C) IEnumerable&lt;T&gt; doesn't support the foreach keyword</li>
+            <li>D) IEnumerable&lt;T&gt; can only be used with arrays, not other collection types</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> IEnumerator&lt;T&gt;.MoveNext() is a synchronous method — it must return true or false immediately. There's no way to await something inside it without blocking the thread, which is exactly the problem asynchronous programming exists to avoid.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> IEnumerable&lt;T&gt; can represent sequences of any size, including unbounded ones — size isn't the limitation here.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> IEnumerable&lt;T&gt; is precisely what powers plain foreach — the limitation is about asynchronous production of items, not about foreach support itself.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> IEnumerable&lt;T&gt; works with any type implementing it, not just arrays — that's the whole point of the interface.</p>
+                <p><strong>Reinforcement:</strong> The synchronous nature of MoveNext() is exactly the gap IAsyncEnumerable&lt;T&gt; closes with its awaitable MoveNextAsync().</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A method needs to stream a million rows from a database export, processing each one as it arrives, without holding all of them in memory at once. Which return type best fits this need?</p>
+        <ul class="options">
+            <li>A) Task&lt;List&lt;OrderRecord&gt;&gt;</li>
+            <li>B) IAsyncEnumerable&lt;OrderRecord&gt;</li>
+            <li>C) OrderRecord[]</li>
+            <li>D) Task&lt;OrderRecord&gt;</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> IAsyncEnumerable&lt;OrderRecord&gt; lets each row be produced (potentially with an asynchronous wait) and consumed one at a time via await foreach, keeping memory use roughly constant regardless of how many rows there are.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This would force loading all one million rows into memory before the caller can process even the first one — exactly the problem being avoided.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A plain array has the same "everything must exist up front, all in memory" problem as the List&lt;T&gt; option, with no asynchrony at all.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Task&lt;OrderRecord&gt; represents exactly one value, not a sequence of a million of them.</p>
+                <p><strong>Reinforcement:</strong> IAsyncEnumerable&lt;T&gt; is specifically the tool for large or open-ended sequences produced incrementally.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> What is the key difference between the plain foreach keyword and await foreach?</p>
+        <ul class="options">
+            <li>A) await foreach runs faster because it always uses multiple threads</li>
+            <li>B) await foreach awaits each step to the next item (calling MoveNextAsync), freeing the thread while it waits, whereas plain foreach calls a synchronous MoveNext that must return immediately</li>
+            <li>C) await foreach can only be used with arrays</li>
+            <li>D) There is no real difference — await foreach is just alternate syntax for the same thing</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> await foreach is specifically for IAsyncEnumerable&lt;T&gt;, where advancing to the next item is an asynchronous operation. It awaits MoveNextAsync() at each step, suspending the method and freeing the thread while the next item is being produced — exactly like any other await in this module.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no inherent multithreading involved — the benefit is not blocking the thread while waiting, not parallel execution.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> await foreach works with any IAsyncEnumerable&lt;T&gt;, which arrays don't even implement.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> They target genuinely different interfaces (IEnumerable&lt;T&gt; vs IAsyncEnumerable&lt;T&gt;) with a real behavioral difference — synchronous vs. awaitable advancement.</p>
+                <p><strong>Reinforcement:</strong> await foreach is the consuming-side counterpart to IAsyncEnumerable&lt;T&gt;, exactly as foreach is to IEnumerable&lt;T&gt;.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A caller uses await foreach over an async stream of search results and calls break after finding the first in-stock item, on page 2 of what could have been 10 pages. What happens to pages 3 through 10?</p>
+        <ul class="options">
+            <li>A) They were already fetched in the background before the loop started</li>
+            <li>B) They are typically never fetched at all — items are produced on demand, so stopping early skips the remaining work</li>
+            <li>C) They are fetched anyway after the loop exits, to keep a cache warm</li>
+            <li>D) The program throws an exception because the loop didn't complete fully</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Async streams typically produce each item (or page) only when it's actually requested via MoveNextAsync — not ahead of time. Breaking out of the loop early means later items were never asked for, so that work is simply never done.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing is pre-fetched automatically in the background — that would defeat the memory and efficiency benefits of streaming in the first place.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such automatic caching behavior — a stream that's stopped early simply stops producing further items.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Breaking out of an await foreach loop early is completely normal and doesn't throw any exception — the enumerator is disposed cleanly (via await using under the hood).</p>
+                <p><strong>Reinforcement:</strong> On-demand production is one of the biggest practical advantages of async streams over pre-loading everything into a single collection.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand what problem async streams solve and how they're consumed. Next up: writing the producing side yourself — async IAsyncEnumerable&lt;T&gt; and yield return, with real paginated-API and file-reading examples.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

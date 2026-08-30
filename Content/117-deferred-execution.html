@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>117 - Deferred Execution · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Writing a LINQ query and running it are two different moments — this lesson is about the gap between them.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Every earlier lesson in this module has quietly relied on one idea, without ever naming it directly: that <code>var query = products.Where(p => p.Stock > 0);</code> doesn't actually filter anything the moment it runs. It's time to name that idea properly, because it explains some of the most surprising bugs in real LINQ code — bugs where a query somehow returns different results the second time you run it, with no code in between that looks like it should have changed anything.</p>
+    <p><strong>This lesson covers deferred execution in full: what it means, why most LINQ operators work this way, two real gotchas it causes (a query silently re-evaluated every time it's enumerated, and a captured variable that changes before enumeration happens), and how it connects back to the <code>yield return</code> iterators from Foundations.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Deferred execution</strong> means that writing a LINQ query doesn't run it. Calling <code>.Where(...)</code>, <code>.Select(...)</code>, <code>.OrderBy(...)</code>, or <code>.GroupBy(...)</code> just builds a small object that <em>describes</em> the work to be done — none of your predicate, selector, or key-selector logic actually executes yet. The real work only happens the moment something <em>enumerates</em> the result: a <code>foreach</code> loop, a call to <code>ToList()</code>, or an aggregation like <code>Count()</code>.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A LINQ query variable of type <code>IEnumerable&lt;T&gt;</code> doesn't hold a <em>result</em> — it holds a description of a computation, built from chained iterator objects. Each operator in a chain wraps the one before it. Nothing runs until something calls <code>GetEnumerator()</code> on the outermost one and starts pulling items through <code>MoveNext()</code> — which is exactly what a <code>foreach</code> loop does under the compiler's hood. Until that first pull happens, the query is inert: no predicate has run, no exception it might throw has been thrown, no side effect it might cause has happened.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <p>Imagine LINQ worked the opposite way — every operator ran immediately, the instant you called it:</p>
+    <div class="code-block"><code>// If Where() ran eagerly (it does NOT — this is hypothetical)
+var expensive = products.Where(p => p.Price > 1000); // would run the ENTIRE filter right now
+
+// You then decide you also want in-stock only
+var expensiveInStock = expensive.Where(p => p.Stock > 0); // would run the WHOLE thing again</code></div>
+    <p>Eager evaluation would mean every intermediate step in a chain does its own full pass over the data — wasted work whenever you build a query up gradually, or whenever the final consumer only needs the first few results and never asks for the rest. Deferred execution lets you compose a query piece by piece, exactly like assembling a plan, and pay the actual computation cost only once, at the one moment you actually need results:</p>
+    <div class="code-block"><code>// ✅ Deferred — building this up costs nothing until enumerated
+var query = products
+    .Where(p => p.Price > 1000)
+    .Where(p => p.Stock > 0)
+    .OrderBy(p => p.Name);
+
+// The ENTIRE chain runs in one single pass, only now:
+foreach (var p in query)
+    Console.WriteLine(p.Name);</code></div>
+    <p>It's also the exact mechanism that makes <code>IQueryable&lt;T&gt;</code> (from earlier in this module) possible at all — a query can't be translated into SQL before it's fully built, and it can't be fully built if pieces of it already ran the moment they were written.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">DECLARING A QUERY vs RUNNING IT</div>
+        <div style="text-align:center;font-size:0.9rem;color:var(--text-muted,#94A3B8);line-height:1.9;">
+            <code>var query = products.Where(p =&gt; p.Stock &gt; 0);</code><br />
+            ↓<br />
+            <strong style="color:var(--text-main,#E2E8F0);">Nothing has run. No item has been touched.</strong><br />
+            <span style="font-size:0.8rem;">"query" only holds a description: "when someone asks, filter products by this."</span><br /><br />
+            <code>foreach (var p in query) { ... }</code>  — or <code>query.ToList()</code>, <code>query.Count()</code>, etc.<br />
+            ↓<br />
+            <strong style="color:var(--text-main,#E2E8F0);">Only NOW does the predicate actually run, once per item.</strong>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">DEFERRED EXECUTION, STEP BY STEP</div>
+        <div class="flow-step"><div class="step-label">1. CALLING A LINQ OPERATOR BUILDS AN ITERATOR OBJECT</div><ul><li>Calling <code>.Where(predicate)</code> constructs and returns a small object that remembers the source sequence and your predicate — nothing more.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">2. CHAINING WRAPS ITERATORS INSIDE ITERATORS</div><ul><li>Each additional <code>.Select(...)</code> or <code>.OrderBy(...)</code> wraps the previous one, building a nested chain of "when asked, pull from the thing inside me first" objects — still nothing has executed.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">3. ENUMERATION TRIGGERS THE FIRST PULL</div><ul><li>A <code>foreach</code>, <code>ToList()</code>, or any operator that must consume the sequence (like the aggregation methods from the previous lesson) calls <code>GetEnumerator()</code> and starts requesting items one at a time via <code>MoveNext()</code>.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">4. EACH ITEM FLOWS THROUGH THE WHOLE CHAIN, ONE AT A TIME</div><ul><li>The outermost operator pulls from the one inside it, which pulls from the one inside <em>that</em>, all the way down to the original source — item by item, not stage by stage. This "pull" model is revisited in the Method Syntax lesson later in this module.</li></ul></div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Two classic gotchas fall directly out of deferred execution — both surprise developers who don't yet have this mental model.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Gotcha 1 — A Query Is Re-Evaluated Every Time It's Enumerated</h3>
+    <div class="code-block"><code>public record Product(int Id, string Name, int Stock);
+
+List&lt;Product&gt; products =
+[
+    new(1, "Wireless Mouse", 120),
+    new(2, "Standing Desk",  15),
+    new(3, "Desk Lamp",      0),
+];
+
+var inStock = products.Where(p =&gt; p.Stock &gt; 0); // still nothing has run
+
+Console.WriteLine(inStock.Count()); // 2 — runs the filter, right now
+
+products.Add(new Product(4, "Headphones", 8)); // mutate the ORIGINAL list
+
+Console.WriteLine(inStock.Count()); // 3 — runs the filter AGAIN, sees the new item!</code></div>
+    <p><strong>Code → Meaning → Result:</strong> <code>inStock</code> was never a snapshot of "products in stock at the moment I wrote this line" — it's a standing instruction, "filter <code>products</code> whenever asked." Every single enumeration re-runs the predicate against whatever <code>products</code> currently contains, which is why the second <code>Count()</code> call sees the newly added headphones even though <code>inStock</code> itself was never reassigned.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Gotcha 2 — A Captured Variable Can Change Before Enumeration</h3>
+    <div class="code-block"><code>decimal threshold = 50m;
+
+var affordable = products
+    .Select(p =&gt; p) // (imagine a real product list with prices here)
+    .Where(p =&gt; GetPrice(p) &lt; threshold); // captures "threshold" itself, not its value
+
+threshold = 500m; // changed BEFORE the query is ever enumerated
+
+foreach (var p in affordable)
+    Console.WriteLine(p); // uses 500m, NOT the 50m that was in scope when the query was written!</code></div>
+    <p>The lambda <code>p =&gt; GetPrice(p) &lt; threshold</code> doesn't capture the <em>value</em> <code>50m</code> — it captures the <em>variable</em> <code>threshold</code> itself, exactly as closures work throughout C# (a rule you saw with delegates and lambdas back in Intermediate Part III). Because the predicate only actually runs during enumeration, and enumeration happens <em>after</em> <code>threshold</code> was reassigned, the query silently uses the new value — a genuine, real-world source of subtle bugs, especially in loops that build several queries with a changing loop variable.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A background service builds a query for "today's orders" once when it starts, then reuses that query variable throughout a long-running process — a subtle bug that's genuinely happened in production systems:</p>
+    <div class="code-block"><code>public class DailyReportService
+{
+    private readonly List&lt;Order&gt; _orders;
+
+    public IEnumerable&lt;Order&gt; GetTodaysOrders()
+    {
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+
+        // ❌ Looks like a snapshot of "today" — it is NOT.
+        // "today" is captured by reference; the predicate re-evaluates
+        // DateOnly.FromDateTime(DateTime.Now) — no wait, it captures the LOCAL "today" variable,
+        // which is fine here since it's not reassigned — but the underlying QUERY still
+        // re-filters _orders every single time it's enumerated.
+        return _orders.Where(o =&gt; o.OrderDate == today);
+    }
+}
+
+// Elsewhere, called repeatedly through the day:
+var report = service.GetTodaysOrders();
+
+int countAtNoon = report.Count();      // filters _orders right now, at noon
+_orders.Add(new Order(999, DateToday, 42.00m)); // a new order comes in
+int countAtFivePm = report.Count();    // filters AGAIN — includes the new order too
+
+// ✅ FIX — snapshot the result once, deliberately, if a stable point-in-time view is what's needed:
+var stableReport = service.GetTodaysOrders().ToList(); // covered fully in the next lesson</code></div>
+    <p>Whether re-evaluating on every call is a bug or a feature depends entirely on intent: if "always reflect the current state of <code>_orders</code>" is exactly what's wanted, deferred execution is doing its job perfectly. If a <em>stable snapshot</em> at one point in time was actually needed, this is the bug — and the fix (forcing immediate execution) is exactly what the next lesson covers.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📋</span> A Recipe, Not a Finished Meal</div>
+        <p>Writing a LINQ query is like writing down a recipe: "take the vegetables, filter out anything wilted, chop them, sort by size." Writing the recipe down doesn't put food on the table — nothing gets chopped or sorted until someone actually starts cooking. If the pantry's contents change between when the recipe was written and when someone finally cooks it, the cook uses whatever's in the pantry <em>at cooking time</em>, not whatever was there when the recipe was jotted down. That's deferred execution: the query is the recipe; enumeration is the cooking.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">yield return AND THE COMPILER-GENERATED STATE MACHINE</div>
+        <div class="flow-step">
+            <div class="step-label">1. RECALL yield return FROM FOUNDATIONS (LESSON 038)</div>
+            <ul><li>A method using <code>yield return</code> isn't compiled like an ordinary method. The compiler rewrites it into a hidden class implementing <code>IEnumerable&lt;T&gt;</code> and <code>IEnumerator&lt;T&gt;</code> — a <strong>state machine</strong> that remembers exactly where execution paused, so it can resume from that exact point the next time <code>MoveNext()</code> is called.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. Where, Select, GroupBy — ALL BUILT THE SAME WAY</div>
+            <ul><li>As shown back in the Filtering and Projection lessons, <code>Where</code> and <code>Select</code> are themselves implemented with <code>yield return</code>. Calling them constructs one of these state-machine objects — <code>MoveNext()</code> hasn't been called even once yet, so no code inside the method body has executed at all.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. foreach IS SYNTACTIC SUGAR FOR CALLING MoveNext() IN A LOOP</div>
+            <ul><li>A <code>foreach</code> loop compiles down to calling <code>GetEnumerator()</code> once, then <code>MoveNext()</code> (checking the return value) and reading <code>Current</code> repeatedly until <code>MoveNext()</code> returns <code>false</code>. Every one of those <code>MoveNext()</code> calls is what actually runs a slice of your predicate or selector logic — which is why nothing happens until the loop (or an equivalent consumer) actually starts.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Deferred execution" and "lazy evaluation" — used almost interchangeably here</h3>
+    <p>In the context of LINQ, these two terms describe the same practical behavior and are frequently used interchangeably: the work doesn't happen until it's needed. Some sources draw a finer distinction elsewhere in computer science, but for everyday LINQ code, treating them as synonyms is accurate and standard.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Not every operator streams item-by-item, even though every operator is still deferred at the call site</h3>
+    <p>As the Sorting and Grouping lessons both noted, <code>OrderBy</code> and <code>GroupBy</code> are still deferred — calling them does nothing immediately. But once enumeration actually starts, they must pull the <em>entire</em> source through before producing even their first result, because sorting and bucketing both require seeing everything first. Contrast that with <code>Where</code> and <code>Select</code>, which can produce their first result after examining just one source item. Deferred vs. immediate is about <em>when</em> work starts; streaming vs. buffering is a separate question about how much of the source must be consumed before the first result appears.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Treating a query variable as if it already holds a result</h4>
+    <p>❌ Assuming <code>var query = products.Where(...);</code> means "the filtered list is sitting in <code>query</code> right now." ✅ It means "when something enumerates <code>query</code>, run this filter against whatever <code>products</code> contains at that moment." If a genuine snapshot is needed, force it — the very next lesson shows how.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Enumerating the same expensive query multiple times without realizing it re-runs each time</h4>
+    <p>❌ Calling <code>.Count()</code> and then separately <code>foreach</code>-ing over the exact same deferred query variable, unaware that this triggers the whole predicate chain to run <em>twice</em> — costly if the predicate does real work (a database call inside a delegate, heavy computation, and so on). ✅ Recognize when a query is about to be enumerated more than once, and decide deliberately whether that's intended or whether the result should be materialized once instead.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Deferred execution is the right default when</h4>
+            <ul>
+                <li>You're building a query up gradually across several lines or method calls before it's finally consumed.</li>
+                <li>You genuinely want a query to reflect the current, possibly-changing state of its source each time it runs.</li>
+                <li>You're working with <code>IQueryable&lt;T&gt;</code>, where deferral is what makes translation to SQL possible at all.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ Force immediate execution instead when</h4>
+            <ul>
+                <li>You need a stable snapshot that won't silently change if the source is mutated later.</li>
+                <li>The same query result will be enumerated more than once, and re-running it each time would be wasteful or incorrect.</li>
+                <li>See the next lesson, Immediate Execution, for exactly how.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Writing a query</strong> = "describing what should happen, later"<br />
+        <strong>Enumerating a query</strong> = "actually making it happen, right now"<br /><br />
+        <strong>Remember:</strong><br />
+        · A LINQ query variable holds instructions, not results.<br />
+        · Every enumeration re-runs the whole chain against the source's current state.<br />
+        · A lambda captures the <em>variable</em>, not the value it held when the lambda was written.<br />
+        · This is the same <code>yield return</code> state-machine mechanism from Foundations, powering nearly every LINQ operator.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><strong>Deferred execution</strong> means most LINQ operators build a description of work, not a result — nothing runs until the query is enumerated.</li>
+            <li style="margin-bottom:0.4rem;">A deferred query re-runs, in full, <strong>every time</strong> it's enumerated — against whatever state the source is in <em>at that moment</em>.</li>
+            <li style="margin-bottom:0.4rem;">A captured variable in a predicate uses its value <strong>at enumeration time</strong>, not at the time the lambda was written — a real, common source of bugs.</li>
+            <li style="margin-bottom:0.4rem;">This mechanism is built on the exact same <code>yield return</code> compiler-generated state machine covered in Foundations.</li>
+            <li style="margin-bottom:0.4rem;">When a stable, one-time snapshot is what's actually needed, force immediate execution — the subject of the very next lesson.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've learned what deferred execution really means, and the two classic gotchas it causes. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> <code>var query = products.Where(p => p.Stock > 0);</code> is written, followed by no other code for several lines. At that point, has the filtering actually happened?</p>
+        <ul class="options">
+            <li>A) Yes, immediately when <code>Where</code> is called</li>
+            <li>B) No — <code>query</code> only holds a description of the filter; nothing runs until <code>query</code> is enumerated</li>
+            <li>C) It depends on how many items are in <code>products</code></li>
+            <li>D) Only the first item is filtered immediately; the rest wait</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the core idea of the entire lesson — calling <code>Where</code> builds an iterator object describing the filter; the predicate itself doesn't run against any item until enumeration begins.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the misconception deferred execution corrects.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The size of <code>products</code> has no bearing on whether execution is deferred — deferral is a property of how <code>Where</code> is built, not of the data.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Absolutely nothing runs, not even a single item's worth, until something actually starts enumerating the result.</p>
+                <p><strong>Reinforcement:</strong> A LINQ query variable is instructions, not a result — remember this before assuming any work has happened.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A deferred query built from <code>products.Where(...)</code> is enumerated once, then <code>products</code> is mutated (an item is added), then the same query variable is enumerated a second time. What happens?</p>
+        <ul class="options">
+            <li>A) The second enumeration returns the exact same results as the first, ignoring the mutation</li>
+            <li>B) The second enumeration throws an exception because the source changed</li>
+            <li>C) The second enumeration re-runs the predicate against the now-mutated <code>products</code>, potentially producing different results</li>
+            <li>D) The query variable becomes invalid and must be reassigned before it can be used again</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> As shown in Gotcha 1, a deferred query is a standing instruction re-executed on every enumeration, always against the source's current state — the mutation is fully visible the next time it's enumerated.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing about a deferred query caches or freezes the first result — there is no such snapshotting unless you explicitly force it.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Adding an item to a <code>List&lt;T&gt;</code> between two separate, complete enumerations doesn't throw — that specific exception only applies to modifying a collection <em>during</em> an in-progress enumeration of it.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The query variable remains perfectly valid and reusable — that's precisely why it can be enumerated a second time at all.</p>
+                <p><strong>Reinforcement:</strong> A deferred query always reflects its source's state at the moment of enumeration, not at the moment it was declared.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> <code>decimal threshold = 50m; var q = products.Where(p => p.Price < threshold); threshold = 500m;</code> — when <code>q</code> is finally enumerated with <code>foreach</code>, which threshold value does the predicate actually use?</p>
+        <ul class="options">
+            <li>A) 50m, because that was the value when the lambda was written</li>
+            <li>B) 500m, because the lambda captured the variable itself, and the predicate only runs at enumeration time, after the reassignment</li>
+            <li>C) It causes a compiler error</li>
+            <li>D) Both values are used, alternating per item</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in Gotcha 2, a lambda captures the variable, not a copy of its value at the time of writing. Since the predicate doesn't actually run until <code>foreach</code> enumerates <code>q</code> — after <code>threshold</code> was reassigned — it sees 500m.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the intuitive-but-wrong assumption the lesson warns about — the value at declaration time is irrelevant to what the predicate actually uses.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is entirely valid C# — capturing and later reassigning a local variable used in a lambda compiles and runs without error, even though the behavior can be surprising.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no alternation — every single item in the enumeration uses whatever <code>threshold</code> holds at that point (500m throughout, since it isn't reassigned again mid-enumeration).</p>
+                <p><strong>Reinforcement:</strong> Combined with deferred execution, closure-captured variables can change out from under a query before it ever runs — a genuinely common real-world bug.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> How does deferred execution in LINQ relate to the <code>yield return</code> iterators covered in Foundations?</p>
+        <ul class="options">
+            <li>A) They're unrelated — deferred execution is a completely different, newer mechanism</li>
+            <li>B) Operators like <code>Where</code> and <code>Select</code> are themselves implemented using <code>yield return</code>, which the compiler turns into a state machine that only advances when <code>MoveNext()</code> is called — which is exactly what makes deferral possible</li>
+            <li>C) <code>yield return</code> is only used for <code>OrderBy</code>, none of the other operators</li>
+            <li>D) Deferred execution replaced <code>yield return</code> entirely in modern .NET</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in Under the Hood (and previously in the Filtering and Projection lessons' own "Under the Hood" sections), <code>Where</code> and <code>Select</code> are built with <code>yield return</code> — the compiler-generated state machine is precisely the mechanism that makes "nothing runs until <code>MoveNext()</code> is called" true.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> They're directly connected — deferred execution is a direct consequence of how <code>yield return</code>-based iterators work.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Multiple operators across this module (<code>Where</code>, <code>Select</code>, <code>SelectMany</code>) have all been shown using <code>yield return</code> — it's not limited to any one operator.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>yield return</code> remains a core, actively used C# feature and is exactly what underlies deferred execution — nothing has replaced it.</p>
+                <p><strong>Reinforcement:</strong> Deferred execution isn't a separate LINQ-specific trick — it's a natural consequence of the same iterator mechanism you already learned in Foundations.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand why LINQ queries behave the way they do. Next up: the operators that deliberately break out of deferred execution and run right now.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

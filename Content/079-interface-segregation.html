@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>079 - Interface Segregation · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-base {
+            background: rgba(251, 191, 36, 0.2);
+            color: #FBBF24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .tag-derived {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .memory-diagram {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The "I" in SOLID. No class should be forced to depend on methods it doesn't use.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Somewhere in a lot of real codebases, there's an interface that looks like this — grown one "just add it here" decision at a time over a couple of years:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IRepository&lt;T&gt;
+{
+    Task&lt;T?&gt; GetByIdAsync(Guid id);
+    Task&lt;IReadOnlyList&lt;T&gt;&gt; GetAllAsync();
+    Task AddAsync(T entity);
+    Task UpdateAsync(T entity);
+    Task DeleteAsync(Guid id);
+    Task&lt;IReadOnlyList&lt;T&gt;&gt; SearchAsync(string query);
+    Task BulkImportAsync(IEnumerable&lt;T&gt; entities);
+    Task&lt;int&gt; CountAsync();
+    Task ArchiveAsync(Guid id);
+    Task RestoreFromArchiveAsync(Guid id);
+}
+
+// A read-only reporting screen just wants to list customers...
+public sealed class CustomerListViewModel(IRepository&lt;Customer&gt; repository)
+{
+    public Task&lt;IReadOnlyList&lt;Customer&gt;&gt; LoadAsync() =&gt; repository.GetAllAsync();
+    // ...but it's now coupled to Add, Update, Delete, BulkImport, Archive, Restore —
+    // ten members, when it only ever calls one.
+}</code></pre>
+    <p>Nothing here fails to compile. But every single consumer of <code>IRepository&lt;T&gt;</code> — including a read-only reporting screen that will never call <code>DeleteAsync</code> in its life — is coupled to all ten members. A test fake for <code>CustomerListViewModel</code> has to implement all ten, even though nine of them are irrelevant noise. This is what a "fat" interface costs you, quietly, everywhere it's used.</p>
+    <p><strong>In this lesson, you'll learn the Interface Segregation Principle — the "I" in SOLID — why fat interfaces hurt in ways that aren't obvious until you try to test or extend them, how to split a bloated interface into focused ones, and how to do it on a real <code>IRepository</code> example.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is the Interface Segregation Principle?</h2>
+    <p>The <strong>Interface Segregation Principle</strong> (ISP) states: <em>no client should be forced to depend on methods it does not use.</em> In practice, this means preferring several small, focused interfaces over one large interface that tries to cover every possible need of every possible consumer.</p>
+    <p>You already saw ISP in action, informally, in lesson 078 — <code>INotificationChannel</code>, <code>IConfigurable</code>, and <code>IStartupHealthCheckable</code> were kept separate specifically so a plugin only had to implement the capabilities it genuinely had. ISP is the name for that instinct, generalized into a rule you can apply deliberately.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Fat Interfaces Hurt</h2>
+    <p>An interface with too many members creates a specific chain of real costs, not just an aesthetic complaint:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Unnecessary coupling.</strong> Every consumer of <code>IRepository&lt;T&gt;</code> is coupled to all ten members, whether it uses one or all ten — a change to <code>BulkImportAsync</code>'s signature can force a recompile of code that never calls it.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Painful test doubles.</strong> A fake implementation for a read-only view model still has to stub out <code>AddAsync</code>, <code>DeleteAsync</code>, <code>ArchiveAsync</code>, and every other member — usually with <code>throw new NotSupportedException()</code>, which is a Liskov Substitution violation waiting to happen (lesson 074).</li>
+        <li style="margin-bottom:0.4rem;"><strong>Hidden, misleading permissions.</strong> A method that only needs to read data, but receives the full <code>IRepository&lt;T&gt;</code>, looks — to anyone reading the code — like it might also delete or archive records. The signature lies about what the method actually does.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Implementations that can't honestly satisfy the whole contract.</strong> An append-only audit log store might have no sensible way to implement <code>DeleteAsync</code> at all — forcing it to throw, fake it, or violate its own domain rules just to satisfy a compiler requirement it shouldn't have had in the first place.</li>
+    </ul>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Splitting a Bloated IRepository</h2>
+    <div class="flow-container">
+        <div class="flow-title">BEFORE: ONE FAT INTERFACE, EVERYONE PAYS FOR EVERYTHING</div>
+        <div class="flow-step">
+            <div class="step-label">IRepository&lt;T&gt; <span class="tag tag-base">10 members</span></div>
+            <ul><li>GetByIdAsync, GetAllAsync, AddAsync, UpdateAsync, DeleteAsync, SearchAsync, BulkImportAsync, CountAsync, ArchiveAsync, RestoreFromArchiveAsync</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Every consumer — reporting screens, import jobs, admin panels</div>
+            <ul><li>Depends on all 10 members regardless of which 1-2 it actually calls</li></ul>
+        </div>
+    </div>
+    <div class="flow-container">
+        <div class="flow-title">AFTER: FOCUSED INTERFACES, COMPOSED WHERE NEEDED</div>
+        <div class="flow-step">
+            <div class="step-label">IReadableRepository&lt;T&gt; <span class="tag tag-derived">3 members</span></div>
+            <ul><li>GetByIdAsync, GetAllAsync, CountAsync</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">IWritableRepository&lt;T&gt; <span class="tag tag-derived">3 members</span></div>
+            <ul><li>AddAsync, UpdateAsync, DeleteAsync</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">ISearchableRepository&lt;T&gt; <span class="tag tag-derived">1 member</span></div>
+            <ul><li>SearchAsync</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">IArchivableRepository&lt;T&gt; <span class="tag tag-derived">2 members</span></div>
+            <ul><li>ArchiveAsync, RestoreFromArchiveAsync</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Reporting screen depends only on IReadableRepository&lt;T&gt;</div>
+            <ul><li>3 members instead of 10 — its dependency now honestly reflects what it does</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Splitting a Bloated Interface — the Steps</h2>
+    <div class="flow-container">
+        <div class="flow-title">HOW TO SEGREGATE AN EXISTING FAT INTERFACE</div>
+        <div class="flow-step">
+            <div class="step-label">STEP 1 — Group members by who actually calls them</div>
+            <ul><li>List every consumer of the interface, and mark which members each one actually uses — natural clusters usually emerge (read-only consumers, write-heavy consumers, admin-only consumers)</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 2 — Extract each cluster into its own focused interface</div>
+            <ul><li>Give each interface a name describing exactly what it promises — <code>IReadableRepository</code>, not a generic, catch-all name</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 3 — Have concrete classes implement all the focused interfaces they genuinely support</div>
+            <ul><li>A full <code>SqlRepository&lt;T&gt;</code> implements all four — nothing is lost for the class that needs everything</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 4 — Update each consumer's dependency to the narrowest interface it needs</div>
+            <ul><li>The reporting screen's constructor parameter changes from <code>IRepository&lt;Customer&gt;</code> to <code>IReadableRepository&lt;Customer&gt;</code> — nothing else in it needs to change</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ Before — one fat interface
+public interface IWorker
+{
+    void Work();
+    void Eat();
+    void Sleep();
+}
+
+// A robot worker can Work() just fine, but eating and sleeping make no sense for it.
+public sealed class RobotWorker : IWorker
+{
+    public void Work() => Console.WriteLine("Welding...");
+    public void Eat() => throw new NotSupportedException("Robots don't eat.");   // ❌ LSP violation
+    public void Sleep() => throw new NotSupportedException("Robots don't sleep.");
+}
+
+// ✅ After — segregated by actual capability
+public interface IWorkable { void Work(); }
+public interface IFeedable { void Eat(); }
+public interface IRestable { void Sleep(); }
+
+public sealed class RobotWorker : IWorkable   // only implements what genuinely applies
+{
+    public void Work() => Console.WriteLine("Welding...");
+}
+
+public sealed class HumanWorker : IWorkable, IFeedable, IRestable
+{
+    public void Work() => Console.WriteLine("Writing code...");
+    public void Eat() => Console.WriteLine("Lunch break.");
+    public void Sleep() => Console.WriteLine("Going home.");
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>RobotWorker</code> no longer has to lie about capabilities it doesn't have. Any code that only needs "something that can work" depends on <code>IWorkable</code> alone, and both worker types satisfy it honestly — no throwing, no fake implementations.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Segregating IRepository&lt;T&gt;, in Full</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IReadableRepository&lt;T&gt;
+{
+    Task&lt;T?&gt; GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task&lt;IReadOnlyList&lt;T&gt;&gt; GetAllAsync(CancellationToken ct = default);
+    Task&lt;int&gt; CountAsync(CancellationToken ct = default);
+}
+
+public interface IWritableRepository&lt;T&gt;
+{
+    Task AddAsync(T entity, CancellationToken ct = default);
+    Task UpdateAsync(T entity, CancellationToken ct = default);
+    Task DeleteAsync(Guid id, CancellationToken ct = default);
+}
+
+public interface IArchivableRepository&lt;T&gt;
+{
+    Task ArchiveAsync(Guid id, CancellationToken ct = default);
+    Task RestoreFromArchiveAsync(Guid id, CancellationToken ct = default);
+}
+
+// The full SQL-backed implementation genuinely supports everything
+public sealed class SqlCustomerRepository(DbConnection connection)
+    : IReadableRepository&lt;Customer&gt;, IWritableRepository&lt;Customer&gt;, IArchivableRepository&lt;Customer&gt;
+{
+    public Task&lt;Customer?&gt; GetByIdAsync(Guid id, CancellationToken ct = default) =&gt; /* ... */ default!;
+    public Task&lt;IReadOnlyList&lt;Customer&gt;&gt; GetAllAsync(CancellationToken ct = default) =&gt; /* ... */ default!;
+    public Task&lt;int&gt; CountAsync(CancellationToken ct = default) =&gt; /* ... */ default!;
+    public Task AddAsync(Customer entity, CancellationToken ct = default) =&gt; /* ... */ Task.CompletedTask;
+    public Task UpdateAsync(Customer entity, CancellationToken ct = default) =&gt; /* ... */ Task.CompletedTask;
+    public Task DeleteAsync(Guid id, CancellationToken ct = default) =&gt; /* ... */ Task.CompletedTask;
+    public Task ArchiveAsync(Guid id, CancellationToken ct = default) =&gt; /* ... */ Task.CompletedTask;
+    public Task RestoreFromArchiveAsync(Guid id, CancellationToken ct = default) =&gt; /* ... */ Task.CompletedTask;
+}
+
+// A read-only reporting view model now depends on EXACTLY what it uses
+public sealed class CustomerListViewModel(IReadableRepository&lt;Customer&gt; repository)
+{
+    public Task&lt;IReadOnlyList&lt;Customer&gt;&gt; LoadAsync(CancellationToken ct = default) =&gt;
+        repository.GetAllAsync(ct);
+}
+
+// An append-only audit log store implements ONLY what it can honestly support —
+// no DeleteAsync to fake, no ArchiveAsync that makes no sense for an audit trail
+public sealed class SqlAuditLogRepository(DbConnection connection)
+    : IReadableRepository&lt;AuditEntry&gt;, IWritableRepository&lt;AuditEntry&gt;
+{
+    // Note: implements Add/Update but no need to implement IArchivableRepository at all —
+    // there's simply no such interface reference for it to satisfy or fake.
+    public Task&lt;AuditEntry?&gt; GetByIdAsync(Guid id, CancellationToken ct = default) =&gt; /* ... */ default!;
+    public Task&lt;IReadOnlyList&lt;AuditEntry&gt;&gt; GetAllAsync(CancellationToken ct = default) =&gt; /* ... */ default!;
+    public Task&lt;int&gt; CountAsync(CancellationToken ct = default) =&gt; /* ... */ default!;
+    public Task AddAsync(AuditEntry entity, CancellationToken ct = default) =&gt; /* ... */ Task.CompletedTask;
+    public Task UpdateAsync(AuditEntry entity, CancellationToken ct = default) =&gt;
+        throw new InvalidOperationException("Audit entries are immutable once written.");
+    public Task DeleteAsync(Guid id, CancellationToken ct = default) =&gt;
+        throw new InvalidOperationException("Audit entries cannot be deleted.");
+}</code></pre>
+    <p><strong>Why this segregation genuinely pays off:</strong></p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><code>CustomerListViewModel</code>'s test fake now needs to implement three methods, not ten — a fake that used to be a wall of stubs is now three honest lines.</li>
+        <li style="margin-bottom:0.4rem;"><code>SqlAuditLogRepository</code> simply never has to implement <code>ArchiveAsync</code> or <code>RestoreFromArchiveAsync</code> — those methods don't exist for it to fake or throw from, because it never claimed to support that capability.</li>
+        <li style="margin-bottom:0.4rem;">A code reviewer looking at <code>CustomerListViewModel</code>'s constructor immediately knows, from the type alone, that this class cannot delete or archive customer data — the dependency's shape documents the class's actual permissions.</li>
+        <li style="margin-bottom:0.4rem;"><code>UpdateAsync</code> and <code>DeleteAsync</code> still technically throw on the audit log — but only because those methods were explicitly needed for a narrower reason (the writable interface still fits, mostly); a stricter design might split <code>IWritableRepository</code> further into <code>IInsertOnlyRepository</code> for exactly this case, which is a legitimate next iteration of applying ISP again.</li>
+    </ul>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Why This Costs Nothing at Runtime</h2>
+    <div class="flow-container">
+        <div class="flow-title">SEGREGATION IS A COMPILE-TIME, ZERO-RUNTIME-COST DECISION</div>
+        <div class="flow-step">
+            <div class="step-label">1. SPLITTING AN INTERFACE DOESN'T CHANGE THE CONCRETE CLASS'S LAYOUT</div>
+            <ul><li><code>SqlCustomerRepository</code> has the exact same methods, compiled the exact same way, whether they're grouped under one interface or four — segregation only changes which references are used where in calling code</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE INTERFACE MAP (LESSON 077) SIMPLY GROWS BY A FEW MORE ENTRIES</div>
+            <ul><li>A class implementing four small interfaces instead of one large one has the same total number of interface-to-method mappings as before — segregation redistributes the shape, not the amount of dispatch work</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE REAL COST IS PURELY AT DESIGN TIME</div>
+            <ul><li>Segregation is entirely a compile-time dependency-shape decision — its payoff shows up in coupling, testability, and code review clarity, not in anything the CPU has to do differently at runtime</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">ISP vs. "just implement more interfaces on one class" (lesson 078)</h3>
+    <p>Lesson 078 was about a class implementing several already-well-sized interfaces. ISP is the earlier, upstream design question: <em>how big should each of those interfaces be in the first place?</em> They work together — ISP tells you how to shape the individual interfaces; lesson 078's multiple-implementation pattern is how a class combines several of them once they're properly sized.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Small interfaces" doesn't mean "one member per interface, always"</h3>
+    <p>ISP is about grouping members by <em>who genuinely needs them together</em>, not about mechanically shrinking every interface to a single method. <code>IReadableRepository&lt;T&gt;</code> above has three members — that's fine, because <code>GetByIdAsync</code>, <code>GetAllAsync</code>, and <code>CountAsync</code> are genuinely used together by the same kind of read-only consumer. Splitting them further would add ceremony without reducing any real coupling.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Adding "just one more method" to an existing interface, repeatedly, without reconsidering its shape</h4>
+    <p>❌ This is exactly how <code>IRepository&lt;T&gt;</code> grew to ten members in the first place — each individual addition looked harmless, and nobody stopped to ask whether it belonged with the rest.</p>
+    <p>✅ Before adding a member to an existing interface, ask who will consume it and whether it genuinely belongs with the interface's existing members, or deserves its own focused interface instead.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Over-segregating into a single-method interface for every conceivable member</h4>
+    <p>❌ Splitting <code>IReadableRepository&lt;T&gt;</code> into <code>IGetByIdRepository&lt;T&gt;</code>, <code>IGetAllRepository&lt;T&gt;</code>, and <code>ICountRepository&lt;T&gt;</code>, when every real consumer of "read" behavior always needs all three together anyway — this multiplies interface count without reducing any actual coupling.</p>
+    <p>✅ Segregate along real usage boundaries, not arbitrarily. If two members are always needed together by every consumer, keeping them on the same interface is the right call, not a violation of ISP.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Depending on the fat interface out of habit, even after segregated ones exist</h4>
+    <p>❌ A newly-written, read-only reporting class that still takes <code>IRepository&lt;T&gt;</code> in its constructor "because that's what everyone uses," even though <code>IReadableRepository&lt;T&gt;</code> now exists and would be more honest.</p>
+    <p>✅ Once focused interfaces exist, use the narrowest one that satisfies the class's actual needs — the benefit of segregation is only realized when consumers actually adopt the narrower contract.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">An existing interface has grown past what any single consumer actually uses, and different consumers clearly use different, non-overlapping subsets of it.</li>
+        <li style="margin-bottom:0.4rem;">A concrete implementation has to throw or fake a member because it genuinely can't support it — a strong signal that member belongs in a separate, more specific interface.</li>
+        <li style="margin-bottom:0.4rem;">Writing a test fake for a class has become tedious because the interface it depends on has far more members than that class actually calls.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> if a concrete implementation ever needs to throw <code>NotSupportedException</code> from a member of an interface it "implements," that's the clearest possible signal the interface needs to be split — the member never should have been part of that contract for that implementer.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>A fat interface</strong> = a menu everyone is handed, whether they're hungry for all of it or not.<br />
+        <strong>A segregated interface</strong> = you order only what you're actually going to eat.<br /><br />
+        <strong>Remember:</strong><br />
+        · No client should depend on methods it doesn't call — that dependency is a lie about what the class actually does.<br />
+        · A throwing implementation of an interface member is the loudest possible signal that member belongs somewhere else.<br />
+        · Segregating costs nothing at runtime — it's a design-time investment that pays off in testability and honest dependencies.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">The Interface Segregation Principle: no client should be forced to depend on methods it does not use.</li>
+            <li style="margin-bottom:0.4rem;">Fat interfaces cause unnecessary coupling, painful test doubles, and implementations that must throw or fake members they can't honestly support.</li>
+            <li style="margin-bottom:0.4rem;">Split by grouping members according to which consumers genuinely use them together — not by arbitrarily reducing every interface to one method.</li>
+            <li style="margin-bottom:0.4rem;">A concrete class can implement several segregated interfaces at once (lesson 078) to recombine full functionality where it's genuinely needed.</li>
+            <li style="margin-bottom:0.4rem;">Segregation is a compile-time, design-level decision with no runtime cost — its payoff is in coupling, clarity, and testability.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">Let's confirm you can recognize a fat interface and know how to fix it properly.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Which statement most accurately describes the Interface Segregation Principle?</p>
+        <ul class="options">
+            <li>A) Every interface must have exactly one member</li>
+            <li>B) No client should be forced to depend on methods it does not use — interfaces should be shaped around what consumers actually need</li>
+            <li>C) Interfaces should never be implemented by more than one class</li>
+            <li>D) Abstract classes should be preferred over interfaces whenever possible</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the precise statement of ISP — the goal is aligning interface shape with genuine consumer needs, not an arbitrary size rule.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> As covered in Mistake 2, forcing every interface down to one member is over-segregation, not correct application of ISP — grouping members that are always used together is fine.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> ISP says nothing about how many classes may implement an interface — multiple implementers (like <code>SqlCustomerRepository</code> and <code>SqlAuditLogRepository</code> both implementing <code>IReadableRepository&lt;T&gt;</code>) is completely normal.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is unrelated to ISP, which is specifically about interface shape, not a general preference between abstract classes and interfaces (that trade-off was covered in lessons 075 and 077).</p>
+                <p><strong>Reinforcement:</strong> ISP is about matching contract shape to actual consumer usage, not a fixed rule about interface size.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In the <code>SqlAuditLogRepository</code> example, <code>UpdateAsync</code> and <code>DeleteAsync</code> both throw <code>InvalidOperationException</code>. What does this suggest about the current design?</p>
+        <ul class="options">
+            <li>A) Nothing — this is a perfectly clean, finished design with no further improvement possible</li>
+            <li>B) It's a signal that <code>IWritableRepository&lt;T&gt;</code> could be segregated further — perhaps into an insert-only interface — since audit log entries genuinely can't support update or delete</li>
+            <li>C) The audit log repository should be deleted entirely</li>
+            <li>D) <code>IWritableRepository&lt;T&gt;</code> should be merged back into <code>IReadableRepository&lt;T&gt;</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As the real-world example itself notes, a throwing implementation is the clearest sign a member doesn't belong in the interface for this implementer — the natural next step is applying ISP again, splitting out an insert-only interface that <code>SqlAuditLogRepository</code> can honestly satisfy in full.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Throwing from an interface member is exactly the red flag this lesson calls out — it's a sign of remaining, unresolved coupling, not a finished design.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The repository itself is fine and useful — the issue is narrowly about which interface members it's being forced to implement, not whether it should exist.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Merging interfaces back together would move in exactly the wrong direction, recreating the fat-interface problem this lesson is about solving.</p>
+                <p><strong>Reinforcement:</strong> ISP is applied iteratively — a throwing member found later is a legitimate reason to segregate further, not a sign the earlier segregation failed.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A read-only reporting screen depends on <code>IReadableRepository&lt;Customer&gt;</code> instead of the full <code>IRepository&lt;Customer&gt;</code>. What is the concrete benefit of this, beyond fewer lines in a test fake?</p>
+        <ul class="options">
+            <li>A) It makes the reporting screen's queries execute faster</li>
+            <li>B) It honestly documents, through the type system, that this class cannot modify or delete customer data — a reviewer can see this without reading the method bodies</li>
+            <li>C) It allows the reporting screen to bypass authentication</li>
+            <li>D) It automatically caches all repository calls</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A narrowed dependency is a form of documentation the compiler enforces — anyone reviewing <code>CustomerListViewModel</code>'s constructor immediately knows its capabilities are limited to reading, without needing to trust that its method bodies never happen to call something destructive.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Interface segregation has no effect on query execution speed — the underlying database calls behave identically regardless of which interface reference is used to invoke them.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> ISP is unrelated to authentication or authorization mechanisms — it only concerns which interface members a class depends on syntactically.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There is no caching behavior implied by interface segregation — that would be an entirely separate concern, potentially handled by the decorator pattern using composition (lesson 073).</p>
+                <p><strong>Reinforcement:</strong> A narrowly-typed dependency is a form of self-documenting, compiler-checked evidence about what a class can and cannot do.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A developer proposes splitting <code>IReadableRepository&lt;T&gt;</code> (currently <code>GetByIdAsync</code>, <code>GetAllAsync</code>, <code>CountAsync</code>) into three separate single-method interfaces, arguing "smaller is always better for ISP." Every current and anticipated consumer always needs all three together. Is this a good application of ISP?</p>
+        <ul class="options">
+            <li>A) Yes — ISP always means splitting interfaces down to one member each, with no exceptions</li>
+            <li>B) No — since every real consumer genuinely needs all three members together, splitting further adds ceremony without reducing any actual coupling; ISP groups by real usage, not by an arbitrary size target</li>
+            <li>C) Yes, but only if the interface is renamed first</li>
+            <li>D) No — interfaces should never be split under any circumstances</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is precisely Mistake 2 from this lesson — ISP's goal is matching interface shape to genuine consumer usage. When every consumer needs a set of members together, keeping them on one interface is correct; splitting further would only add interface count without reducing any real coupling.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This treats ISP as a mechanical size rule rather than a usage-driven design principle — the lesson explicitly warns against this over-segregation.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Renaming has no bearing on whether the split is a good design decision — the substance of the grouping is what matters.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Splitting is clearly valuable in general — as the <code>IRepository&lt;T&gt;</code> example demonstrated — the issue here is specifically about over-applying it past the point of real benefit.</p>
+                <p><strong>Reinforcement:</strong> Segregate along genuine usage boundaries; stop when further splitting would separate members that are always needed together.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You can now spot a fat interface on sight and know exactly how to fix it — which sets up explicit interface implementation (080), the precision tool for when two focused interfaces genuinely collide.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

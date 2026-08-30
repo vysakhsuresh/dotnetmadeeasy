@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>081 - Dependency Inversion · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-base {
+            background: rgba(251, 191, 36, 0.2);
+            color: #FBBF24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .tag-derived {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .memory-diagram {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The "D" in SOLID — and the capstone of everything Part I has been building toward. Every lesson in this module was, quietly, in service of this one idea.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Look back at where this module started. Lesson 073 showed composition wired to an interface instead of a concrete class. Lesson 077 showed <code>OrderService</code> depending on <code>IInventoryRepository</code>, <code>IPaymentGateway</code>, and <code>IOrderNotifier</code> — never on a concrete SQL, Stripe, or email class. Lesson 078 showed a class composing several focused capabilities. Lesson 079 showed why those capabilities should be small and honest. Lesson 080 showed how to keep a class's public face clean when contracts collide. Every single one of those lessons was quietly obeying one rule, without ever naming it out loud:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// This one line, repeated across five lessons, IS the Dependency Inversion Principle:
+public sealed class OrderService(
+    IInventoryRepository inventory,   // not SqlInventoryRepository
+    IPaymentGateway payments,          // not StripeGateway
+    IOrderNotifier notifier)           // not EmailNotifier
+{
+    // OrderService — the important, high-level policy — never once mentions
+    // a concrete, low-level class. It only ever depends on abstractions.
+}</code></pre>
+    <p>That's not a coincidence, and it's not just "good practice" in some vague sense. It's the last, and arguably most important, of the five SOLID principles — the one that explains <em>why</em> depending on interfaces instead of concrete classes matters so much that an entire module was built around teaching you to do it instinctively.</p>
+    <p><strong>In this lesson — the capstone of Part I — you'll learn the Dependency Inversion Principle precisely: what "high-level" and "low-level" actually mean, why the word "inversion" is in the name, exactly how it differs from Dependency Injection (a distinction that trips up even experienced developers), and how everything from lessons 073 through 080 was building toward this one idea.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is the Dependency Inversion Principle?</h2>
+    <p>The <strong>Dependency Inversion Principle</strong> (DIP) — the "D" in SOLID — has two parts, and both matter:</p>
+    <div class="concept-box">
+        <div class="concept-title">📜 The two rules of DIP</div>
+        <p><strong>1.</strong> High-level modules should not depend on low-level modules. Both should depend on abstractions.</p>
+        <p><strong>2.</strong> Abstractions should not depend on details. Details should depend on abstractions.</p>
+    </div>
+    <p>Unpacked into plain language: the important, policy-level code in your application (<em>what should happen</em> — "charge the customer, reserve the stock, send a confirmation") should never be written in terms of specific, swappable implementation details (<em>how it happens</em> — "using Stripe's SDK, a SQL Server table, and SMTP"). Instead, both sides — the policy and the detail — should be written against a shared abstraction (an interface) that neither one owns exclusively.</p>
+    <p><strong>High-level module</strong> = code that expresses business policy — <code>OrderService</code>, deciding <em>what</em> an order-placement workflow consists of. <strong>Low-level module</strong> = code that does the mechanical, technology-specific work of one step — <code>SqlInventoryRepository</code> talking to a real database, <code>StripeGateway</code> talking to Stripe's API. DIP says the high-level module must never mention the low-level module's concrete type — only the abstraction standing between them.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist? — The Problem It Solves</h2>
+    <p>Without DIP, the natural way to write software points the dependency arrow the "obvious" direction — important business logic ends up directly depending on the specific technology it happens to be using today:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ WITHOUT dependency inversion — the "obvious" but costly design
+public sealed class OrderService
+{
+    private readonly SqlInventoryRepository _inventory = new();   // a concrete SQL Server class
+    private readonly StripeGateway _payments = new();              // a concrete Stripe class
+    private readonly SmtpOrderNotifier _notifier = new();          // a concrete SMTP class
+
+    public async Task&lt;OrderResult&gt; PlaceOrderAsync(Order order)
+    {
+        // OrderService — the most important business logic in the entire application —
+        // is now permanently welded to SQL Server, Stripe, and SMTP.
+        if (!await _inventory.HasStockAsync(order.Items)) return OrderResult.OutOfStock();
+        var result = await _payments.ChargeAsync(order.Total);
+        // ...
+        return OrderResult.Success(order.Id);
+    }
+}
+// Switching payment providers means editing OrderService directly.
+// Unit testing PlaceOrderAsync means standing up a real database, a real Stripe sandbox,
+// and a real SMTP server — or not testing it at all.</code></pre>
+    <p>This is what DIP exists to prevent: your most valuable code — the business rules that make your application <em>your</em> application — becomes hostage to whichever database driver, payment SDK, or email library you happened to pick on day one. Change vendors, and you're editing the policy code, not just swapping a component. Want to unit test the policy, and you're forced to drag along every real infrastructure dependency it touches.</p>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>High-level policy code directly depends on low-level, technology-specific classes — a vendor or infrastructure change forces edits to business logic itself</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>A way for policy code to state <em>what it needs</em> without committing to <em>which implementation provides it</em> — so either side can change independently</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>Both the policy code and the technology-specific code depend on a shared interface that neither one owns — the Dependency Inversion Principle</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Why "Inversion"?</h2>
+    <p>The name comes from what happens to the dependency <em>arrow</em>. Without DIP, dependencies point downward, the "natural" direction — policy depends on detail:</p>
+    <div class="flow-container">
+        <div class="flow-title">WITHOUT DIP — THE "NATURAL" ARROW DIRECTION</div>
+        <div class="flow-step">
+            <div class="step-label">OrderService (high-level policy)</div>
+            <ul><li>depends directly on ↓</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SqlInventoryRepository, StripeGateway, SmtpOrderNotifier (low-level detail)</div>
+            <ul><li>The most important code in the application is now controlled by the least important, most easily-replaced code</li></ul>
+        </div>
+    </div>
+    <p>Dependency inversion flips this. Both the high-level policy and the low-level detail now point at something in between — an abstraction that the high-level side defines and the low-level side must conform to:</p>
+    <div class="flow-container">
+        <div class="flow-title">WITH DIP — THE ARROW IS INVERTED THROUGH AN ABSTRACTION</div>
+        <div class="flow-step">
+            <div class="step-label">OrderService (high-level policy)</div>
+            <ul><li>depends on ↓</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">IInventoryRepository, IPaymentGateway, IOrderNotifier <span class="tag tag-derived">the abstraction — owned conceptually by the high-level side</span></div>
+            <ul><li>Defined by, and shaped around, what <code>OrderService</code> actually needs — not around what SQL Server or Stripe happen to expose</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▲</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SqlInventoryRepository, StripeGateway, SmtpOrderNotifier (low-level detail)</div>
+            <ul><li>implements ↑ — now depends UPWARD on the abstraction, instead of the policy depending downward on it</li></ul>
+        </div>
+    </div>
+    <p>Notice the arrow on the low-level side now points <em>up</em>, toward the abstraction — the opposite of where it pointed before. Both <code>OrderService</code> and <code>SqlInventoryRepository</code> depend on <code>IInventoryRepository</code>; neither depends on the other directly. That's the "inversion": the low-level detail is now the one that has to conform to a contract defined by, and for, the high-level policy — not the other way around.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Applying DIP, Step by Step</h2>
+    <div class="flow-container">
+        <div class="flow-title">FROM CONCRETE DEPENDENCY TO INVERTED DEPENDENCY</div>
+        <div class="flow-step">
+            <div class="step-label">STEP 1 — Identify the high-level policy and what it actually needs</div>
+            <ul><li><code>OrderService</code> needs "check stock," "charge a customer," "notify someone" — described in terms the <em>policy</em> cares about, not in terms of SQL, Stripe, or SMTP</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 2 — Define the abstraction shaped around the high-level side's needs</div>
+            <ul><li><code>IInventoryRepository.HasStockAsync(items)</code> — named and shaped the way <code>OrderService</code> thinks about the problem, not the way a SQL table happens to be structured (this is interface segregation, lesson 079, applied at the architectural level)</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 3 — Make the high-level module depend only on that abstraction</div>
+            <ul><li><code>OrderService</code>'s constructor takes <code>IInventoryRepository</code>, never <code>SqlInventoryRepository</code> — this is composition wired to an interface, exactly as lesson 073 taught</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 4 — Make the low-level module implement that abstraction</div>
+            <ul><li><code>SqlInventoryRepository : IInventoryRepository</code> — the detail now conforms to a contract it doesn't get to define on its own terms</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 5 — Something outside both sides wires the concrete implementation in</div>
+            <ul><li>A composition root — often ASP.NET Core's built-in DI container — constructs a <code>SqlInventoryRepository</code> and hands it to <code>OrderService</code> as an <code>IInventoryRepository</code>; this wiring step is Dependency Injection, the technique covered next</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.5;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ Before — high-level LightSwitch depends directly on a low-level detail
+public sealed class IncandescentBulb
+{
+    public void PowerOn() => Console.WriteLine("Bulb glowing.");
+}
+
+public sealed class LightSwitch
+{
+    private readonly IncandescentBulb _bulb = new();   // welded to ONE specific bulb type
+    public void Flip() => _bulb.PowerOn();
+}
+// Want an LED bulb instead? You're editing LightSwitch itself.
+
+// ✅ After — both sides depend on a shared abstraction
+public interface ISwitchable
+{
+    void PowerOn();
+}
+
+public sealed class IncandescentBulb : ISwitchable
+{
+    public void PowerOn() => Console.WriteLine("Bulb glowing.");
+}
+
+public sealed class LedBulb : ISwitchable
+{
+    public void PowerOn() => Console.WriteLine("LED illuminated.");
+}
+
+public sealed class LightSwitch(ISwitchable device)   // depends ONLY on the abstraction
+{
+    public void Flip() => device.PowerOn();
+}
+
+var switchWithIncandescent = new LightSwitch(new IncandescentBulb());
+var switchWithLed = new LightSwitch(new LedBulb());
+// LightSwitch's own code never changed — the detail plugged in from outside</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> Before, <code>LightSwitch</code> — the high-level "policy" of flipping something on — was permanently wired to one specific bulb technology. After, <code>LightSwitch</code> depends only on <code>ISwitchable</code>, an abstraction shaped around what a switch actually needs ("something I can power on"). Either bulb type can be handed in without <code>LightSwitch</code> changing a single line — this is DIP working at the smallest possible scale.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Order Fulfillment, Fully Inverted</h2>
+    <p>Bringing together composition (073), multiple interfaces (078), segregation (079), and explicit implementation (080) into one coherent, DIP-compliant order fulfillment workflow:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ── Abstractions — shaped around what the HIGH-LEVEL policy needs (lesson 079: focused, not fat) ──
+public interface IInventoryRepository
+{
+    Task&lt;bool&gt; HasStockAsync(IReadOnlyList&lt;OrderItem&gt; items, CancellationToken ct = default);
+    Task ReserveAsync(IReadOnlyList&lt;OrderItem&gt; items, CancellationToken ct = default);
+}
+
+public interface IPaymentGateway
+{
+    Task&lt;PaymentResult&gt; ChargeAsync(decimal amount, string customerToken, CancellationToken ct = default);
+}
+
+public interface IOrderNotifier
+{
+    Task NotifyOrderPlacedAsync(Order order, CancellationToken ct = default);
+}
+
+// ── High-level module — the business policy. Depends ONLY on abstractions. ──
+public sealed class OrderFulfillmentService(
+    IInventoryRepository inventory,
+    IPaymentGateway payments,
+    IOrderNotifier notifier)
+{
+    public async Task&lt;OrderResult&gt; PlaceOrderAsync(Order order, CancellationToken ct = default)
+    {
+        if (!await inventory.HasStockAsync(order.Items, ct))
+            return OrderResult.OutOfStock();
+
+        var paymentResult = await payments.ChargeAsync(order.Total, order.CustomerToken, ct);
+        if (!paymentResult.Success)
+            return OrderResult.PaymentFailed(paymentResult.Reason);
+
+        await inventory.ReserveAsync(order.Items, ct);
+        await notifier.NotifyOrderPlacedAsync(order, ct);
+        return OrderResult.Success(order.Id);
+    }
+    // Not one line of this class mentions SQL, Stripe, or SMTP.
+    // This is the entire point: the POLICY is completely insulated from the DETAILS.
+}
+
+// ── Low-level modules — the details. They depend UPWARD on the abstractions. ──
+public sealed class SqlInventoryRepository(DbConnection connection) : IInventoryRepository
+{
+    public Task&lt;bool&gt; HasStockAsync(IReadOnlyList&lt;OrderItem&gt; items, CancellationToken ct = default) =&gt;
+        /* real SQL query against connection */ Task.FromResult(true);
+    public Task ReserveAsync(IReadOnlyList&lt;OrderItem&gt; items, CancellationToken ct = default) =&gt;
+        /* real SQL update against connection */ Task.CompletedTask;
+}
+
+public sealed class StripePaymentGateway(IStripeClient client) : IPaymentGateway
+{
+    public async Task&lt;PaymentResult&gt; ChargeAsync(decimal amount, string customerToken, CancellationToken ct = default)
+    {
+        var response = await client.CreateChargeAsync(amount, customerToken, ct);
+        return response.Succeeded ? PaymentResult.Success(response.TransactionId) : PaymentResult.Failed(response.DeclineReason);
+    }
+}
+
+public sealed class EmailOrderNotifier(ISmtpClient smtp) : IOrderNotifier
+{
+    public Task NotifyOrderPlacedAsync(Order order, CancellationToken ct = default) =&gt;
+        smtp.SendAsync(order.CustomerEmail, "Order confirmed", $"Order {order.Id} is on its way.", ct);
+}
+
+// ── The composition root — the ONE place that knows about every concrete type ──
+// Everywhere else in the application, only the abstractions are visible.
+services.AddScoped&lt;IInventoryRepository, SqlInventoryRepository&gt;();
+services.AddScoped&lt;IPaymentGateway, StripePaymentGateway&gt;();
+services.AddScoped&lt;IOrderNotifier, EmailOrderNotifier&gt;();
+services.AddScoped&lt;OrderFulfillmentService&gt;();
+
+// ── A test never touches SQL Server, Stripe, or SMTP at all ──
+var fulfillment = new OrderFulfillmentService(
+    new FakeInventoryRepository(alwaysInStock: true),
+    new FakePaymentGateway(alwaysSucceeds: true),
+    new FakeOrderNotifier());
+var result = await fulfillment.PlaceOrderAsync(testOrder);
+Assert.True(result.Success);   // milliseconds, zero infrastructure, fully deterministic</code></pre>
+    <p><strong>Why this is DIP working end to end, not just "using interfaces":</strong></p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><code>OrderFulfillmentService</code> — the high-level module — has zero compiled dependency on <code>SqlInventoryRepository</code>, <code>StripePaymentGateway</code>, or <code>EmailOrderNotifier</code>. You could delete all three low-level classes and <code>OrderFulfillmentService</code> would still compile.</li>
+        <li style="margin-bottom:0.4rem;">The interfaces were shaped around what the <em>policy</em> needs (<code>HasStockAsync</code>, <code>ChargeAsync</code>, <code>NotifyOrderPlacedAsync</code>) — not around what a SQL table, Stripe's SDK, or SMTP happen to expose. That's the "abstractions should not depend on details" half of DIP.</li>
+        <li style="margin-bottom:0.4rem;">Swapping Stripe for a different payment processor means writing one new class implementing <code>IPaymentGateway</code> and changing one line in the composition root — <code>OrderFulfillmentService</code> is never touched.</li>
+        <li style="margin-bottom:0.4rem;">The test at the bottom is only possible because of this inversion — a fake stands in for each interface, and <code>OrderFulfillmentService</code> genuinely cannot tell the difference between a fake and the real thing.</li>
+    </ul>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy — The Wall Socket</h2>
+    <p>A wall socket is an abstraction owned by the electrical system of your house — the house's wiring (the "high-level" side, since it's what you actually built and care about) doesn't know or care whether a lamp, a phone charger, or a vacuum cleaner gets plugged in. Every appliance manufacturer (the "low-level" side) builds their plug to conform to the socket's shape — not the other way around; nobody rewires their house to match a new toaster. The socket's shape is the abstraction. The house depends on the socket shape; every appliance also depends on the socket shape; neither the house nor any specific appliance depends on the other directly. That's dependency inversion — and it's exactly why you can unplug a broken toaster and plug in a working one without touching a single wire in the wall.</p>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Compile-Time Dependencies vs. Runtime Wiring</h2>
+    <div class="flow-container">
+        <div class="flow-title">TWO SEPARATE GRAPHS: WHAT COMPILES AGAINST WHAT, AND WHAT RUNS AGAINST WHAT</div>
+        <div class="flow-step">
+            <div class="step-label">1. THE COMPILE-TIME DEPENDENCY GRAPH IS WHAT DIP ACTUALLY CONTROLS</div>
+            <ul><li><code>OrderFulfillmentService.cs</code> only references <code>IInventoryRepository</code>, <code>IPaymentGateway</code>, <code>IOrderNotifier</code> in its <code>using</code>s and signatures — the compiler never needs <code>SqlInventoryRepository</code> to exist to build this file; that's the literal, mechanical meaning of "does not depend on"</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE RUNTIME OBJECT GRAPH STILL NEEDS REAL CONCRETE INSTANCES</div>
+            <ul><li>At some point, <em>something</em> has to actually construct a <code>SqlInventoryRepository</code> and hand it over — DIP doesn't eliminate that need, it just relocates it to one narrow place (the composition root) instead of scattering <code>new SqlInventoryRepository()</code> throughout the policy code</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE DI CONTAINER RESOLVES INTERFACE-TYPED CONSTRUCTOR PARAMETERS AT RUNTIME</div>
+            <ul><li>ASP.NET Core's container reads <code>OrderFulfillmentService</code>'s constructor, sees it wants an <code>IInventoryRepository</code>, looks up which concrete type was registered for that interface, and passes the resolved instance in — this reflection-driven resolution is what makes the wiring in <code>Program.cs</code> actually work</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. NOTHING ABOUT DIP ITSELF REQUIRES A DI CONTAINER</div>
+            <ul><li>The <code>new OrderFulfillmentService(new FakeInventoryRepository(...), ...)</code> test line manually constructs the object graph, no container involved — DIP is satisfied by the <em>compile-time reference structure</em>, regardless of how the runtime instances get assembled</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion — Dependency Inversion ≠ Dependency Injection</h2>
+    <p>These two terms get used almost interchangeably in casual conversation, and it causes real confusion. They are not the same thing — one is a <em>principle</em>, the other is a <em>technique</em> that helps you follow it.</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>📐 Dependency Inversion (DIP)</h4>
+            <ul>
+                <li>A <strong>design principle</strong> — a rule about which direction dependencies should point</li>
+                <li>Says: high-level modules and low-level modules should both depend on abstractions</li>
+                <li>You can satisfy it just by writing <code>OrderFulfillmentService(IInventoryRepository inventory, ...)</code> — nothing about a container required</li>
+                <li>It's about the <em>shape</em> of your dependency graph</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🔧 Dependency Injection (DI)</h4>
+            <ul>
+                <li>A <strong>technique</strong> — a mechanical way of supplying a dependency from outside a class instead of the class creating it itself</li>
+                <li>Says: pass the dependency in (constructor, property, or method), don't <code>new</code> it up internally</li>
+                <li>Can be done with zero DIP compliance at all — <code>OrderFulfillmentService(SqlInventoryRepository inventory)</code> is still dependency injection, just injecting a concrete class instead of an abstraction</li>
+                <li>It's about <em>how</em> a dependency gets supplied</li>
+            </ul>
+        </div>
+    </div>
+    <p>The two ideas combine constantly, which is exactly why they get blurred together: DI is the most common, practical <em>technique</em> for satisfying DIP — you inject an abstraction instead of newing up a concrete class, and now you're doing both at once. But they are separable, and seeing them separately is the whole point of this distinction:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>DI without DIP:</strong> <code>public OrderFulfillmentService(SqlInventoryRepository inventory)</code> — the dependency is injected from outside (that's DI), but it's still a concrete, low-level class (that violates DIP). You've made testing marginally easier (you can pass a different <code>SqlInventoryRepository</code> instance) but you still can't swap the technology or use a fake without a real database connection string.</li>
+        <li style="margin-bottom:0.4rem;"><strong>DIP without DI:</strong> a class could reference only interfaces internally while still constructing its own dependencies with a factory or service locator lookup rather than receiving them via constructor — rarer, and usually a worse design than combining both, but it demonstrates the two ideas are conceptually distinct.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Both together (the goal):</strong> <code>public OrderFulfillmentService(IInventoryRepository inventory)</code> — an abstraction (DIP), supplied from outside (DI). This is what every example in this lesson, and most of Part I, has been building toward.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 The clean one-line version:</strong> Dependency Injection is a technique for supplying dependencies from outside a class. Dependency Inversion is a principle about what kind of thing — abstraction or concrete detail — those dependencies should be. DI is how you typically achieve DIP; DIP is the design goal DI serves.
+    </div>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Injecting a concrete class and calling it "dependency inversion"</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ This uses a DI container, but it does NOT satisfy DIP
+public sealed class OrderFulfillmentService(SqlInventoryRepository inventory) { ... }
+services.AddScoped&lt;SqlInventoryRepository&gt;();
+// OrderFulfillmentService still directly references SqlInventoryRepository.
+// Swapping databases means editing this class's signature. No abstraction exists between them.</code></pre>
+    <p>✅ The dependency being injected must itself be an abstraction — <code>IInventoryRepository</code>, not <code>SqlInventoryRepository</code> — for DIP to actually be satisfied. Using a container doesn't automatically buy you inversion; the type in the constructor parameter is what matters.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Shaping the abstraction around the low-level implementation instead of the high-level need</h4>
+    <p>❌ Defining <code>IInventoryRepository</code> with methods like <code>ExecuteQueryAsync(string sql)</code> or <code>GetRowAsync(string tableName, int id)</code> — this "abstraction" is really just SQL Server wearing an interface costume. It leaks the low-level detail's shape straight through, so <code>OrderFulfillmentService</code> is still effectively coupled to how a relational database thinks, even though it technically depends on an interface.</p>
+    <p>✅ Shape the interface around what the high-level policy actually needs to express — <code>HasStockAsync(items)</code>, not <code>ExecuteQueryAsync(sql)</code>. This is DIP's second rule in action: "abstractions should not depend on details" — the interface belongs conceptually to the high-level side, not to whichever low-level technology happens to implement it first.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Applying DIP to every class, including ones with no real "detail" to invert</h4>
+    <p>❌ Creating an <code>IOrderTotalCalculator</code> interface, with exactly one implementation that will ever exist, purely because "DIP says depend on abstractions" — for a small, pure calculation with no I/O, no external system, and no plausible alternative implementation, this just adds a file and an indirection with no real benefit.</p>
+    <p>✅ DIP earns its cost at the boundary between your policy and something genuinely variable or external — a database, a payment provider, a notification channel, a filesystem, a third-party API. A pure, deterministic calculation with a single obvious implementation usually doesn't need an interface just to satisfy the letter of the principle.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">At the boundary between your business logic and anything external or swappable — databases, payment gateways, notification channels, third-party APIs, the filesystem, the system clock.</li>
+        <li style="margin-bottom:0.4rem;">Anywhere you want to unit test policy logic without standing up real infrastructure — DIP is what makes a fast, deterministic, infrastructure-free test suite possible in the first place.</li>
+        <li style="margin-bottom:0.4rem;">In plugin or extension-style architectures (lesson 078), where the set of low-level implementations isn't even fully known when the high-level module is written.</li>
+    </ul>
+    <p>And when it's overkill: for small, internal, pure-logic classes with exactly one plausible implementation and no I/O — as Mistake 3 covers, forcing an interface onto every class "because SOLID says so" adds files and indirection without adding real flexibility or testability. DIP is a tool for managing genuine points of variation and external dependency, not a mandate to abstract everything.</p>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> ask "could this dependency plausibly be swapped, faked, or does it touch something outside my process (network, disk, database, clock)?" If yes, invert it behind an interface. If it's a small, pure, single-implementation detail, a concrete dependency is honest and simpler.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>High-level module</strong> = the policy — what should happen.<br />
+        <strong>Low-level module</strong> = the detail — how it actually happens, today, with today's vendor.<br />
+        <strong>Abstraction</strong> = the shared contract, shaped around what the policy needs, that both sides depend on.<br />
+        <strong>Inversion</strong> = the detail now depends upward on the abstraction, instead of the policy depending downward on the detail.<br /><br />
+        <strong>Remember:</strong><br />
+        · Dependency Inversion is the principle: depend on abstractions, not concrete details.<br />
+        · Dependency Injection is the technique: supply dependencies from outside instead of constructing them internally.<br />
+        · DI is how you typically achieve DIP — but injecting a concrete class is still DI without DIP.<br />
+        · The abstraction belongs conceptually to the high-level side — shape it around what the policy needs, not around what the low-level technology happens to expose.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">The Dependency Inversion Principle: high-level modules should not depend on low-level modules — both should depend on abstractions; abstractions should not depend on details, details should depend on abstractions.</li>
+            <li style="margin-bottom:0.4rem;">"Inversion" refers to the dependency arrow flipping — the low-level detail now depends upward on an abstraction, rather than the high-level policy depending downward on the detail.</li>
+            <li style="margin-bottom:0.4rem;">Dependency Inversion is a design principle; Dependency Injection is a technique. DI is the most common way to satisfy DIP, but injecting a concrete class is DI without DIP — the two are related but distinct.</li>
+            <li style="margin-bottom:0.4rem;">Every lesson in this module fed into this principle: composition to an interface (073), depending on abstractions for testability (077), composing multiple focused capabilities (078), keeping those abstractions honest and small (079), and hiding implementation-only detail from a class's public surface (080).</li>
+            <li style="margin-bottom:0.4rem;">Apply it at genuine boundaries — databases, external services, anything swappable or worth faking in a test — not reflexively on every class regardless of whether it has a real detail to invert.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">This is the capstone of Part I — let's confirm you can tell dependency inversion apart from dependency injection, and recognize the principle in real code.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> According to the Dependency Inversion Principle, what should both high-level and low-level modules depend on?</p>
+        <ul class="options">
+            <li>A) Each other directly, so both sides stay in sync</li>
+            <li>B) A shared abstraction, shaped around what the high-level module needs</li>
+            <li>C) A dependency injection container</li>
+            <li>D) The low-level module's concrete implementation details</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the precise statement of DIP — both sides depend on an abstraction, and that abstraction is shaped around what the high-level policy needs, not around what the low-level detail happens to expose.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Depending on each other directly is exactly the problem DIP solves — it creates the tight coupling shown in the "Why Does It Exist?" section, where a vendor change forces edits to business logic.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A container is one tool that can help wire dependencies at runtime, but DIP itself is a design principle about dependency direction — it doesn't require any specific container or tool, as the manually-constructed test in the real-world example demonstrated.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is precisely backwards — depending on implementation details is what DIP explicitly prohibits for the high-level side.</p>
+                <p><strong>Reinforcement:</strong> The abstraction sits between both sides and is owned conceptually by the high-level policy — neither side depends on the other directly.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A developer writes <code>public OrderFulfillmentService(SqlInventoryRepository inventory)</code> and passes the dependency in through the constructor rather than constructing it internally. Is this Dependency Inversion, Dependency Injection, both, or neither?</p>
+        <ul class="options">
+            <li>A) Both — passing anything through a constructor automatically satisfies both principles</li>
+            <li>B) Dependency Injection only — the dependency is supplied from outside (the technique), but it's still a concrete, low-level class, so DIP is not satisfied</li>
+            <li>C) Dependency Inversion only — constructors are irrelevant to DI</li>
+            <li>D) Neither — constructor parameters never count as dependency injection</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly Mistake 1 and the "DI without DIP" case from Common Confusion — supplying the dependency from outside is dependency injection (the technique), but since <code>SqlInventoryRepository</code> is a concrete, low-level class rather than an abstraction, the Dependency Inversion Principle is not being followed here.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Using a constructor parameter alone does not guarantee DIP — the type of that parameter is what determines whether the dependency is inverted (an abstraction) or not (a concrete class), as this exact example shows.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This gets it backwards — DIP is not satisfied here at all (concrete class, no abstraction), while DI clearly is (the dependency comes from outside).</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Constructor injection is one of the most common forms of dependency injection — supplying any dependency via a constructor parameter, concrete or abstract, is DI by definition.</p>
+                <p><strong>Reinforcement:</strong> DI is about how a dependency is supplied; DIP is about what kind of thing — abstraction or detail — it is. This example does one but not the other.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why is <code>IInventoryRepository</code> designed with a method like <code>HasStockAsync(items)</code> rather than something like <code>ExecuteQueryAsync(string sql)</code>?</p>
+        <ul class="options">
+            <li>A) Because SQL queries are always slower to execute than named methods</li>
+            <li>B) Because the abstraction should be shaped around what the high-level policy needs to express, not leak the shape of the low-level database technology through the interface</li>
+            <li>C) Because <code>ExecuteQueryAsync</code> is not valid C# syntax</li>
+            <li>D) It makes no difference either way — both are equally good interface designs</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is DIP's second rule — "abstractions should not depend on details" — covered directly in Mistake 2. An interface shaped like the low-level technology (raw SQL) is really just that technology wearing an interface costume; it still couples the high-level policy to how a relational database thinks, even though it technically compiles against an interface.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This has nothing to do with performance — the concern is about coupling and abstraction leakage, not execution speed.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>ExecuteQueryAsync(string sql)</code> is perfectly valid C# — the problem with it is a design one, not a syntax one.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The two designs are not equivalent — one keeps the high-level policy genuinely decoupled from the database technology, the other only appears to while still leaking its shape through.</p>
+                <p><strong>Reinforcement:</strong> A leaky abstraction that mirrors the low-level implementation's shape doesn't actually deliver DIP's benefit, even though it technically uses an interface.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> In the real-world example, why can <code>OrderFulfillmentService</code> be unit tested with <code>FakeInventoryRepository</code>, <code>FakePaymentGateway</code>, and <code>FakeOrderNotifier</code> with zero real infrastructure?</p>
+        <ul class="options">
+            <li>A) Because unit tests automatically mock every dependency without any design changes needed</li>
+            <li>B) Because <code>OrderFulfillmentService</code> depends only on interfaces, and any class implementing those interfaces — real or fake — is indistinguishable to it</li>
+            <li>C) Because <code>FakeInventoryRepository</code> secretly connects to a real, lightweight test database</li>
+            <li>D) Because the Dependency Injection container is required to run any unit test</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the direct payoff of DIP — since <code>OrderFulfillmentService</code>'s constructor only knows about <code>IInventoryRepository</code>, <code>IPaymentGateway</code>, and <code>IOrderNotifier</code>, any class satisfying those contracts works identically from its perspective, fake or real. The test constructs the object graph manually, with no container needed at all.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing is automatic — this testability exists specifically because the class was designed to depend on abstractions in the first place; a version depending on concrete classes (Mistake 1) would not be nearly this easy to test.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A properly-written fake holds no real connection at all — it's an in-memory stand-in, which is exactly why the test runs in milliseconds with no infrastructure.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The "Under the Hood" section showed the test constructing <code>OrderFulfillmentService</code> directly with <code>new</code> — no container is involved or required; DIP is satisfied by the compile-time reference structure alone.</p>
+                <p><strong>Reinforcement:</strong> Fast, infrastructure-free unit testing is one of the most concrete, everyday payoffs of following the Dependency Inversion Principle.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 5 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A developer creates an <code>IOrderTotalCalculator</code> interface with exactly one implementation, for a small, pure, deterministic calculation with no I/O and no plausible alternative implementation — purely because "SOLID says depend on abstractions." Is this a good application of DIP?</p>
+        <ul class="options">
+            <li>A) Yes — every single class in an application should always depend on an interface, without exception</li>
+            <li>B) No — DIP earns its cost at genuine boundaries with external systems or plausible variation; a pure, single-implementation calculation typically doesn't need the added interface and indirection</li>
+            <li>C) Yes, but only if the interface is named starting with a capital "I"</li>
+            <li>D) No — interfaces should never be used for calculation logic under any circumstances</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is precisely Mistake 3 and the "When Should I Use It?" guidance — DIP is a tool for managing genuine variation and external dependency (databases, payment providers, anything swappable or worth faking), not a mandate to abstract every class regardless of whether there's a real detail to invert.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This treats DIP as a mechanical rule to apply everywhere rather than a principle for managing genuine architectural boundaries — exactly the over-application this question describes.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Naming convention has no bearing on whether an interface is architecturally justified — the substance of whether there's a genuine point of variation is what matters.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Interfaces are entirely appropriate for calculation logic when there's a genuine need — multiple real strategies, or a need to swap behavior (as lesson 073's <code>IDiscountStrategy</code> showed) — the issue here is specifically the lack of any genuine variation or external dependency.</p>
+                <p><strong>Reinforcement:</strong> Apply DIP where it earns its cost — real boundaries with the outside world, or genuine points of variation — not reflexively on every single class.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 Part I complete. From composition wired to an interface, through segregated contracts and explicit implementation, to the Dependency Inversion Principle tying it all together — you now design classes the way production C# systems are actually built: as policies depending on abstractions, with the details plugged in from outside.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
