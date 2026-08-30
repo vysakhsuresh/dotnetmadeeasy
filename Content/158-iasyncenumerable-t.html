@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>158 - IAsyncEnumerable&lt;T&gt; · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        yield return said "here's the next item." async IAsyncEnumerable&lt;T&gt; lets you also say "...but first, let me go fetch it."
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>The last lesson showed you the <em>consuming</em> side of async streams — <code class="icode">await foreach</code> pulling items out of an <code class="icode">IAsyncEnumerable&lt;T&gt;</code>, one at a time, as they became ready. But something had to produce <code class="icode">SearchProductsStreamAsync(query)</code> in the first place. Where do those items actually come from?</p>
+    <p>You already know how to produce a plain synchronous sequence: write a method that returns <code class="icode">IEnumerable&lt;T&gt;</code> and use <code class="icode">yield return</code> inside it. <strong>In this lesson, you'll learn the async counterpart — writing a method as <code class="icode">async IAsyncEnumerable&lt;T&gt;</code> and using <code class="icode">yield return</code> alongside real <code class="icode">await</code> calls — and see it solve two genuinely real problems: streaming paginated API results as they arrive, and reading a large file line by line without loading the whole thing into memory.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>An <code class="icode">async IAsyncEnumerable&lt;T&gt;</code> method is a method that produces items one at a time using <code class="icode">yield return</code> — exactly like a normal iterator method — except it's also allowed to <code class="icode">await</code> real asynchronous work in between yields. Fetch a page, yield its items, fetch the next page, yield those, and so on, until there's nothing left.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A method is recognized by the compiler as an async iterator when it satisfies three conditions together: it's marked <code class="icode">async</code>, its return type is <code class="icode">IAsyncEnumerable&lt;T&gt;</code> (or <code class="icode">IAsyncEnumerator&lt;T&gt;</code>), and its body contains at least one <code class="icode">yield return</code>. Meeting all three tells the compiler to generate the combined state machine described in the previous lesson's "Under the Hood" section — one capable of suspending both on <code class="icode">await</code> and on <code class="icode">yield return</code>.</p>
+    <div class="code-block"><code>public async IAsyncEnumerable&lt;SearchResult&gt; SearchProductsStreamAsync(string query)
+{
+    int page = 1;
+    bool hasMorePages = true;
+
+    while (hasMorePages)
+    {
+        SearchPage response = await _httpClient
+            .GetFromJsonAsync&lt;SearchPage&gt;($"/search?q={query}&amp;page={page}");
+
+        foreach (SearchResult result in response.Items)
+            yield return result;   // hand one item back to the caller
+
+        hasMorePages = response.HasNextPage;
+        page++;
+    }
+}</code></div>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> Two kinds of pause, freely mixed</div>
+        <p>Inside this one method body, <code class="icode">await</code> pauses to wait for something (a network call), and <code class="icode">yield return</code> pauses to hand a value to the caller. They can appear in any order, any number of times — the compiler's combined state machine tracks both kinds of suspension in the same method.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — yield return Alone Can't Await</h3>
+    <p>A plain synchronous iterator method (<code class="icode">IEnumerable&lt;T&gt;</code> with <code class="icode">yield return</code>) is not marked <code class="icode">async</code>, and cannot contain <code class="icode">await</code> at all — the compiler rejects it outright. So if the next item genuinely requires an asynchronous wait (fetching page 2 from an API, reading the next chunk of a file), there was, before this feature, no clean way to write that as an iterator. You'd either have to block synchronously inside <code class="icode">MoveNext()</code> (defeating the entire point of async), or abandon the elegant <code class="icode">yield return</code> syntax and hand-roll something far messier.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is a way to write a producer method that reads exactly like a familiar synchronous iterator — a loop, some logic, <code class="icode">yield return</code> — but is also free to <code class="icode">await</code> whatever asynchronous work is needed to produce the next value.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — async IAsyncEnumerable&lt;T&gt;</h3>
+    <p>That's exactly what <code class="icode">async IAsyncEnumerable&lt;T&gt;</code> gives you. The method above reads almost identically to how you'd write a synchronous paginated loop that returned <code class="icode">IEnumerable&lt;SearchResult&gt;</code> — the only additions are the <code class="icode">async</code> modifier, the <code class="icode">IAsyncEnumerable&lt;T&gt;</code> return type, and an <code class="icode">await</code> in front of the network call. Everything else — the loop, the <code class="icode">yield return</code>, the pagination logic — is the same shape you already know.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Producing side</th><th>Consuming side</th><th>What it takes to write it</th></tr></thead>
+            <tbody>
+                <tr><td><code class="icode">IEnumerable&lt;T&gt;</code> + <code class="icode">yield return</code></td><td><code class="icode">foreach</code></td><td>No <code class="icode">await</code> allowed inside</td></tr>
+                <tr><td><code class="icode">Task&lt;T&gt;</code> (no yield)</td><td><code class="icode">await</code> once</td><td>One value, computed with <code class="icode">await</code> inside</td></tr>
+                <tr><td><code class="icode">async IAsyncEnumerable&lt;T&gt;</code> + <code class="icode">yield return</code></td><td><code class="icode">await foreach</code></td><td>Many values, each producible with <code class="icode">await</code> inside</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>This lesson's method is the last row — the piece that was missing until now. It's the producing-side twin of the consuming-side <code class="icode">await foreach</code> you already know from the previous lesson.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">A ROUND TRIP THROUGH SearchProductsStreamAsync</div>
+        <div class="flow-step">
+            <div class="step-label">Step 1 — Caller starts `await foreach`, which calls MoveNextAsync()</div>
+            <ul><li>The producer method starts running from the top for the very first time.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 2 — It hits `await _httpClient.GetFromJsonAsync(...)`</div>
+            <ul><li>Execution suspends here, exactly like any other <code>await</code> — the thread is freed while page 1 is fetched.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 3 — The response arrives; the inner `foreach` reaches `yield return result`</div>
+            <ul><li>The method suspends <em>again</em>, this time handing the first result back — that's what makes the pending <code>MoveNextAsync()</code> from Step 1 complete, with <code>Current</code> set to that item.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 4 — Caller processes the item, then loops back for the next one</div>
+            <ul><li>This calls <code>MoveNextAsync()</code> again — execution resumes in the producer <em>right after</em> the <code>yield return</code> that paused it, not from the top.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 5 — Repeat: yield remaining items from page 1, then await page 2, then yield those...</div>
+            <ul><li>This continues until <code>hasMorePages</code> is false and the method runs off the end — that's the signal that tells <code>await foreach</code> the sequence is done.</li></ul>
+        </div>
+    </div>
+    <p>Notice the key detail: fetching page 2 doesn't happen until the caller has actually asked for the item right after the last one from page 1. Nothing is pre-fetched — production is driven entirely by the consumer's demand, exactly as the previous lesson described.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Before writing anything paginated or file-based, here's the smallest possible async iterator — a countdown that waits a bit between each number, to make the "await, then yield, repeat" shape unmistakable:</p>
+
+    <div class="code-block"><code>public async IAsyncEnumerable&lt;int&gt; CountDownAsync(int from)
+{
+    for (int i = from; i &gt; 0; i--)
+    {
+        await Task.Delay(500);   // pretend this is "waiting for the next value to be ready"
+        yield return i;          // hand this value to the caller
+    }
+}
+
+// Consuming it:
+await foreach (int number in CountDownAsync(3))
+{
+    Console.WriteLine(number); // prints 3, 2, 1 — roughly half a second apart
+}</code></div>
+    <p>Walking through it:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">The signature is <code class="icode">async IAsyncEnumerable&lt;int&gt;</code> — all three markers from the technical definition are present: <code class="icode">async</code>, that return type, and a <code class="icode">yield return</code> in the body.</li>
+        <li style="margin-bottom:0.4rem;">Each loop iteration awaits first (simulating real waiting work), then yields — the same "await, then yield" pattern you'll use for real API pages or file lines.</li>
+        <li style="margin-bottom:0.4rem;"><code class="icode">await foreach</code> on the caller's side needs no special handling for the fact that this producer both awaits <em>and</em> yields — it's completely transparent from the outside.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Scenario 1 — Streaming paginated API results as they arrive</h3>
+    <p>The full, cancellation-aware version of the search example from earlier — a realistic shape for calling any paginated third-party API:</p>
+
+    <div class="code-block"><code>public async IAsyncEnumerable&lt;SearchResult&gt; SearchProductsStreamAsync(
+    string query,
+    [EnumeratorCancellation] CancellationToken ct = default)
+{
+    int page = 1;
+    bool hasMorePages = true;
+
+    while (hasMorePages)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        SearchPage response = await _httpClient
+            .GetFromJsonAsync&lt;SearchPage&gt;($"/search?q={query}&amp;page={page}", ct);
+
+        foreach (SearchResult result in response.Items)
+            yield return result;
+
+        hasMorePages = response.HasNextPage;
+        page++;
+    }
+}</code></div>
+    <p>The caller can start displaying page 1's results the instant they arrive, while page 2 hasn't even been requested yet — and if the caller stops early (say, the user closed the search panel), later pages are simply never fetched, exactly like the "stop early" benefit from the previous lesson. The <code class="icode">[EnumeratorCancellation]</code> attribute is what lets a <code class="icode">CancellationToken</code> parameter on an async-iterator method actually be wired up to the token that <code class="icode">.WithCancellation(ct)</code> supplies on the consuming side — without it, a token passed as a normal parameter here wouldn't correctly connect to the enumerator that <code class="icode">await foreach</code> creates.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Scenario 2 — Reading a large file line by line, asynchronously</h3>
+    <p>A log file with millions of lines, processed without ever holding more than one line in memory at a time:</p>
+
+    <div class="code-block"><code>public async IAsyncEnumerable&lt;string&gt; ReadLinesAsync(string path)
+{
+    using StreamReader reader = File.OpenText(path);
+
+    while (!reader.EndOfStream)
+    {
+        string? line = await reader.ReadLineAsync();
+        if (line is not null)
+            yield return line;
+    }
+}
+
+// Consuming it — find the first ERROR line without reading the whole file:
+await foreach (string line in ReadLinesAsync("app.log"))
+{
+    if (line.Contains("ERROR"))
+    {
+        Console.WriteLine($"Found: {line}");
+        break; // the rest of a multi-gigabyte file is never read
+    }
+}</code></div>
+    <p>Every <code class="icode">await reader.ReadLineAsync()</code> frees the thread while the next chunk is read off disk. Memory use stays flat regardless of whether the file is a hundred lines or a hundred million — only the current line needs to exist in memory at once, the same benefit you saw with the order-export example in the previous lesson, now applied to a file instead of a database.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🍳</span> A Short-Order Cook, Not a Meal-Prep Kitchen</div>
+        <p>A synchronous iterator is like a cook with every ingredient already prepped and sitting on the counter — handing you one plate the moment you ask, with no waiting. <code class="icode">async IAsyncEnumerable&lt;T&gt;</code> is a short-order cook: when you ask for the next dish, they might need to step away to grill something first (the <code class="icode">await</code>), and only once it's ready do they hand it to you (the <code class="icode">yield return</code>). Crucially, they don't grill dish #5 until you've actually asked for it — no wasted food sitting around for orders that were never placed.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>As the previous lesson described at a high level, the compiler generates a single state machine for a method like this, capable of two distinct kinds of suspension. Concretely, each call to <code class="icode">MoveNextAsync()</code> resumes the state machine from wherever it last paused — whether that pause was at an <code class="icode">await</code> (waiting on a Task) or at a <code class="icode">yield return</code> (waiting for the caller to ask for the next item) — and runs forward until it hits the <em>next</em> pause of either kind, or falls off the end of the method (which is what makes the final <code class="icode">MoveNextAsync()</code> return <code class="icode">false</code>).</p>
+    <p>This is exactly why the order of statements you write is exactly the order things happen: <code class="icode">await</code> the page, <em>then</em> yield its items, <em>then</em> loop back to await the next page — nothing runs ahead of where the caller has actually asked to be.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "yield return in an async method means it must be returning IAsyncEnumerable" — not quite the rule</h3>
+    <p>It's more precise to say: an <code class="icode">async</code> method that contains <code class="icode">yield return</code> can <em>only</em> declare its return type as <code class="icode">IAsyncEnumerable&lt;T&gt;</code> (or <code class="icode">IAsyncEnumerator&lt;T&gt;</code>) — you can't combine <code class="icode">yield return</code> with a return type of <code class="icode">Task&lt;T&gt;</code>. Ordinary <code class="icode">async Task&lt;T&gt;</code> methods that don't yield anything are unaffected and remain exactly what you already know from earlier in this module.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Calling the method doesn't run any of its code yet</h3>
+    <p>Just like a synchronous iterator method, calling <code class="icode">SearchProductsStreamAsync(query)</code> by itself doesn't execute a single line inside it — it hands back an <code class="icode">IAsyncEnumerable&lt;T&gt;</code> object ready to be enumerated. The body only actually starts running once something calls <code class="icode">GetAsyncEnumerator()</code> and then <code class="icode">MoveNextAsync()</code> on it — which is exactly what <code class="icode">await foreach</code> does for you.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Forgetting [EnumeratorCancellation] and expecting cancellation to "just work"</h4>
+    <p>❌ Adding a plain <code class="icode">CancellationToken</code> parameter to an async-iterator method and assuming <code class="icode">.WithCancellation(ct)</code> on the caller's side will automatically feed it in.</p>
+    <p>✅ Mark the parameter <code class="icode">[EnumeratorCancellation]</code>, as shown in the search example — this is the detail that actually wires the caller's token through to your method's token.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Buffering everything into a list inside the method, then yielding from that</h4>
+    <p>❌ Fetching every page up front into a <code class="icode">List&lt;SearchResult&gt;</code> before yielding anything — this throws away the entire point of streaming; the caller is back to waiting for everything before seeing the first item.</p>
+    <p>✅ Yield each item (or batch) as soon as it's actually available, right after the <code class="icode">await</code> that produced it — don't collect first and yield later.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Leaving a disposable resource unmanaged inside the iterator</h4>
+    <p>❌ Opening a <code class="icode">StreamReader</code> (or a database connection) without a <code class="icode">using</code>, hoping it gets cleaned up eventually.</p>
+    <p>✅ Use <code class="icode">using</code> exactly as shown in the file-reading example — the compiler's generated state machine correctly runs the disposal when the enumeration ends, whether that's because the file was fully read or because the caller broke out of the loop early.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">📄</span>
+            <div class="label">You're the one fetching paginated data</div>
+            <div class="desc">Write the producer as async IAsyncEnumerable&lt;T&gt; so callers can consume it page-by-page.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">📁</span>
+            <div class="label">You're reading a large file or stream</div>
+            <div class="desc">Yield each line or chunk right after awaiting it — no full-file buffering.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🚫</span>
+            <div class="label">Not for a single asynchronous value</div>
+            <div class="desc">One result, computed with await? That's just async Task&lt;T&gt; — no yield needed.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🚫</span>
+            <div class="label">Not for a small, already in-memory collection</div>
+            <div class="desc">If you already have a List&lt;T&gt; sitting in memory, just return it — there's nothing to stream.</div>
+        </div>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>yield return</strong> = "here's the next value, right now."<br />
+        <strong>await</strong> = "I need to wait before I know what's next."<br />
+        <strong>async IAsyncEnumerable&lt;T&gt;</strong> = a method free to do both, in any order, as many times as it needs.<br /><br />
+        <strong>Remember:</strong><br />
+        · Nothing runs until the caller starts enumerating — same as a synchronous iterator.<br />
+        · Each <code>MoveNextAsync()</code> resumes exactly where the last suspension left off.<br />
+        · Use <code>[EnumeratorCancellation]</code> to correctly wire up a <code>CancellationToken</code> parameter.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Write the producing side of an async stream with <code>async IAsyncEnumerable&lt;T&gt;</code> and <code>yield return</code> — the same iterator syntax you already know, now free to <code>await</code> real asynchronous work between yields.</li>
+            <li style="margin-bottom:0.4rem;">Each <code>MoveNextAsync()</code> call resumes the method exactly where it last paused — at an <code>await</code> or a <code>yield return</code> — and runs forward to the next pause.</li>
+            <li style="margin-bottom:0.4rem;">Items are produced strictly on demand — nothing is fetched or read ahead of what the caller has actually asked for.</li>
+            <li style="margin-bottom:0.4rem;">Two concrete, real uses: streaming paginated API results page-by-page, and reading a large file line-by-line without loading it all into memory.</li>
+            <li style="margin-bottom:0.4rem;">Mark a cancellation parameter with <code>[EnumeratorCancellation]</code> so it correctly connects to a caller's <code>.WithCancellation(ct)</code>.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've now seen both sides of an async stream — consuming with await foreach, and producing with async IAsyncEnumerable&lt;T&gt;. Let's check the producing side is clear.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What three things must be true about a method for the compiler to treat it as an async iterator?</p>
+        <ul class="options">
+            <li>A) It must be public, static, and return void</li>
+            <li>B) It must be marked async, return IAsyncEnumerable&lt;T&gt; (or IAsyncEnumerator&lt;T&gt;), and contain at least one yield return</li>
+            <li>C) It must accept a CancellationToken and return Task&lt;List&lt;T&gt;&gt;</li>
+            <li>D) It must be marked async and contain at least one await, with no other requirements</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> All three conditions together — the async modifier, an IAsyncEnumerable&lt;T&gt;/IAsyncEnumerator&lt;T&gt; return type, and at least one yield return in the body — are what tell the compiler to generate the combined async-iterator state machine.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Accessibility and staticness have nothing to do with this — plenty of instance methods are async iterators.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> That describes an ordinary async method returning a buffered list, not a streaming async iterator — no yield return involved.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> async plus await alone just describes a normal async Task method — yield return and the IAsyncEnumerable&lt;T&gt; return type are what make it a streaming producer specifically.</p>
+                <p><strong>Reinforcement:</strong> All three markers — async, the right return type, and yield return — must appear together.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In SearchProductsStreamAsync from this lesson, when does the HTTP request for page 2 actually happen?</p>
+        <ul class="options">
+            <li>A) Immediately when the method is first called, before any items are yielded</li>
+            <li>B) Only after the caller has consumed every item yielded from page 1 and asks for the next item</li>
+            <li>C) In parallel with the page 1 request, so both are in flight at once</li>
+            <li>D) It never happens — only page 1 is ever fetched</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The while loop only reaches the await for page 2 after every item from page 1 has been yielded and the caller has asked for the next one (another MoveNextAsync call) — production is entirely driven by the caller's demand.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Calling the method doesn't execute any of its body yet — nothing runs until enumeration actually starts, and even then, page 2 specifically waits until page 1's items are exhausted.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The pages are fetched sequentially, one await at a time, inside a single loop — there's no parallel fetching here.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The while loop continues fetching subsequent pages as long as hasMorePages is true and the caller keeps asking for more items.</p>
+                <p><strong>Reinforcement:</strong> On-demand production means later work only happens once the caller has actually asked for it.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why does the file-reading example (ReadLinesAsync) keep memory usage roughly constant regardless of file size?</p>
+        <ul class="options">
+            <li>A) Because StreamReader automatically compresses the file in memory</li>
+            <li>B) Because each line is yielded immediately after being read, rather than being collected into a list first — only the current line needs to exist in memory at once</li>
+            <li>C) Because .NET automatically limits how much memory any method can use</li>
+            <li>D) Because files under a certain size are read directly from disk without ever entering memory</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Each call to ReadLineAsync reads just one line, which is immediately yielded to the caller rather than accumulated anywhere. Whether the file has a hundred lines or a hundred million, only one line's worth of data needs to be in memory at any given moment.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no compression involved — the memory efficiency comes from not buffering, not from compressing data.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> .NET doesn't impose an automatic memory cap like this — the efficient behavior here is a direct result of how the method is written.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Some representation of the line's text does exist in memory briefly (it has to, to be processed) — the point is that it's just one line at a time, not the whole file.</p>
+                <p><strong>Reinforcement:</strong> Yielding each item right after producing it, instead of buffering into a collection, is exactly what keeps memory flat for large or unbounded sequences.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> What is the purpose of the [EnumeratorCancellation] attribute on a CancellationToken parameter in an async-iterator method?</p>
+        <ul class="options">
+            <li>A) It makes the method run faster by skipping cancellation checks</li>
+            <li>B) It correctly connects the token passed via the caller's .WithCancellation(ct) to the token used inside the async-iterator method</li>
+            <li>C) It automatically adds a timeout to the method</li>
+            <li>D) It's required on every parameter of every async method, not just iterators</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Without this attribute, a plain CancellationToken parameter on an async-iterator method wouldn't correctly receive the token supplied by a caller's .WithCancellation(ct) call — [EnumeratorCancellation] is specifically what wires that connection up correctly.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> It has nothing to do with performance — it's about correctly routing which token gets observed.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> No timeout is added automatically — cancellation still has to be triggered explicitly by whoever owns the CancellationTokenSource.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> It's specific to CancellationToken parameters on async-iterator methods (those using yield return) — ordinary async methods don't need it.</p>
+                <p><strong>Reinforcement:</strong> Async-iterator methods need this specific attribute for cancellation to actually reach the method's own token correctly.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand both sides of async streams — consuming with await foreach, and producing with async IAsyncEnumerable&lt;T&gt; and yield return. Next up: the final lesson in this module — a curated tour of the most common async mistakes developers make, and how to avoid every one of them.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

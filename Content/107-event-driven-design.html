@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>107 - Event-Driven Design · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The capstone of Part III: everything from delegates to the standard event pattern, now used to pull an application apart into pieces that don't know about each other.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Picture an <code>OrderService.PlaceOrder()</code> method written the straightforward way: it saves the order, then calls <code>_inventoryService.ReduceStock(order)</code>, then calls <code>_emailService.SendConfirmation(order)</code>. It works. Then the business asks for an SMS notification too — you edit <code>OrderService</code> again. Then a loyalty-points system — you edit it again. A year later, <code>PlaceOrder()</code> is forty lines long, <code>OrderService</code> has constructor dependencies on six unrelated services, and nobody can safely change the inventory logic without recompiling and re-testing the order flow.</p>
+    <p><code>OrderService</code>'s actual job is placing an order. It has been quietly forced into a second job: knowing about — and personally calling — every single thing in the system that cares when an order is placed. <strong>Event-driven design</strong> is the fix: <code>OrderService</code> raises a signal that "an order was placed," and everything else that cares about that fact listens for it independently, without <code>OrderService</code> ever knowing they exist.</p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Event-driven design</strong> is structuring parts of an application so that a component announces "something happened" using an event, instead of directly calling every other component that might need to react to it. The component raising the event — the <strong>publisher</strong> — has no reference to, and no knowledge of, whichever components — the <strong>subscribers</strong> — end up listening. Everything you've learned in Part III, from multicast delegates through the standard <code>EventArgs</code>/<code>OnXxx</code> pattern in lesson 106, is the mechanism this is built on. This lesson is about what you do with that mechanism at the level of application design.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>In an event-driven design, dependencies point in one direction only: subscribers depend on the publisher's event (they need to know it exists in order to subscribe to it), but the publisher has zero dependency on any subscriber — no field, no constructor parameter, no <code>using</code> statement referencing a single one of them. New reactions to the same event are added by writing a new subscriber and wiring it up at the application's composition point, without modifying the publisher's code at all — a direct application of the open/closed principle (open for extension, closed for modification).</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>⚠️ Direct Calls (Tightly Coupled)</h4>
+            <ul>
+                <li><code>OrderService</code> holds references to <code>InventoryService</code>, <code>EmailService</code>, ...</li>
+                <li>Adding a new reaction means editing <code>OrderService</code></li>
+                <li>One failing dependency can break order placement itself</li>
+                <li>Hard to unit test <code>OrderService</code> in isolation</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Event-Driven (Decoupled)</h4>
+            <ul>
+                <li><code>OrderService</code> knows only about its own <code>OrderPlaced</code> event</li>
+                <li>Adding a new reaction means writing a new subscriber, zero edits to <code>OrderService</code></li>
+                <li>Each subscriber's own concern stays isolated from the others</li>
+                <li><code>OrderService</code> is trivially testable with no subscribers wired up at all</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Direct Calls Force One Class to Know Everything</h3>
+    <p>When <code>OrderService</code> calls <code>_inventoryService.ReduceStock(order)</code> and <code>_emailService.SendConfirmation(order)</code> directly, three problems compound as the system grows:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Every new reaction requires editing the publisher.</strong> Adding SMS notifications, loyalty points, or an analytics log all mean opening <code>OrderService</code> and adding another dependency and another call — a class that should own "placing an order" keeps absorbing responsibilities that belong elsewhere.</li>
+        <li style="margin-bottom:0.4rem;"><strong>The publisher becomes a single point of failure for unrelated concerns.</strong> If <code>SendConfirmation</code> throws because the mail server is briefly down, that exception happens inside <code>PlaceOrder()</code> itself — a failure in notifications can prevent (or appear to prevent) the order from being placed at all, even though those are two entirely separate concerns.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Testing gets harder with every dependency added.</strong> A unit test for "does placing an order save it correctly" now has to construct, mock, or stub every unrelated service <code>OrderService</code> happens to call, purely to satisfy its constructor.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Publish a Fact, Let Others React Independently</h3>
+    <p><code>OrderService</code> is only responsible for one thing: placing the order, and announcing that it did. It declares an <code>OrderPlaced</code> event and raises it once the order is genuinely placed. It has no idea whether zero, one, or ten things are listening — and that's precisely the point. Each concern that needs to react — inventory, email, SMS, loyalty points — becomes its own small class that subscribes to the event and handles its own piece of the reaction, including its own error handling.</p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight</div>
+        <p>This is Part III coming together: lesson 096–097 gave you multicast delegates, lesson 105 gave you <code>event</code> for encapsulated subscription, and lesson 106 gave you the standard pattern for carrying rich data safely. Event-driven design is simply <em>using</em> that machinery deliberately, at the level of how classes in your application are allowed to depend on each other.</p>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            BEFORE vs AFTER — WHO KNOWS ABOUT WHOM
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">⚠️ WITHOUT EVENTS</div>
+                <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.7rem;border-radius:4px;margin:0.5rem 0 0 0;font-size:0.85rem;border:none;overflow-x:auto;color:var(--text-main,#E2E8F0);"><code style="background:transparent;padding:0;font-size:inherit;color:inherit;">OrderService
+  → calls InventoryService
+  → calls EmailService
+  → calls SmsService
+  → calls LoyaltyService
+  (knows every one, by name)</code></pre>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">✅ WITH EVENTS</div>
+                <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.7rem;border-radius:4px;margin:0.5rem 0 0 0;font-size:0.85rem;border:none;overflow-x:auto;color:var(--text-main,#E2E8F0);"><code style="background:transparent;padding:0;font-size:inherit;color:inherit;">OrderService
+  → raises OrderPlaced
+      ⤳ InventoryService listens
+      ⤳ EmailService listens
+      ⤳ SmsService listens
+      ⤳ LoyaltyService listens
+  (knows none of them)</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">WIRING AN EVENT-DRIVEN FLOW</div>
+        <div class="flow-step">
+            <div class="step-label">1. DEFINE THE EVENT'S DATA</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class OrderPlacedEventArgs : EventArgs
+{
+    public int OrderId { get; }
+    public string CustomerEmail { get; }
+    // ...
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. PUBLISHER DECLARES AND RAISES THE EVENT — NOTHING ELSE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public event EventHandler&lt;OrderPlacedEventArgs&gt;? OrderPlaced;
+// PlaceOrder(...) saves the order, then calls OnOrderPlaced(e)</code></pre>
+            <ul><li><code>OrderService</code> has no field, no constructor parameter, referencing any subscriber.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. EACH SUBSCRIBER IS ITS OWN INDEPENDENT CLASS</div>
+            <ul>
+                <li><code>InventoryUpdater</code> — knows nothing about email or SMS</li>
+                <li><code>OrderConfirmationEmailer</code> — knows nothing about inventory</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. THE COMPOSITION ROOT WIRES EVERYTHING TOGETHER</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">orderService.OrderPlaced += inventoryUpdater.Handle;
+orderService.OrderPlaced += emailer.Handle;</code></pre>
+            <ul><li>This is the <em>only</em> place that knows both <code>OrderService</code> and its subscribers exist together.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. ORDER PLACED → EVERY SUBSCRIBER RUNS, EACH HANDLING ITS OWN CONCERN</div>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+public class Publisher
+{
+    public event EventHandler&lt;string&gt;? SomethingHappened;
+
+    protected virtual void OnSomethingHappened(string detail)
+        =&gt; SomethingHappened?.Invoke(this, detail);
+
+    public void DoWork() =&gt; OnSomethingHappened("work finished");
+}
+
+class Program
+{
+    static void Main()
+    {
+        var publisher = new Publisher();
+
+        // Two completely independent subscribers — neither knows the other exists
+        publisher.SomethingHappened += (sender, detail) =&gt; Console.WriteLine($"Logger: {detail}");
+        publisher.SomethingHappened += (sender, detail) =&gt; Console.WriteLine($"Metrics: recorded '{detail}'");
+
+        publisher.DoWork();
+        // Logger: work finished
+        // Metrics: recorded 'work finished'
+    }
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>Publisher</code> never mentions logging or metrics anywhere in its own code — it just does its work and raises an event. <code>Main</code>, acting as the composition point, decides that a logger and a metrics recorder both care about this particular event. Delete either subscription line and <code>Publisher</code> doesn't change at all — it still works exactly the same.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Here's the order-processing scenario in full: <code>OrderService</code> raises <code>OrderPlaced</code>, and two independent subscribers — <code>InventoryUpdater</code> and <code>OrderConfirmationEmailer</code> — react to it, each with its own single responsibility. Notice that <code>OrderService</code> contains zero references to either of them.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+using System.Collections.Generic;
+
+// ─── Event data ───
+public class OrderPlacedEventArgs : EventArgs
+{
+    public int OrderId { get; }
+    public string CustomerEmail { get; }
+    public IReadOnlyList&lt;string&gt; ItemSkus { get; }
+
+    public OrderPlacedEventArgs(int orderId, string customerEmail, IReadOnlyList&lt;string&gt; itemSkus)
+    {
+        OrderId = orderId;
+        CustomerEmail = customerEmail;
+        ItemSkus = itemSkus;
+    }
+}
+
+// ─── Publisher — knows NOTHING about inventory or email ───
+public class OrderService
+{
+    public event EventHandler&lt;OrderPlacedEventArgs&gt;? OrderPlaced;
+
+    protected virtual void OnOrderPlaced(OrderPlacedEventArgs e)
+        =&gt; OrderPlaced?.Invoke(this, e);
+
+    public void PlaceOrder(int orderId, string customerEmail, IReadOnlyList&lt;string&gt; itemSkus)
+    {
+        // ... core responsibility only: validate and persist the order ...
+        Console.WriteLine($"Order #{orderId} saved.");
+
+        OnOrderPlaced(new OrderPlacedEventArgs(orderId, customerEmail, itemSkus));
+    }
+}
+
+// ─── Subscriber 1 — its own, isolated concern ───
+public class InventoryUpdater
+{
+    public void HandleOrderPlaced(object? sender, OrderPlacedEventArgs e)
+    {
+        foreach (var sku in e.ItemSkus)
+            Console.WriteLine($"  [Inventory] Reduced stock for {sku}");
+    }
+}
+
+// ─── Subscriber 2 — its own, isolated concern ───
+public class OrderConfirmationEmailer
+{
+    public void HandleOrderPlaced(object? sender, OrderPlacedEventArgs e)
+        =&gt; Console.WriteLine($"  [Email] Confirmation sent to {e.CustomerEmail}");
+}
+
+// ─── Composition root — the ONLY place that knows everyone ───
+class Program
+{
+    static void Main()
+    {
+        var orderService = new OrderService();
+        var inventoryUpdater = new InventoryUpdater();
+        var emailer = new OrderConfirmationEmailer();
+
+        orderService.OrderPlaced += inventoryUpdater.HandleOrderPlaced;
+        orderService.OrderPlaced += emailer.HandleOrderPlaced;
+
+        orderService.PlaceOrder(1001, "sam@example.com", new[] { "SKU-42", "SKU-7" });
+
+        // Order #1001 saved.
+        //   [Inventory] Reduced stock for SKU-42
+        //   [Inventory] Reduced stock for SKU-7
+        //   [Email] Confirmation sent to sam@example.com
+    }
+}</code></pre>
+    <p>If the business asks for SMS notifications tomorrow, the fix is a new <code>OrderSmsNotifier</code> class and one more line in <code>Main</code>: <code>orderService.OrderPlaced += smsNotifier.HandleOrderPlaced;</code>. <code>OrderService</code>, <code>InventoryUpdater</code>, and <code>OrderConfirmationEmailer</code> are not touched, not recompiled for a reason related to this change, and not re-tested for behavior they don't own.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📌</span> A Notice Board, Not a Phone Tree</div>
+        <p>A phone tree is what <code>OrderService</code> looks like without events: the person at the top has to personally know and dial every single number, in order, and if someone new needs to be told, that top person has to learn a new phone number and add another call. A notice board is the event-driven version: <code>OrderService</code> pins one notice — "Order #1001 placed" — and walks away. Anyone in the building who cares reads the board on their own schedule and reacts however they see fit. The board doesn't know or care who's reading it, and a new department can start reading it tomorrow without anyone updating the board itself.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>It's important to be precise about what's actually happening at runtime here, because the word "event" invites a bigger mental picture than what's really going on in-process. Everything in this lesson is still the exact same multicast delegate invocation list from lesson 097: <code>OnOrderPlaced(e)</code> calls <code>OrderPlaced?.Invoke(this, e)</code>, which walks the invocation list and calls <code>InventoryUpdater.HandleOrderPlaced</code>, then <code>OrderConfirmationEmailer.HandleOrderPlaced</code>, <strong>synchronously, on the same thread, in subscription order</strong> — one after another, each one blocking until it returns, all still inside the original call to <code>PlaceOrder()</code>. There's no queue, no separate process, and no network hop anywhere in this picture. If <code>InventoryUpdater</code>'s handler takes three seconds, <code>PlaceOrder()</code> doesn't return until those three seconds have passed.</p>
+    <p>One consequence worth internalizing: if any subscriber's handler throws an unhandled exception, that exception propagates straight back up through <code>?.Invoke</code>, out of <code>OnOrderPlaced</code>, and out of <code>PlaceOrder()</code> itself — and any subscriber later in the invocation list than the one that threw <strong>never runs at all</strong>. A misbehaving email handler can, in this design, prevent inventory from ever being updated for that call, simply because it happened to be registered before it in the list.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Event-driven design" and "event-driven architecture" are the same thing — they aren't</h3>
+    <p>This lesson's pattern — a C# <code>event</code>, subscribers in the same process, synchronous invocation, everyone sharing one call stack and one memory space — is <strong>in-process event-driven design</strong>. A much larger idea shares the name: <strong>event-driven architecture</strong>, where publishers and subscribers are entirely separate services, often on separate machines, communicating asynchronously through a message broker (RabbitMQ, Kafka, Azure Service Bus). There, a "subscriber" isn't a C# object holding a reference — it's an independent process that reads messages off a durable queue, possibly minutes later, possibly after a crash and restart. That's a genuinely different set of tools and trade-offs — durability, retries, network failures, eventual consistency — and it belongs to a later, Advanced-tier topic. Everything in this lesson stays inside a single process on a single call stack.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Event" and "command" sound similar, but mean opposite things</h3>
+    <p>A <strong>command</strong> is an instruction — imperative, forward-looking, and it can be refused: <code>PlaceOrder()</code>, <code>CancelOrder()</code>. An <strong>event</strong> describes a fact that has already happened — past tense, and by the time anyone hears about it, it's not up for debate: <code>OrderPlaced</code>, <code>OrderCancelled</code>. Naming an event in the imperative (<code>PlaceOrder</code> as an event name, for instance) is a signal that the design has drifted — an event's name should always read like something that's already true.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Letting the publisher reach back into a subscriber's business</h4>
+    <p>❌ <code>OrderService</code> catching an exception from a subscriber and then deciding, on its behalf, "if inventory update fails, I should roll back the order" — this quietly reintroduces the exact coupling events were meant to remove, just hidden behind an event subscription instead of a direct call.</p>
+    <p>✅ Each subscriber owns its own failure handling. If a genuine cross-cutting rule like "the whole order must roll back if inventory fails" is a real business requirement, that's a sign the two operations aren't actually independent — model it as one transactional operation instead of forcing events to simulate it.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming subscribers run in parallel or "in the background"</h4>
+    <p>❌ Wiring up a slow subscriber (one that calls a mail server, say) and assuming <code>PlaceOrder()</code> returns immediately while that subscriber "handles it later" — as shown under the hood above, it doesn't; every handler runs synchronously, in order, before <code>PlaceOrder()</code> returns.</p>
+    <p>✅ If a reaction genuinely needs to happen asynchronously, the subscriber's handler is responsible for kicking off that async work itself (e.g. queuing a background job) — the event mechanism itself stays synchronous.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Using an event where you actually need a return value</h4>
+    <p>❌ Trying to make <code>OrderPlaced</code> "ask" a subscriber for an approval decision or a computed result — <code>EventHandler</code> is <code>void</code>-returning by design; there's no clean way to get a single answer back out of a multicast call with multiple subscribers.</p>
+    <p>✅ If you need an answer back — "is this order allowed to proceed?" — that's a direct method call with a return value (or a dedicated validation pipeline), not an event. Events are for one-way, fire-and-forget notifications that any number of independent parties may or may not be listening to.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">When one occurrence in your application genuinely triggers multiple, independent reactions that don't need to affect each other's success or failure — order placement triggering inventory, notification, and analytics is a textbook case.</li>
+        <li style="margin-bottom:0.4rem;">When you expect the list of reactions to grow over time, and you want new reactions added without editing or re-testing the class that raises the event.</li>
+        <li style="margin-bottom:0.4rem;">Skip it for a simple, stable, two-step operation where one class always needs to call exactly one other class and needs a result back — a plain method call is simpler to read, simpler to debug (a normal call stack, not an invocation list), and there's no real decoupling need to justify the extra indirection.</li>
+        <li style="margin-bottom:0.4rem;">Skip it, too, when you actually need cross-service, asynchronous, durable communication — that's the message-queue territory this lesson deliberately left for later; reaching for in-process events to simulate it will only produce the worst of both worlds.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Publisher</strong> = announces a fact, knows nothing about who's listening.<br />
+        <strong>Subscriber</strong> = decides for itself whether and how to react, owns its own failures.<br />
+        <strong>Composition root</strong> = the only place that connects publisher to subscribers.<br />
+        Still one call stack, one thread, synchronous, in-process — <strong>not</strong> a message queue, <strong>not</strong> a distributed system.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Event-driven design uses the <code>event</code>/<code>EventArgs</code>/<code>OnXxx</code> machinery from lessons 105–106 to let a publisher announce a fact without knowing or caring who, if anyone, is listening.</li>
+            <li style="margin-bottom:0.4rem;">New reactions are added by writing a new subscriber and wiring it up at a single composition point — the publisher's code never changes.</li>
+            <li style="margin-bottom:0.4rem;">Under the hood, this is still a synchronous, in-process, single-thread multicast delegate call — every subscriber runs one after another, in order, before the raising method returns; an unhandled exception in one subscriber stops the rest from running.</li>
+            <li style="margin-bottom:0.4rem;">This is <strong>not</strong> the same thing as event-driven architecture built on external message queues across services — that's a distributed-systems topic for later, in the Advanced tier, with its own concerns around durability, retries, and asynchronous processing.</li>
+            <li style="margin-bottom:0.4rem;">Events are for one-way, fire-and-forget notifications. If you need a return value or a guaranteed cross-cutting outcome, use a direct method call instead.</li>
+        </ul>
+    </div>
+    <div class="callout">
+        <strong>💡 Looking ahead:</strong> Everything here stays inside one process and one call stack. The Advanced tier revisits this exact idea — a publisher announcing "an order was placed" — but stretched across independent services communicating over a message broker, where subscribers can be down, slow, or processing the message minutes later. The design instinct (decouple the publisher from its reactions) carries forward; the mechanics change completely.
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how events decouple a publisher from its reactions, and where the boundaries of that idea sit. Let's confirm the details — and wrap up Part III.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> In the <code>OrderService</code> example, why doesn't <code>OrderService</code> hold a reference to <code>InventoryUpdater</code> or <code>OrderConfirmationEmailer</code>?</p>
+        <ul class="options">
+            <li>A) C# does not allow one class to reference two other classes at once</li>
+            <li>B) Because the whole point of the design is that the publisher stays decoupled from its subscribers — it only exposes an event, and the composition root connects the two independently</li>
+            <li>C) <code>InventoryUpdater</code> and <code>OrderConfirmationEmailer</code> are static classes, so no reference is needed</li>
+            <li>D) It's a limitation of the <code>event</code> keyword, not a deliberate design choice</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the central goal of event-driven design covered in this lesson — the publisher announces a fact through its event and has no dependency on any specific subscriber. The composition root, not <code>OrderService</code>, is what wires the two together.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> C# has no such restriction; classes can and often do reference many other classes. The lack of a reference here is a deliberate design choice, not a language limit.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Both classes are ordinary instance classes constructed in <code>Main</code> — nothing about them being static is involved.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing about the <code>event</code> keyword prevents a publisher from also holding direct references to other classes — this is purely an intentional application-design decision.</p>
+                <p><strong>Reinforcement:</strong> Decoupling in this design is a choice you make, not a constraint the language forces on you.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> When <code>OrderService.PlaceOrder()</code> raises <code>OrderPlaced</code> with two subscribers attached, how do the two subscribers actually execute?</p>
+        <ul class="options">
+            <li>A) On two separate background threads, running at the same time</li>
+            <li>B) One after another, synchronously, on the same thread, in subscription order, all before <code>PlaceOrder()</code> returns</li>
+            <li>C) Whichever subscriber was added most recently runs first, and the other is skipped</li>
+            <li>D) Both are queued and run at some later point after <code>PlaceOrder()</code> has already returned</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As covered under the hood, this is still the same synchronous multicast delegate invocation list from lesson 097 — every subscriber runs in order on the calling thread, and <code>PlaceOrder()</code> doesn't return until all of them have finished.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There is no automatic parallelism or background threading involved — that description matches a message-queue architecture, not in-process C# events.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Every subscriber in the invocation list runs (barring an earlier exception) — subscribing doesn't remove or skip earlier subscribers.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no queue and no delay — this describes external event-driven architecture, explicitly called out as a different, later topic.</p>
+                <p><strong>Reinforcement:</strong> In-process events are synchronous and ordered — never assume background or parallel execution without writing it yourself.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> What is the key difference between the in-process event-driven design covered in this lesson and a full external event-driven architecture using a message queue?</p>
+        <ul class="options">
+            <li>A) There is no real difference — they are two names for exactly the same thing</li>
+            <li>B) In-process events run synchronously within one call stack and process; a message-queue architecture involves separate services communicating asynchronously, often across a network, with durability and retry concerns</li>
+            <li>C) Message queues can only be used with events, never with direct method calls</li>
+            <li>D) In-process events require a database; message queues do not</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the distinction drawn in Common Confusion — this lesson's events share one call stack and one memory space; a message-broker architecture spans independent processes/services with asynchronous, often durable, delivery.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> They share a design goal (decoupling a publisher from its reactions) but are built with entirely different mechanics and trade-offs — conflating them is precisely the confusion this lesson warns against.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Message queues are an independent messaging mechanism; they aren't tied specifically to the C# <code>event</code> keyword at all.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Neither in-process C# events nor message queues inherently require a database — that's not the distinguishing factor between them.</p>
+                <p><strong>Reinforcement:</strong> Same underlying idea, two very different implementations — know which one you're actually using.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A developer wants <code>OrderService.PlaceOrder()</code> to return <code>true</code> or <code>false</code> depending on whether a fraud-check subscriber approves the order. Is an event the right tool for this?</p>
+        <ul class="options">
+            <li>A) Yes — just have the fraud-check subscriber's handler return the boolean and use that</li>
+            <li>B) No — <code>EventHandler</code> handlers are <code>void</code>-returning, and with multiple subscribers there's no single well-defined value to get back; a direct method call (or dedicated validation step) is the right tool for needing a result</li>
+            <li>C) Yes, but only if there is exactly one subscriber attached to the event</li>
+            <li>D) No — events can never be used anywhere near a validation or approval scenario</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This matches Mistake 3 directly — events are one-way and <code>void</code>-returning by design. Needing an answer back is a signal to use a direct method call or a dedicated validation pipeline, not to force it through an event.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>EventHandler</code>'s signature is <code>void</code> — a handler cannot return a value through the event invocation mechanism at all.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Even with exactly one subscriber, the standard <code>EventHandler</code> delegate type still has no return value — the count of subscribers doesn't change the signature.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The problem isn't the topic (fraud/approval) — it's the shape of the mechanism (needing a returned result). Events are fine for announcing "an order was flagged," just not for asking a yes/no question and getting one specific answer back.</p>
+                <p><strong>Reinforcement:</strong> Recognize the need for a return value as the signal that you've reached for the wrong tool.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 That's Part III complete — from multicast delegates through custom delegates, <code>Action</code>/<code>Func</code>/<code>Predicate</code>, lambdas, closures, local functions, higher-order functions, and finally events at both the mechanism and design level. You now have the full functional-C# toolkit that everything from LINQ to ASP.NET Core middleware is built on top of.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

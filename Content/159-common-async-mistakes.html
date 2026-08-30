@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>159 - Common Async Mistakes · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Every mistake on this page compiles. That's exactly what makes them dangerous.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Across this module, you've learned <code class="icode">Task</code>, <code class="icode">async</code>/<code class="icode">await</code>, <code class="icode">CancellationToken</code>, <code class="icode">Task.WhenAll</code>/<code class="icode">WhenAny</code>, exception handling in async code, and async streams. Each of those lessons showed you the correct way to use its tool. This lesson looks at the same territory from the opposite direction: the five mistakes developers make with these exact tools most often — mistakes the compiler happily lets through, that only reveal themselves later, as a hung UI, a silently swallowed exception, or a production outage nobody can reproduce locally.</p>
+    <p><strong>In this lesson, you'll walk through five real async pitfalls — <code class="icode">async void</code>, accidentally-unawaited Tasks, blocking with <code class="icode">.Result</code>/<code class="icode">.Wait()</code>, dropping <code class="icode">CancellationToken</code>, and misusing <code class="icode">Task.Run</code> — see exactly why each one is dangerous, and learn the fix for each. Think of it as this module's final exam, graded against real bugs instead of trivia.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>An "async mistake," in the sense used on this page, is code that <em>compiles cleanly and often even appears to work in casual testing</em>, but violates one of the rules this module has been building toward — usually because it quietly reintroduces blocking, silently drops an exception, or breaks the "async all the way" chain from a couple of lessons ago.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>What unites all five mistakes below is that they violate an <em>invariant</em> of the async model rather than a syntax rule: "an exception from an <code class="icode">async void</code> method can't be caught by the caller," "a Task that's never awaited or observed can fail silently," "blocking a thread on a Task can deadlock in certain contexts," "a <code class="icode">CancellationToken</code> that isn't passed down can't be honored deeper in the chain," and "<code class="icode">Task.Run</code> wrapping I/O-bound work spends a thread pool thread for nothing." None of these are enforced by the compiler the way a missing semicolon is — they're enforced by careful code review, and by knowing what to look for.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> Why this lesson exists</div>
+        <p>Every mistake in this lesson uses APIs you already know how to use correctly. The danger was never "not knowing the syntax" — it's reaching for the <em>wrong</em> correct-looking syntax under pressure (a deadline, a quick fix, an unfamiliar codebase). Recognizing the shape of each mistake is what actually prevents it.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Async Bugs Don't Look Like Bugs</h3>
+    <p>A missing null check crashes loudly, right where the mistake is. Most async mistakes don't. Forgetting to <code class="icode">await</code> a Task doesn't throw at the call site — the method just returns before the work finishes, and everything downstream that depended on it silently gets stale or default data. Blocking with <code class="icode">.Result</code> doesn't fail every time — it works fine in a console app, then deadlocks the one time it's called from inside a request handler with a synchronization context. These mistakes are dangerous <em>precisely because</em> they're quiet.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is a way to recognize the <em>shape</em> of each dangerous pattern on sight — in your own code and in code review — before it ships, rather than debugging it after it's already caused a production incident.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — A Curated Tour of the Five Big Ones</h3>
+    <p>The rest of this lesson is exactly that tour: five mistakes, each shown as broken code next to its fix, with the underlying "why" spelled out using concepts from earlier in this module.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Mistake</th><th>What breaks</th><th>Which earlier lesson it violates</th></tr></thead>
+            <tbody>
+                <tr><td><code class="icode">async void</code></td><td>Exceptions can't be caught by the caller</td><td>Exception handling in async</td></tr>
+                <tr><td>Forgetting to <code class="icode">await</code></td><td>Method finishes before the work does; failures vanish</td><td>async / await, Task&lt;T&gt;</td></tr>
+                <tr><td><code class="icode">.Result</code> / <code class="icode">.Wait()</code></td><td>Blocks a thread; can deadlock</td><td>async / await ("async all the way")</td></tr>
+                <tr><td>Dropping <code class="icode">CancellationToken</code></td><td>Deeper work can't be stopped</td><td>CancellationToken</td></tr>
+                <tr><td>Unnecessary <code class="icode">Task.Run</code></td><td>Wastes a thread pool thread for nothing</td><td>Synchronous vs. asynchronous, Task &amp; Task&lt;T&gt;</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Notice the pattern: every single one of these traces back to a rule you already learned correctly, somewhere earlier in this module. This lesson isn't teaching new concepts — it's teaching you to recognize when an earlier rule has quietly been broken.</p>
+
+    <!-- ====== HOW IT WORKS — the five mistakes ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — async void (Except Event Handlers)</h2>
+
+    <p>An <code class="icode">async</code> method almost always returns <code class="icode">Task</code> or <code class="icode">Task&lt;T&gt;</code>. <code class="icode">async void</code> is legal too — but it exists almost exclusively for one narrow purpose: UI event handlers, whose signature is fixed by the framework and can't return a <code class="icode">Task</code>.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ The mistake</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async void ProcessOrderAsync(Order order)
+{
+    await _repository.SaveAsync(order);
+    // if SaveAsync throws, the caller
+    // has no try/catch that can see it
+}</code></pre>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ The fix</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task ProcessOrderAsync(Order order)
+{
+    await _repository.SaveAsync(order);
+    // now callers can await this method
+    // and their try/catch actually works
+}</code></pre>
+        </div>
+    </div>
+
+    <p><strong>Why it's dangerous:</strong> Recall from the exception-handling lesson that an exception thrown inside an <code class="icode">async Task</code> method is captured onto the returned Task, and re-thrown at the point where a caller <code class="icode">await</code>s it. An <code class="icode">async void</code> method has no Task for anything to be captured onto — there's nothing for a caller to <code class="icode">await</code> in the first place. Instead, an unhandled exception from an <code class="icode">async void</code> method is thrown directly on whatever context started it, typically crashing the entire process — a <code class="icode">try</code>/<code class="icode">catch</code> wrapped around the call site does nothing, because by the time the exception surfaces, that calling code has often already finished running.</p>
+    <p>The one legitimate exception really is UI event handlers (<code class="icode">private async void Button_Click(...)</code>), because the framework's delegate signature requires <code class="icode">void</code> and there's no alternative — and even there, the handler's own body should wrap its work in <code class="icode">try</code>/<code class="icode">catch</code> internally, since nothing further up will catch anything for it.</p>
+
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forgetting to await a Task ("Fire and Forget" by Accident)</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ The mistake</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task CheckoutAsync(Cart cart)
+{
+    _emailService.SendReceiptAsync(cart);
+    // missing 'await' — this line doesn't wait
+    // for the email to send, or even complete,
+    // before moving on
+
+    await _repository.SaveOrderAsync(cart);
+}</code></pre>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ The fix</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task CheckoutAsync(Cart cart)
+{
+    await _emailService.SendReceiptAsync(cart);
+    await _repository.SaveOrderAsync(cart);
+}</code></pre>
+        </div>
+    </div>
+
+    <p><strong>Why it's dangerous:</strong> Calling an async method starts it running immediately — that part happens whether or not you <code class="icode">await</code> the result. What <code class="icode">await</code> actually gives you is (a) waiting for it to actually finish before moving on, and (b) the chance for any exception it throws to surface at that point, exactly like the exception-handling lesson covered. Skip the <code class="icode">await</code>, and you get neither: <code class="icode">CheckoutAsync</code> might return — and the calling code might treat checkout as fully done — before the receipt email has even been sent. And if <code class="icode">SendReceiptAsync</code> throws, that exception has nowhere to go; it's attached to a Task nobody is watching, and simply disappears (in some hosts it may later surface as an "unobserved task exception" on a finalizer thread, far removed from the original call, which is its own debugging nightmare).</p>
+    <p>The compiler tries to help here: an unawaited Task-returning call usually triggers the "because this call is not awaited, execution of the current method continues before the call is completed" warning — never treat that warning as noise.</p>
+    <p>If you genuinely intend a deliberate, tracked fire-and-forget (rare, but real — e.g., kicking off a best-effort background log write that truly shouldn't block the caller), make that intent explicit and still handle its failures, rather than leaving a bare unawaited call sitting in the middle of otherwise sequential code:</p>
+    <div class="code-block"><code>// A deliberate, clearly-marked fire-and-forget — not an accident
+_ = Task.Run(async () =&gt;
+{
+    try { await _analytics.TrackAsync(eventName); }
+    catch (Exception ex) { _logger.LogWarning(ex, "Analytics tracking failed"); }
+});</code></div>
+
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Blocking on Async Code with .Result / .Wait()</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ The mistake</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public Customer GetCustomer(int id)
+{
+    // blocks the calling thread; deadlock risk
+    return _repository.GetCustomerAsync(id).Result;
+}</code></pre>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ The fix</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task&lt;Customer&gt; GetCustomerAsync(int id)
+{
+    return await _repository.GetCustomerAsync(id);
+}
+// let "async all the way" carry the async-ness
+// up through this method's own callers too</code></pre>
+        </div>
+    </div>
+
+    <p><strong>Why it's dangerous:</strong> This is exactly the "async all the way" guidance and the deadlock mechanics from the async/await lesson, showing up again as a real habit under real pressure — usually because a surrounding method's signature is synchronous and changing it feels inconvenient. The fix is almost never "block instead" — it's to let the <code class="icode">async</code> propagate outward through that method's own signature, all the way to wherever the call chain can genuinely support it. Reaching for <code class="icode">.Result</code>/<code class="icode">.Wait()</code> as a shortcut around updating a signature is one of the single most common sources of hangs reported in production ASP.NET applications.</p>
+
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 4 — Not Passing CancellationToken Through</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ The mistake</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task&lt;Report&gt; BuildReportAsync(int id, CancellationToken ct)
+{
+    Customer customer = await _repository.GetCustomerAsync(id);
+    // ct never reaches this call — cancelling the
+    // outer operation can't stop this inner fetch
+    List&lt;Order&gt; orders = await _orderService.GetOrdersAsync(id);
+
+    return new Report(customer, orders);
+}</code></pre>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ The fix</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task&lt;Report&gt; BuildReportAsync(int id, CancellationToken ct)
+{
+    Customer customer = await _repository.GetCustomerAsync(id, ct);
+    List&lt;Order&gt; orders = await _orderService.GetOrdersAsync(id, ct);
+
+    return new Report(customer, orders);
+}</code></pre>
+        </div>
+    </div>
+
+    <p><strong>Why it's dangerous:</strong> The CancellationToken lesson was explicit about this: cancellation is <em>cooperative</em>, and a token has to be threaded, by hand, into every layer that should be able to observe it. A method that accepts a <code class="icode">CancellationToken</code> parameter but then calls its own downstream dependencies without passing that token along is only cancellable in appearance — the outer caller thinks cancellation is wired up end-to-end, but the actual long-running work underneath has no way to know it was asked to stop. This is exactly the quiz scenario from that lesson (a loop that never checks its token keeps running to completion) — the same failure, just one layer removed and easier to miss in review.</p>
+
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 5 — Unnecessary Task.Run Around Already-Async I/O</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ The mistake</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task&lt;Order&gt; GetOrderAsync(int id)
+{
+    // GetOrderAsync is already async I/O —
+    // wrapping it just burns a thread-pool
+    // thread waiting for another thread
+    return await Task.Run(() =&gt;
+        _dbContext.Orders.FindAsync(id).AsTask());
+}</code></pre>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ The fix</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task&lt;Order&gt; GetOrderAsync(int id)
+{
+    return await _dbContext.Orders.FindAsync(id);
+}</code></pre>
+        </div>
+    </div>
+
+    <p><strong>Why it's dangerous:</strong> As the very first lesson in this module established, <code class="icode">await</code> on genuinely I/O-bound work does not necessarily consume another thread while it waits — the whole point of async I/O is that no thread is dedicated to sitting around during the wait. <code class="icode">Task.Run</code>, by contrast, genuinely dispatches work to a thread-pool thread — the right tool specifically for CPU-bound work you want off of, say, a UI thread. Wrapping an already-async I/O call in <code class="icode">Task.Run</code> gets you the worst of both: you still wait for the same I/O, but now you've also occupied a thread-pool thread for the duration, for zero benefit. Under load, this quietly eats into the very thread pool capacity that's supposed to let a server handle many concurrent requests efficiently.</p>
+    <p><code class="icode">Task.Run</code> earns its place when the work is genuinely CPU-bound — a large in-memory sort, image processing, heavy computation — and you specifically want it off the current thread (a UI thread, most commonly). Reach for it deliberately for that reason, not as a reflexive wrapper around anything that returns a Task.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📮</span> A Chain of Handoffs, Each One a Chance to Drop the Baton</div>
+        <p>Think of an async call chain as a relay race, where each runner hands a baton (the work, and eventually the result) to the next. <code class="icode">async void</code> is a runner with no one behind them to hand the baton to — if they trip, nobody catches it. Forgetting <code class="icode">await</code> is handing the baton to a runner who's already left the track — it just falls on the ground. <code class="icode">.Result</code>/<code class="icode">.Wait()</code> is a runner who stops and physically grabs the next runner instead of handing off, sometimes literally tangling both of them. Dropping a <code class="icode">CancellationToken</code> is a race official whose "stop the race" whistle only some runners can actually hear. And wrapping already-async work in <code class="icode">Task.Run</code> is sending a second runner to jog alongside the first one for no reason, burning energy without moving the baton any faster.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>Every mistake on this page ultimately traces back to one of two internal mechanisms this module already introduced: how the compiler-generated state machine reports completion and exceptions (the async/await and exception-handling lessons), and how the thread pool decides whether a thread is actually needed at all (the synchronous-vs-asynchronous lesson). <code class="icode">async void</code> has no Task for the state machine to report onto. An unawaited Task has a completion the caller never observes. <code class="icode">.Result</code> forces a thread to sit idle waiting on that same state machine instead of being released back to the pool. A dropped <code class="icode">CancellationToken</code> means the state machine for the downstream call was never given the signal to check in the first place. And <code class="icode">Task.Run</code> around I/O asks the thread pool to hold a thread hostage for work that was never going to need one. None of these are new mechanisms — they're the same handful of moving parts from earlier lessons, just misused.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "async void event handlers are always wrong" — not quite</h3>
+    <p>They're the one legitimate exception, because UI frameworks define the event delegate signature and it's genuinely <code class="icode">void</code> — you can't change that. The rule isn't "never use async void," it's "never use async void <em>except</em> for a UI event handler, and even then, catch your own exceptions inside it."</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Task.Run makes things async" ≠ "await makes things async"</h3>
+    <p>These two module-spanning ideas get conflated constantly. <code class="icode">await</code> lets a method pause without blocking a thread — it doesn't, by itself, move work anywhere. <code class="icode">Task.Run</code> actually moves work onto a different (thread-pool) thread — it's about <em>where</em> work runs, not about non-blocking waiting. Confusing the two is exactly what produces Mistake 5.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. A compiler warning about an unawaited call is not optional reading</h3>
+    <p>It's tempting to treat build warnings as background noise, especially in a codebase with hundreds of them. The specific "this call is not awaited" warning is one of the highest-signal warnings the C# compiler produces for async code — it is very often pointing at exactly Mistake 2.</p>
+
+    <!-- ====== COMMON MISTAKES — recap table ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes — Quick Recap</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>❌ Instead of</th><th>✅ Do this</th></tr></thead>
+            <tbody>
+                <tr><td><code class="icode">async void DoWorkAsync()</code></td><td><code class="icode">async Task DoWorkAsync()</code> (except real UI event handlers)</td></tr>
+                <tr><td><code class="icode">SendEmailAsync(x);</code> (no await)</td><td><code class="icode">await SendEmailAsync(x);</code></td></tr>
+                <tr><td><code class="icode">GetDataAsync().Result</code></td><td><code class="icode">await GetDataAsync()</code>, propagated up the signature</td></tr>
+                <tr><td>Calling a downstream async method without <code class="icode">ct</code></td><td>Pass the same <code class="icode">CancellationToken</code> into every downstream call</td></tr>
+                <tr><td><code class="icode">Task.Run(() =&gt; SomeIoAsync())</code></td><td><code class="icode">await SomeIoAsync()</code> directly</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <p>This lesson isn't a tool to reach for selectively — it's a checklist worth running through on <em>every</em> piece of async code you write or review:</p>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">🔍</span>
+            <div class="label">Before merging any async code</div>
+            <div class="desc">Scan for these five shapes specifically — they're quick to check for and easy to miss otherwise.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">⚠️</span>
+            <div class="label">Whenever a build warning mentions "not awaited"</div>
+            <div class="desc">Treat it as a real defect report, not noise to suppress.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🐌</span>
+            <div class="label">When a server seems to run out of threads under load</div>
+            <div class="desc">Check for .Result/.Wait() and unnecessary Task.Run around I/O first — these are the usual suspects.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🛑</span>
+            <div class="label">When "Cancel" doesn't seem to actually stop anything</div>
+            <div class="desc">Trace the CancellationToken through every layer of the call chain — a break anywhere silences it downstream.</div>
+        </div>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        Almost every async bug in this lesson comes from breaking one of two promises this module has repeated all along:<br /><br />
+        <strong>1. Keep the chain unbroken</strong> — await, all the way up; pass the CancellationToken, all the way down.<br />
+        <strong>2. Match the tool to the work</strong> — await for I/O you don't own a thread for; Task.Run only for CPU work you deliberately want off the current thread.<br /><br />
+        <strong>Remember:</strong><br />
+        · async void has no Task — nothing can catch what it throws (except real UI event handlers).<br />
+        · An unawaited Task's result, and its failures, are simply never seen.<br />
+        · .Result / .Wait() reintroduce blocking and deadlock risk — always await instead.<br />
+        · A CancellationToken only protects the calls it's actually passed into.<br />
+        · Task.Run around already-async I/O wastes a thread for nothing.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Use <code>async Task</code>, not <code>async void</code>, for everything except real UI event handlers — <code>async void</code> has no Task for a caller's exception handling to attach to.</li>
+            <li style="margin-bottom:0.4rem;">Always <code>await</code> a Task-returning call, or explicitly and deliberately mark a genuine fire-and-forget with its own error handling — never leave one bare by accident.</li>
+            <li style="margin-bottom:0.4rem;">Never block on async code with <code>.Result</code> or <code>.Wait()</code> — follow "async all the way" instead; blocking wastes threads and can deadlock.</li>
+            <li style="margin-bottom:0.4rem;">Thread a <code>CancellationToken</code> through every downstream async call in the chain — accepting one without passing it on doesn't actually enable cancellation.</li>
+            <li style="margin-bottom:0.4rem;">Don't wrap already-async I/O in <code>Task.Run</code> — reserve <code>Task.Run</code> for genuinely CPU-bound work you want off the current thread.</li>
+            <li style="margin-bottom:0.4rem;">All five mistakes compile without error — the only real defense is knowing their shape well enough to spot them in your own code and in review.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've toured five real async pitfalls, each tying back to something earlier in this module. Let's check you can spot them — and reason about why they're dangerous, not just recognize their names.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A method marked async void throws an exception partway through its work. What happens to that exception from the perspective of code that called this method inside a try/catch?</p>
+        <ul class="options">
+            <li>A) The catch block catches it normally, just like any other exception</li>
+            <li>B) The catch block does not catch it — async void methods have no Task for the exception to be captured onto, so it surfaces outside the normal call/catch relationship, often crashing the process</li>
+            <li>C) The exception is automatically logged and swallowed by the runtime</li>
+            <li>D) The method silently returns default values instead of throwing</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Unlike async Task methods, where an exception is captured on the returned Task and re-thrown at an await, async void has no Task to capture it on. The exception surfaces directly, typically on whatever context started the call, bypassing the caller's try/catch entirely — which is exactly why async void is dangerous outside of UI event handlers.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the behavior async void breaks — a surrounding try/catch has no effect on it.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no automatic logging or swallowing built into the runtime for this — the exception genuinely propagates in a way the caller can't intercept normally.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing about async void suppresses the exception into a default value — it still throws, just not somewhere the caller can catch it.</p>
+                <p><strong>Reinforcement:</strong> async void severs the normal exception-propagation path that async Task relies on — use async Task everywhere except real UI event handlers.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In a method, a line calls an async Task-returning method but doesn't await it, and execution continues to the next line immediately. What is the most accurate description of what happened?</p>
+        <ul class="options">
+            <li>A) The call never actually started running</li>
+            <li>B) The call started running immediately, but the method didn't wait for it to finish, and any exception it throws has nowhere to surface</li>
+            <li>C) The compiler automatically inserts an await for you at compile time</li>
+            <li>D) The call runs synchronously instead of asynchronously as a fallback</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Calling an async method starts its work immediately regardless of whether you await it. What await actually provides is waiting for completion and giving any exception a place to surface. Without it, execution just moves on, and a later failure in that unawaited Task is never observed by this code.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The work does start — that part doesn't require await. It's the waiting and exception observation that are missing.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The compiler never inserts an await for you — it only warns that the call isn't awaited, leaving the actual behavior unchanged.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no synchronous fallback — the call still runs asynchronously; it's simply not being waited on.</p>
+                <p><strong>Reinforcement:</strong> An unawaited Task is still running, just unobserved — which is exactly what makes its eventual failures so easy to miss.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A developer writes a synchronous method that calls someTask.Result to "just get the value" from an async repository call. Why is this considered dangerous rather than merely inelegant?</p>
+        <ul class="options">
+            <li>A) .Result always throws an exception the first time it's used</li>
+            <li>B) It blocks the calling thread until the Task finishes, wasting that thread, and in certain contexts (like one with a synchronization context) it can deadlock entirely</li>
+            <li>C) .Result silently returns null instead of the real value</li>
+            <li>D) .Result only works with Task&lt;T&gt;, never with plain Task, so this code wouldn't compile</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the "async all the way" and deadlock danger from the async/await lesson resurfacing as a practical habit. Blocking with .Result wastes a thread while it waits, and in a context with a synchronization context, it can deadlock — the blocked thread is exactly the thread the awaited continuation needs to resume on.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> .Result doesn't inherently throw — it can work fine in many cases, which is part of what makes the deadlock risk so easy to miss until it actually happens.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> .Result returns the real result value (or re-throws the underlying exception, wrapped) — it doesn't silently substitute null.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This code, using Task&lt;T&gt;.Result on a repository call returning data, is completely valid and compiles fine — the problem is behavioral, not a compile error.</p>
+                <p><strong>Reinforcement:</strong> The danger of .Result/.Wait() is inconsistent and context-dependent, which is exactly why it's easy to miss in casual testing and only surfaces under real production conditions.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A method BuildReportAsync(int id, CancellationToken ct) calls two downstream async methods but forgets to pass ct into either call. The caller cancels the operation via the token's source. What actually happens?</p>
+        <ul class="options">
+            <li>A) Both downstream calls are cancelled immediately, because CancellationToken automatically applies to the whole call stack</li>
+            <li>B) Neither downstream call is affected by the cancellation — since they were never given the token, they have no way to observe that cancellation was requested, and they keep running to completion</li>
+            <li>C) The program throws a compile-time error because ct is declared but never used</li>
+            <li>D) Only the first downstream call is cancelled; the second one runs regardless</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Cancellation is cooperative, and a token has to be explicitly passed into every layer that should observe it — this is exactly what the CancellationToken lesson established. Since neither downstream call receives ct, neither one has any way to notice cancellation was requested; both continue running as if nothing happened.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing about CancellationToken propagates automatically through a call stack — it must be passed as a parameter at every layer, by hand.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> An unused parameter like this produces, at most, a compiler warning in some configurations — never a hard compile error.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Since neither call receives the token, there's no reason the first would behave differently from the second — both run to completion regardless of cancellation.</p>
+                <p><strong>Reinforcement:</strong> Accepting a CancellationToken parameter is not the same as making your operation cancellable — every downstream call that should honor it needs the token explicitly passed in.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A developer wraps an EF Core database call — `await Task.Run(() =&gt; _dbContext.Orders.FindAsync(id).AsTask())` — believing it makes the call "more async." What's the actual effect?</p>
+        <ul class="options">
+            <li>A) It makes the database call complete faster because it now runs on two threads</li>
+            <li>B) It occupies an extra thread-pool thread for the duration of the wait, providing no benefit, since FindAsync's own await already avoids blocking a thread during the I/O wait</li>
+            <li>C) It has no effect at all — Task.Run is silently ignored when wrapping an already-async call</li>
+            <li>D) It converts the operation from I/O-bound to CPU-bound, which is generally desirable</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> FindAsync is already asynchronous I/O — awaiting it directly doesn't tie up a thread while waiting on the database. Wrapping it in Task.Run dispatches it to a thread-pool thread that then just sits there awaiting the same I/O — a wasted thread for zero benefit, exactly as this lesson described.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Two threads don't make a single database round-trip finish any faster — the I/O itself is the bottleneck, not thread availability.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Task.Run genuinely dispatches the work to the thread pool — it's not a no-op, which is exactly why it has a real (negative) cost here.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The operation remains I/O-bound regardless of the wrapping — Task.Run doesn't change the fundamental nature of the work, and I/O-bound work generally doesn't benefit from being forced onto the thread pool this way.</p>
+                <p><strong>Reinforcement:</strong> await is for I/O-bound waiting that doesn't need a dedicated thread; Task.Run is for CPU-bound work that genuinely needs one. Mixing them up wastes thread pool capacity for nothing.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 That completes Part VII — Async Programming. You've gone from the basic difference between synchronous and asynchronous code all the way through Task, async/await, cancellation, concurrent coordination with WhenAll/WhenAny, exception handling, async streams, and now the mistakes to watch for in all of it. You're equipped to write async C# code that's both correct and genuinely non-blocking.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
