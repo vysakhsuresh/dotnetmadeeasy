@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>184 - Source Generators — Intro · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Reflection asks "what does this type look like?" at runtime, every time, at a real cost. A source generator asks the same question once — at compile time — and writes the answer down as ordinary code.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>The previous two lessons built up a real, working pattern: attributes as declarative metadata, reflection as the mechanism that reads them back and acts on them at runtime. That pattern is genuinely useful — and it has a genuine cost, paid on every single call, that matters once you're in a hot path or a startup-time-sensitive, AOT-compiled application.</p>
+    <p>What if the same discovery — "which properties does this type have, and what do their names/attributes say" — could happen exactly <em>once</em>, at compile time, instead of over and over at runtime? That's precisely what a <strong>source generator</strong> does. You've almost certainly used one already without realizing it: <code>System.Text.Json</code>'s source-generated serialization mode, and the <code>[LoggerMessage]</code>-based logging pattern in modern ASP.NET Core code, are both source generators quietly doing this trick.</p>
+    <p><strong>In this lesson, at an introductory level: what a source generator actually is, why it exists (directly motivated by reflection's runtime cost and AOT-compatibility limits), a real example you've likely already used, and the basic mental model of "runs at compile time, adds files to your compilation" — without a deep API walkthrough of writing one yourself, which belongs to a dedicated, more advanced lesson.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>source generator</strong> is a piece of code that plugs into the C# compiler itself. While your project is being compiled, the generator gets to look at your actual source code — your classes, your attributes, your method signatures — and, based on what it sees, <strong>write brand-new C# source files</strong> that get compiled right alongside the code you wrote by hand. You never see these generated files unless you go looking for them, but they're real, ordinary C# — compiled, type-checked, and just as fast as anything you typed yourself.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A <strong>source generator</strong> is a component (most commonly implemented as an <code>IIncrementalGenerator</code>) that hooks into the Roslyn (C# compiler) compilation pipeline. During compilation, it receives access to the syntax and semantic model of your source code, can inspect it (typically looking for specific attributes, type shapes, or patterns), and produces additional C# source text that the compiler adds to the same compilation and compiles normally — before the final assembly is produced. The generated code becomes part of your program exactly as if you'd written it by hand, but it was written <em>for</em> you, automatically, based on what your actual code looks like.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>Reflection (runtime)</h4>
+            <ul>
+                <li>Discovers type shape while the program is <strong>running</strong></li>
+                <li>Repeats the discovery cost on every call, unless manually cached</li>
+                <li>Works even with types unknown until runtime</li>
+                <li>Can be incompatible with AOT compilation (more below)</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>Source generator (compile time)</h4>
+            <ul>
+                <li>Discovers type shape while the project is <strong>compiling</strong></li>
+                <li>Discovery happens once; the generated code then runs like any ordinary method</li>
+                <li>Only works for types known at compile time — no truly dynamic discovery</li>
+                <li>Fully AOT-compatible — the generated code is real, ahead-of-time-compilable C#</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem</h3>
+    <p>Reflection gives you enormous flexibility — as the previous two lessons showed, it's what makes serializers, DI containers, and validators work generically. But that flexibility isn't free, in two concrete ways:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Runtime performance</strong> — member lookup, boxing of value-type arguments, no JIT inlining across the reflective call boundary, all covered in the reflection lesson. Real, per-call costs.</li>
+        <li style="margin-bottom:0.4rem;"><strong>AOT (Ahead-Of-Time) compatibility</strong> — some modern .NET deployment models compile your entire application to native code <em>in advance</em>, with no JIT compiler present at runtime at all (used for faster startup, smaller footprints — mobile apps, certain cloud/serverless scenarios, trimmed self-contained deployments). Reflection that depends on discovering and invoking arbitrary types at runtime can conflict badly with this model: the AOT compiler needs to know, in advance, exactly what code might run, and a reflective call whose target is only determined dynamically at runtime is exactly the kind of thing an ahead-of-time compiler can't always see coming, which can mean broken or degraded behavior at runtime in AOT-compiled apps that lean on it heavily.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>Developers needed a way to get the same generic, "works automatically based on what my type looks like" convenience that reflection provides — without paying reflection's runtime cost on every call, and without the AOT-compatibility problems that come from needing to discover and invoke code dynamically at runtime.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution</h3>
+    <p>Move the discovery work from runtime to <strong>compile time</strong>. A source generator inspects your types once, while the project is being built — the exact same kind of question reflection would otherwise ask at runtime ("what properties does this type have?") — and, instead of answering that question dynamically on every call, it writes the answer down as ordinary, hand-looking, directly-callable C# code. That generated code has zero reflection overhead and is fully visible to the AOT compiler, because it's just... normal code, sitting in your compilation like anything else.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">SAME GOAL, TWO VERY DIFFERENT TIMES TO PAY THE COST</div>
+        <div class="comparison-grid">
+            <div class="comparison-card">
+                <h4>Reflection-based approach</h4>
+                <div style="font-size:0.85rem;color:var(--text-main,#E2E8F0);">
+                    Your code compiles<br />↓<br />
+                    Program runs<br />↓<br />
+                    <strong style="color:#EF4444;">Discovery happens HERE, every call</strong><br />↓<br />
+                    Result produced
+                </div>
+            </div>
+            <div class="comparison-card">
+                <h4>Source-generator approach</h4>
+                <div style="font-size:0.85rem;color:var(--text-main,#E2E8F0);">
+                    <strong style="color:#10B981;">Discovery happens HERE, once, at compile time</strong><br />↓<br />
+                    Generated code compiles alongside yours<br />↓<br />
+                    Program runs<br />↓<br />
+                    Result produced — no discovery left to do
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">THE BASIC MENTAL MODEL — STEP BY STEP</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. YOU WRITE ORDINARY C#, OFTEN WITH A MARKER (LIKE AN ATTRIBUTE, OR A partial CLASS)</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">[JsonSerializable(typeof(Customer))]
+public partial class AppJsonContext : JsonSerializerContext { }</code></pre>
+            <ul>
+                <li>The <code>[JsonSerializable]</code> attribute here is the "marker" — it tells the generator which type to generate serialization code for. This is directly connected to the previous lesson: attributes as declarative metadata, now read by a compile-time consumer instead of a runtime one.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE GENERATOR INSPECTS YOUR CODE DURING COMPILATION</div>
+            <ul>
+                <li>The generator finds <code>AppJsonContext</code>, sees the <code>[JsonSerializable(typeof(Customer))]</code> marker, and looks at <code>Customer</code>'s actual properties — <code>Name</code>, <code>Balance</code>, whatever they are — using the compiler's own understanding of your code (not reflection; the compiler already knows this information while it's compiling).</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE GENERATOR EMITS NEW C# SOURCE FILES</div>
+            <ul>
+                <li>It writes out — conceptually — something like a hand-crafted <code>WriteCustomer(Utf8JsonWriter writer, Customer value)</code> method that directly reads <code>value.Name</code> and <code>value.Balance</code> and writes them out, with no reflection involved at all. This generated file becomes part of the <code>AppJsonContext</code> partial class.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. THE COMPILER COMPILES THE GENERATED CODE TOGETHER WITH YOUR OWN</div>
+            <ul>
+                <li>By the time compilation finishes, there's no meaningful difference between the code you wrote and the code the generator wrote — both are ordinary IL in the same assembly. At runtime, calling <code>AppJsonContext.Default.Customer</code>-based serialization is just an ordinary, direct method call — as fast as anything hand-written, and fully visible to an AOT compiler.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+
+    <p><code>System.Text.Json</code>'s source-generated serialization mode, the most common source generator most .NET developers encounter directly:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class Customer
+{
+    public string Name { get; set; } = "";
+    public decimal Balance { get; set; }
+}
+
+// The marker: a partial class, attributed with the types to generate serialization code for
+[JsonSerializable(typeof(Customer))]
+public partial class AppJsonContext : JsonSerializerContext { }
+
+// Usage — looks almost identical to the plain reflection-based API...
+var customer = new Customer { Name = "Alice", Balance = 100m };
+string json = JsonSerializer.Serialize(customer, AppJsonContext.Default.Customer);
+// ...but under the hood, AppJsonContext.Default.Customer resolves to GENERATED, non-reflective
+// serialization code that the source generator wrote for Customer specifically, at compile time.</code></pre>
+    <p><strong>Meaning:</strong> Compare this to plain <code>JsonSerializer.Serialize(customer)</code> with no context — that call uses reflection at runtime to discover <code>Customer</code>'s properties, exactly like the reflection lesson described. The source-generated version does that same discovery once, at compile time, and <code>AppJsonContext</code> ends up containing real, generated, directly-callable serialization code for <code>Customer</code> — no runtime property discovery left to do at all.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A second real, widely-used source generator: <code>[LoggerMessage]</code>-based logging, common in modern ASP.NET Core code, which replaces a reflection- and boxing-heavy logging call pattern with generated, allocation-minimal code.</p>
+
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public partial class OrderService
+{
+    private readonly ILogger&lt;OrderService&gt; _logger;
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Order {OrderId} shipped to {Destination}")]
+    partial void LogOrderShipped(int orderId, string destination);
+
+    public void ShipOrder(int orderId, string destination)
+    {
+        // ...shipping logic...
+        LogOrderShipped(orderId, destination); // looks like an ordinary method call — because it now IS one
+    }
+}</code></pre>
+    <p>You write only the <code>partial void LogOrderShipped(...)</code> declaration and the <code>[LoggerMessage]</code> attribute describing the log message template — you never write the method body. The source generator sees the attribute, inspects the method's declared parameters (<code>orderId</code>, <code>destination</code>), and generates the actual implementation: efficient, allocation-minimal logging code matching the message template to the parameters, with no runtime string-formatting or reflection-based argument boxing involved. Calling <code>LogOrderShipped(orderId, destination)</code> is, after compilation, exactly as fast as calling any ordinary method you wrote entirely by hand — because, after the generator runs, that's precisely what it is.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📋</span> A translator who works ahead of time vs. one who works live</div>
+        <p>Reflection is like a live interpreter standing beside a speaker, translating every single sentence in real time, for every single listener, every single time the speech is given. It's flexible — it works for a speech nobody's heard before — but it's genuinely slower than reading, and it has to be redone from scratch at every performance.</p>
+        <p>A source generator is like translating the entire speech into a printed script <em>once</em>, ahead of time, before the event even starts. Every audience member afterward just reads the printed script directly — no live interpretation happening at all during the actual event. The upfront translation work (the generator running at compile time) is exactly the same kind of work the live interpreter does — reading the source and producing a translation — it's just done once, in advance, instead of repeatedly, live, under time pressure.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">GENERATOR RUNS AT COMPILE TIME, ADDS FILES TO YOUR COMPILATION — THE CORE MECHANIC</div>
+        <div class="flow-step">
+            <div class="step-label">WHERE A SOURCE GENERATOR SITS IN THE BUILD</div>
+            <ul>
+                <li>Source generators plug into <strong>Roslyn</strong>, the C# compiler, as an extra step during compilation. Before your project's final assembly is produced, registered generators are given read access to the project's syntax trees (your parsed source code) and semantic model (fully resolved type information — the same rich information the compiler itself uses to check your code).</li>
+                <li>Each generator can then contribute additional C# source text — real files, even though they typically live only in memory / in build output rather than being saved into your project folder by default — which the compiler folds into the <em>same</em> compilation as your hand-written code, before that compilation is finalized into an assembly.</li>
+                <li>Because the generated code goes through the exact same compilation pass as your own code, it's subject to the exact same type checking, and produces the exact same kind of ordinary IL. There is nothing structurally different about generated code once it's compiled — it's genuinely indistinguishable from code you typed by hand, at the IL level.</li>
+                <li>This is deliberately a shallow overview — the actual generator-authoring API (<code>IIncrementalGenerator</code>, syntax providers, incremental pipelines for build performance) is a substantial topic with its own dedicated, more advanced lesson elsewhere. The goal here is just the mental model: compile-time inspection in, compile-time-generated ordinary code out.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Source generators generate code while my program runs" — no, strictly at compile time</h3>
+    <p>This is worth stating plainly because the name invites the mistake: a source generator never runs as part of your deployed application. All of its work happens on the machine (or build server) compiling your project. By the time you have a finished executable or published application, the generator has already done everything it's going to do — what ships is ordinary, already-generated C#, compiled to ordinary IL, with the generator itself nowhere in the runtime picture at all.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Source generators don't replace reflection everywhere — they replace it where the types are known at compile time</h3>
+    <p>A tool that must genuinely discover and act on types it has never seen before, chosen dynamically at runtime (a plugin system loading arbitrary assemblies at startup, for instance) still needs reflection — a source generator can't generate code for a type it doesn't know exists yet at compile time. Source generators shine specifically when the relevant types <em>are</em> known up front, in your source code, which covers a large share — though not all — of what reflection is used for today.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. Generated code is not "hidden magic" — it's real, inspectable C#</h3>
+    <p>Because the generated files genuinely exist and go through genuine compilation, most tooling lets you view them directly (for example, IDE features to inspect generated files, or MSBuild settings to emit them to disk). This is quite different from reflection's runtime behavior, which has no equivalent "look at the generated code" step — there's simply no generated code to look at, because reflection discovers everything dynamically, on the fly.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Assuming a source generator can handle types only known at runtime</h4>
+    <p>❌ Expecting <code>[JsonSerializable(typeof(...))]</code>-style generation to somehow work for a type loaded dynamically from a plugin assembly the generator never saw at compile time. ✅ Source generators require compile-time knowledge of the target types — for genuinely dynamic scenarios, reflection (or a hybrid approach) is still the right tool.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forgetting the target member/class needs to be <code>partial</code></h4>
+    <p>❌ Writing <code>[LoggerMessage(...)]</code> on a method inside a non-<code>partial</code> class and being confused why the generator's contribution doesn't compile alongside it. ✅ Many source generators (including <code>[LoggerMessage]</code>) rely on <code>partial</code> classes/methods specifically so the hand-written declaration and the generator's contribution can be split across two files that the compiler merges — this is a real, common setup requirement worth double-checking.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Treating "uses a source generator" and "uses reflection" as mutually exclusive facts about a whole library</h4>
+    <p>❌ Assuming that because a library offers a source-generated mode, reflection is entirely gone from it everywhere. ✅ Many libraries (like <code>System.Text.Json</code>) offer <em>both</em> a reflection-based mode (maximally flexible, works with types not registered ahead of time) and a source-generated mode (faster, AOT-friendly, requires upfront registration) — you often choose which one fits your scenario, rather than one having fully replaced the other across the board.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Prefer a library's <strong>source-generated mode</strong> (when one is offered, like <code>System.Text.Json</code>'s) for hot paths — high-throughput serialization, logging in a busy web application — where the compile-time-known types make it a strict upgrade over the reflection-based equivalent.</li>
+        <li style="margin-bottom:0.4rem;">Reach for it specifically when targeting <strong>Native AOT</strong> or heavily trimmed deployments, where reflection-based discovery can be unreliable or unsupported — source-generated code sidesteps that entirely.</li>
+        <li style="margin-bottom:0.4rem;">Stick with the plain <strong>reflection-based</strong> approach when the types genuinely aren't known until runtime, or when the extra setup (attributes, <code>partial</code> declarations, registering a context) isn't worth it for a small, non-hot-path use case.</li>
+        <li style="margin-bottom:0.4rem;">Writing your <em>own</em> source generator is a meaningfully larger undertaking than using one — appropriate for library authors solving this exact problem for their own users, and covered at full depth in a dedicated, later lesson.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Reflection</strong> = discover the type's shape while the program runs, every time, at a real per-call cost.<br />
+        <strong>Source generator</strong> = discover the type's shape while the project compiles, once, and write ordinary code for the answer.<br />
+        <strong>The generated code</strong> = indistinguishable, at the IL level, from anything you'd have typed by hand.<br /><br />
+        <strong>Remember:</strong> a source generator never runs inside your deployed application — by the time your program is running, all the "figuring out what the type looks like" work is already finished and baked into ordinary, already-compiled code.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <strong>source generator</strong> is compile-time code that inspects your source and adds new, ordinary C# source files to your compilation — it runs during the build, never inside the running application.</li>
+            <li style="margin-bottom:0.4rem;">It exists specifically to solve reflection's two real costs: <strong>per-call runtime overhead</strong>, and <strong>AOT-compatibility</strong> limits on discovering/invoking code dynamically at runtime.</li>
+            <li style="margin-bottom:0.4rem;"><code>System.Text.Json</code>'s source-generated serialization context and <code>[LoggerMessage]</code>-based logging are both real, widely-used source generators you've likely benefited from without noticing.</li>
+            <li style="margin-bottom:0.4rem;">Generated code is compiled exactly like hand-written code — no special runtime machinery, no reflection, fully visible to the JIT and to AOT compilation.</li>
+            <li style="margin-bottom:0.4rem;">Source generators only work when the relevant types are known at compile time — genuinely dynamic scenarios still need reflection; this lesson is deliberately introductory, with the full generator-authoring API covered separately.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen what a source generator is, why it exists, and two real examples you may have already used. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> When does a source generator's code actually run?</p>
+        <ul class="options">
+            <li>A) While your deployed application is running, the first time each type is used</li>
+            <li>B) While your project is being compiled — it never runs as part of the deployed, running application at all</li>
+            <li>C) Only when an exception is thrown</li>
+            <li>D) Continuously, in the background, for the lifetime of the process</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the central distinction from reflection — a source generator does all of its work during compilation. By the time your application is running, the generator has already finished; what's running is ordinary, already-generated code.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This describes how reflection-based discovery works (lazily, at runtime) — the exact behavior a source generator is designed to avoid, as covered in "Common Confusion."</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Source generators have nothing to do with exception handling — they run unconditionally as a normal part of every build.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no generator activity happening "in the background" once the application is running — the generator's job is finished the moment the build completes.</p>
+                <p><strong>Reinforcement:</strong> "Compile time, not runtime" is the single most important fact about source generators — it's the direct source of both their performance benefit and their AOT-compatibility.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why does source-generated JSON serialization avoid the runtime performance cost that plain reflection-based <code>JsonSerializer.Serialize(obj)</code> pays?</p>
+        <ul class="options">
+            <li>A) Because generated code runs on a separate, faster thread</li>
+            <li>B) Because the property discovery that reflection would otherwise do at runtime, on every call, has already been done once at compile time — the generated code directly reads each property by name, with no runtime member lookup or boxing involved</li>
+            <li>C) Because source generators compress the JSON output more efficiently</li>
+            <li>D) Because <code>JsonSerializerContext</code> caches results in a database</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The generator moves exactly the work described in the reflection lesson — discovering a type's properties — from runtime (paid every call) to compile time (paid once). The generated code that results is ordinary, direct property access, with none of reflection's per-call overhead.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's nothing about threading involved here — the performance win is about eliminating reflective lookup and boxing, not about parallelism.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The generator doesn't change the JSON output format or compression — it changes how the serialization <em>code itself</em> is produced and executed.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>JsonSerializerContext</code> holds generated, in-memory serialization code — there's no database involved anywhere in this mechanism.</p>
+                <p><strong>Reinforcement:</strong> The performance win is entirely about when the "what does this type look like" question gets answered — once at compile time, versus every time at runtime.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A plugin system needs to load assemblies chosen by the user at runtime and discover types inside them that were completely unknown when the host application was compiled. Is a source generator a good fit for this specific requirement?</p>
+        <ul class="options">
+            <li>A) Yes — source generators can inspect any assembly at any time, including ones loaded after the application starts</li>
+            <li>B) No — a source generator only sees code that exists at compile time; it can't generate code for types that are only discovered dynamically at runtime, so reflection is still the appropriate tool here</li>
+            <li>C) Yes, but only if the plugin assemblies are written in a different language</li>
+            <li>D) No — source generators are entirely deprecated in favor of reflection for all new code</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As covered in "Common Confusion" and "Common Mistakes," source generators require the relevant types to be known at compile time. A plugin loaded dynamically at runtime, with types the host never saw while compiling, is exactly the scenario reflection remains the right tool for.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A source generator's inspection window is strictly the compile-time compilation — it has no visibility into assemblies loaded later, at runtime, that didn't exist as part of that compilation.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The source language of the plugin assembly is irrelevant — the fundamental limitation is about compile-time versus runtime knowledge, not language.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This reverses the relationship entirely — source generators are a newer complement to reflection for compile-time-known scenarios, not a wholesale replacement, and reflection remains fully relevant for genuinely dynamic cases like this one.</p>
+                <p><strong>Reinforcement:</strong> Source generators and reflection solve overlapping but distinct problems — compile-time-known types are a great fit for generators; genuinely dynamic, runtime-discovered types still need reflection.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have the mental model for source generators, and you can see exactly how they connect back to reflection's real runtime cost and attributes' role as declarative metadata — the throughline for this entire module.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

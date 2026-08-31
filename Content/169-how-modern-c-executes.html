@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>169 - How Modern C# Executes · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Welcome to Production .NET — where "it works" isn't enough anymore. Now you need to know <em>why</em> it works.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You've written hundreds of methods, launched dozens of apps, and typed <code>dotnet run</code> more times than you can count. Every time, the same thing happens: your C# turns into a running program. But have you ever stopped to ask what actually happens in the half-second between hitting Enter and seeing output on screen?</p>
+    <p>It's not magic, and it's not a single step. Your C# source code goes through <strong>two separate compilations</strong> — one you control (at build time) and one you don't (at run time) — before a single CPU instruction executes. Understanding this pipeline is the foundation for everything else in this Advanced tier: garbage collection, JIT tuning, memory layout, and performance diagnostics all sit on top of it.</p>
+    <p><strong>In this lesson, you'll trace the complete journey from the C# you type to the machine code your CPU actually runs — and meet the two compilers, the runtime, and the alternatives to the default pipeline that modern .NET offers.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>Running a C# program is a two-stage translation, not one:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Stage 1 (build time):</strong> The <strong>Roslyn</strong> compiler turns your <code>.cs</code> files into <strong>IL (Intermediate Language)</strong> — a CPU-independent instruction set — and packages it into an <strong>assembly</strong> (a <code>.dll</code> or <code>.exe</code>) along with <strong>metadata</strong> describing every type, method, and field.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Stage 2 (run time):</strong> When you actually run the program, the <strong>CLR</strong> loads that assembly and its <strong>JIT compiler</strong> translates the IL into real, CPU-specific <strong>machine code</strong> — the only thing a processor can actually execute.</li>
+    </ul>
+    <p>You already met this pipeline at a high level back in Foundations. This lesson goes underneath it — the actual mechanics of tiered JIT compilation, and the alternatives (ReadyToRun, NativeAOT) that reshape when that second translation happens.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><strong>Roslyn</strong> is the open-source C# (and Visual Basic) compiler platform. It performs lexing, parsing, semantic analysis, and code generation, emitting IL plus metadata into a Portable Executable (PE) file — the assembly.</p>
+    <p>The <strong>CLR (Common Language Runtime)</strong> is the execution engine that loads assemblies, verifies them, and hosts the <strong>JIT (Just-In-Time) compiler</strong>, which compiles IL to native machine code <em>method by method, on demand</em>, the first time each method actually runs. Modern .NET uses <strong>tiered compilation</strong>: a fast, lightly-optimized pass (Tier 0) gets code running quickly, and a slower, heavily-optimized recompilation (Tier 1) kicks in later for methods that turn out to be "hot" (called frequently).</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🛠️ Compile Time (Roslyn)</h4>
+            <ul>
+                <li>Runs once, on <strong>your</strong> machine or build server</li>
+                <li>C# source → <strong>IL + metadata</strong></li>
+                <li>Catches syntax and type errors</li>
+                <li>Output is CPU-independent — the same DLL runs on x64, Arm64, Windows, or Linux</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚙️ Run Time (CLR / JIT)</h4>
+            <ul>
+                <li>Runs every time the app starts, on the <strong>end user's</strong> machine</li>
+                <li>IL → <strong>native machine code</strong></li>
+                <li>Happens per-method, lazily, as methods are first called</li>
+                <li>Output is specific to the exact CPU it's running on</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem</h3>
+    <p>Imagine .NET skipped IL entirely and Roslyn compiled C# straight to native x64 machine code, the way a C compiler does. That would create real problems:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>No portability</strong> — you'd need a separate build for x64, Arm64, Windows, Linux, macOS... every target would need its own compiled artifact.</li>
+        <li style="margin-bottom:0.4rem;"><strong>No runtime services</strong> — things like garbage collection, exception handling, and type safety checks need the runtime to understand what the code is doing structurally. Raw machine code has already thrown that structure away.</li>
+        <li style="margin-bottom:0.4rem;"><strong>No adaptive optimization</strong> — a compiler working ahead of time can't know which CPU features are actually available at runtime, or which methods will actually run hot in your specific deployment.</li>
+    </ul>
+    <p>Now imagine the opposite extreme: the JIT does its absolute best optimization pass on <em>every single method</em>, the instant the program starts. That has a different problem — startup would be brutally slow, because full optimization (inlining, register allocation, loop unrolling) is expensive to compute, and most methods only run a handful of times.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution</h3>
+    <p>.NET's answer is layered:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Compile to IL, not native code, at build time</strong> — this gives portability (write once, the same DLL runs anywhere .NET runs) and preserves the structural information the CLR needs for GC, type safety, and reflection.</li>
+        <li style="margin-bottom:0.4rem;"><strong>JIT lazily, per method, at run time</strong> — a method that's never called is never compiled at all. Startup only pays for the code paths actually exercised.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Compile in tiers</strong> — get something running fast (Tier 0), then spend real optimization effort only on the methods that prove, by actually being called a lot, that the investment is worth it (Tier 1).</li>
+    </ul>
+    <p>This is a deliberate trade-off between <strong>startup latency</strong> and <strong>peak throughput</strong> — and it's tuned automatically so you rarely have to think about it. You'll dig into that trade-off in detail in the next lesson.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">THE FULL EXECUTION PIPELINE</div>
+        <div class="flow-step">
+            <div class="step-label">1. C# SOURCE CODE (.cs files)</div>
+            <ul><li>What you write in your editor</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. ROSLYN COMPILER</div>
+            <ul><li>Parses, type-checks, and lowers your C# into IL</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. ASSEMBLY (.dll / .exe) — IL + METADATA</div>
+            <ul><li>A CPU-independent, portable binary sitting on disk</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. CLR LOADS THE ASSEMBLY (at process startup)</div>
+            <ul><li>Locates and reads the assembly, resolves type metadata</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. JIT COMPILES METHODS — ON FIRST CALL, PER METHOD</div>
+            <ul>
+                <li><strong>Tier 0</strong> — fast, minimally optimized native code, generated quickly</li>
+                <li><strong>Tier 1</strong> — fully optimized recompilation, only for methods called often enough</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">6. NATIVE MACHINE CODE RUNS ON THE CPU</div>
+            <ul><li>The only form of code your processor can actually execute</li></ul>
+        </div>
+    </div>
+
+    <p>Two alternative paths exist to this default JIT pipeline, and you'll meet them properly in a later module — for now, just know they exist:</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>📦 ReadyToRun (R2R)</h4>
+            <ul>
+                <li>Assemblies are pre-compiled to native code <em>at publish time</em>, in addition to still carrying IL</li>
+                <li>The CLR can use that native code directly instead of JIT-compiling on first call — improving startup</li>
+                <li>Tiered JIT can still re-optimize hot R2R methods later, using Dynamic PGO</li>
+                <li>Still runs on the full CLR with GC, reflection, etc.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🚀 NativeAOT</h4>
+            <ul>
+                <li>Compiles your entire app to a single native executable <em>ahead of time</em> — no IL, no JIT, no CLR loading step at run time</li>
+                <li>Fastest possible startup, smallest memory footprint</li>
+                <li>Trades away some dynamic features (heavy reflection, runtime code generation)</li>
+                <li>Full depth is a dedicated Advanced lesson later in this book</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 1 — You write and build C#</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public static int Square(int n) => n * n;</code></pre>
+    <p>When you run <code>dotnet build</code>, Roslyn parses this into a syntax tree, resolves every symbol (what is <code>n</code>? what type does <code>*</code> mean here?), and checks it against the language rules. This is where compile errors like "cannot convert type" get caught — before your program ever runs.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 2 — Roslyn emits IL and metadata</h4>
+    <p>Roslyn lowers your C# into IL, a stack-based, CPU-independent instruction set. The <code>Square</code> method above becomes something like:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">IL_0000: ldarg.0
+IL_0001: ldarg.0
+IL_0002: mul
+IL_0003: ret</code></pre>
+    <p>Alongside the IL, Roslyn writes <strong>metadata</strong> — a structured catalog of every type, method signature, field, and attribute in the assembly. This metadata is what lets tools like reflection, the debugger, and IntelliSense understand your code's shape without re-parsing C# source.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 3 — The assembly is packaged</h4>
+    <p>IL and metadata are packaged into a Portable Executable (PE) file — your familiar <code>.dll</code> or <code>.exe</code>. This file contains no CPU-specific instructions at all yet. The same assembly can, in principle, run on an x64 Windows server or an Arm64 Linux container without recompilation, as long as a compatible .NET runtime is present.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 4 — You run the program, and the CLR takes over</h4>
+    <p>When you (or your hosting environment) launch the app, the <code>dotnet</code> host starts the CLR, which loads the entry assembly, resolves its dependencies, and prepares to run <code>Main</code>. No machine code has been generated yet — only IL has been loaded.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 5 — The JIT compiles methods on first call</h4>
+    <p>The very first time <code>Square</code> is actually invoked, the CLR notices it has no native code for it yet, and hands the IL to the JIT compiler. By default, the JIT produces a <strong>Tier 0</strong> version first: quick to generate, with minimal optimization. If <code>Square</code> turns out to be called repeatedly (it's "hot"), the runtime schedules a background recompilation to a fully optimized <strong>Tier 1</strong> version, and future calls use that instead. Methods called only once or twice may simply stay at Tier 0 forever — spending optimization effort on them wouldn't pay off.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 6 — The CPU executes native code</h4>
+    <p>Only now does actual machine code run — real x64 or Arm64 instructions, sitting in memory, executed directly by the processor. Everything before this step was preparation; this is the only step the hardware itself participates in.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Consider this tiny console app:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">int total = 0;
+for (int i = 0; i < 1_000_000; i++)
+{
+    total += Square(i);
+}
+Console.WriteLine(total);
+
+static int Square(int n) => n * n;</code></pre>
+    <p><strong>Code → What happens:</strong></p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><code>Main</code> is JIT-compiled at Tier 0 the moment the process starts and <code>Main</code> is first invoked by the runtime.</li>
+        <li style="margin-bottom:0.4rem;"><code>Square</code> is JIT-compiled at Tier 0 the very first time the loop calls it (iteration 0).</li>
+        <li style="margin-bottom:0.4rem;">After roughly 30 calls (the exact threshold is a runtime implementation detail, not a documented contract you should code against), the runtime notices <code>Square</code> is hot and queues it for Tier 1 recompilation on a background thread.</li>
+        <li style="margin-bottom:0.4rem;">A moment later, calls to <code>Square</code> transparently start using the new, fully optimized Tier 1 code — likely with the multiplication inlined directly into the loop, eliminating the call overhead entirely.</li>
+        <li style="margin-bottom:0.4rem;">You never see any of this. It's invisible from C# — no code you write triggers or observes tiering directly.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Picture an ASP.NET Core API deployed as a container that autoscales — new instances spin up in response to traffic spikes, run for a while, and then get torn down.</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">When a new container starts, the CLR loads all the assemblies, and the JIT has to compile <code>Main</code>, the ASP.NET Core middleware pipeline, routing, and your controllers — all before the first request can be handled. This is exactly why <strong>Tier 0 exists</strong>: it gets that first request served quickly instead of making the pod wait through full optimization of hundreds of startup-path methods.</li>
+        <li style="margin-bottom:0.4rem;">Once the container is warm and serving thousands of requests per second, the handful of hot-path methods (JSON serialization, your busiest endpoint handler, a frequently-hit database query builder) get promoted to <strong>Tier 1</strong>, so steady-state throughput is just as good as if everything had been optimized from the start.</li>
+        <li style="margin-bottom:0.4rem;">If this same API is deployed as a serverless function that only lives for a few requests before being recycled, the container may never live long enough for Tier 1 to matter — which is exactly the scenario where teams reach for <strong>ReadyToRun</strong> or <strong>NativeAOT</strong> to skip JIT warm-up entirely.</li>
+    </ul>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🎭</span> A play, translated twice</div>
+        <p>Imagine a play written in English (your C#) that needs to be performed for an audience whose language you won't know until showtime.</p>
+        <p><strong>Roslyn</strong> is a translator who converts the script, well ahead of time, into a detailed universal notation — precise stage directions and dialogue that any actor, in any language, could follow (this is IL). This translation happens once, and the notation works for any theater.</p>
+        <p><strong>The JIT</strong> is the cast, who only translate each scene into the audience's actual spoken language <em>the moment that scene is about to be performed</em>. For the first performance of each scene, they do a quick, serviceable read-through (Tier 0) so the show can start on time. If a scene turns out to be performed over and over (a hit number the audience demands as an encore), the cast rehearses it properly and delivers a polished, optimized version from then on (Tier 1).</p>
+        <p>The mapping back to code: the universal notation (IL) is portable to any "theater" (CPU architecture); the just-in-time translation (JIT) is what actually makes the show watchable in this specific room, for this specific audience — right now.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">ASSEMBLY ANATOMY AND JIT MECHANICS</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. THE ASSEMBLY IS A PE FILE</div>
+            <ul>
+                <li>Same container format Windows uses for native executables (Portable Executable), reused by .NET.</li>
+                <li>Instead of native machine code in the main code section, it holds <strong>IL</strong>.</li>
+                <li>A <strong>metadata</strong> table catalogs every type, method signature, field, and custom attribute — this is what reflection reads at run time.</li>
+                <li>An assembly manifest records the assembly's identity and the other assemblies it depends on.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">2. METHODS START AS "STUBS"</div>
+            <ul>
+                <li>Before a method is ever called, the CLR points its entry to a small pre-stub — not real code, just a placeholder.</li>
+                <li>The first call jumps into this stub, which triggers the JIT to compile the method and then patches the method's entry point to point at the freshly-generated native code.</li>
+                <li>Every subsequent call goes straight to the native code — no stub, no recompilation, unless a tier promotion happens later.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">3. TIERED COMPILATION IN DETAIL</div>
+            <ul>
+                <li><strong>Tier 0 (QuickJit)</strong> — minimal optimization, very fast to produce; the CLR also inserts a call counter into the method.</li>
+                <li>Once a method's call count crosses an internal threshold, it's queued for background recompilation.</li>
+                <li><strong>Tier 1</strong> — the optimizing JIT runs: inlining, better register allocation, loop optimizations, and (starting in .NET 8) <strong>Dynamic PGO</strong>, which uses instrumentation collected from the method's actual Tier 0 execution to guide better decisions (e.g., which branch of an <code>if</code> is usually taken).</li>
+                <li>This all happens on background threads — your running request or loop is never blocked waiting for a recompile.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">4. ROSLYN VS THE JIT — TWO DIFFERENT COMPILERS</div>
+            <ul>
+                <li>Roslyn is a <strong>language</strong> compiler: it understands C# grammar, generics as written, LINQ query syntax, pattern matching — and turns all of that into IL once.</li>
+                <li>The JIT is a <strong>code generation</strong> compiler: it doesn't know or care that your IL came from C# (it could have come from F# or VB.NET) — it only turns IL into CPU instructions, and it does this every time the process starts, on every machine that runs it.</li>
+                <li>Roslyn's optimizations are mostly about correctness and some IL-shape simplifications; the JIT's optimizations are about real machine performance (inlining, register allocation, dead code elimination on the native side).</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "C# is a compiled language" — yes, but compiled twice</h3>
+    <p>C# is neither "purely compiled" like C, nor "purely interpreted" like classic scripting languages. It's compiled ahead of time to IL (portable, but not directly runnable by hardware) and then compiled again, just-in-time, to native code. Calling it "interpreted" is wrong — the JIT genuinely produces real machine code, it just does so lazily and at run time rather than in advance.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "JIT compilation happens once, for the whole app, at startup"</h3>
+    <p>It does not. JIT compilation is <strong>per method</strong> and <strong>lazy</strong> — a method is compiled the first time it's actually called, not when the assembly is loaded. A method your program never calls in a given run is never JIT-compiled at all. This is why cold-start profiles for large apps show JIT activity spread across the first several seconds (or longer), not concentrated in a single "startup compile" moment.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "ReadyToRun and NativeAOT are the same thing"</h3>
+    <p>They solve a similar problem (slow JIT warm-up) very differently. R2R assemblies still carry IL and still run on the full CLR — the pre-compiled native code is just an optional fast-path the runtime can use instead of JIT-ing from scratch, and the JIT can still re-optimize hot R2R methods later. NativeAOT produces a single native executable with <strong>no IL, no JIT, and no separate CLR loading step</strong> at run time — it's a fundamentally different deployment model, covered in full later in this book.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Benchmarking a method's first call</h4>
+    <p>❌ Timing a method's very first invocation and concluding "this code is slow" — you likely measured Tier 0 JIT compilation time plus Tier 0 (unoptimized) execution, not steady-state performance.</p>
+    <p>✅ Warm up the method with a few throwaway calls before timing it, or use a proper benchmarking tool (like BenchmarkDotNet) that accounts for JIT warm-up automatically.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming the same IL always produces identical native code</h4>
+    <p>❌ Believing that because two machines run "the exact same DLL," they run identical machine instructions.</p>
+    <p>✅ The JIT generates native code tailored to the actual CPU it's running on (available instruction set extensions, cache sizes considered by the optimizer, etc.). The IL is identical; the resulting native code can legitimately differ between machines.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for NativeAOT to "fix" every startup problem</h4>
+    <p>❌ Jumping straight to NativeAOT the moment cold start feels slow, without checking whether ReadyToRun or simply reducing startup-path work would be enough.</p>
+    <p>✅ NativeAOT gives up some dynamic capabilities (heavy runtime reflection, certain plugin-loading patterns). Understand the trade-off — covered fully in its own lesson — before committing your deployment model to it.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does This Matter for My Code?</h2>
+    <p>You don't "turn on" this pipeline — it's always running underneath every C# program. But understanding it changes how you reason about real problems:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Diagnosing cold-start latency</strong> in containers, serverless functions, or CLI tools — you now know to ask "how much of this is JIT warm-up?" before assuming it's your code's fault.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Writing fair benchmarks</strong> — you know steady-state (Tier 1) performance and first-call (Tier 0) performance are genuinely different numbers, and both can matter depending on your scenario.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Choosing a deployment model</strong> — long-running services (most APIs) benefit most from the default tiered JIT; short-lived, scale-to-zero workloads may benefit from ReadyToRun or NativeAOT.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Understanding the rest of this book</strong> — garbage collection, memory allocation, and boxing all happen <em>while native code runs</em>. This lesson is the map that shows where that native code came from.</li>
+    </ul>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> For the vast majority of applications — web APIs, background services, desktop apps — the default JIT pipeline with tiered compilation is already well-tuned and requires no intervention. Reach for R2R or NativeAOT only when you've measured a real startup-latency problem that matters for your scenario (serverless cold starts, CLI tool responsiveness, container autoscaling speed).
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Roslyn</strong> = C# → IL, done once, ahead of time, on your machine.<br />
+        <strong>JIT</strong> = IL → native code, done per method, lazily, on the user's machine.<br /><br />
+        <strong>Remember:</strong><br />
+        · Two compilers, two very different jobs — language rules vs. machine code generation.<br />
+        · Tier 0 gets you running fast; Tier 1 makes hot code fast to keep running.<br />
+        · R2R pre-computes the Tier-0-ish native code at publish time; NativeAOT removes the JIT step entirely.<br />
+        · None of this is something you write code to control directly — it's the invisible foundation everything else in this book sits on.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">C# executes in two stages: <strong>Roslyn</strong> compiles source to IL + metadata at build time; the <strong>JIT</strong> compiles IL to native code at run time, per method, on demand.</li>
+            <li style="margin-bottom:0.4rem;">This split gives .NET portability (one assembly, many CPUs/OSes) and lets the CLR provide services like GC, exception handling, and reflection that depend on structural metadata.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Tiered compilation</strong> balances startup speed against peak performance: Tier 0 is fast-but-unoptimized, Tier 1 is slow-to-produce-but-fast-to-run, and only hot methods get promoted.</li>
+            <li style="margin-bottom:0.4rem;"><strong>ReadyToRun</strong> pre-generates native code at publish time to skip early JIT work while staying on the full CLR; <strong>NativeAOT</strong> removes JIT and the CLR loading step entirely for the fastest possible startup, at the cost of some dynamic features.</li>
+            <li style="margin-bottom:0.4rem;">This pipeline is the foundation for the rest of Part I — every GC pause, every allocation, every boxing operation happens inside native code that this pipeline produced.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've traced the full journey from C# source to executing machine code. Let's check that the mental model is solid before building on it.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What does Roslyn actually produce when it compiles your C# project?</p>
+        <ul class="options">
+            <li>A) Native machine code specific to the build machine's CPU</li>
+            <li>B) IL (Intermediate Language) instructions plus metadata, packaged into an assembly</li>
+            <li>C) A fully optimized executable ready to run on any operating system without a runtime</li>
+            <li>D) Interpreted bytecode that is re-parsed as text every time the app runs</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Roslyn emits CPU-independent IL along with metadata describing types and members, packaged as a PE-format assembly (.dll/.exe). No native machine code is produced at this stage.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That's the JIT's job, and it happens at run time on whatever machine actually executes the program — not at build time.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The assembly still requires a .NET runtime (or NativeAOT publishing, a separate path) to actually execute — it isn't a standalone native binary by default.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> IL is a real binary instruction format, not re-parsed text, and the CLR compiles it to machine code — it doesn't interpret it line by line like a scripting engine.</p>
+                <p><strong>Reinforcement:</strong> Build time and run time produce two different kinds of output — IL from Roslyn, native code from the JIT — and mixing them up is the single most common source of confusion about "compiled vs. interpreted" languages.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A method in your app is called exactly twice during the entire lifetime of the process. What is the most likely outcome for that method's JIT compilation?</p>
+        <ul class="options">
+            <li>A) It is never compiled, since it's called so rarely</li>
+            <li>B) It is compiled once at Tier 0 and stays there — it never accumulates enough calls to be promoted to Tier 1</li>
+            <li>C) It is compiled directly at Tier 1, since the JIT always fully optimizes on the first call</li>
+            <li>D) It causes a runtime error, since the JIT requires a minimum call count before it will compile a method at all</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Every called method is JIT-compiled on its first invocation — by default at Tier 0. Promotion to Tier 1 happens only after a method's call count crosses an internal threshold, which two calls won't reach, so it simply stays at Tier 0.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A method has to be compiled before it can run at all — "called twice" still means it was JIT-compiled at least once, on the first call.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The JIT deliberately does <em>not</em> fully optimize on the first call — that's the whole point of tiering; full optimization is reserved for methods proven to run often.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There is no minimum call count required for a method to be compiled at all — only a threshold for tier <em>promotion</em>. A method called once still gets Tier 0 code.</p>
+                <p><strong>Reinforcement:</strong> Most methods in a typical application are called rarely and simply live out their life at Tier 0 — tier promotion is reserved for the minority of methods that are actually hot.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why does .NET compile IL to native code lazily, method by method, instead of compiling the entire loaded assembly to native code all at once at startup?</p>
+        <ul class="options">
+            <li>A) Because the JIT is technically incapable of compiling more than one method at a time</li>
+            <li>B) So that startup only pays the compilation cost for the code paths actually exercised, rather than every method in the assembly whether it runs or not</li>
+            <li>C) Because IL cannot be converted to native code until the garbage collector has run at least once</li>
+            <li>D) Because Roslyn does not emit enough metadata to compile more than one method at a time</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Lazy, per-method JIT compilation means startup cost scales with the code your program actually runs, not with the total size of the loaded assemblies. A large library with thousands of methods costs nothing at startup for the methods that are never called.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no such technical limitation — the design choice is about efficiency, not capability.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> JIT compilation and garbage collection are unrelated processes; the GC managing heap memory has no bearing on when IL can be compiled.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Roslyn's metadata is complete for every method in the assembly; the JIT could technically compile everything up front — the runtime simply chooses not to, for the startup-cost reason described in B.</p>
+                <p><strong>Reinforcement:</strong> "Lazy" is the key word — the runtime avoids doing work that might never be needed, which is exactly why tiny console tools and huge web frameworks alike can start up reasonably fast despite having enormous amounts of IL loaded.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team deploys the same published .NET assembly, unmodified, to both an x64 server and an Arm64 server. What should they expect?</p>
+        <ul class="options">
+            <li>A) The assembly will fail to run on the Arm64 server, since IL is compiled for a specific CPU architecture</li>
+            <li>B) The IL is identical on both machines, but the JIT produces different native machine code tailored to each CPU</li>
+            <li>C) The Arm64 server will silently execute the x64 native code through hardware emulation built into the CLR</li>
+            <li>D) They must recompile with Roslyn separately for each CPU architecture before deployment</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> IL is CPU-independent — the same assembly runs unmodified on both machines. Each machine's local JIT compiler generates native code appropriate to its own processor, so the underlying IL is shared but the final machine code differs.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the portability IL is designed to provide — a correctly targeted .NET assembly runs on any supported architecture with a compatible runtime installed.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no native-code emulation happening — each machine's JIT compiles the IL itself, from scratch, for its own architecture. No x64 code ever needs to run on the Arm64 box.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Recompiling with Roslyn per architecture is unnecessary for standard JIT-based deployment — that requirement only applies to certain NativeAOT publish scenarios, a separate ahead-of-time compilation model covered later.</p>
+                <p><strong>Reinforcement:</strong> "Compile once, run anywhere .NET runs" is only true because the JIT — not Roslyn — is the piece of the pipeline responsible for producing CPU-specific code, and it does that work locally on each machine.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A serverless function using .NET has a strict cold-start budget and only ever handles one or two requests before its container is torn down. Which statement best explains why the default tiered JIT pipeline is a poor fit here?</p>
+        <ul class="options">
+            <li>A) Tiered JIT requires a minimum of 1,000 method calls before any code will run at all</li>
+            <li>B) The function's short lifetime means most methods will only ever run at unoptimized Tier 0, and it still pays the cost of JIT-compiling on every cold start, unlike a pre-compiled alternative such as ReadyToRun or NativeAOT</li>
+            <li>C) Tiered JIT is only available on Windows, and serverless platforms exclusively run Linux</li>
+            <li>D) The garbage collector refuses to run in short-lived processes, causing memory leaks</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A process that lives for one or two requests never runs long enough to benefit from Tier 1 optimization, yet it still pays full JIT compilation cost on every fresh cold start — cost that ReadyToRun or NativeAOT could largely avoid by having native code ready ahead of time.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no such minimum — a method compiles on its very first call, whether that's call number one or call number one-thousand.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Tiered JIT compilation works across all platforms .NET supports, including Linux — it isn't a Windows-only feature.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The garbage collector functions normally in short-lived processes; this scenario is about JIT warm-up cost, not garbage collection, which is covered starting in the next few lessons.</p>
+                <p><strong>Reinforcement:</strong> This is exactly the scenario where the startup-vs-throughput trade-off tips toward pre-compilation — short-lived processes never get to "cash in" on Tier 1's investment, so paying the JIT cost repeatedly on every cold start is pure overhead.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand the pipeline that turns your C# into running machine code — the foundation for everything the CLR does next.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

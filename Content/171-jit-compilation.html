@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>171 - JIT Compilation · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The JIT doesn't optimize everything equally — it bets on which methods are worth the effort, and it usually bets right.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>In the pipeline lesson, you saw that the JIT compiles IL to native code "in tiers." That was intentionally the high-level version. Now let's actually answer the question every curious developer eventually asks: <em>if full optimization produces faster code, why doesn't the JIT just always do that?</em></p>
+    <p>The honest answer is that optimization itself isn't free — it costs CPU time to compute. And most methods in a typical program run only a handful of times, ever. Spending heavy optimization effort on a method that runs twice is pure waste; spending it on a method that runs ten million times is enormously profitable. The JIT's whole design is built around figuring out, automatically and cheaply, which methods fall into which category.</p>
+    <p><strong>In this lesson, you'll go deep on exactly how tiered compilation makes that decision, what Dynamic PGO adds on top of it, and why this design is the right trade-off for the vast majority of real applications.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>JIT (Just-In-Time) compilation</strong> is the CLR translating IL into native machine code, one method at a time, at the moment each method is first actually called — not before. "Tiered" JIT means the runtime doesn't produce just one version of that native code; it can produce a quick, rough version first, and later replace it with a slower-to-produce, faster-to-run version, but only for methods that prove worth the extra investment.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Modern .NET's default JIT strategy has two tiers, on by default since .NET Core 3.0:</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>⚡ Tier 0 — QuickJit</h4>
+            <ul>
+                <li>Minimal optimization — no inlining of most calls, simpler register allocation</li>
+                <li>Produced very quickly, minimizing time-to-first-execution</li>
+                <li>Instrumented with a call counter (and, since .NET 8, lightweight profiling probes for Dynamic PGO)</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🚀 Tier 1 — Fully Optimized</h4>
+            <ul>
+                <li>Aggressive inlining, better register allocation, loop optimizations</li>
+                <li>Slower to produce — but only paid once, for methods that earn it</li>
+                <li>Since .NET 8: guided by real profiling data via <strong>Dynamic PGO</strong></li>
+            </ul>
+        </div>
+    </div>
+
+    <p>The promotion from Tier 0 to Tier 1 happens automatically, on a background thread, once a method's observed call count crosses an internal threshold. This is a runtime implementation detail — the exact number isn't a documented, stable contract — but conceptually: a method called once stays at Tier 0 forever; a method called in a tight loop millions of times gets promoted almost immediately.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — a real tension, not a false one</h3>
+    <p>Picture the two extremes a JIT design could pick:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Always fully optimize, on first call.</strong> Every method — including the ones called once during startup and never again — pays the full cost of aggressive optimization before it can run at all. For a large application (think: a big ASP.NET Core service with thousands of methods touched during startup), this can add real, measurable seconds to how long it takes to handle the very first request.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Never optimize — always produce the fastest-to-generate code.</strong> Startup is snappy, but a hot loop that runs for the next six hours of the process's life never gets the benefit of inlining, better register allocation, or loop optimizations — leaving real throughput on the table for the entire remaining lifetime of the process.</li>
+    </ul>
+    <p>Neither extreme is right for a typical long-running server application, which wants <em>both</em> fast startup <em>and</em> excellent sustained throughput.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — pay for optimization only where it's earned</h3>
+    <p>Tiered compilation resolves the tension by not committing to either extreme up front. Every method gets the cheap version first, so nothing blocks startup. Only methods that actually run often enough to matter get the expensive treatment — and by the time that happens, the runtime has already observed real behavior, which it can use to make even smarter decisions than a purely static, ahead-of-time compiler ever could.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">A METHOD'S LIFE THROUGH THE TIERS</div>
+        <div class="flow-step">
+            <div class="step-label">METHOD IS FIRST CALLED</div>
+            <ul><li>No native code exists yet — the CLR routes the call to the JIT</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">TIER 0 (QuickJit) COMPILATION</div>
+            <ul><li>Fast to produce, minimally optimized, instrumented with a call counter</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">METHOD RUNS AT TIER 0 — CALL COUNT ACCUMULATES</div>
+            <ul><li>Most methods in a typical app: this is where they live and die</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">THRESHOLD CROSSED? → QUEUED FOR TIER 1 (background thread)</div>
+            <ul><li>Since .NET 8, Dynamic PGO instrumentation data collected at Tier 0 feeds this recompilation</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">TIER 1 NATIVE CODE INSTALLED — FUTURE CALLS USE IT</div>
+            <ul><li>Fully optimized, profile-guided; no further recompilation for this method (barring rare re-JIT scenarios)</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 1 — First call triggers Tier 0</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">decimal CalculateDiscount(decimal price, bool isMember)
+    => isMember ? price * 0.9m : price;</code></pre>
+    <p>The first time <code>CalculateDiscount</code> is called, the JIT produces Tier 0 code for it — quickly, without spending effort deciding whether to inline the multiplication or how cleverly to allocate CPU registers. The method runs correctly, just not maximally fast yet.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 2 — Call count accumulates</h4>
+    <p>If this method sits behind a checkout endpoint hit thousands of times per minute, its call count climbs quickly. The CLR is counting invocations for exactly this purpose — not for any diagnostic or logging reason.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 3 — Threshold crossed → background recompilation</h4>
+    <p>Once the call count crosses the internal threshold, the runtime schedules Tier 1 recompilation of <code>CalculateDiscount</code> on a background thread. Your checkout requests keep being served by the existing Tier 0 code while this happens — there's no pause, no blocking, nothing your code observes directly.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 4 — Dynamic PGO uses real observed behavior</h4>
+    <p>Starting in .NET 8, Dynamic Profile-Guided Optimization goes a step further: while a method runs at Tier 0, the JIT can instrument it lightly to record real facts about its execution — for example, which side of a branch is actually taken most of the time, or which concrete type actually flows through a call site that looks polymorphic in the IL. When Tier 1 compilation runs, it uses this real data to make better decisions than a purely static analysis of the IL could — for instance, ordering branches so the common case needs no jump at all, or specializing a virtual call site for the one type that's actually ever seen in practice (with a fallback still in place for the rare case it's wrong).</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Step 5 — Tier 1 code takes over silently</h4>
+    <p>Once Tier 1 compilation finishes, the CLR swaps the method's entry point to point at the new native code. Calls already "in flight" using the old code finish normally; new calls from that point forward use the optimized version. From your C# code's perspective, absolutely nothing changed — the method just quietly got faster.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>You can see the effect of tiering, indirectly, through timing — though this is illustrative, not a rigorous benchmark:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">static long SumOfSquares(int n)
+{
+    long total = 0;
+    for (int i = 0; i < n; i++)
+        total += (long)i * i;
+    return total;
+}
+
+// First call: includes Tier 0 JIT compile time + Tier 0 execution
+var sw = Stopwatch.StartNew();
+SumOfSquares(50_000_000);
+Console.WriteLine($"First call: {sw.ElapsedMilliseconds} ms");
+
+// Later calls, after enough iterations to trigger Tier 1 promotion,
+// may run measurably faster per call — same method, same IL, faster native code
+sw.Restart();
+SumOfSquares(50_000_000);
+Console.WriteLine($"Later call: {sw.ElapsedMilliseconds} ms");</code></pre>
+    <p><strong>What this demonstrates:</strong> the first call's time includes both JIT compilation overhead and execution at the less-optimized Tier 0. A later call — assuming enough prior calls occurred to trigger promotion — runs against genuinely different, more optimized native code, even though you didn't change a single line of C#. This is exactly why proper benchmarking tools like BenchmarkDotNet always include a warm-up phase before measuring.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Two deployment shapes illustrate why this trade-off is tuned automatically rather than being a single fixed choice:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>A long-running order-processing API</strong> — deployed once, running for days or weeks, handling millions of requests. Tiered JIT is close to ideal here: startup is fast, and the handful of genuinely hot methods (JSON deserialization, the order-total calculation, a frequently-hit repository method) reach full Tier 1 optimization, with Dynamic PGO further tuning them based on this specific deployment's actual traffic patterns.</li>
+        <li style="margin-bottom:0.4rem;"><strong>A short-lived Azure Function invoked to resize an uploaded image</strong> — the process might handle a single request and then be recycled. Here, most methods never accumulate enough calls to reach Tier 1 at all — the whole invocation runs on Tier 0 code. This is precisely the scenario where teams evaluate ReadyToRun (to skip Tier 0 JIT compile time by shipping pre-JITted code) since Tier 1's benefits are never realized in such a short-lived process anyway.</li>
+    </ul>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🎻</span> Sight-reading vs. a rehearsed performance</div>
+        <p>Imagine an orchestra handed a brand-new piece of music five minutes before curtain. For most passages — played once, briefly, in the background — the musicians simply <strong>sight-read</strong> them: play competently, on the first pass, with no rehearsal (that's Tier 0). The audience doesn't notice, because these passages don't repeat and don't carry the piece.</p>
+        <p>But if the conductor notices one particular passage is going to be repeated as the piece's central, recurring theme — played over and over throughout the performance — that passage gets pulled aside for real <strong>rehearsal</strong>: refined timing, better dynamics, tighter coordination (that's Tier 1). The investment is worth it precisely because that passage will be heard many times.</p>
+        <p>Dynamic PGO is like the conductor listening carefully during those first sight-read passes and using what was actually heard — which instruments tend to come in early, where the tempo naturally wants to shift — to shape exactly how the rehearsal is run, rather than rehearsing blindly from the sheet music alone.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">TIERING MECHANICS</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. CALL COUNTING IS BUILT INTO TIER 0 CODE ITSELF</div>
+            <ul>
+                <li>Tier 0-compiled methods contain a small amount of extra native code that increments an internal counter on every call.</li>
+                <li>This counting has a real, small runtime cost — one more reason Tier 0 isn't "free," and one more reason methods that never get called often simply aren't worth promoting.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">2. RECOMPILATION HAPPENS ON A DEDICATED BACKGROUND THREAD</div>
+            <ul>
+                <li>Tier 1 compilation for a promoted method runs concurrently with your application's normal execution — it is not on the critical path of any request or call that triggered the promotion.</li>
+                <li>Once ready, the method's entry point is atomically updated (patched) to redirect future calls to the new code.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">3. SOME METHODS SKIP TIERING ENTIRELY</div>
+            <ul>
+                <li>Very small, trivial methods, and certain methods the JIT determines aren't good candidates for tiering, may be compiled directly at a single, optimized level.</li>
+                <li>Methods containing loops can also be optimized more eagerly even at lower tiers in some cases, since a long-running loop can itself accumulate enough "work" to justify it — the exact heuristics are internal, tuned implementation details of the runtime.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">4. DYNAMIC PGO — INSTRUMENTATION, THEN SPECIALIZATION</div>
+            <ul>
+                <li>While at Tier 0, an instrumented variant can record lightweight statistics: branch outcomes, and which concrete types actually appear at call sites that are virtual or interface calls in the IL.</li>
+                <li>Tier 1 compilation reads this data to make choices a purely static compiler cannot — e.g., speculatively devirtualizing a call site because, in practice, only one implementing type has ever shown up, while still keeping a correct fallback path for the rare case another type appears.</li>
+                <li>This is enabled by default starting in .NET 8; it's a refinement of tiering, not a separate mechanism.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Tier 0 means unoptimized garbage code"</h3>
+    <p>Tier 0 code is <em>less</em> optimized than Tier 1, not unoptimized in any absolute sense — it's still correct, still reasonably efficient native machine code, just without the more expensive optimization passes (aggressive inlining, advanced register allocation). For the majority of methods in a typical application — called a handful of times each — Tier 0 code is perfectly adequate and its cost is essentially invisible.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Dynamic PGO is a separate feature you have to turn on"</h3>
+    <p>Dynamic PGO is enabled by default in modern .NET (as of .NET 8) — it's not a separate opt-in optimization mode you configure, but a refinement layered onto the existing tiering pipeline. It's worth knowing it exists mainly so you understand <em>why</em> Tier 1 code can sometimes make surprisingly smart decisions that a plain "recompile with -O3" style optimizer never could — because it's using real, observed runtime behavior, not just static analysis of the IL.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "This is basically the same thing as ReadyToRun"</h3>
+    <p>Tiered JIT compilation happens live, at run time, on the machine actually running the app, and it's always adapting based on real observed call counts. ReadyToRun, by contrast, bakes in native code <em>ahead of time</em>, at publish time, before the app has ever run against real traffic — it's a way to skip early Tier-0-equivalent JIT work at startup, not a replacement for the tiering system, which can (and does) still promote hot R2R methods to a fully optimized Tier 1 later, informed by Dynamic PGO.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Benchmarking without a warm-up phase</h4>
+    <p>❌ Writing a quick <code>Stopwatch</code>-based timing loop and calling the target method only once or twice, then drawing performance conclusions.</p>
+    <p>✅ Call the method enough times to reach steady state (or use BenchmarkDotNet, which handles this correctly), so you're measuring Tier 1 performance — the number that will actually matter once your app has been running for more than a few seconds.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming tiering is something you need to manually configure per method</h4>
+    <p>❌ Hunting for a C# attribute to force a specific method to "skip straight to Tier 1" as routine practice, on the assumption that faster is always better regardless of the method's actual call frequency.</p>
+    <p>✅ Trust the default heuristics for the overwhelming majority of code — they're tuned against real-world workloads. Advanced knobs for controlling tiering exist for narrow, measured scenarios, not as a first response to a perceived performance problem.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Confusing "startup is slow" with "my algorithm is slow"</h4>
+    <p>❌ Profiling a slow startup, seeing time attributed to JIT compilation across hundreds of methods, and concluding your algorithms are inefficient.</p>
+    <p>✅ Distinguish JIT warm-up cost (compilation time, paid once per method per process) from algorithmic cost (execution time, paid every call). They require completely different fixes — reducing startup-path code for the former, better algorithms or data structures for the latter.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does This Matter for My Code?</h2>
+    <p>Tiered JIT compilation is on by default and self-tuning — there's no "should I use this" decision most teams ever need to make. Where this knowledge pays off is diagnosis and expectation-setting:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">You now know why a load test's first minute of results often looks worse than its later, steady-state results — and that this is expected tiering behavior, not necessarily a red flag.</li>
+        <li style="margin-bottom:0.4rem;">You know to warm up code paths before measuring them, and you understand exactly what a benchmarking tool's "warm-up" phase is actually doing under the hood.</li>
+        <li style="margin-bottom:0.4rem;">You can reason clearly about when a short-lived process (a CLI tool, a scale-to-zero function) might not benefit much from Tier 1 at all — informing a later, deliberate decision about ReadyToRun or NativeAOT rather than a guess.</li>
+        <li style="margin-bottom:0.4rem;">You understand why the same C# code can legitimately run at different speeds at different points in a process's lifetime, without anything in your code changing.</li>
+    </ul>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Don't try to outsmart the tiering system for typical application code — it already knows more about your program's real call patterns than a static analysis (or a guess) ever could. Reach for advanced JIT-tuning knobs only after profiling has identified a specific, measured problem tiering isn't solving well on its own.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Tier 0</strong> = "get it running now" — fast to compile, good enough for most methods.<br />
+        <strong>Tier 1</strong> = "make the hot ones fast" — slow to compile, but only paid for methods that prove they're worth it.<br />
+        <strong>Dynamic PGO</strong> = "use what actually happened" — Tier 1 gets smarter using real data collected while running at Tier 0.<br /><br />
+        <strong>Remember:</strong> the JIT is placing a bet on every method — "will this run often enough to justify optimizing it?" — and it keeps re-evaluating that bet live, based on real call counts, instead of guessing once and being stuck with the guess.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">.NET JITs IL to native code <strong>lazily, per method</strong>, at first call — full ahead-of-time compilation isn't the default because it would slow every startup down for optimization most methods never repay.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Tiered compilation</strong> resolves the startup-vs-throughput trade-off: Tier 0 (QuickJit) gets code running fast; Tier 1 fully optimizes only methods proven hot by a real call count.</li>
+            <li style="margin-bottom:0.4rem;">Promotion happens automatically, on a background thread, with no blocking and no code changes required from you.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Dynamic PGO</strong> (default since .NET 8) makes Tier 1 recompilation smarter by using real profiling data gathered during Tier 0 execution, rather than static analysis alone.</li>
+            <li style="margin-bottom:0.4rem;">This is why fair benchmarking requires warm-up, why cold starts and steady-state throughput are genuinely different numbers, and why short-lived processes are the scenario where ReadyToRun or NativeAOT become worth evaluating.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've gone deep on tiered JIT compilation and Dynamic PGO. Let's confirm the mechanics are clear.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why doesn't the JIT simply fully optimize every method the very first time it's called?</p>
+        <ul class="options">
+            <li>A) Full optimization is technically impossible to perform at run time — it can only be done ahead of time by Roslyn</li>
+            <li>B) Full optimization is expensive to compute, and most methods run too few times to make that cost worthwhile — so paying it upfront for every method would slow down startup for little benefit</li>
+            <li>C) The CLR does not have permission to optimize IL that Roslyn has already compiled</li>
+            <li>D) Fully optimized code produces incorrect results for generic methods</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the core trade-off the whole lesson is built around — optimization has a real computational cost, and most methods are called too rarely to justify paying it. Tiering defers that cost until a method proves, through actual call volume, that it's worth optimizing.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The JIT performs real optimization at run time constantly — that's exactly what Tier 1 compilation is.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such permission barrier; the JIT is free to optimize IL as aggressively as it chooses — the constraint is purely about the cost/benefit of doing so.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Optimized code is just as correct as unoptimized code for generics or any other construct — correctness isn't a factor in the tiering decision at all.</p>
+                <p><strong>Reinforcement:</strong> Tiering exists purely to manage the trade-off between compilation cost and execution benefit — not because full optimization is impossible or unsafe.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A method is called exactly 3 times over the entire lifetime of a process. What tier does it most likely run at throughout that lifetime?</p>
+        <ul class="options">
+            <li>A) Tier 1, because the JIT always promotes methods after their third call</li>
+            <li>B) Tier 0 for all three calls, because three calls is very unlikely to cross the threshold the runtime uses for Tier 1 promotion</li>
+            <li>C) It cannot be JIT-compiled at all, since it runs too few times to justify compilation</li>
+            <li>D) NativeAOT compilation, since Tier 0 only applies to methods called at least 10 times</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The promotion threshold is set high enough that a handful of calls typically won't trigger Tier 1 recompilation — the method simply runs its (very small number of) calls entirely on Tier 0 code, which is more than adequate for that usage pattern.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no fixed "third call" trigger — promotion depends on crossing an internal call-count threshold that's considerably higher than three for typical methods.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Every called method must be JIT-compiled at least once (to Tier 0) before it can execute at all — there's no minimum call count required just to compile.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> NativeAOT is an entirely separate, unrelated ahead-of-time compilation model, not a tier within the standard JIT pipeline, and Tier 0 has no fixed "at least 10 calls" rule.</p>
+                <p><strong>Reinforcement:</strong> The vast majority of methods in a typical application, like this one, live and die entirely at Tier 0 — and that's by design, not a missed optimization opportunity.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> What does Dynamic PGO add on top of standard tiered compilation?</p>
+        <ul class="options">
+            <li>A) It skips Tier 0 entirely and compiles every method directly to Tier 1</li>
+            <li>B) It uses real data observed during a method's Tier 0 execution — like which branches are actually taken — to make smarter decisions when compiling that method's Tier 1 version</li>
+            <li>C) It replaces the garbage collector with a more efficient allocator</li>
+            <li>D) It allows developers to manually mark methods with a C# attribute that forces immediate full optimization</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Dynamic PGO instruments Tier 0 execution to gather real profiling data — actual branch outcomes, actual types seen at polymorphic call sites — and feeds that data into the Tier 1 recompilation, enabling optimizations a purely static analysis of the IL couldn't discover on its own.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Dynamic PGO relies on Tier 0 execution to gather its profiling data in the first place — it doesn't skip Tier 0; it depends on it.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Dynamic PGO is about code generation optimization, entirely separate from the garbage collector and memory allocation, which are covered in the next lessons.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Dynamic PGO is an automatic, default runtime behavior, not a developer-facing attribute you apply per method.</p>
+                <p><strong>Reinforcement:</strong> Dynamic PGO is best understood as "tiering, made smarter by real observation" — it doesn't change the two-tier structure, it improves the quality of the Tier 1 recompilation using genuine runtime evidence.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why does BenchmarkDotNet (and good benchmarking practice generally) insist on a "warm-up" phase before recording measurements?</p>
+        <ul class="options">
+            <li>A) Warm-up allows the CPU's fan to reach an optimal operating temperature</li>
+            <li>B) Without warm-up, early measurements would include Tier 0 JIT compilation overhead and less-optimized Tier 0 execution, giving a misleading picture of steady-state performance</li>
+            <li>C) Warm-up is only necessary when using unsafe code or pointers</li>
+            <li>D) Warm-up forces the garbage collector to run once before measurements begin</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The first calls to any method include one-time JIT compilation cost and run against less-optimized Tier 0 code. Warming up lets the method reach Tier 1 (if it's going to be called enough to trigger promotion) before real measurements are recorded, producing numbers representative of how the code will actually perform in steady-state production use.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is a real-world engineering concern for physical hardware, unrelated to the CLR's tiered JIT compilation process this lesson covers.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Tiered compilation and its warm-up implications apply to ordinary managed code broadly — unsafe code and pointers aren't a special case here.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Warm-up in benchmarking tools is about reaching steady-state JIT tiering, not about triggering garbage collection specifically, though a well-designed benchmark harness may separately account for GC effects too.</p>
+                <p><strong>Reinforcement:</strong> This directly connects back to the "Common Mistakes" section — timing a method's first call conflates one-time JIT costs with the method's true, repeatable execution cost.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A team runs a .NET function that processes a single image and then the container is torn down within a couple of seconds. They notice this workload spends a disproportionate share of its time in JIT compilation rather than in the actual image-processing logic. What does this observation most directly suggest?</p>
+        <ul class="options">
+            <li>A) Their image-processing algorithm has a bug causing infinite recompilation</li>
+            <li>B) The process is too short-lived for methods to reach Tier 1, and it's re-paying Tier 0 JIT compilation cost on every fresh cold start — a scenario where pre-compiled options like ReadyToRun are worth evaluating</li>
+            <li>C) Dynamic PGO is disabled by default and must be manually enabled for short workloads</li>
+            <li>D) The garbage collector is running too frequently and blocking JIT compilation</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A process this short-lived never accumulates enough calls for Tier 1 promotion to matter, yet it still fully pays the Tier 0 JIT compilation cost on every fresh start — this is precisely the pattern that motivates evaluating ReadyToRun or NativeAOT, as discussed in the real-world example.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> JIT compilation happens once per method per process by design — there's no "infinite recompilation" bug mechanism; a disproportionate JIT time share here is an expected consequence of a short process lifetime, not a defect.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Dynamic PGO is enabled by default in modern .NET; nothing about a short-lived workload disables it, though such a workload simply won't live long enough to benefit much from the Tier 1 recompilation it feeds into.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The garbage collector and the JIT are independent subsystems — GC activity doesn't block or cause JIT compilation, and this scenario's description points squarely at cold-start JIT overhead, not GC pauses.</p>
+                <p><strong>Reinforcement:</strong> This is the exact real-world pattern from earlier in the lesson — short-lived processes pay JIT costs repeatedly without ever recovering the investment through sustained Tier 1 execution, which is the concrete, measurable reason ahead-of-time alternatives exist.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand exactly how and why the JIT decides which methods deserve full optimization — and why that decision is made automatically, based on real behavior.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
