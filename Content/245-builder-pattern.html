@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>245 - Builder Pattern · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        You already use a real Builder every time you write <code>WebApplication.CreateBuilder(args)</code> — this lesson gives that shape its name.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Imagine a <code>Report</code> class with a title, an author, an optional date range, an optional list of chart types, an optional footer note, and a flag for whether to include raw data tables. A constructor covering every combination looks like <code>new Report("Q3 Sales", "J. Smith", start, end, chartTypes, footer, true)</code> — seven positional arguments, most of them optional, and utterly unreadable at the call site. Add an eighth optional field next quarter, and every single call site needs to change, or you write a second, third, and fourth overload just to cover the common combinations. This is the classic <strong>telescoping constructor problem</strong>: constructors that grow longer and more overloaded every time a new optional piece of configuration is needed.</p>
+    <p>The <strong>Builder Pattern</strong> — a Creational pattern, alongside Factory (240) — solves this by separating <em>how an object gets constructed, step by step</em> from <em>what the finished object looks like</em>. Instead of one enormous constructor call, you set pieces one at a time, in readable, named steps, and ask for the finished object only once every piece is in place.</p>
+    <p><strong>In this lesson, you'll see the telescoping constructor problem Builder was designed to solve — and, just as importantly, you'll see honestly that modern C# already solves a large part of that same problem without a Builder at all. Then you'll learn precisely when a real Builder still earns its keep, and build one from scratch.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>Builder</strong> is a separate object whose entire job is assembling another object piece by piece, through a sequence of clearly named steps, and handing back the finished result only when you explicitly ask for it — usually by calling a final <code>.Build()</code> method.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>The GoF definition: <em>separate the construction of a complex object from its representation, so that the same construction process can create different representations.</em> In practice, that means the object being built (often called the "product") doesn't know how it's being assembled — the Builder owns the assembly sequence, can validate or apply logic at each step, and only produces the finished, ready-to-use object at the very end.</p>
+
+    <div class="concept-box">
+        <div class="concept-title">🔑 This is a Creational pattern — like Factory, but solving a different shaped problem</div>
+        <p>Factory (240) answers "which concrete class should get instantiated?" Builder answers a completely different question: "this <em>one</em> object is complicated enough that constructing it needs multiple, separate steps — how do I make that process clean instead of one enormous constructor call?" Both are Creational — both are about controlling object construction — but Factory centralizes a <em>decision</em>, while Builder centralizes a <em>process</em>.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist? — the Telescoping Constructor Problem</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ THE TELESCOPING CONSTRUCTOR PROBLEM — one overload per "reasonable" combination
+public class Report
+{
+    public Report(string title, string author) { /* ... */ }
+    public Report(string title, string author, DateTime start, DateTime end) { /* ... */ }
+    public Report(string title, string author, DateTime start, DateTime end, bool includeCharts) { /* ... */ }
+    public Report(string title, string author, DateTime start, DateTime end, bool includeCharts, string footer) { /* ... */ }
+    // ...and every NEW optional field means another overload, or editing an existing one
+    // and hunting down every call site that used it.
+}
+
+// At the call site — which bool is which? Which overload is even being called here?
+var report = new Report("Q3 Sales", "J. Smith", start, end, true, "Confidential");</code></pre>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>An object has many optional pieces, and every reasonable combination of them "deserves" its own constructor overload — leading to unreadable call sites (what does positional argument #5 mean again?) and a combinatorial explosion of overloads as more optional fields get added</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>A way to set only the pieces that matter, by name, in any order, with the object only actually assembled once every needed piece is set — readable at the call site, and resilient to new optional fields being added later</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>Historically: the Builder pattern — a separate object accumulating configuration through named methods, producing the final object via one explicit <code>.Build()</code> call</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — an Honest Update: Modern C# Already Solves Part of This</h2>
+    <p>Here's the important, honest twist this lesson has to address directly: in 1994, when the GoF catalog was written, C# didn't exist, and even early C# had no clean way to set several optional properties readably in one expression. That's completely changed. <strong>Object initializers</strong>, <strong>required members</strong> (Foundations lesson 057), and <strong>primary constructors</strong> (Foundations lesson 058) together solve the "object has many optional properties" problem directly, with zero extra classes:</p>
+    <div class="table-wrap">
+        <table class="comparison-table">
+            <tr><th>Tool</th><th>What it solves</th><th>Lesson</th></tr>
+            <tr><td>Object initializer syntax</td><td>Set only the properties you care about, by name, in any order — no positional confusion</td><td>Foundations, early OOP lessons</td></tr>
+            <tr><td><code>required</code> members</td><td>The compiler enforces that specific properties MUST be set, even inside a flexible object initializer</td><td>057</td></tr>
+            <tr><td>Primary constructors</td><td>A concise way to require a few genuinely mandatory values up front, while everything else stays initializer-driven</td><td>058</td></tr>
+        </table>
+    </div>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ✅ MODERN C# — no Builder class needed for "many optional properties"
+public class Report
+{
+    public required string Title { get; init; }
+    public required string Author { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
+    public bool IncludeCharts { get; init; } = false;
+    public string? Footer { get; init; }
+}
+
+// Readable, named, order-independent, and the COMPILER enforces Title and Author:
+var report = new Report
+{
+    Title = "Q3 Sales",
+    Author = "J. Smith",
+    IncludeCharts = true,
+    Footer = "Confidential"
+};
+// var broken = new Report { Author = "J. Smith" }; // ❌ compile error — missing required 'Title'</code></pre>
+    <div class="callout">
+        <strong>💡 The honest conclusion:</strong> if the only problem you have is "this object has a lot of optional properties, and I want a readable, enforced way to set them," you do not need a Builder class in modern C#. Object initializers plus <code>required</code> plus primary constructors already solve that problem, with less code than a hand-written Builder, and no extra class to maintain. A real Builder earns its place for a genuinely <em>different</em> reason — covered next.
+    </div>
+
+    <!-- ====== WHEN A REAL BUILDER STILL EARNS ITS KEEP ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When a Real Builder Still Earns Its Keep</h2>
+    <p>Object initializers set properties on an object that already, technically, exists as a single expression. A real Builder is warranted when construction is genuinely a <em>process</em> — something that happens across multiple, distinct steps, not a single flat list of property values:</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Genuinely multi-step construction</h4>
+            <ul>
+                <li>Different pieces are added by different parts of the code, at different times, before the object is finally assembled</li>
+                <li>The order steps happen in, or which steps are called at all, can vary between different construction paths</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Progressive validation / business logic</h4>
+            <ul>
+                <li>Each step can validate or transform its input as it's added, rather than deferring all validation to one final check</li>
+                <li>Adding a piece can depend on, or interact with, pieces already added — logic an object initializer's flat property list can't express</li>
+            </ul>
+        </div>
+    </div>
+    <div class="concept-box">
+        <div class="concept-title">🔑 You've already used a real, built-in .NET Builder</div>
+        <p><code>WebApplicationBuilder</code> and <code>HostApplicationBuilder</code> (Intermediate lessons 124 and 238) are genuine, production Builder pattern implementations. <code>var builder = WebApplication.CreateBuilder(args);</code> creates the builder; <code>builder.Services.AddScoped&lt;...&gt;()</code> and <code>builder.Configuration.AddJsonFile(...)</code> are fluent step-by-step configuration calls, each one mutating the builder's internal state; and <code>var app = builder.Build();</code> is the exact same "finalize and produce the product" step every Builder ends with. This isn't a coincidence or a loose analogy — it is, structurally, the Builder pattern, built into the ASP.NET Core hosting model you've been using since the Intermediate book.</p>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Building a Fluent Builder, Step by Step</h2>
+    <div class="flow-container">
+        <div class="flow-title">CONSTRUCTING A FLUENT ReportBuilder</div>
+        <div class="flow-step">
+            <div class="step-label">1. DEFINE THE FINISHED "PRODUCT" — THE OBJECT BEING BUILT</div>
+            <ul><li><code>Report</code> — the finished, immutable object the builder ultimately hands back</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. WRITE THE BUILDER CLASS, HOLDING STATE AS IT ACCUMULATES</div>
+            <ul><li><code>ReportBuilder</code> — private, mutable fields collecting each piece as it's added</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. EACH STEP METHOD RETURNS <code>this</code>, ENABLING FLUENT CHAINING</div>
+            <ul><li><code>WithTitle(...)</code>, <code>WithAuthor(...)</code>, <code>AddChart(...)</code> — each one mutates internal state and returns the builder itself, so calls can be chained one after another</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. <code>.Build()</code> VALIDATES AND PRODUCES THE FINAL, IMMUTABLE OBJECT</div>
+            <ul><li>Only at this final step is the actual <code>Report</code> constructed — this is also the natural place to enforce "mandatory pieces were actually set" before handing back a usable object.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public sealed class ReportBuilder
+{
+    private string? _title;
+    private string? _author;
+    private readonly List&lt;string&gt; _sections = [];
+
+    public ReportBuilder WithTitle(string title)
+    {
+        _title = title;
+        return this;   // ← enables fluent chaining
+    }
+
+    public ReportBuilder WithAuthor(string author)
+    {
+        _author = author;
+        return this;
+    }
+
+    public ReportBuilder AddSection(string section)
+    {
+        _sections.Add(section);
+        return this;
+    }
+
+    public Report Build()
+    {
+        if (string.IsNullOrWhiteSpace(_title))
+            throw new InvalidOperationException("A report must have a title before it can be built.");
+        return new Report(_title, _author ?? "Unknown", _sections.AsReadOnly());
+    }
+}
+
+// ── Usage — a readable, step-by-step, fluent chain ──
+var report = new ReportBuilder()
+    .WithTitle("Q3 Sales")
+    .WithAuthor("J. Smith")
+    .AddSection("Revenue")
+    .AddSection("Regional Breakdown")
+    .Build();</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> Each fluent call returns the builder itself, so calls chain naturally. <code>Build()</code> is the single point where validation happens (a report needs a title) and where the actual, immutable <code>Report</code> gets constructed. Nothing about <code>ReportBuilder</code>'s shape would fit cleanly into a single object initializer, because sections accumulate through repeated calls to <code>AddSection</code> — a genuine multi-step process, not a flat list of properties.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — a QueryBuilder With Progressive Validation</h2>
+    <p>A query builder for a search feature is a case where each step genuinely needs to validate as it goes, and the final shape of the query depends on which steps were called at all:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public sealed record ProductQuery(string? Keyword, decimal? MinPrice, decimal? MaxPrice, string? Category, int PageSize);
+
+public sealed class ProductQueryBuilder
+{
+    private string? _keyword;
+    private decimal? _minPrice;
+    private decimal? _maxPrice;
+    private string? _category;
+    private int _pageSize = 20;
+
+    public ProductQueryBuilder WithKeyword(string keyword)
+    {
+        if (string.IsNullOrWhiteSpace(keyword))
+            throw new ArgumentException("Keyword cannot be blank.", nameof(keyword));
+        _keyword = keyword;
+        return this;
+    }
+
+    public ProductQueryBuilder WithPriceRange(decimal min, decimal max)
+    {
+        // ── Validation happens progressively, AS each piece is added — not deferred to the end ──
+        if (min &lt; 0 || max &lt; min)
+            throw new ArgumentException("Invalid price range.");
+        _minPrice = min;
+        _maxPrice = max;
+        return this;
+    }
+
+    public ProductQueryBuilder InCategory(string category)
+    {
+        _category = category;
+        return this;
+    }
+
+    public ProductQueryBuilder PageSize(int size)
+    {
+        if (size is < 1 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(size), "Page size must be between 1 and 100.");
+        _pageSize = size;
+        return this;
+    }
+
+    public ProductQuery Build() => new(_keyword, _minPrice, _maxPrice, _category, _pageSize);
+}
+
+// ── Usage — steps applied conditionally, based on which search filters the user actually chose ──
+var builder = new ProductQueryBuilder().PageSize(50);
+if (!string.IsNullOrEmpty(searchTerm)) builder.WithKeyword(searchTerm);
+if (selectedCategory is not null) builder.InCategory(selectedCategory);
+if (minPrice.HasValue && maxPrice.HasValue) builder.WithPriceRange(minPrice.Value, maxPrice.Value);
+var query = builder.Build();</code></pre>
+    <p>Notice what this buys you that an object initializer couldn't: <code>WithPriceRange</code> validates <code>min</code> and <code>max</code> <em>together, at the moment they're added</em> — a rule an object initializer's independent property assignments can't express. And the calling code conditionally invokes only the steps it needs, based on which filters the user actually selected — a genuinely step-based, branching construction process.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy — Building a Custom Sandwich, Not Filling Out a Form</h2>
+    <div class="concept-box">
+        <div class="concept-title">🥪 A sandwich shop's order line</div>
+        <p>Filling out a form with checkboxes for "extra cheese" and "no onions" is like an object initializer — you specify everything you want, all at once, in one flat submission. But a made-to-order sandwich shop works differently: you choose the bread first, and that choice affects what's offered next; you add ingredients one at a time, in a sequence, and the person behind the counter can catch a problem as it happens ("we're out of that cheese — want to pick something else before I add the rest?"). Only when you say "that's everything" does the sandwich actually get wrapped and handed to you.</p>
+        <p>A Builder is the sandwich line, not the checkbox form: a sequence of steps, each one able to depend on or validate against what came before, producing the finished result only when you explicitly finish the process. Reach for a Builder specifically when your object's construction genuinely resembles the sandwich line — not when it's really just a form with a lot of optional fields.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — the Mechanics That Make Fluent Builders Work</h2>
+    <div class="flow-container">
+        <div class="flow-title">DESIGN REASONING BEHIND THE FLUENT SHAPE</div>
+        <div class="flow-step">
+            <div class="step-label">1. RETURNING <code>this</code> IS WHAT MAKES CHAINING POSSIBLE — NOTHING MORE MAGICAL THAN THAT</div>
+            <ul><li>Every step method returns the same builder instance it mutated. That's the entire mechanism behind <code>.WithTitle(...).WithAuthor(...).Build()</code> reading as one continuous expression — no special C# syntax is involved, just an ordinary method return value.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE BUILDER IS MUTABLE; THE FINISHED PRODUCT USUALLY ISN'T</div>
+            <ul><li>It's a deliberate, common asymmetry: <code>ReportBuilder</code>'s private fields change with every step call, but <code>Report</code> itself — once <code>Build()</code> returns it — is typically immutable, often a <code>record</code>, with no way to mutate it after construction. The mutability is contained entirely inside the temporary builder; the final object stays safe to share and reason about.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. VALIDATION CAN HAPPEN AT TWO DIFFERENT POINTS, DELIBERATELY</div>
+            <ul><li><em>Per-step validation</em> (like <code>WithPriceRange</code> checking <code>min &lt; max</code> immediately) catches a problem the instant it's introduced. <em>Final validation</em> in <code>Build()</code> (like requiring a title) catches missing pieces only detectable once every step is done. A well-designed Builder uses both, deliberately, rather than deferring everything to the end.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Isn't an object initializer basically a Builder already?"</h3>
+    <p>No — and the distinction is exactly what this lesson is built around. An object initializer sets properties on an object in one single expression; there's no accumulated state between calls, no way for one property's value to be validated against another's as they're set, and no notion of "steps" happening in sequence at all — it's syntactic sugar over setting properties, not a process. A real Builder maintains its own mutable state across multiple, separate method calls, and can enforce relationships between pieces as they're added. If your "construction" genuinely fits into one flat expression, you don't have a Builder problem — you have an object-initializer-shaped problem, and 057/058 already solve it.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Builder vs. Factory — different questions entirely</h3>
+    <p>Factory (240) answers "which concrete class should be instantiated?" — a decision, usually made instantly, based on some input. Builder answers "how do I assemble this one, already-known type across several steps?" — a process, potentially spanning many method calls over time. You can genuinely combine them — a Factory could internally use a Builder to assemble the object it returns — but they solve different-shaped problems and shouldn't be confused for the same thing just because both are Creational.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Writing a Builder for an object that's really just "several optional properties"</h4>
+    <p>❌ Hand-rolling a <code>PersonBuilder</code> with <code>.WithName(...)</code>, <code>.WithAge(...)</code>, <code>.WithEmail(...)</code> for a flat data object with no cross-field validation and no real construction sequence — pure ceremony around what an object initializer already does more simply. ✅ Reach for object initializers plus <code>required</code> (057) first; only introduce a Builder once genuine multi-step logic or progressive validation is actually present.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forgetting to validate in <code>Build()</code>, letting an incomplete object escape</h4>
+    <p>❌ A <code>ReportBuilder.Build()</code> that happily returns a <code>Report</code> with no title set, silently, because no check was ever added — the whole point of centralizing construction is lost if the final step doesn't actually enforce the invariants it's supposed to guard. ✅ Treat <code>Build()</code> as the one place that must validate every mandatory piece is present before handing back a usable object — exactly as shown in this lesson's examples.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Making the finished product itself mutable, defeating the point of a controlled build process</h4>
+    <p>❌ Having <code>Build()</code> return an object with public setters, so code elsewhere can silently mutate it after construction, bypassing every validation rule the Builder carefully enforced. ✅ Make the finished product immutable — a <code>record</code> with <code>init</code>-only properties, or a class with a private constructor only the Builder can call — so the guarantees established during building actually hold for the object's entire lifetime.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Construction genuinely happens across multiple, distinct steps — possibly conditionally, possibly from different parts of the code, before the object is finally assembled.</li>
+        <li style="margin-bottom:0.4rem;">Validation or business logic needs to run <em>progressively</em>, as pieces are added — not just once, at the very end.</li>
+        <li style="margin-bottom:0.4rem;">You're designing a fluent, discoverable configuration API for other developers — like <code>WebApplicationBuilder</code> itself — where chained, named method calls read more clearly than a giant constructor or options object.</li>
+    </ul>
+    <p>And when it's overkill: if the "problem" is really just "this object has several optional properties," reach for object initializers, <code>required</code> members (057), and primary constructors (058) first — they solve exactly that problem, with less code, no extra class, and no risk of an incomplete object escaping through a forgotten step. A Builder is warranted by genuine process, not merely by property count.</p>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> if you can express the whole thing as one <code>new Report { ... }</code> expression with no cross-field logic, you don't need a Builder. If assembly genuinely spans multiple steps, conditionally, with validation along the way, a Builder is exactly the right tool — and .NET's own <code>WebApplicationBuilder</code> is proof it scales to real, production use.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Builder</strong> = a separate object that assembles another object step by step, and hands it back only when told to.<br />
+        <strong>Object initializer + required + primary constructors</strong> = the modern C# answer to "many optional properties" — no Builder needed.<br />
+        <strong>A real Builder</strong> = genuine multi-step construction, progressive validation, or a fluent configuration API.<br /><br />
+        <strong>Remember:</strong><br />
+        · <code>WebApplicationBuilder</code>/<code>HostApplicationBuilder</code> is a real, production Builder you've already used since Intermediate 124/238.<br />
+        · Factory decides WHICH class; Builder decides HOW to assemble ONE class, across steps.<br />
+        · Fluent methods return <code>this</code>; the finished product should be immutable.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Builder solves the classic <strong>telescoping constructor problem</strong> — separating an object's step-by-step construction from its final representation.</li>
+            <li style="margin-bottom:0.4rem;">Modern C# — object initializers, <code>required</code> members (057), primary constructors (058) — already solves "many optional properties," without needing a Builder class at all.</li>
+            <li style="margin-bottom:0.4rem;">A real Builder earns its place when construction genuinely spans multiple steps, needs progressive validation, or forms a fluent configuration API — like <code>WebApplicationBuilder</code>, a real, production .NET Builder you've already used.</li>
+            <li style="margin-bottom:0.4rem;">Fluent step methods return <code>this</code> to enable chaining; <code>.Build()</code> is where final validation happens and the immutable, finished product gets constructed.</li>
+            <li style="margin-bottom:0.4rem;">Builder and Factory are both Creational, but answer different questions — Builder is about process (how to assemble one type), Factory is about decision (which type to construct).</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen when modern C# already solves the problem Builder was invented for, and when a real Builder still earns its keep. Let's confirm you can tell the two situations apart.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A <code>Customer</code> class has six optional properties, no cross-field validation, and is always fully known at the moment it's created. Which approach does this lesson recommend?</p>
+        <ul class="options">
+            <li>A) A hand-written <code>CustomerBuilder</code> with a fluent method per property</li>
+            <li>B) An object initializer, using <code>required</code> on any mandatory properties</li>
+            <li>C) Six separate constructor overloads, one per common combination</li>
+            <li>D) A Factory Method that overrides which property gets set</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> With no cross-field validation and no multi-step process, this is exactly the "many optional properties" problem that object initializers plus <code>required</code> already solve — with less code and no extra class.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A Builder is warranted by genuine process or progressive validation, neither of which is present here — this would be Builder ceremony around a problem that doesn't need it.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is exactly the telescoping constructor problem the lesson opens with — the source of unreadable, hard-to-maintain call sites.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Factory Method addresses which concrete type gets constructed via inheritance — an unrelated problem to setting properties on one known type.</p>
+                <p><strong>Reinforcement:</strong> "Many optional properties, no process, no cross-field logic" is an object-initializer-shaped problem, not a Builder-shaped one.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why is <code>WebApplicationBuilder</code> described in this lesson as a genuine, real-world implementation of the Builder pattern?</p>
+        <ul class="options">
+            <li>A) Because "Builder" appears literally in its class name, and that alone qualifies it</li>
+            <li>B) Because it accumulates configuration through fluent, chained calls like <code>builder.Services.AddScoped&lt;...&gt;()</code>, and only produces the finished, usable application object via one explicit <code>.Build()</code> call — the same shape as any hand-written Builder</li>
+            <li>C) Because it uses a <code>switch</code> statement internally to decide which type to construct</li>
+            <li>D) Because it inherits from a base class named <code>Builder&lt;T&gt;</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The defining structural trait of a Builder — accumulating state through step-by-step calls, then producing the finished product through one explicit finalizing call — is exactly what <code>builder.Services.AddScoped(...)</code> followed by <code>builder.Build()</code> does.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A class's name alone doesn't establish a pattern — the lesson identifies it by its actual structural shape, not by naming convention.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A <code>switch</code> deciding which concrete type to construct describes Factory (240), not Builder — this lesson is specifically about assembling ONE known type across steps.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Inheriting from a specific base class isn't required by, or even typical of, the Builder pattern — the pattern is about structural behavior, not a shared base type.</p>
+                <p><strong>Reinforcement:</strong> A pattern is identified by its structural shape and behavior, not by a class name or inheritance relationship.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> In the <code>ProductQueryBuilder</code> example, why does <code>WithPriceRange(min, max)</code> validate <code>min &lt; max</code> immediately, inside the step method itself, rather than deferring that check to <code>Build()</code>?</p>
+        <ul class="options">
+            <li>A) Because C# requires all validation to happen inside individual methods, never in a finalizing method</li>
+            <li>B) Because this is a rule that only makes sense when both pieces (min and max) are supplied together, at the moment they're added — exactly the kind of progressive, cross-field validation an object initializer can't express</li>
+            <li>C) Because <code>Build()</code> cannot throw exceptions in C#</li>
+            <li>D) There's no real reason — it could equally well be checked in <code>Build()</code> with no difference in behavior</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The rule "min must be less than max" only makes sense to check once both values are known together — checking it the instant they're both supplied catches the problem as early as possible, which is precisely the progressive-validation capability a flat object initializer doesn't have.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing in C# restricts where validation logic can live — this is a design choice about when validation is most useful, not a language constraint.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>Build()</code> methods throw exceptions constantly in real Builder implementations, including this lesson's own <code>ReportBuilder.Build()</code> example.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Catching the problem immediately, at the step where the bad data was introduced, gives more useful, immediate feedback than discovering it only after several more unrelated steps have already run.</p>
+                <p><strong>Reinforcement:</strong> Progressive, per-step validation is one of the genuine advantages a Builder offers over a single flat object initializer.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> What is the key difference between the Builder pattern and the Factory pattern (240), even though both are Creational?</p>
+        <ul class="options">
+            <li>A) There is no real difference — they are two names for the exact same pattern</li>
+            <li>B) Factory decides WHICH concrete class to instantiate; Builder assembles ONE already-known type across a multi-step process</li>
+            <li>C) Factory is only used in ASP.NET Core; Builder is only used in console applications</li>
+            <li>D) Builder is a Structural pattern, not a Creational one</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Factory centralizes a decision about which concrete type to construct; Builder centralizes the process of assembling a single, already-known type through multiple steps — genuinely different problems, even though both fall under the Creational category.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson explicitly distinguishes them by the shape of problem each one solves — treating them as identical loses that distinction entirely.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Neither pattern is tied to a specific application type — both are general object-oriented design shapes usable anywhere in C#.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Builder is explicitly a Creational pattern, alongside Factory — both concern object construction, just in different ways.</p>
+                <p><strong>Reinforcement:</strong> "Which type?" is Factory's question; "how do I assemble this one type, across steps?" is Builder's question.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly when modern C# already solves your construction problem, and when a real Builder — the same shape as <code>WebApplicationBuilder</code> itself — genuinely earns its place.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>250 - Hexagonal Architecture · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .hex-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.9rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem 1rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+        }
+
+        .hex-core {
+            width: 200px;
+            height: 200px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: #7C3AED;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 600;
+            padding: 1rem;
+        }
+
+        .hex-core .hex-sub {
+            display: block;
+            font-weight: 400;
+            font-size: 0.75rem;
+            margin-top: 0.3rem;
+            opacity: 0.9;
+        }
+
+        .hex-ports {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.6rem;
+        }
+
+        .hex-port {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px dashed var(--accent-purple, #8B5CF6);
+            border-radius: 6px;
+            padding: 0.4rem 0.7rem;
+            font-size: 0.8rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .hex-adapters {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.6rem;
+        }
+
+        .hex-adapter {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 6px;
+            padding: 0.4rem 0.7rem;
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Same rule as lesson 249, different picture: instead of circles, a hexagon with sockets — Ports — and the plugs that fit them — Adapters.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Lesson 249 drew Clean Architecture as concentric circles: Domain at the center, Infrastructure and Presentation further out, dependencies only ever pointing inward. A few years before that model became popular, Alistair Cockburn described what turns out to be essentially the same underlying idea, using a completely different picture: a hexagon, with sockets cut into its sides. He called the sockets <strong>Ports</strong>, and called whatever plugs into them <strong>Adapters</strong>.</p>
+    <p><strong>Hexagonal Architecture</strong> — also called <strong>Ports and Adapters</strong> — isn't a rival to Clean Architecture, and it isn't a new rule to learn from scratch. It's the same goal — isolate your core business logic from infrastructure detail, keep dependencies pointing inward — described through a different, equally influential vocabulary. Once you know one, recognizing the other is mostly a matter of translating terms.</p>
+    <p><strong>In this lesson, you'll learn the Ports and Adapters model precisely, see exactly how it connects to the Adapter Pattern (243) you already learned — because Adapter isn't just <em>similar</em> to this architecture's mechanism, it literally <em>is</em> the mechanism — and build a small, concrete slice showing a port and two interchangeable adapters implementing it.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Hexagonal Architecture</strong> puts your application's core logic in the center of a hexagon. The hexagon's sides have sockets cut into them — <strong>Ports</strong> — each one describing something the core needs from the outside world, or offers to it. Outside the hexagon, <strong>Adapters</strong> plug into those sockets, one per specific technology: a REST API adapter, a database adapter, a message-queue adapter. The core never touches a specific technology directly — it only ever talks through a Port.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition — Ports and Adapters</h3>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🔌 Port</h4>
+            <ul>
+                <li>An interface, owned by the application core, describing a capability the core needs (a <strong>driven</strong> or "outbound" port, like persistence) or offers (a <strong>driving</strong> or "inbound" port, like a use-case entry point)</li>
+                <li>Defined entirely in terms the core cares about — never in terms of any specific technology</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🔧 Adapter</h4>
+            <ul>
+                <li>A concrete class implementing a Port for one specific technology — <code>EfOrderRepository</code>, <code>StripePaymentAdapter</code>, <code>OrdersApiController</code></li>
+                <li>Lives entirely outside the hexagon; the core never references an Adapter's concrete type</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="hex-wrap">
+        <div class="hex-ports">
+            <div class="hex-port">Port: IOrderRepository</div>
+            <div class="hex-port">Port: IPaymentGateway</div>
+            <div class="hex-port">Port: IPlaceOrder (inbound)</div>
+        </div>
+        <div class="hex-core">Application Core<span class="hex-sub">Domain + use-cases — no framework references</span></div>
+        <div class="hex-adapters">
+            <div class="hex-adapter">Adapter: EfOrderRepository</div>
+            <div class="hex-adapter">Adapter: StripeGatewayAdapter</div>
+            <div class="hex-adapter">Adapter: OrdersApiController</div>
+        </div>
+    </div>
+
+    <div class="concept-box">
+        <div class="concept-title">🔑 Driving vs. driven Ports — the direction of the conversation</div>
+        <p>A <strong>driving Port</strong> (also called a primary or inbound Port) is how something outside asks the core to do work — an <code>IPlaceOrderUseCase</code> that a REST controller Adapter calls into. A <strong>driven Port</strong> (secondary, or outbound) is how the core asks something outside to do work for it — an <code>IOrderRepository</code> that the core calls, implemented by a database Adapter. Both are still just interfaces owned by the core; the only difference is which side initiates the call.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>Cockburn observed the same recurring problem Clean Architecture's authors would later describe: business logic quietly wired directly to a specific UI framework, a specific database, a specific external service — so testing the logic meant standing up a real database, and swapping any one piece of infrastructure meant rewriting logic that had nothing to do with that infrastructure</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>A way to describe, precisely, that the application core should be "symmetric" — equally isolated from a UI on one side and a database on the other — with a vocabulary that treats every external technology, whether it drives the application or is driven by it, the same structural way</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>Ports (interfaces the core owns) and Adapters (technology-specific implementations plugged in from outside) — the hexagon's sides represent as many Ports as the core needs, with no special status given to any one side, unlike a layered diagram that visually implies a single "top" (UI) and a single "bottom" (database)</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Two Names for One Underlying Rule</h2>
+    <p>Line the two vocabularies up side by side, and the mapping is almost mechanical:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Clean Architecture (249)</th><th>Hexagonal Architecture</th><th>Same underlying idea</th></tr></thead>
+            <tbody>
+                <tr><td>Domain / Application (inner rings)</td><td>The hexagon's core</td><td>Business logic, isolated from technology</td></tr>
+                <tr><td>An interface the Domain/Application layer defines (e.g. <span class="icode">IProductRepository</span>)</td><td>A Port</td><td>An abstraction the core owns, shaped around what the core needs</td></tr>
+                <tr><td>An Infrastructure implementation (e.g. <span class="icode">EfProductRepository</span>)</td><td>An Adapter</td><td>A technology-specific implementation, plugged in from outside</td></tr>
+                <tr><td>The Dependency Rule — arrows point inward</td><td>Adapters depend on Ports, never the reverse</td><td>The core never knows a specific technology exists</td></tr>
+                <tr><td>Concentric circles</td><td>A hexagon with sockets</td><td>Two different pictures of the identical structural rule</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>The genuinely new idea Hexagonal contributes — beyond just a different picture — is treating the UI side and the persistence side <strong>symmetrically</strong>. A layered/concentric-circle diagram visually suggests a single, special "top" layer (Presentation) and a single, special "bottom" layer (Infrastructure). A hexagon has no top or bottom — just however many sides the core actually needs Ports on, each one exactly as isolated from the core as every other.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Adapter Pattern (243), at Architectural Scale</h2>
+    <div class="flow-container">
+        <div class="flow-title">FROM ONE CLASS'S ADAPTER TO A WHOLE APPLICATION'S BOUNDARY</div>
+        <div class="flow-step">
+            <div class="step-label">1. THE CORE DEFINES A PORT — SHAPED AROUND WHAT IT ACTUALLY NEEDS</div>
+            <ul><li><span class="icode">IOrderNotifier</span>, declared inside the application core, with a method shaped around the core's own vocabulary — <span class="icode">NotifyOrderShippedAsync(Order order)</span>, not "SendSmtpMessage(host, port, ...)"</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. AN ADAPTER IMPLEMENTS THE PORT, TRANSLATING TO A SPECIFIC TECHNOLOGY</div>
+            <ul><li><span class="icode">SmtpOrderNotifierAdapter : IOrderNotifier</span> — the only class that knows an SMTP client exists at all. This is precisely lesson 243's Adapter Pattern: converting one interface (the vendor SDK's shape) into another (the core's Port) without modifying either side.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. A SECOND ADAPTER CAN IMPLEMENT THE SAME PORT, INTERCHANGEABLY</div>
+            <ul><li><span class="icode">SlackOrderNotifierAdapter : IOrderNotifier</span> — a completely different technology, same Port, zero changes required inside the core</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. THE COMPOSITION ROOT WIRES THE CHOSEN ADAPTER TO THE PORT</div>
+            <ul><li><span class="icode">services.AddScoped&lt;IOrderNotifier, SmtpOrderNotifierAdapter&gt;();</span> — exactly the same composition-root responsibility from lesson 238, whether you call the abstraction an "interface," an "abstraction owned by the inner layer," or a "Port."</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — One Port, Two Adapters</h2>
+    <div class="code-block"><code>// ═══ APPLICATION CORE — the hexagon's inside. No framework references at all. ═══
+
+// A DRIVEN (outbound) Port — the core describes what IT needs, in its own vocabulary
+public interface IOrderNotifier
+{
+    Task NotifyOrderShippedAsync(string customerEmail, string trackingNumber);
+}
+
+public sealed class PlaceOrderUseCase(IOrderRepository repository, IOrderNotifier notifier)
+{
+    public async Task ShipAsync(int orderId)
+    {
+        var order = await repository.GetByIdAsync(orderId)
+            ?? throw new InvalidOperationException("Order not found.");
+        order.MarkShipped();
+        await repository.SaveAsync(order);
+        await notifier.NotifyOrderShippedAsync(order.CustomerEmail, order.TrackingNumber!);
+        // PlaceOrderUseCase has NO IDEA whether email, Slack, or SMS is behind IOrderNotifier.
+    }
+}
+
+// ═══ ADAPTERS — outside the hexagon. Each one owns exactly one technology's detail. ═══
+
+public sealed class SmtpOrderNotifierAdapter(SmtpClient smtpClient) : IOrderNotifier
+{
+    public async Task NotifyOrderShippedAsync(string customerEmail, string trackingNumber) =>
+        await smtpClient.SendMailAsync(new MailMessage("orders@shop.com", customerEmail)
+        {
+            Subject = "Your order has shipped!",
+            Body = $"Tracking number: {trackingNumber}"
+        });
+}
+
+public sealed class SlackOrderNotifierAdapter(HttpClient httpClient) : IOrderNotifier
+{
+    public async Task NotifyOrderShippedAsync(string customerEmail, string trackingNumber) =>
+        await httpClient.PostAsJsonAsync("/webhook", new { text = $"Order shipped, tracking: {trackingNumber}" });
+}
+
+// ═══ COMPOSITION ROOT — Program.cs — the ONLY place the concrete Adapter is chosen ═══
+builder.Services.AddScoped&lt;IOrderNotifier, SmtpOrderNotifierAdapter&gt;();
+// Swap to SlackOrderNotifierAdapter here, and NOTHING inside PlaceOrderUseCase changes.</code></div>
+    <p><strong>Code → Meaning → Result:</strong> <code>PlaceOrderUseCase</code> is the hexagon's core — it depends on <code>IOrderNotifier</code>, a Port it effectively owns, and never on <code>SmtpClient</code> or <code>HttpClient</code> directly. Both notifier classes are Adapters, each translating the core's simple, vocabulary-shaped request into whatever a specific technology actually requires — precisely the Adapter Pattern (243) from earlier in this Part, operating at the boundary of the entire application instead of around one third-party class.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Testing the Core Without Any Real Infrastructure</h2>
+    <p>Because <code>PlaceOrderUseCase</code> depends only on Ports, a unit test can supply fake, in-memory Adapters and exercise the core's actual business logic — the rule that shipping an order marks it shipped and notifies the customer — without touching a real database, a real SMTP server, or a real Slack workspace:</p>
+    <div class="code-block"><code>public sealed class InMemoryOrderRepository : IOrderRepository
+{
+    private readonly Dictionary&lt;int, Order&gt; _orders = new();
+    public Task&lt;Order?&gt; GetByIdAsync(int id) => Task.FromResult(_orders.GetValueOrDefault(id));
+    public Task SaveAsync(Order order) { _orders[order.Id] = order; return Task.CompletedTask; }
+}
+
+public sealed class RecordingOrderNotifier : IOrderNotifier
+{
+    public List&lt;string&gt; NotifiedEmails { get; } = [];
+    public Task NotifyOrderShippedAsync(string customerEmail, string trackingNumber)
+    {
+        NotifiedEmails.Add(customerEmail);
+        return Task.CompletedTask;
+    }
+}
+
+// The test wires the SAME PlaceOrderUseCase to fake Adapters — no SMTP server, no real database
+var repository = new InMemoryOrderRepository();
+var notifier = new RecordingOrderNotifier();
+var useCase = new PlaceOrderUseCase(repository, notifier);
+// ... seed an order, call ShipAsync, then assert notifier.NotifiedEmails contains the customer.</code></div>
+    <p>This is the practical payoff Ports and Adapters is built to deliver: the exact same core logic runs in production behind real Adapters, and in a test suite behind fake ones — with <code>PlaceOrderUseCase</code> itself completely unaware of, and unaffected by, which situation it's in.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy — a Wall Socket and Every Country's Plug</h2>
+    <div class="concept-box">
+        <div class="concept-title">🔌 The wall doesn't care what's plugged into it</div>
+        <p>An electrical wall socket defines a standard shape — a Port. It doesn't know or care whether a lamp, a laptop charger, or a vacuum cleaner is plugged in; it just supplies power to whatever fits its standard shape. Each specific appliance has a plug — an Adapter — shaped to match the socket, hiding the appliance's own internal complexity behind that one standard interface. Travel to a different country, and only the plug (Adapter) needs to change — the socket's underlying purpose, and the appliance's own inner workings, stay exactly the same.</p>
+        <p>Your application core is the electrical system inside the wall — it defines Ports, standard shapes it needs filled. A REST controller, a database, a message queue are all "appliances" plugging in through Adapters shaped to fit. Swap the database technology, and only that one Adapter — the plug — needs replacing; the core's wiring never gets touched.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Driving vs. Driven, Made Concrete</h2>
+    <div class="flow-container">
+        <div class="flow-title">BOTH SIDES OF THE HEXAGON, WORKED THROUGH</div>
+        <div class="flow-step">
+            <div class="step-label">1. A DRIVING (INBOUND) PORT — SOMETHING OUTSIDE CALLS INTO THE CORE</div>
+            <ul><li><span class="icode">IPlaceOrderUseCase</span> — an ASP.NET Core controller (a driving Adapter) calls this Port to trigger core logic. The controller depends on the Port; the core doesn't depend on the controller at all.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. A DRIVEN (OUTBOUND) PORT — THE CORE CALLS OUT TO SOMETHING OUTSIDE</div>
+            <ul><li><span class="icode">IOrderRepository</span> — the core calls this Port to persist an order; an EF Core Adapter (a driven Adapter) implements it. The core still owns the interface; the database technology still knows nothing about the core beyond that interface.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. IN BOTH DIRECTIONS, THE RULE IS IDENTICAL</div>
+            <ul><li>Whether an Adapter is calling INTO the core (driving) or the core is calling OUT to an Adapter (driven), the Adapter always depends on the Port — never the reverse. This is exactly Clean Architecture's Dependency Rule (249), restated without reference to "inner" or "outer" at all — just "the core defines it, an Adapter implements or calls it."</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Should I use Clean Architecture or Hexagonal Architecture?" — this is the wrong question</h3>
+    <p>They're not two competing choices you pick between, the way you'd pick between two different database technologies. They're two well-known, historically influential ways of <em>describing</em> essentially the same underlying structural rule — isolate the core, dependencies point inward, infrastructure is replaceable detail. Many real teams say "Clean Architecture" and then draw a hexagon, or say "Hexagonal" and then organize their solution into concentric-circle-style projects. Picking a vocabulary is a communication choice for your team, not an architectural decision with different runtime consequences.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Every interface is a Port" — not quite</h3>
+    <p>Every Port is an interface, but not every interface in your codebase is meaningfully a "Port" in the Hexagonal sense. The term specifically means an interface sitting at the application core's actual boundary with the outside world — persistence, external services, the UI's entry point into the core. An interface used purely for internal polymorphism inside the core (like a Strategy from lesson 241, entirely within the domain) isn't a Port; it's just an ordinary interface used for an unrelated, internal reason.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Shaping a Port around the Adapter's technology instead of the core's needs</h4>
+    <p>❌ Defining <span class="icode">IOrderNotifier</span> with a method like <span class="icode">SendSmtpMessageAsync(string host, int port, MailMessage message)</span> — the Port has quietly absorbed SMTP's shape, so a Slack Adapter would have to awkwardly pretend to be an SMTP server just to satisfy the interface. ✅ Shape every Port entirely around what the <em>core</em> needs to express — <span class="icode">NotifyOrderShippedAsync(string customerEmail, string trackingNumber)</span> — and let each Adapter absorb the translation cost, exactly as lesson 243 taught.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Treating "Hexagonal" and "Clean Architecture" as requiring a debate over which is "more correct"</h4>
+    <p>❌ Spending a design meeting arguing whether a project should be "Hexagonal" or "Clean," as if choosing wrong would produce a worse system. ✅ Recognize both describe the identical underlying discipline; pick whichever vocabulary your team already understands and communicates with most naturally, and move on to the actual work of isolating the core.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Adding Ports for things that will never realistically have a second Adapter</h4>
+    <p>❌ Defining a Port and a single Adapter for something that will provably never be swapped or faked in a test — pure ceremony, adding indirection with no real payoff. ✅ Just as lesson 240 taught for Factory, a Port earns its place when there's a genuine reason to keep the core ignorant of a specific technology — commonly, for testability, or because the technology genuinely might change — not automatically for every single external touchpoint.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Situation</th><th>Leans toward</th></tr></thead>
+            <tbody>
+                <tr><td>A team already fluent in Clean Architecture's ring vocabulary</td><td>Keep using rings — the underlying discipline is identical; don't force a vocabulary switch without a reason</td></tr>
+                <tr><td>An application that genuinely has multiple driving Adapters (a REST API AND a message-queue consumer AND a CLI, all triggering the same core logic)</td><td>Hexagonal's symmetric "no special top layer" framing communicates this shape especially clearly</td></tr>
+                <tr><td>A small application with one UI and one database, unlikely to ever swap either</td><td>Same guidance as lesson 249 — the full Ports-and-Adapters ceremony is real, avoidable overhead here</td></tr>
+                <tr><td>Deciding between "Hexagonal" and "Clean Architecture" as if they were mutually exclusive</td><td>Reconsider the framing — they're the same underlying goal, described two well-known ways</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> the discipline — core logic depends only on abstractions it owns, technology plugs in from outside, dependencies never point back toward the core — is what actually matters. Whether you draw circles or a hexagon while explaining it to your team is a communication choice, not a different architecture.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Port</strong> = an interface the application core owns, shaped around what the core needs.<br />
+        <strong>Adapter</strong> = a technology-specific implementation of a Port, living entirely outside the core.<br />
+        <strong>The rule</strong> = Adapters depend on Ports; the core never depends on a specific Adapter.<br /><br />
+        <strong>Remember:</strong> this is Clean Architecture's Dependency Rule (249), and literally the Adapter Pattern (243), described through a hexagon instead of concentric circles — not a competing idea.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Hexagonal Architecture — Ports and Adapters — puts the application core at the center of a hexagon; Ports are interfaces the core owns, and Adapters are technology-specific implementations plugged in from outside.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Driving (inbound) Ports</strong> let something outside call into the core; <strong>driven (outbound) Ports</strong> let the core call out to something outside — in both directions, the Adapter depends on the Port, never the reverse.</li>
+            <li style="margin-bottom:0.4rem;">This is literally the Adapter Pattern (243) applied at the scale of an entire application's boundary — the same "translate one interface shape into another" mechanism, just centered on the whole core instead of one third-party dependency.</li>
+            <li style="margin-bottom:0.4rem;">Hexagonal and Clean Architecture (249) pursue the <strong>identical</strong> goal — isolate business logic, dependencies point inward — through different vocabulary and a different visual metaphor. They are not competing choices.</li>
+            <li style="margin-bottom:0.4rem;">The genuine payoff Hexagonal emphasizes: a symmetric core, equally isolated from every direction — UI, database, external service alike — with no single side treated as structurally special.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've mapped Hexagonal Architecture's vocabulary onto Clean Architecture's, and onto the Adapter Pattern you already knew. Let's confirm the mapping holds.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> In the Ports and Adapters model, what is a "Port"?</p>
+        <ul class="options">
+            <li>A) A concrete class, like <code>EfOrderRepository</code>, that implements technology-specific logic</li>
+            <li>B) An interface, owned by the application core, describing something the core needs or offers — shaped around the core's own vocabulary, not any specific technology's</li>
+            <li>C) A network port number used by an ASP.NET Core web server</li>
+            <li>D) The composition root where all dependencies get wired together</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A Port is precisely the abstraction the application core owns — an interface shaped around what the core needs or offers, deliberately independent of any specific technology's own conventions.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A concrete, technology-specific implementing class is an Adapter, not a Port — Ports are the interfaces Adapters implement.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is an unrelated, coincidental use of the word "port" from networking — Hexagonal Architecture's "Port" is a design-pattern term, not a TCP/IP concept.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The composition root (238) is where concrete Adapters get bound to Ports — it's a related but distinct concept from the Port abstraction itself.</p>
+                <p><strong>Reinforcement:</strong> Port = interface owned by the core. Adapter = technology-specific implementation of that interface.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why does this lesson state that Hexagonal Architecture is literally the Adapter Pattern (243), rather than merely similar to it?</p>
+        <ul class="options">
+            <li>A) Because both happen to use the word "Adapter," which is purely coincidental</li>
+            <li>B) Because a Hexagonal Adapter does exactly what lesson 243's Adapter Pattern does — converts one interface shape into another the client (the core) expects — just applied at the scale of the whole application's boundary instead of one third-party class</li>
+            <li>C) Because Hexagonal Architecture requires the Adapter Pattern to be implemented using inheritance, not interfaces</li>
+            <li>D) Because Adapters in Hexagonal Architecture must always adapt a database specifically</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The mechanism is identical, not just similarly named — a Hexagonal Adapter translates a specific technology's shape into the interface the core actually depends on, precisely the structural definition of the Adapter Pattern from lesson 243, just applied at architectural scale.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The shared name reflects a genuinely shared mechanism, not a coincidence — this lesson explicitly traces the structural identity between the two.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Neither the Adapter Pattern nor Hexagonal Architecture requires inheritance — both are built on interfaces implemented by concrete classes.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Adapters can wrap any external technology — email, message queues, REST APIs, UI controllers — not exclusively databases.</p>
+                <p><strong>Reinforcement:</strong> Recognizing the same named pattern recurring at a larger scale is a recurring theme across this Part — Dependency Inversion (081) inside Clean Architecture (249), and now Adapter (243) inside Hexagonal Architecture.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A team is debating whether their new project "should be Hexagonal or Clean Architecture," treating it as a decision with different runtime consequences. What does this lesson say about that framing?</p>
+        <ul class="options">
+            <li>A) Hexagonal Architecture is strictly newer and technically superior, so it should always be chosen</li>
+            <li>B) The framing is mistaken — both describe the same underlying structural goal (isolate the core, dependencies point inward) through different vocabulary and visual metaphors, not two competing architectures with different consequences</li>
+            <li>C) Clean Architecture is only for ASP.NET Core, while Hexagonal Architecture is only for console applications</li>
+            <li>D) The two are incompatible and a team must fully commit to one, never mixing terminology</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the lesson's central Common Confusion point — the two are the same underlying discipline, described two different, well-known ways; picking one is a communication choice for the team, not a decision with different structural outcomes.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Neither is "superior" — they emerged independently around the same underlying insight and are used interchangeably by real teams today.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Neither vocabulary is tied to a specific application type — both apply equally to web APIs, console apps, or any other application shape.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The lesson explicitly notes many real teams blend the vocabularies (saying "Clean Architecture" while drawing a hexagon, or vice versa) without any conflict.</p>
+                <p><strong>Reinforcement:</strong> Treat the choice between these vocabularies as a team communication preference, not an architectural decision with real consequences of its own.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> What is the difference between a "driving" (inbound) Port and a "driven" (outbound) Port?</p>
+        <ul class="options">
+            <li>A) A driving Port is used only in test code; a driven Port is used only in production</li>
+            <li>B) A driving Port is how something outside calls INTO the core (e.g., a use-case interface a controller calls); a driven Port is how the core calls OUT to something outside (e.g., a repository interface) — in both cases, the Adapter still depends on the Port</li>
+            <li>C) A driving Port must be implemented using an abstract class; a driven Port must be implemented using an interface</li>
+            <li>D) There is no real difference — the terms are interchangeable</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The distinction is about which side initiates the call — driving Ports are entry points into the core called by outside Adapters; driven Ports are called by the core to reach outside Adapters — but the dependency direction (Adapter depends on Port) stays identical in both cases.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Both kinds of Ports are used in production and in tests — the driving/driven distinction is about call direction, not about test versus production usage.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Nothing about Hexagonal Architecture mandates abstract classes versus interfaces for either kind of Port — both are typically plain interfaces.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The lesson explicitly distinguishes the two by the direction of the call, even though the underlying dependency rule stays the same in both directions.</p>
+                <p><strong>Reinforcement:</strong> "Driving" = called from outside, in. "Driven" = called by the core, out. Both keep the Adapter depending on the Port, never the reverse.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now recognize the same core discipline through two names — rings and a hexagon — and can translate fluently between them. Next: Domain-Driven Design, the methodology for figuring out what belongs inside that isolated core in the first place.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
