@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>267 - Resilience &amp; Fault Handling · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        A dependency that fails once is a blip. A thousand clients retrying it at the exact same instant is an outage you caused.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Your API calls a third-party shipping-rate service on every checkout. One afternoon, that service hiccups for four seconds under its own load spike — a completely normal, survivable blip for a well-behaved client to just retry past. Except every one of your app's in-flight requests notices the failure at roughly the same moment, and every one of them retries after exactly the same fixed one-second delay you hardcoded. A wall of retries lands on the shipping service at the exact same instant, right as it's trying to recover — and that wave of simultaneous retries is often enough to knock it back down, or keep it down longer than the original blip ever would have. You didn't just fail to handle a transient fault. You made it worse.</p>
+    <p><strong>In this lesson, you'll learn the three pillars of resilient calls to external dependencies — retries (done correctly, with exponential backoff and jitter), circuit breakers, and timeouts — and how to wire all three into <code>IHttpClientFactory</code> using <code>Microsoft.Extensions.Resilience</code>.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Resilience</strong> is the practice of assuming, up front, that the external things your code depends on — other APIs, databases, third-party services — will occasionally fail, slow down, or become temporarily unreachable, and writing your code so that when that happens, it degrades gracefully instead of falling over or making the problem worse.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Modern .NET builds resilience on top of <strong>Polly</strong>, the long-established .NET resilience and transient-fault-handling library, via the <code>Microsoft.Extensions.Resilience</code> package. Since .NET 8, this integrates directly into <code>IHttpClientFactory</code> — the typed/named client infrastructure you already know from the Intermediate course — through <code>AddResilienceHandler(...)</code>, letting you attach a named pipeline of resilience strategies (retry, circuit breaker, timeout, and others) to any <code>HttpClient</code> registration with a few lines of configuration.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Networks and Dependencies Fail, Constantly, Briefly</h3>
+    <p>Once your app makes real network calls — to a database, a third-party API, another internal service — it inherits every way a network call can go wrong: a momentary DNS hiccup, a server briefly overloaded, a load balancer mid-deployment, a packet dropped somewhere in between. Most of these are <strong>transient</strong> — gone in milliseconds to seconds, not permanent outages. Code that treats every failure as fatal (bubble the exception straight up, fail the whole request) throws away perfectly recoverable situations. Code that retries <em>naively</em> — same delay, every time, for every client — can turn one dependency's bad five seconds into everyone's bad five minutes, through the exact thundering-herd mechanism in the hook above.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Assume Failure, Handle It Deliberately</h3>
+    <p>Resilience isn't one trick — it's a small set of complementary strategies, each solving a different failure shape: retries recover from brief blips, circuit breakers stop hammering something that's clearly down, and timeouts stop you from waiting forever on something that will never answer. Used together, they let your app survive the kind of failures that are completely normal in any system with real network dependencies.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Your code
+    ↓
+Timeout        — "never wait forever for an answer"
+    ↓
+Retry (with backoff + jitter) — "a brief blip? try again, spaced out sensibly"
+    ↓
+Circuit Breaker — "clearly and repeatedly failing? stop hammering it, fail fast for a while"
+    ↓
+The external dependency (API, database, third-party service)</code></pre>
+    <p>These three wrap around a single outbound call, each addressing a different question: how long do I wait (timeout), do I try again on failure and how (retry), and should I even bother trying right now given recent history (circuit breaker)?</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Retries — And the Thundering Herd Problem</h3>
+    <div class="flow-container">
+        <div class="flow-title">WHY A FIXED RETRY DELAY IS DANGEROUS AT SCALE</div>
+        <div class="flow-step">
+            <div class="step-label">1. A DEPENDENCY BRIEFLY FAILS FOR EVERYONE AT ONCE</div>
+            <ul><li>Say a downstream service has a 2-second blip. Every client currently calling it — potentially hundreds or thousands of concurrent requests — sees a failure at roughly the same moment.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. WITH A FIXED, IDENTICAL RETRY DELAY, THEY ALL RETRY IN LOCKSTEP</div>
+            <ul><li>If every client's rule is "wait exactly 1 second, then retry," they all retry within the same narrow window — producing a sudden, synchronized spike of load exactly when the dependency is trying to recover. This spike, the <strong>thundering herd</strong>, can be worse than the original failure and can even re-trigger it.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE FIX — EXPONENTIAL BACKOFF WITH JITTER</div>
+            <ul>
+                <li><strong>Exponential backoff:</strong> each successive retry waits progressively longer than the last (e.g. roughly 1s, then 2s, then 4s) — later attempts back off further, giving the dependency real breathing room to recover instead of being hit again almost immediately.</li>
+                <li><strong>Jitter:</strong> a small, randomized amount of variation is added to each client's wait time, so instead of every client retrying at exactly "2 seconds," one retries at 1.8s, another at 2.3s, another at 2.1s — the retries spread out across a window instead of landing in one synchronized spike.</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Circuit Breakers — Failing Fast Instead of Piling Up</h3>
+    <div class="flow-container">
+        <div class="flow-title">CIRCUIT BREAKER STATES (INTRODUCTORY LEVEL)</div>
+        <div class="flow-step">
+            <div class="step-label">1. CLOSED — NORMAL OPERATION</div>
+            <ul><li>Requests flow through to the dependency normally. The circuit breaker is quietly counting recent failures.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. OPEN — AFTER ENOUGH CONSECUTIVE FAILURES</div>
+            <ul><li>Once failures cross a configured threshold, the circuit "opens." For a set period, calls to that dependency <strong>fail immediately</strong>, without even attempting the network call — this is "failing fast" instead of piling up more slow, doomed requests behind an already-struggling dependency.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. HALF-OPEN — TESTING RECOVERY</div>
+            <ul><li>After the open period elapses, the breaker allows a limited number of test requests through. If they succeed, the circuit closes again (back to normal); if they still fail, it re-opens and waits again.</li></ul>
+        </div>
+    </div>
+    <div class="callout">
+        <strong>💡 Scoped intentionally:</strong> This is an introductory, conceptual treatment of circuit breakers — enough to recognize the pattern, configure a basic one, and understand why it exists. A fuller, deeper treatment of circuit breakers as part of broader distributed-systems resilience may appear in a later, more distributed-systems-focused part of this course.
+    </div>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Timeouts — Never Wait Forever</h3>
+    <p>A call with no timeout can, in the worst case, hang indefinitely — tying up a thread, a connection, and the caller's own responsiveness while waiting for an answer that may never come. A timeout guarantees the call gives up after a bounded, known amount of time, converting an indefinite hang into a definite, handleable failure.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>A single retry strategy, attached to a named <code>HttpClient</code> via <code>AddResilienceHandler</code>:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">builder.Services.AddHttpClient("ShippingApi", client =&gt;
+{
+    client.BaseAddress = new Uri("https://shipping.example.com/");
+})
+.AddResilienceHandler("shipping-retry", pipeline =&gt;
+{
+    pipeline.AddRetry(new HttpRetryStrategyOptions
+    {
+        MaxRetryAttempts = 3,
+        BackoffType = DelayBackoffType.Exponential,
+        UseJitter = true,                         // spreads retries out — avoids thundering herd
+        Delay = TimeSpan.FromSeconds(1)            // base delay before exponential growth + jitter
+    });
+});</code></pre>
+    <p><code>BackoffType = DelayBackoffType.Exponential</code> makes each retry wait longer than the last; <code>UseJitter = true</code> adds the randomized variation that spreads many clients' retries across a window instead of one synchronized spike — this single flag is the direct fix for the thundering-herd scenario from the hook.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A payment-gateway typed client, combining retry, circuit breaker, and timeout into one resilience pipeline — the standard shape for a real production integration with an external dependency:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class PaymentGatewayClient(HttpClient httpClient)
+{
+    public async Task&lt;bool&gt; ChargeAsync(string cardToken, decimal amount, CancellationToken ct)
+    {
+        var json = $$"""{"token": "{{cardToken}}", "amount": {{amount}}}""";
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        var response = await httpClient.PostAsync("charges", content, ct);
+        return response.IsSuccessStatusCode;
+    }
+}
+
+builder.Services.AddHttpClient&lt;PaymentGatewayClient&gt;(client =&gt;
+{
+    client.BaseAddress = new Uri("https://payments.example.com/api/");
+})
+.AddResilienceHandler("payment-pipeline", pipeline =&gt;
+{
+    // 1. Retry transient failures — exponential backoff + jitter avoids a retry storm
+    pipeline.AddRetry(new HttpRetryStrategyOptions
+    {
+        MaxRetryAttempts = 3,
+        BackoffType = DelayBackoffType.Exponential,
+        UseJitter = true
+    });
+
+    // 2. Circuit breaker — stop hammering a clearly-failing gateway
+    pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+    {
+        FailureRatio = 0.5,                        // open if ≥50% of recent calls failed
+        SamplingDuration = TimeSpan.FromSeconds(30),
+        MinimumThroughput = 10,                     // need enough samples before judging
+        BreakDuration = TimeSpan.FromSeconds(15)    // how long the circuit stays open
+    });
+
+    // 3. Timeout — never wait indefinitely for the gateway to respond
+    pipeline.AddTimeout(TimeSpan.FromSeconds(5));
+});</code></pre>
+    <p>Order matters conceptually here: a single call attempt is bounded by the timeout; if it fails, the retry strategy decides whether (and how, with backoff and jitter) to try again; and across many calls over time, the circuit breaker is watching the overall failure rate — if the gateway is clearly down, it stops even attempting new calls (retries included) until the break duration passes and it allows a test call through.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📞</span> Calling a Busy Friend</div>
+        <p>Imagine calling a friend who's briefly not answering. Calling back <em>immediately</em>, over and over, at the exact same interval, is annoying and doesn't help — and if a hundred people are all trying to reach that friend the same way, their phone is overwhelmed the instant it's free (thundering herd). Waiting a bit longer each time you retry, with a bit of randomness in exactly when you call back, means you're less likely to call at the exact same moment as everyone else (exponential backoff with jitter).</p>
+        <p>If you've called forty times with no answer, the sensible thing isn't to keep dialing — it's to stop for a while and try again in twenty minutes (circuit breaker: open, then a later test attempt). And you'd never let a single call ring forever without hanging up eventually (timeout) — an unanswered call that never ends is still tying up your attention the whole time.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">HOW A RESILIENCE PIPELINE WRAPS AN OUTGOING HTTP CALL</div>
+        <div class="flow-step">
+            <div class="step-label">1. AddResilienceHandler REGISTERS A DelegatingHandler</div>
+            <ul><li>Under the hood, the resilience pipeline is wired into <code>HttpClient</code>'s message handler chain — the same handler-pipeline mechanism <code>IHttpClientFactory</code> already uses. Every request sent through this client passes through the pipeline before the actual network call happens.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. POLLY EXECUTES EACH CONFIGURED STRATEGY, IN ORDER</div>
+            <ul><li><code>Microsoft.Extensions.Resilience</code> is a thin, DI-friendly configuration layer over Polly's actual resilience strategy execution engine — timeout, retry, and circuit breaker each wrap the call in sequence, the same way middleware wraps a request in the ASP.NET Core pipeline you've already learned elsewhere in this Part.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. RETRY DELAYS USE THE FRAMEWORK'S TIMER, NOT A BLOCKING WAIT</div>
+            <ul><li>The delay between retry attempts is implemented with an asynchronous wait, not a thread-blocking <code>Thread.Sleep</code> — the calling thread is free to do other work while a retry is pending, consistent with everything you already know about <code>async</code>/<code>await</code> for I/O-bound work.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"More retries is always safer" — it's often the opposite</h3>
+    <p>It's tempting to think "if 3 retries is good, 10 must be safer." In reality, more retries mean more total load thrown at an already-struggling dependency, and a longer total time before the caller gets a final answer (success or failure) — which can itself cascade into timeouts elsewhere in the system. A small number of retries with real exponential backoff and jitter is almost always the better trade than many retries fired in quick succession.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"A circuit breaker fixes the dependency" — it doesn't, it protects everyone else</h3>
+    <p>A circuit breaker doesn't repair the failing service — it protects <em>your</em> app (and, indirectly, the struggling dependency) from making things worse while it's down. Opening the circuit trades "keep trying and probably keep failing slowly" for "fail fast and predictably," which is almost always better for both sides, but the underlying problem with the dependency still needs to be fixed by whoever owns it.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Fixed-delay retries with no jitter, at any meaningful scale</h4>
+    <p>❌ <code>Delay = TimeSpan.FromSeconds(1)</code> with no backoff and no jitter — every client retries in lockstep, which is exactly the thundering-herd setup from the hook.</p>
+    <p>✅ Use exponential backoff (<code>DelayBackoffType.Exponential</code>) with <code>UseJitter = true</code> so retries spread out over time instead of clustering.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Retrying non-idempotent operations blindly</h4>
+    <p>❌ Automatically retrying a "charge the customer's card" POST that may have actually succeeded server-side before the response was lost — a naive retry can double-charge the customer.</p>
+    <p>✅ Be deliberate about what's safe to retry — idempotent operations (like GETs, or POSTs designed with idempotency keys) are safe; a raw "retry everything" policy on non-idempotent writes is a real correctness risk, not just a performance one.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — No timeout at all on an outbound call</h4>
+    <p>❌ Letting an <code>HttpClient</code> call run with an unbounded or excessively long default timeout — a single hung dependency can tie up threads and connections indefinitely, degrading your own app's responsiveness for everyone.</p>
+    <p>✅ Always set an explicit, reasonable timeout, and treat "the dependency didn't answer in time" as its own distinct, expected failure mode to handle.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Any outbound call to a dependency you don't fully control — a third-party API, another internal service, sometimes even a database under heavy load — deserves at least a timeout and a sensible retry policy.</li>
+        <li style="margin-bottom:0.4rem;">Add a circuit breaker specifically when a dependency's failures tend to cluster (an outage, not just isolated blips) and you want to fail fast instead of queuing up doomed retries during that window.</li>
+        <li style="margin-bottom:0.4rem;">Skip aggressive retry policies for calls where retrying could cause real harm (non-idempotent writes without idempotency protection) unless you've specifically designed for safe retries.</li>
+        <li style="margin-bottom:0.4rem;">For quick internal scripts or one-off tooling with no real concurrent load, this level of resilience machinery is likely overkill — it earns its complexity in production systems under real, sustained traffic.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Timeout</strong> = never wait forever for one answer<br />
+        <strong>Retry (backoff + jitter)</strong> = try again, but spaced out and staggered across clients<br />
+        <strong>Circuit breaker</strong> = stop trying entirely for a while, once it's clearly not working<br /><br />
+        <strong>Remember:</strong> a fixed retry delay with no jitter isn't resilience — under real concurrent load, it's a mechanism for turning a small blip into a synchronized pile-on.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><code>Microsoft.Extensions.Resilience</code>, built on Polly, integrates directly into <code>IHttpClientFactory</code> via <code>AddResilienceHandler(...)</code> since .NET 8.</li>
+            <li style="margin-bottom:0.4rem;">Naive fixed-delay retries from many simultaneous clients can cause a <strong>thundering herd</strong> against a recovering dependency — a synchronized wave of retries that can prolong or worsen the original outage.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Exponential backoff with jitter</strong> is the standard fix — progressively longer delays, plus randomized variation, spread retries out instead of clustering them.</li>
+            <li style="margin-bottom:0.4rem;">A <strong>circuit breaker</strong> opens after enough consecutive/recent failures, failing fast instead of piling up more doomed requests, then periodically tests whether the dependency has recovered — this lesson covers it at an introductory level.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Timeouts</strong> bound how long you'll ever wait for a single call — never wait indefinitely for an external dependency.</li>
+            <li style="margin-bottom:0.4rem;">A real production resilience pipeline typically combines all three — timeout, retry, circuit breaker — wrapped around the same <code>HttpClient</code> call.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen why naive retries can backfire and how retries, circuit breakers, and timeouts work together. Let's test your reasoning.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A dependency briefly fails, and 500 concurrent clients all retry after exactly the same fixed 1-second delay. What problem does this create?</p>
+        <ul class="options">
+            <li>A) Nothing — a fixed delay is the recommended, safest retry strategy</li>
+            <li>B) A thundering herd — all 500 clients hit the dependency again at nearly the same instant, potentially overwhelming it right as it's trying to recover</li>
+            <li>C) The retries will automatically be rejected by .NET's runtime for exceeding a hardcoded limit</li>
+            <li>D) HttpClient will throw a compile-time error if retries aren't staggered</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the thundering-herd scenario — identical fixed delays across many concurrent clients cause synchronized retries that can overwhelm a just-recovering dependency, potentially prolonging or worsening the original failure.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A fixed delay with no jitter is precisely the pattern that causes this problem — it's a common mistake, not a recommended practice.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such automatic rejection mechanism — the runtime doesn't police retry timing on its own.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a runtime behavioral concern under load, not something the compiler can detect.</p>
+                <p><strong>Reinforcement:</strong> Exponential backoff with jitter exists specifically to prevent this synchronized retry spike.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What does "jitter" specifically add to a retry strategy that "exponential backoff" alone does not provide?</p>
+        <ul class="options">
+            <li>A) It guarantees the retry will always succeed on the next attempt</li>
+            <li>B) It adds a small amount of randomized variation to each client's wait time, spreading retries across a window instead of having every client with the same backoff schedule retry at the exact same moment</li>
+            <li>C) It increases the maximum number of retry attempts allowed</li>
+            <li>D) It disables the circuit breaker while retries are in progress</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Exponential backoff alone still produces identical wait times across every client following the same schedule — they'd all still retry in a synchronized wave, just a later one. Jitter adds randomness on top, so different clients' retries land at different moments, spreading load out instead of clustering it.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> No retry strategy can guarantee success — it only improves the odds of eventually succeeding on a transient fault.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Jitter affects timing, not the count of retry attempts — those are configured separately (e.g. <code>MaxRetryAttempts</code>).</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Jitter and circuit breakers are independent, complementary strategies — one doesn't disable the other.</p>
+                <p><strong>Reinforcement:</strong> Backoff spreads retries out in time per client; jitter spreads them out <em>across</em> clients — both are needed to fully avoid a thundering herd.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> After many consecutive failures calling a downstream service, a circuit breaker opens. What happens to new requests while the circuit is open?</p>
+        <ul class="options">
+            <li>A) They are queued indefinitely until the circuit closes again</li>
+            <li>B) They fail immediately without attempting the network call at all, until the breaker later allows a test request through to check for recovery</li>
+            <li>C) They are automatically redirected to a different, unrelated dependency</li>
+            <li>D) They are retried with an unlimited number of attempts until one succeeds</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the defining behavior of an open circuit — it fails fast, deliberately skipping the actual network call, rather than piling up more slow, doomed requests against a service that's already clearly struggling. After the configured break duration, it moves to a half-open state and allows limited test traffic through.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Open circuits fail fast, not queue — queuing would still tie up resources waiting, which defeats the purpose.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A circuit breaker doesn't reroute traffic to alternative services on its own — that would be a separate fallback strategy, not the breaker itself.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Unlimited retries against a dependency the circuit breaker has identified as failing is exactly the pile-up behavior circuit breakers exist to prevent.</p>
+                <p><strong>Reinforcement:</strong> "Open" means "stop trying and fail immediately," which protects both your app and the struggling dependency.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why is a timeout considered an essential, separate piece of a resilience pipeline, distinct from retries and circuit breakers?</p>
+        <ul class="options">
+            <li>A) It's not really necessary if retries are already configured</li>
+            <li>B) Without a timeout, a single call can hang indefinitely waiting for a response that may never come, tying up resources — a timeout bounds how long you'll ever wait for one attempt</li>
+            <li>C) Timeouts automatically fix the underlying cause of a slow dependency</li>
+            <li>D) Timeouts replace the need for a circuit breaker entirely</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Retries and circuit breakers operate across multiple attempts or over time, but neither one bounds how long any single attempt is allowed to hang — that's specifically the timeout's job. Without it, one unresponsive call can tie up a thread/connection indefinitely, regardless of how well-configured retries or circuit breaking are.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Retries don't help if the underlying attempt never returns at all — you need a timeout to even know an attempt has failed and should be retried.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A timeout only bounds your own wait — it does nothing to fix whatever is making the dependency slow.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Timeouts and circuit breakers solve different problems (bounding one call's duration vs. tracking failure patterns across many calls) and are meant to be used together, not as substitutes for each other.</p>
+                <p><strong>Reinforcement:</strong> Timeout, retry, and circuit breaker each answer a different question about a call — none of the three alone is a complete resilience strategy.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand how to build genuinely resilient calls to unreliable dependencies — retries done safely, circuit breakers, and timeouts, combined into one pipeline.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

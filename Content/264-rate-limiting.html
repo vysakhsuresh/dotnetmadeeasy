@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>264 - Rate Limiting · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        A single client, meaning no harm at all, can take down a shared resource just as effectively as an attacker — rate limiting is the guardrail either way.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Imagine your API's <code>/api/search</code> endpoint calls a paid, rate-limited third-party mapping service on every request. One day, a single legitimate client — no malicious intent whatsoever, just a bug in their retry logic — starts firing thousands of requests a second. Your API happily accepts every one of them and forwards each to the mapping service, which promptly rate-limits <em>you</em>, breaks search for every other customer, and hands you a surprise bill. Nothing about this required an attacker. A perfectly well-behaved client with a bug was enough.</p>
+    <p>Now widen the picture: a genuine attacker deliberately hammering a login endpoint to brute-force passwords, or a script scraping your entire product catalog in seconds, or simply far more traffic from one client than your database can comfortably serve while still being fair to everyone else. All of these are the same underlying problem, wearing different hats: <strong>too many requests, from one source, in too little time</strong>. Rate limiting is the mechanism that puts a boundary on that.</p>
+    <p><strong>In this lesson: why APIs need rate limiting, ASP.NET Core's built-in <code>Microsoft.AspNetCore.RateLimiting</code> middleware (part of the framework since .NET 7), its four algorithms — Fixed Window, Sliding Window, Token Bucket, and the Concurrency Limiter — with their genuine trade-offs, and how to configure and apply a policy to real endpoints.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Rate limiting</strong> is capping how many requests a client is allowed to make in a given period of time (or how many it can have in flight at once), and rejecting — usually with an HTTP <strong>429 Too Many Requests</strong> — whatever exceeds that cap.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>ASP.NET Core ships a built-in rate limiting middleware, <code>Microsoft.AspNetCore.RateLimiting</code>, available since .NET 7. It's configured with one or more named <strong>rate limiter policies</strong> — each backed by one of four built-in algorithms (Fixed Window, Sliding Window, Token Bucket, or Concurrency) — registered once via <code>AddRateLimiter()</code>, then applied to specific endpoints or endpoint groups. A request that violates its policy's limit is rejected before reaching your endpoint logic at all, with a configurable response (429 by default).</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Unlimited Traffic Hurts Everyone Sharing the System</h3>
+    <p>An API without any rate limiting treats every client as if it could send unlimited traffic without consequence. In practice, that assumption breaks down in three genuinely distinct ways:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Abuse</strong> — an attacker deliberately sending excessive traffic: brute-forcing a login form, scraping data at high speed, or attempting a denial-of-service.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Unfairness</strong> — one client, even without malicious intent, consuming so much capacity that every other client sharing the same API suffers degraded performance.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Downstream overload</strong> — even entirely legitimate, well-intentioned traffic can overwhelm a shared, finite resource behind your API: a database that can only handle so many concurrent queries, or a paid third-party API with its own rate limits and per-call costs, exactly as in the hook.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is a way to cap how much traffic any single client can generate — configurable per endpoint, since a login endpoint and a static content endpoint have very different reasonable limits — enforced consistently and cheaply, before that traffic ever reaches the expensive parts of the system.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution</h3>
+    <p>ASP.NET Core's built-in rate limiting middleware, offering four different algorithms because "cap the traffic" is not actually one single problem — a login endpoint's needs (protect against brute-force bursts) are genuinely different from a background sync endpoint's needs (allow occasional bursts, enforce a steady average), and the four algorithms below exist specifically to match those different shapes of need.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">WHERE RATE LIMITING SITS IN THE REQUEST PIPELINE</div>
+        <div style="text-align:center;color:var(--text-main,#E2E8F0);font-size:0.95rem;line-height:2;">
+            Incoming HTTP request<br />
+            ↓<br />
+            <strong>Rate limiting middleware</strong> — checks the request against its endpoint's assigned policy<br />
+            ↓<br />
+            Within limit → request proceeds normally, toward authentication/authorization/your endpoint<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Over limit → <strong>429 Too Many Requests</strong>, rejected immediately — your endpoint never runs, the database is never touched
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">THE FOUR BUILT-IN ALGORITHMS — WHAT EACH ONE ACTUALLY DOES</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. FIXED WINDOW — SIMPLE, BUT ALLOWS A BOUNDARY BURST</div>
+            <ul>
+                <li>Divides time into fixed-size windows (e.g. every 60 seconds) and allows up to N requests per window, then resets the count entirely at each window boundary.</li>
+                <li><strong>Genuine trade-off:</strong> a client can send N requests in the last instant of one window, then immediately send another N requests in the first instant of the next window — briefly, up to 2N requests in a very short span straddling the boundary, even though the configured rate was "N per window."</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. SLIDING WINDOW — SMOOTHS OUT THE BOUNDARY BURST, AT MORE BOOKKEEPING COST</div>
+            <ul>
+                <li>Splits each window into smaller segments and tracks request counts per segment, effectively "sliding" the window continuously rather than resetting it all at once — a request is counted against a blend of the current and recent segments.</li>
+                <li><strong>Genuine trade-off:</strong> it directly fixes fixed window's boundary-burst problem, at the cost of tracking more state (per-segment counts) than a single running counter — a real but usually modest overhead.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. TOKEN BUCKET — ALLOWS SOME BURSTINESS WHILE ENFORCING A STEADY AVERAGE RATE</div>
+            <ul>
+                <li>A "bucket" holds up to a maximum number of tokens; each request consumes one token; tokens are replenished at a steady, configured rate over time. A client with a full bucket can burst through several requests at once — up to the bucket's capacity — but is then limited to the steady refill rate until the bucket fills back up.</li>
+                <li><strong>Genuine trade-off:</strong> this is the most flexible of the count-based algorithms — it deliberately tolerates short bursts (which fixed and sliding window are stricter about) while still enforcing a real long-run average rate, which is exactly why it's a common default choice for general-purpose API rate limiting.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. CONCURRENCY LIMITER — A DIFFERENT KIND OF LIMIT ENTIRELY: IN-FLIGHT, NOT OVER TIME</div>
+            <ul>
+                <li>Instead of counting requests over a time period, this caps how many requests can be <strong>actively being processed at the same moment</strong> — a request acquires a "slot" when it starts and releases it when it finishes; once every slot is taken, further requests are rejected (or queued) until one frees up.</li>
+                <li><strong>Genuine distinction:</strong> a client sending requests slowly, one at a time, could technically send an unlimited number over a day under a pure concurrency limiter and never be throttled — because it never has more than one request <em>in flight</em> at once. This is precisely why it's a different kind of limit than the other three, and it's specifically well-suited to protecting a resource that's sensitive to simultaneous load (like a limited connection pool) rather than to total volume over time.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+
+    <p>Registering a fixed window policy and applying it to one endpoint:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("fixed", opt =>
+    {
+        opt.PermitLimit = 10;                          // up to 10 requests...
+        opt.Window = TimeSpan.FromSeconds(30);         // ...per 30-second window
+        opt.QueueLimit = 0;                             // requests over the limit are rejected immediately, not queued
+    });
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
+var app = builder.Build();
+app.UseRateLimiter(); // add the middleware to the pipeline
+
+app.MapGet("/api/weather", () => Results.Ok(GetWeather()))
+   .RequireRateLimiting("fixed"); // apply the named policy to this endpoint</code></pre>
+    <p><strong>Meaning:</strong> The policy is defined once, by name, and attached to whichever endpoints need it via <code>RequireRateLimiting("fixed")</code> — the same reusable-policy shape you've already seen for authorization policies, applied here to traffic instead of permissions.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Different endpoints, genuinely different rate-limiting needs — matching each algorithm to the shape of the problem it actually solves:</p>
+
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">builder.Services.AddRateLimiter(options =>
+{
+    // Login: protect against brute-force attempts, per client IP — a strict, simple cap is appropriate here.
+    options.AddFixedWindowLimiter("login", opt =>
+    {
+        opt.PermitLimit = 5;
+        opt.Window = TimeSpan.FromMinutes(1);
+    });
+
+    // General API traffic: allow normal bursts of activity (a user rapidly paging through results)
+    // while still holding everyone to a fair, steady average rate.
+    options.AddTokenBucketLimiter("api", opt =>
+    {
+        opt.TokenLimit = 20;                              // bucket capacity — allows a burst of 20
+        opt.TokensPerPeriod = 5;
+        opt.ReplenishmentPeriod = TimeSpan.FromSeconds(10); // refills 5 tokens every 10 seconds
+    });
+
+    // Report generation: expensive, resource-heavy work — the concern isn't request volume over time,
+    // it's how many of these can genuinely run AT ONCE without overwhelming the reporting engine.
+    options.AddConcurrencyLimiter("reports", opt =>
+    {
+        opt.PermitLimit = 3;   // at most 3 report generations in flight simultaneously, from anyone
+        opt.QueueLimit = 10;   // additional requests wait in a queue rather than being rejected outright
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync("Too many requests — please slow down.", token);
+    };
+});
+
+app.UseRateLimiter();
+
+app.MapPost("/api/login", LoginHandler).RequireRateLimiting("login");
+app.MapGet("/api/products", GetProducts).RequireRateLimiting("api");
+app.MapPost("/api/reports/generate", GenerateReport).RequireRateLimiting("reports");</code></pre>
+    <p>Three different policies, three different algorithms, because each endpoint's actual risk is genuinely different: login needs strict, simple abuse protection (Fixed Window); everyday API browsing needs to tolerate normal bursty usage while staying fair overall (Token Bucket); expensive report generation needs to cap simultaneous load on a shared resource, regardless of how spread out over time the requests are (Concurrency Limiter).</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🚦</span> A theme park's ride queue, not a strict ticket quota</div>
+        <p>A <strong>fixed window</strong> is like a ride that only counts riders per exact clock hour — if 50 people rush in during the last minute of the 2 PM hour, and another 50 the instant 3 PM starts, the ride was briefly swamped with 100 people in about two minutes, even though "50 per hour" was the rule. A <strong>sliding window</strong> smooths that by tracking riders on a continuously moving hour, not a clock-aligned one, so no single sixty-second stretch can be double-counted against two separate hours.</p>
+        <p>A <strong>token bucket</strong> is like a ride that hands out ride tickets that trickle in steadily over the day, but lets you save up a few and use them all at once if you haven't ridden in a while — some real burstiness is fine, as long as your average pace over the day stays within bounds. A <strong>concurrency limiter</strong> isn't about tickets over time at all — it's the ride physically only having 3 cars, so however many people show up over the whole day, never more than 3 groups are ever mid-ride at the same instant.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">HOW REQUESTS ARE ACTUALLY KEYED AND TRACKED</div>
+        <div class="flow-step">
+            <div class="step-label">PARTITIONING — LIMITS APPLY PER KEY, NOT GLOBALLY BY DEFAULT</div>
+            <ul>
+                <li>The examples above define a single limiter shared by every caller of an endpoint — useful, but often too coarse: you usually want the limit applied <em>per client</em>, not one shared pool for the entire world.</li>
+                <li><code>AddPolicy</code> (the more general registration method, alongside the algorithm-specific shortcuts shown above) accepts a <strong>partition key</strong> — commonly the client's IP address, or an authenticated user's ID (read from the <code>ClaimsPrincipal</code> the authentication lesson covered) — so each distinct client gets its own independent counter, rather than everyone sharing one global limit.</li>
+                <li>Under the hood, each algorithm's state (window counts, bucket token levels, in-flight counts) is tracked in memory by the middleware, per partition key, using precise, thread-safe counters — this is why the limiter itself adds only a small, predictable amount of overhead per request compared to the cost of whatever it's protecting.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Rate limiting is only about stopping attackers" — no, fairness and downstream protection matter just as much</h3>
+    <p>It's tempting to think of rate limiting purely as a security feature against malicious traffic. As the hook illustrated, entirely well-intentioned clients can just as easily overwhelm a shared resource through a bug, an unexpectedly popular feature, or simple scale. Rate limiting protects the system's overall health and fairness, independent of anyone's intent.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "A rate limit over time and a concurrency limit are the same idea" — they measure genuinely different things</h3>
+    <p>A time-based limit (fixed window, sliding window, token bucket) asks "how many requests happened in this period?" A concurrency limit asks "how many requests are actively in progress right now?" A client sending requests one-at-a-time, waiting for each to finish before sending the next, could never trip a concurrency limiter no matter how many total requests it sends over a day — but it could easily trip a strict fixed-window limit if it sends them fast enough within one window. These are answering different questions, and picking the wrong one for a given problem (protecting a limited connection pool vs. protecting against a chatty client) won't actually solve it.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Applying one global limit shared by every client</h4>
+    <p>❌ A single fixed-window policy with no partition key, meaning one aggressive client can exhaust the entire limit and lock out every other legitimate client sharing it.</p>
+    <p>✅ Partition the limiter by client IP or authenticated user ID, so each caller gets its own independent budget.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Using Fixed Window where boundary bursts genuinely matter</h4>
+    <p>❌ Protecting a genuinely fragile downstream resource (a strict third-party rate limit) with Fixed Window, not accounting for the possibility of nearly double the configured rate landing right at a window boundary.</p>
+    <p>✅ Use Sliding Window (or a sufficiently conservative Token Bucket configuration) when the boundary-burst behavior would actually cause a real problem for what's being protected.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for a time-based limiter to protect against simultaneous load</h4>
+    <p>❌ Using a Token Bucket policy to try to cap how many report generations can run at once, when the actual risk is overwhelming the reporting engine with too much <em>concurrent</em> work — a slow, spread-out trickle of requests could still pass a time-based limit while still overloading the engine if enough of them land at once.</p>
+    <p>✅ Use the Concurrency Limiter specifically when the concern is simultaneous in-flight load on a resource, not total volume over a time window.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Use <strong>Fixed Window</strong> for simple, strict caps where the boundary-burst behavior is an acceptable trade-off for simplicity — a reasonable default for endpoints like login where "at most N per minute" is a fine approximation.</li>
+        <li style="margin-bottom:0.4rem;">Use <strong>Sliding Window</strong> when the boundary-burst problem genuinely matters — protecting a resource with a hard, strict external limit that a brief 2x spike would actually violate.</li>
+        <li style="margin-bottom:0.4rem;">Use <strong>Token Bucket</strong> as a general-purpose default for everyday API traffic, when tolerating short, normal bursts (a user quickly paging through results) while still holding to a fair long-run average is the goal.</li>
+        <li style="margin-bottom:0.4rem;">Use the <strong>Concurrency Limiter</strong> when the real concern is simultaneous load on a specific resource (a database connection pool, an expensive computation engine) rather than total request volume over time.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Don't</strong> apply the same blanket rate limit to every endpoint — a public, cheap read endpoint and an expensive write or authentication endpoint have genuinely different, reasonable limits.</li>
+    </ul>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Ask "is the risk here about how much traffic arrives over time, or about how much is happening all at once?" The first points to Fixed Window, Sliding Window, or Token Bucket; the second points specifically to the Concurrency Limiter.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Fixed Window</strong> = simple clock-aligned buckets — can double up right at the boundary.<br />
+        <strong>Sliding Window</strong> = a continuously moving window — fixes the boundary burst, costs more bookkeeping.<br />
+        <strong>Token Bucket</strong> = tolerates real bursts, enforces a steady average over time.<br />
+        <strong>Concurrency Limiter</strong> = caps simultaneous in-flight requests — a genuinely different axis than "over time."<br /><br />
+        <strong>Remember:</strong> Rate limiting protects the system from abuse, unfairness between clients, <em>and</em> overload of downstream resources — three real reasons, not just one.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">ASP.NET Core's built-in <strong><code>Microsoft.AspNetCore.RateLimiting</code></strong> middleware (since .NET 7) caps traffic per named policy, applied to specific endpoints via <code>RequireRateLimiting()</code>.</li>
+            <li style="margin-bottom:0.4rem;">Rate limiting exists to protect against <strong>abuse</strong>, ensure <strong>fairness</strong> across clients sharing an API, and prevent <strong>downstream resources</strong> from being overwhelmed — even by well-intentioned traffic.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Fixed Window</strong> is simple but allows a burst at window boundaries; <strong>Sliding Window</strong> smooths that out at extra bookkeeping cost.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Token Bucket</strong> tolerates short bursts while enforcing a steady average rate — a common general-purpose default.</li>
+            <li style="margin-bottom:0.4rem;">The <strong>Concurrency Limiter</strong> caps simultaneous in-flight requests rather than volume over time — a genuinely different kind of limit, suited to protecting resources sensitive to simultaneous load.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen why APIs need rate limiting and how each of the four built-in algorithms handles the problem differently. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A fixed window limiter allows 100 requests per 60-second window. What genuine weakness does this algorithm have?</p>
+        <ul class="options">
+            <li>A) It cannot be applied to individual endpoints, only globally</li>
+            <li>B) A client can send up to 100 requests at the very end of one window and another 100 at the very start of the next, briefly approaching 200 requests in a much shorter span than 60 seconds</li>
+            <li>C) It requires a database to track request counts</li>
+            <li>D) It cannot reject any requests at all — it only logs violations</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Because the window resets entirely at fixed clock-aligned boundaries, a client can exploit both the tail end of one window and the start of the next, briefly seeing close to double the configured rate.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Fixed window limiters, like all the built-in algorithms, are applied per named policy to specific endpoints via <code>RequireRateLimiting()</code>.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The built-in middleware tracks state in memory, not in a database, for its counters.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Rate limiting middleware actively rejects requests over the limit (typically with 429), it doesn't just log and allow them through.</p>
+                <p><strong>Reinforcement:</strong> The boundary-burst weakness is the specific, well-known trade-off Fixed Window makes for its simplicity — and it's exactly what Sliding Window exists to fix.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Which algorithm specifically limits how many requests can be actively processed at the same moment, rather than how many occur over a period of time?</p>
+        <ul class="options">
+            <li>A) Fixed Window</li>
+            <li>B) Sliding Window</li>
+            <li>C) Token Bucket</li>
+            <li>D) Concurrency Limiter</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: D</span></p>
+                <p><strong>Why D is correct:</strong> The Concurrency Limiter caps in-flight, simultaneous requests — a request holds a slot from when it starts until it finishes, independent of how request volume is distributed over time.</p>
+                <p><span class="incorrect">❌ Why A, B, and C are incorrect:</span> Fixed Window, Sliding Window, and Token Bucket are all fundamentally time-based — they count requests over a period, which is a genuinely different measurement than "how many are in flight right now."</p>
+                <p><strong>Reinforcement:</strong> Concurrency limiting answers "how much is happening at once," a distinct question from every time-window-based algorithm.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> You're rate limiting a general-purpose API endpoint where you want to allow users to quickly page through several pages of results in a row (a natural short burst), while still enforcing a fair average request rate over time. Which algorithm best fits this need?</p>
+        <ul class="options">
+            <li>A) Fixed Window, because it's the simplest to configure</li>
+            <li>B) Token Bucket, because it deliberately tolerates a burst up to the bucket's capacity while still enforcing a steady long-run average through its refill rate</li>
+            <li>C) Concurrency Limiter, because paging through results counts as concurrent load</li>
+            <li>D) None of the built-in algorithms can express this — it requires a custom solution</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is precisely the shape of problem Token Bucket is designed for — a full bucket allows a short burst of paging requests, and the steady token refill rate keeps the long-run average fair.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Fixed Window can technically allow some burstiness too, but it's not designed for it deliberately — and it comes with the specific boundary-burst weakness rather than a controlled, intentional one.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Paging through results one request at a time isn't primarily a concurrency concern (multiple requests in flight simultaneously) — it's a request-volume-over-time concern, which is what Token Bucket addresses.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is exactly what Token Bucket, a built-in algorithm, is designed to express — no custom solution is needed.</p>
+                <p><strong>Reinforcement:</strong> "Allow some burst, enforce a steady average" is Token Bucket's defining characteristic — recognize that phrasing and reach for it directly.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why is it a mistake to apply a single, unpartitioned rate limit policy shared by every client hitting an endpoint?</p>
+        <ul class="options">
+            <li>A) Unpartitioned policies are rejected by the framework at startup</li>
+            <li>B) One aggressive or buggy client can consume the entire shared limit, degrading or blocking access for every other legitimate client using the same policy</li>
+            <li>C) Unpartitioned policies only work with the Concurrency Limiter algorithm</li>
+            <li>D) It has no real downside — partitioning is purely a performance optimization</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Without a partition key (like client IP or user ID), all callers share one counter — so a single high-traffic client can exhaust the whole limit and lock out everyone else, directly undermining the "fairness" goal rate limiting is meant to serve.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Unpartitioned (single, shared) policies are valid configuration — the earlier Simple Example uses exactly one — they're just usually the wrong choice for multi-client scenarios.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Partitioning by key is a general capability available across the rate limiting system, not specific to one algorithm.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a real fairness problem, explicitly called out as a common mistake, not merely a performance concern.</p>
+                <p><strong>Reinforcement:</strong> Partitioning by client is usually essential in real multi-tenant APIs — a shared limit with no partition key defeats the fairness goal that motivated rate limiting in the first place.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know how to protect your API — and everything behind it — from excessive traffic, whether it comes from an attacker, a bug, or simply more legitimate demand than one client should fairly consume.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

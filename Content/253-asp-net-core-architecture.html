@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>253 - ASP.NET Core Architecture · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Same host, same DI, same configuration — plus a web server and a router.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Back in lessons 161 and 162, you built a working ASP.NET Core API. You wrote <code>app.MapGet(...)</code>, ran the project, and a browser (or a test script) got real JSON back. It worked — but you were never told <em>how</em>. What actually happens between a client sending an HTTP request and your little lambda function running? What is <code>app</code>, really? Why does calling <code>app.Run()</code> make anything start listening at all?</p>
+    <p>This lesson answers those questions. Not with hand-waving — with the real, documented architecture of ASP.NET Core: the web server that accepts the connection, the pipeline that processes the request, and the router that decides which piece of your code actually gets to handle it. Once you see this shape, every other lesson in this Part — middleware, filters, minimal APIs, controllers, model binding — is just filling in one piece of a picture you already have in your head.</p>
+    <p><strong>In this lesson, you'll learn the real ASP.NET Core request pipeline — Kestrel, middleware, and endpoint routing — and how <code>WebApplication.CreateBuilder(args)</code> is the exact same generic host you already used in lesson 124, with web-specific pieces bolted on.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>ASP.NET Core</strong> is the part of .NET responsible for turning your C# code into something that can listen on a network port, understand HTTP, and respond to requests. It's not one single thing — it's three cooperating layers:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">A <strong>web server</strong> that speaks raw HTTP over sockets (<strong>Kestrel</strong>).</li>
+        <li style="margin-bottom:0.4rem;">A <strong>pipeline</strong> of small components that each get a look at every request (<strong>middleware</strong>).</li>
+        <li style="margin-bottom:0.4rem;">A <strong>router</strong> that figures out which specific piece of your code should actually handle this particular request (<strong>endpoint routing</strong>).</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>ASP.NET Core is a cross-platform, open-source web framework built on top of the .NET generic host (the same <code>Host</code> infrastructure from lesson 124). It layers three things onto that host: <strong>Kestrel</strong>, a built-in, cross-platform HTTP server implemented directly in managed .NET code; a <strong>middleware pipeline</strong>, an ordered chain of request-handling delegates (the full subject of the next lesson); and <strong>endpoint routing</strong>, a system that matches an incoming request's URL and HTTP method against a table of registered endpoints — whether those endpoints are Minimal API delegates (lesson 256) or Controller actions (lesson 257).</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — HTTP Is Just Bytes on a Socket</h3>
+    <p>At the bottom of every web request is nothing more than bytes flowing over a TCP connection. Somebody has to: accept the connection, parse the raw bytes into a structured request (method, path, headers, body), figure out which piece of application code should handle it, run that code, and serialize whatever it returns back into raw bytes going the other direction. Doing all of that by hand, for every request, for every app, is exactly the kind of repetitive infrastructure work no application developer wants to write from scratch.</p>
+    <p>The older .NET Framework answer to this — classic ASP.NET, running under <code>System.Web</code> — solved it, but by tying the whole pipeline tightly to Windows and IIS. You couldn't run it on Linux, you couldn't easily swap out pieces of the pipeline, and the request-handling model (<code>HttpModules</code>, <code>HttpHandlers</code>) was heavier and less composable than modern needs demanded.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — A Lean, Composable, Cross-Platform Pipeline</h3>
+    <p>ASP.NET Core was built from the ground up to fix this: a web server that runs identically on Windows, Linux, and macOS; a pipeline made of small, composable, easy-to-reason-about components instead of a fixed framework-controlled sequence; and — critically for this course — a design that reuses the exact same hosting, configuration, dependency injection, and logging infrastructure you already learned for console apps and worker services in lesson 124. Web apps in modern .NET aren't a separate universe with their own rules. They're the generic host, plus a server, plus routing.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <p>Every single HTTP request that reaches your ASP.NET Core app travels through the same four stages, and the response travels back out through the same stages in reverse:</p>
+
+    <div class="flow-container">
+        <div class="flow-title">THE ASP.NET CORE REQUEST PIPELINE</div>
+        <div class="flow-step"><div class="step-label">1. CLIENT SENDS A REQUEST</div><ul><li>A browser, a mobile app, another service — sends raw bytes over HTTP(S) to your server's address and port.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">2. KESTREL ACCEPTS THE CONNECTION</div><ul><li>Kestrel, the built-in HTTP server, accepts the TCP connection and parses the raw bytes into a structured <code>HttpContext</code> — an object representing this one request/response pair.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">3. THE MIDDLEWARE PIPELINE RUNS</div><ul><li>The <code>HttpContext</code> flows through a chain of middleware components (lesson 254) — logging, exception handling, HTTPS redirection, authentication, and more, each getting a chance to inspect or modify it.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">4. ENDPOINT ROUTING MATCHES A HANDLER</div><ul><li>Routing middleware inspects the request's method and path, and matches it against your registered endpoints — a Minimal API delegate (lesson 256) or a Controller action (lesson 257).</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">5. YOUR HANDLER RUNS</div><ul><li>Model binding (lesson 258) populates its parameters, your code executes, and it produces a result — an object to serialize, a status code, whatever you return.</li></ul></div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step"><div class="step-label">6. THE RESPONSE FLOWS BACK OUT</div><ul><li>The result is written to the <code>HttpContext</code>'s response, flows back up through the same middleware chain (in reverse), and Kestrel writes the final bytes back over the socket to the client.</li></ul></div>
+    </div>
+
+    <div class="callout">
+        <strong>💡 The whole Part VII, in one sentence:</strong> lesson 254 zooms into stage 3 (middleware), lesson 255 explains a controller-specific refinement of stage 5, lessons 256–257 explain the two ways to write stage 5's handlers, and lesson 258 explains exactly how stage 5's parameters get populated. This lesson is the map; the rest of the Part is the terrain.
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <p>Here's the exact sequence that happens in your code, from cold start to a running server, and it should look immediately familiar from lesson 124:</p>
+
+    <div class="flow-container">
+        <div class="flow-title">FROM Program.cs TO A LISTENING SERVER</div>
+        <div class="flow-step">
+            <div class="step-label">1. CREATE THE WEB APPLICATION BUILDER</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">var builder = WebApplication.CreateBuilder(args);</code></pre>
+            <ul><li>This is <code>Host.CreateApplicationBuilder(args)</code>'s web-flavored sibling. It sets up the exact same DI container (<code>IServiceCollection</code>), the exact same layered configuration system, and the exact same logging infrastructure.</li><li>On top of that, it also registers Kestrel as the server and wires up the plumbing routing needs.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. REGISTER SERVICES (JUST LIKE LESSON 124)</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">builder.Services.AddSingleton&lt;IProductRepository, ProductRepository&gt;();</code></pre>
+            <ul><li><code>builder.Services</code> is the same <code>IServiceCollection</code> you already know. Nothing about DI registration changes just because HTTP is now involved.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. BUILD THE APP</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">var app = builder.Build();</code></pre>
+            <ul><li>This compiles all the registrations into a working <code>IServiceProvider</code>, exactly as <code>Build()</code> did for the plain generic host — and also produces a <code>WebApplication</code> object that additionally knows how to configure a middleware pipeline and register endpoints.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. CONFIGURE THE MIDDLEWARE PIPELINE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">app.UseHttpsRedirection();</code></pre>
+            <ul><li>Every <code>app.Use...()</code> call adds one more component to the chain a request will pass through. Full treatment in lesson 254.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. REGISTER ENDPOINTS</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">app.MapGet("/products/{id:int}", (int id, IProductRepository repo) =&gt; repo.GetById(id));</code></pre>
+            <ul><li>This adds an entry to the endpoint routing table: "a GET request to <code>/products/{id}</code> should run this delegate." Full treatment in lesson 256.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">6. RUN</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">app.Run();</code></pre>
+            <ul><li>This is the web equivalent of <code>host.RunAsync()</code>. It starts Kestrel listening on its configured port(s) and blocks, processing requests, until the process is asked to shut down.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Here's the smallest possible ASP.NET Core app — every stage from the Big Picture diagram is present, just with almost nothing inside each one:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">var builder = WebApplication.CreateBuilder(args);   // 1. Host + DI + config + Kestrel
+var app = builder.Build();                          // 2. Build the app
+
+app.Use(async (context, next) =>                     // 3. A tiny middleware
+{
+    Console.WriteLine($"Incoming: {context.Request.Method} {context.Request.Path}");
+    await next(context);
+});
+
+app.MapGet("/hello", () => "Hello from ASP.NET Core!"); // 4. An endpoint
+
+app.Run();                                            // 5. Start Kestrel, listen forever</code></pre>
+    <p><strong>What happens when a browser requests <code>GET /hello</code>:</strong> Kestrel accepts the TCP connection and builds an <code>HttpContext</code>. That context flows into the one middleware you registered, which prints a log line and calls <code>next(context)</code> to continue. Routing then matches <code>GET /hello</code> against the endpoint table and finds your <code>MapGet</code> delegate. It runs, returns the string <code>"Hello from ASP.NET Core!"</code>, which gets written as the response body. The response flows back out (there's nothing left to do in the middleware after the endpoint ran, in this tiny example), and Kestrel sends the bytes back to the browser.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>This is exactly the shape underneath the project you already built in lesson 161/162. When a client called <code>GET /tasks/42</code> against your task-tracking API:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">app.MapGet("/tasks/{id:int}", (int id, ITaskRepository repo) =>
+{
+    var task = repo.GetById(id);
+    return task is not null ? Results.Ok(task) : Results.NotFound();
+});</code></pre>
+    <p>Kestrel accepted the connection. There was no custom middleware in that project beyond the framework defaults, so the request passed straight through routing, which matched <code>GET /tasks/{id:int}</code> and extracted <code>id = 42</code> from the URL. The DI container supplied a real <code>ITaskRepository</code> instance to the delegate's second parameter — the same container mechanics from lesson 124, just reaching directly into an endpoint handler instead of a constructor. Your code ran, returned either <code>Results.Ok(task)</code> or <code>Results.NotFound()</code>, and ASP.NET Core translated that into an actual HTTP status code and JSON body written back through Kestrel. Every piece of that you'll now be able to name.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">✈️</span> An Airport</div>
+        <p>A plane lands — that's a connection arriving. <strong>Kestrel</strong> is the runway and the ground crew: it physically receives the aircraft (the raw bytes) and turns it into something the airport can process (a structured <code>HttpContext</code>).</p>
+        <p>Passengers then walk through a sequence of checkpoints — passport control, security, customs — each able to inspect them, stamp something, or in rare cases turn them away entirely before they ever reach a gate. That's the <strong>middleware pipeline</strong>: a fixed sequence every arrival passes through, regardless of which specific flight or gate they're headed to.</p>
+        <p>Finally, the departures board — <strong>endpoint routing</strong> — tells each passenger exactly which gate is theirs, based on their flight number (the URL and HTTP method). The gate agent — your <strong>handler</strong> — is the only part of this whole journey that's actually specific to that one passenger's trip.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">WHAT WebApplication.CreateBuilder ACTUALLY DOES</div>
+        <div class="flow-step">
+            <div class="step-label">1. IT'S THE GENERIC HOST, EXTENDED</div>
+            <ul><li>Internally, <code>WebApplicationBuilder</code> wraps the same host-building machinery as <code>Host.CreateApplicationBuilder</code> — configuration sources (appsettings.json, environment variables, command-line args), the DI container, and the logging pipeline are all set up identically.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. IT ADDS AN IServer — KESTREL, BY DEFAULT</div>
+            <ul><li>ASP.NET Core defines a <code>IServer</code> abstraction for "something that can accept HTTP connections and hand them off as <code>HttpContext</code> objects." Kestrel is the default, cross-platform implementation registered for you automatically.</li><li>Other implementations exist for specific hosting scenarios (for example, an in-process IIS server), but Kestrel is what you're running whenever you don't configure anything special.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. WebApplication IS SEVERAL THINGS AT ONCE</div>
+            <ul><li>The object you get back from <code>builder.Build()</code> simultaneously acts as the host (it can be run and stopped), as the thing you configure middleware on, and as the thing you register endpoints on. That's why <code>app.Use...()</code> and <code>app.Map...()</code> calls can both be made directly on the same <code>app</code> variable.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. Kestrel ↔ REVERSE PROXY</div>
+            <ul><li>Kestrel is a genuinely production-capable HTTP server — it can be, and often is, exposed directly to the internet. Many production deployments still place a reverse proxy (a cloud load balancer, nginx, or YARP) in front of it anyway, for reasons like TLS termination at scale, sharing one public IP/port across multiple apps, or a web application firewall — not because Kestrel is somehow unsafe on its own.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Is this a completely different DI container from the console app one?"</h3>
+    <p>No. It's the exact same <code>Microsoft.Extensions.DependencyInjection</code> container from lesson 124, exposed through the exact same <code>IServiceCollection</code>/<code>IServiceProvider</code> pattern. <code>WebApplication.CreateBuilder</code> doesn't reinvent DI for the web — it just adds web-specific registrations (Kestrel, routing) on top of the same foundation.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Kestrel" and "ASP.NET Core" aren't the same thing</h3>
+    <p>Kestrel is one specific piece — the server that accepts connections. ASP.NET Core is the whole framework: Kestrel, plus middleware, plus routing, plus everything built on top of routing (Minimal APIs, Controllers, model binding). It's easy to say "ASP.NET Core" when you specifically mean Kestrel, or vice versa, but keeping them distinct in your head makes the rest of this Part click into place faster.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Assuming you must use Controllers to "really" be doing ASP.NET Core</h4>
+    <p>❌ Believing Minimal APIs are a lightweight toy and Controllers are the "real" framework. Both are just two different ways of writing stage 5 (the handler) in the same pipeline — see lessons 256 and 257 for an honest comparison.</p>
+    <p>✅ The pipeline (Kestrel → middleware → routing) is identical either way. Which handler style you choose doesn't change the underlying architecture at all.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Registering middleware or endpoints in the wrong order and being surprised</h4>
+    <p>❌ Calling <code>app.MapGet(...)</code> before <code>app.UseAuthentication()</code> and expecting authentication to protect that endpoint. Order in <code>Program.cs</code> is execution order — this is the entire subject of the next lesson.</p>
+    <p>✅ Treat the sequence of <code>app.Use...()</code> and <code>app.Map...()</code> calls as literally describing the order a request passes through them.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <p>This isn't really an optional tool you reach for — it's the foundation any ASP.NET Core web app or API is built on, whether you know it or not. Every template (<code>dotnet new web</code>, <code>dotnet new webapi</code>, and everything in between) produces a <code>Program.cs</code> shaped exactly like the "How It Works" section above. What <em>is</em> a real decision is how much of it you interact with directly:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">For small APIs and microservices, you may never write custom middleware or touch routing configuration beyond <code>app.Map...()</code> calls — the defaults are enough.</li>
+        <li style="margin-bottom:0.4rem;">For larger applications, understanding this pipeline precisely is what lets you reason correctly about where cross-cutting concerns (logging, auth, error handling) belong — and that reasoning starts here.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Kestrel</strong> = accepts the connection, turns bytes into an <code>HttpContext</code><br />
+        <strong>Middleware</strong> = a chain every request passes through, in order<br />
+        <strong>Endpoint routing</strong> = decides which specific handler this request belongs to<br />
+        <strong>Handler</strong> = your code — a Minimal API delegate or a Controller action<br /><br />
+        <strong>Remember:</strong><br />
+        · <code>WebApplication.CreateBuilder(args)</code> = <code>Host.CreateApplicationBuilder(args)</code> + Kestrel + routing.<br />
+        · Same DI, same configuration, same logging you already know from lesson 124.<br />
+        · The request travels down through this pipeline; the response travels back up through it.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">ASP.NET Core's real request pipeline is: Kestrel accepts the connection → the middleware pipeline runs → endpoint routing matches a handler → your handler runs → the response flows back out through the same middleware.</li>
+            <li style="margin-bottom:0.4rem;"><code>WebApplication.CreateBuilder(args)</code> is not a separate framework — it's the same generic host from lesson 124, with a web server and routing added on top. Same DI container, same configuration system, same logging.</li>
+            <li style="margin-bottom:0.4rem;">Kestrel is the built-in, cross-platform, production-capable HTTP server behind every ASP.NET Core app.</li>
+            <li style="margin-bottom:0.4rem;">Middleware, filters, Minimal APIs, Controllers, and model binding — everything else in this Part — are all pieces of this one pipeline shape, examined in detail.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've now seen the full shape of the ASP.NET Core request pipeline. Let's check that the picture has stuck.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Put these in the correct order for an incoming HTTP request: (I) endpoint routing matches a handler, (II) Kestrel accepts the connection, (III) the middleware pipeline runs, (IV) the handler executes.</p>
+        <ul class="options">
+            <li>A) I, II, III, IV</li>
+            <li>B) II, III, I, IV</li>
+            <li>C) II, I, III, IV</li>
+            <li>D) III, II, I, IV</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Kestrel must accept the connection and build an <code>HttpContext</code> before anything else can happen. That context then flows through the middleware pipeline, which includes the routing middleware that matches an endpoint, and only then does the matched handler actually execute.</p>
+                <p><span class="incorrect">❌ Why A, C, D are incorrect:</span> Each reorders a stage that has a hard dependency on the one before it — you can't match an endpoint before Kestrel has even produced an <code>HttpContext</code>, and you can't run a handler before routing has decided which one applies.</p>
+                <p><strong>Reinforcement:</strong> Connection → middleware/routing → handler → response back out is the fixed shape of every request.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What is the real relationship between <code>WebApplication.CreateBuilder(args)</code> and <code>Host.CreateApplicationBuilder(args)</code> from lesson 124?</p>
+        <ul class="options">
+            <li>A) They are completely unrelated — ASP.NET Core has its own separate DI container</li>
+            <li>B) <code>WebApplication.CreateBuilder</code> builds on the same generic host, adding a web server (Kestrel) and routing on top of the same DI, configuration, and logging</li>
+            <li>C) <code>Host.CreateApplicationBuilder</code> is deprecated in favor of <code>WebApplication.CreateBuilder</code> for all app types</li>
+            <li>D) <code>WebApplication.CreateBuilder</code> only works for Controllers, not Minimal APIs</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The web-flavored builder is an extension of the same generic host pattern — same DI container, same configuration system, same logging — plus web-specific additions like Kestrel and routing.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> They share the same underlying DI mechanics (<code>Microsoft.Extensions.DependencyInjection</code>).</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Both remain valid and serve different purposes — console apps and worker services still use the plain generic host.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>WebApplication.CreateBuilder</code> underlies both Minimal APIs and Controllers equally — they're just two ways of writing endpoint handlers on the same host.</p>
+                <p><strong>Reinforcement:</strong> Web apps don't get a different DI system — they get the same one, with web pieces added.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> What is Kestrel's role in the ASP.NET Core architecture?</p>
+        <ul class="options">
+            <li>A) It's the routing system that decides which controller action or delegate handles a request</li>
+            <li>B) It's the built-in, cross-platform web server that accepts HTTP connections and produces the initial <code>HttpContext</code></li>
+            <li>C) It's a filter that validates incoming request models</li>
+            <li>D) It's a middleware component you add manually with <code>app.UseKestrel()</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Kestrel is the server layer — it accepts raw TCP connections, parses HTTP, and produces the <code>HttpContext</code> that then flows through the rest of the pipeline.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That's endpoint routing's job, a separate stage that runs after Kestrel has already produced the request context.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Model/request validation is a model binding and filter concern (lessons 255 and 258), unrelated to the server layer.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Kestrel is registered automatically by <code>WebApplication.CreateBuilder</code> — you don't add it as middleware.</p>
+                <p><strong>Reinforcement:</strong> Kestrel is the doorman, not the router or the receptionist.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> In the Big Picture diagram, at which stage does the DI container supply a service like <code>IProductRepository</code> directly into a Minimal API delegate's parameter?</p>
+        <ul class="options">
+            <li>A) Stage 2 — Kestrel accepting the connection</li>
+            <li>B) Stage 3 — the middleware pipeline</li>
+            <li>C) Stage 5 — when your handler runs (and its parameters are being resolved/bound)</li>
+            <li>D) It happens before <code>app.Build()</code> is even called</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> Dependency resolution for a handler's parameters happens as part of preparing to invoke that specific handler, once routing has already matched it — the same moment model binding populates the rest of the parameters (lesson 258 covers this fully).</p>
+                <p><span class="incorrect">❌ Why A, B are incorrect:</span> Kestrel and generic middleware have no awareness of any specific endpoint's parameter list — that knowledge only exists once routing has matched a specific handler.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>app.Build()</code> constructs the <code>IServiceProvider</code>, but actual resolution of a specific handler's dependencies happens per-request, not at build time.</p>
+                <p><strong>Reinforcement:</strong> DI into Minimal API parameters is resolved at the same point the handler is about to run — lesson 256 covers this mechanism in full.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> Why does modern ASP.NET Core architecture no longer tie the framework to IIS the way classic ASP.NET (System.Web) did?</p>
+        <ul class="options">
+            <li>A) Because Kestrel is a built-in, cross-platform server that doesn't require IIS or Windows to run at all</li>
+            <li>B) Because IIS was discontinued by Microsoft</li>
+            <li>C) Because ASP.NET Core doesn't support HTTPS</li>
+            <li>D) Because Controllers replaced the need for any web server</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> Kestrel runs identically on Windows, Linux, and macOS, without any dependency on IIS. This is exactly what enables ASP.NET Core apps to run cross-platform — one of the core motivations behind the redesign from classic ASP.NET.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> IIS still exists and can still host ASP.NET Core apps (or sit in front of Kestrel as a reverse proxy) — it's simply no longer a hard requirement.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> ASP.NET Core fully supports HTTPS; this has nothing to do with the platform dependency question.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A web server is still required regardless of whether you use Controllers or Minimal APIs — Controllers are a handler style, not a server replacement.</p>
+                <p><strong>Reinforcement:</strong> Kestrel's cross-platform, in-process design is precisely what freed ASP.NET Core from the Windows/IIS dependency of its predecessor.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have the map for the rest of this Part — every lesson from here on is zooming into one piece of this pipeline.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
