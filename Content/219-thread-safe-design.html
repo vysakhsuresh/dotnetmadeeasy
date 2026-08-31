@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>219 - Thread-Safe Design · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The best synchronization code is the synchronization code you never had to write.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>The last two lessons were reactive: here's a bug (a race condition), here's another bug (a deadlock), here's how to patch each one after the fact with a lock, a timeout, a consistent ordering convention. Useful — but patching is not the same as designing well in the first place. This lesson flips the whole Part's synchronization toolkit around and asks a different question: if you were designing a class from scratch, <em>before</em> any bug existed, how would you shape it so that most of that patching was never necessary at all?</p>
+    <p><strong>In this lesson, you'll learn the actual hierarchy of thread-safe design strategies — starting from the strongest (immutability, which needs zero synchronization) down through minimizing shared state, to encapsulating any synchronization a class genuinely needs inside itself rather than exposing raw state and hoping callers remember to lock correctly. You'll also learn a real, documented .NET convention about which members are — and aren't — safe to call from multiple threads by default, and close by designing a genuinely thread-safe cache class from the ground up.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Thread-safe design</strong> means shaping a type's data and API <em>up front</em> so that using it correctly from multiple threads is either automatic (nothing to get wrong) or clearly documented and self-contained (the type protects itself, rather than trusting every caller everywhere to remember to lock around it correctly, forever, in every file that ever touches it).</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A type is thread-safe if it behaves correctly — no race conditions, no corrupted state, no crashes — when its members are invoked concurrently from multiple threads, without the caller needing to add any external synchronization of their own. Thread-safe <em>design</em> is the discipline of achieving that property deliberately, through a small number of well-understood strategies, rather than by sprinkling <code class="icode">lock</code> statements reactively wherever a bug happens to surface.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> The core message of this whole lesson</div>
+        <p>The strongest, simplest way to make code thread-safe is to make it need no synchronization at all. An object with no mutable state after construction can be shared across any number of threads, read concurrently forever, with zero locks and zero risk — because a race condition, as the earlier lesson defined it precisely, requires mutable state, and there simply isn't any. Everything else in this lesson is what to do when you genuinely can't avoid some mutable, shared state — which is real and common, just not the default you should reach for first.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Reactive Locking Doesn't Scale to a Team</h3>
+    <p>Imagine a class that exposes a public mutable field — say, a <code class="icode">Dictionary&lt;string, int&gt;</code> — and a comment saying "remember to lock around this before using it from multiple threads." That works exactly as long as every single developer, on every single call site, in every file, forever, reads and obeys that comment. One missed spot — a new feature, a hurried bugfix, someone who never saw the comment — reintroduces a live race condition. The correctness of the whole system now depends on discipline scattered across every caller, rather than being enforced in one place.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is for thread-safety to be a property of the <em>type itself</em> — either because there's genuinely nothing to protect (immutability), or because the type protects its own internals and presents a safe contract to every caller, rather than handing out raw mutable state and a wish of good luck.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — A Hierarchy of Strategies, Strongest First</h3>
+    <p>This lesson presents that hierarchy, from the strategy that eliminates the risk entirely down to the one that merely manages it — with a strong bias toward reaching for the earlier, stronger options whenever the design allows it.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Strategy</th><th>How it works</th><th>Strength</th></tr></thead>
+            <tbody>
+                <tr><td><strong>1. Immutability</strong></td><td>No mutable state after construction — nothing for a race condition to happen to</td><td>Strongest — risk eliminated, zero synchronization needed</td></tr>
+                <tr><td><strong>2. Minimize shared state</strong></td><td>Pass data through parameters/return values instead of shared fields multiple threads can reach</td><td>Strong — less to protect in the first place</td></tr>
+                <tr><td><strong>3. Encapsulated synchronization</strong></td><td>The class owns its own lock/concurrent collection internally; callers use a safe public API</td><td>Good — correctness lives in one place, not scattered across every caller</td></tr>
+                <tr><td><strong>4. Caller-managed synchronization</strong></td><td>Raw mutable state is exposed; every caller is expected to lock around it correctly, externally</td><td>Weakest — fragile, depends on every caller getting it right, forever</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Notice the direction of travel: each strategy down the list pushes more of the correctness burden outward, onto more people, for longer. Good thread-safe design means climbing as far up this list as the problem genuinely allows — and reserving strategy 4 for situations where you have no other choice and can document the contract extremely clearly.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">STRATEGY 1 — IMMUTABILITY</div>
+        <div class="flow-step">
+            <div class="step-label">No mutable state → no synchronization needed, ever</div>
+            <ul>
+                <li>Use <code>readonly struct</code> and records with init-only properties — from Advanced Part I — for any type representing a value rather than an evolving, stateful thing.</li>
+                <li>An immutable instance can be freely read by any number of threads simultaneously — there is no write to race against, so it's automatically, structurally thread-safe.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <div class="flow-title">STRATEGY 2 — MINIMIZE SHARED MUTABLE STATE</div>
+        <div class="flow-step">
+            <div class="step-label">Prefer parameters and return values over shared fields</div>
+            <ul>
+                <li>A local variable inside a method, never captured by anything else, can't be raced on — nothing else can reach it.</li>
+                <li>Passing data through method parameters and return values keeps state confined to a single call, rather than published to fields multiple threads can independently reach.</li>
+                <li>Where a field genuinely must exist, ask whether it needs to be mutable, and whether it genuinely needs to be reachable from more than one thread — sometimes it doesn't need to be either.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <div class="flow-title">STRATEGY 3 — ENCAPSULATE NECESSARY SYNCHRONIZATION</div>
+        <div class="flow-step">
+            <div class="step-label">The class owns its own lock — callers never see raw state</div>
+            <ul>
+                <li>If a class genuinely needs mutable, shared internal state (a counter, a cache, an in-memory queue), it should protect that state itself — with a private lock or an internally-used concurrent collection — and expose only a safe public API.</li>
+                <li>Callers never touch the raw field directly, never need to know a lock exists, and can't forget to acquire it — because they never had the opportunity to skip it in the first place.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>The difference between strategy 3 and strategy 4, made concrete — a running total that multiple threads report progress to:</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ Strategy 4 — caller-managed (fragile)</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class ProgressTracker
+{
+    public int Completed; // raw, public, mutable
+
+    // Every single caller must remember:
+    // lock (someSharedLockObject) { tracker.Completed++; }
+}</code></pre>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Strategy 3 — encapsulated (robust)</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.6rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class ProgressTracker
+{
+    private int _completed;
+
+    public void ReportOneCompleted() =&gt;
+        Interlocked.Increment(ref _completed);
+
+    public int Completed =&gt; Volatile.Read(ref _completed);
+}
+// Every caller just calls ReportOneCompleted() —
+// there is no raw field to forget to protect.</code></pre>
+        </div>
+    </div>
+    <p>In the fixed version, <em>every</em> caller — today's code, and code written by someone new to the team next year — automatically gets correct behavior, because there was never a raw field for them to touch unsafely. The synchronization decision was made exactly once, by the class's author, in exactly one place.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE — the capstone cache class ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Designing a Thread-Safe Cache From Scratch</h2>
+    <p>Here's the whole hierarchy applied together, to a genuinely common real-world need: a small in-memory cache that many concurrent request-handling threads will read from and write to at the same time.</p>
+
+    <div class="code-block"><code>/// &lt;summary&gt;
+/// A simple in-memory cache. All members of this type are safe
+/// for concurrent use by multiple threads — no external locking
+/// is required by callers.
+/// &lt;/summary&gt;
+public sealed class SimpleCache&lt;TKey, TValue&gt; where TKey : notnull
+{
+    // Strategy 3: synchronization is encapsulated inside the class.
+    // A ConcurrentDictionary does its own internal locking, so this
+    // class never needs a private lock object of its own for gets/sets.
+    private readonly ConcurrentDictionary&lt;TKey, TValue&gt; _entries = new();
+
+    public bool TryGet(TKey key, out TValue value) =&gt;
+        _entries.TryGetValue(key, out value!);
+
+    // GetOrAdd is a single atomic operation on ConcurrentDictionary —
+    // not a separate "check" then "add" from the caller's side, which
+    // would reintroduce exactly the check-then-act race from the
+    // race-conditions lesson.
+    public TValue GetOrAdd(TKey key, Func&lt;TKey, TValue&gt; factory) =&gt;
+        _entries.GetOrAdd(key, factory);
+
+    public void Remove(TKey key) =&gt; _entries.TryRemove(key, out _);
+
+    public int Count =&gt; _entries.Count;
+}</code></div>
+
+    <p>Walking through the design decisions:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>No raw mutable field is ever exposed publicly</strong> — every interaction goes through a method or property that's already been designed to be safe.</li>
+        <li style="margin-bottom:0.4rem;"><strong>The synchronization is internal</strong> — this class uses a concurrent collection (covered fully elsewhere in this Part) rather than requiring the caller to wrap every call in their own <code class="icode">lock</code>.</li>
+        <li style="margin-bottom:0.4rem;"><strong>GetOrAdd is exposed as one atomic operation</strong>, not as separate "does it exist" and "add it" steps a caller would have to compose themselves — composing two individually-safe operations yourself does not automatically give you a safe combined operation, a trap covered in Common Confusion below.</li>
+        <li style="margin-bottom:0.4rem;"><strong>The thread-safety contract is explicitly documented</strong> in the XML doc comment — a caller doesn't have to guess or read the implementation to know this type is safe to share.</li>
+    </ul>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🏦</span> A Bank Vault vs. a Cash Box on the Counter</div>
+        <p>A raw mutable public field is a cash box sitting on the counter — anyone who walks by can reach in, and whether the money stays correct depends entirely on every single person who touches it remembering to be careful. A class with encapsulated synchronization is a bank vault with one teller window: customers never touch the cash directly; they hand a request to the teller, who follows the bank's own internal procedures every single time, correctly, regardless of who's asking. The correctness lives inside the vault's design, not in the hope that every customer behaves.</p>
+        <p>And an immutable value is like a sealed, tamper-evident envelope of cash — nobody, not even the "teller," can change what's inside once it's sealed, so there's nothing to steal or corrupt no matter how many people pass it around.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — The .NET Thread-Safety Convention</h2>
+    <p>This is a real, documented convention worth knowing precisely, not a rule of thumb someone invented: across the .NET Base Class Library, an <strong>instance member is not guaranteed to be thread-safe unless its documentation explicitly says so</strong>, while <strong>static members are generally expected to be safe for concurrent use</strong>. This is exactly why a plain <code class="icode">List&lt;T&gt;</code> or <code class="icode">Dictionary&lt;TKey, TValue&gt;</code> is documented as not thread-safe for its instance members (two threads calling <code class="icode">Add</code> on the same <code class="icode">List&lt;T&gt;</code> concurrently is a real race condition), while a purpose-built type like <code class="icode">ConcurrentDictionary&lt;TKey, TValue&gt;</code> exists specifically to make an explicit, documented promise about its instance members that the ordinary collections don't make.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Member kind</th><th>Default expectation</th><th>Example</th></tr></thead>
+            <tbody>
+                <tr><td>Instance members</td><td>NOT thread-safe unless documented otherwise</td><td><code class="icode">List&lt;T&gt;.Add</code>, <code class="icode">Dictionary&lt;TKey,TValue&gt;.this[key]</code></td></tr>
+                <tr><td>Static members</td><td>Generally expected to be thread-safe</td><td><code class="icode">Math.Max</code>, <code class="icode">string.Concat</code>, <code class="icode">Path.Combine</code></td></tr>
+                <tr><td>Explicitly documented instance members</td><td>Thread-safe, by explicit design contract</td><td><code class="icode">ConcurrentDictionary&lt;TKey,TValue&gt;</code>'s instance members</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>The practical rule this gives you: never <em>assume</em> a type's instance members are safe to call from multiple threads just because it seems simple or you've never personally hit a problem. Check its documentation. If it doesn't say, assume it isn't — and either don't share it across threads, or wrap access to it using the strategies from this lesson.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "It uses a ConcurrentDictionary, so anything I do with it is automatically safe" — not always</h3>
+    <p>Each individual operation on a <code class="icode">ConcurrentDictionary</code> is thread-safe in isolation. But if you <em>compose</em> two of those individually-safe operations yourself — say, checking <code class="icode">ContainsKey</code> and then, separately, calling the indexer to set a value — you've recreated a check-then-act race, exactly like the inventory example from the race-conditions lesson, just with a "thread-safe" collection underneath it. That's why the cache example above uses <code class="icode">GetOrAdd</code> — a single atomic operation the collection provides specifically to avoid this trap — rather than composing "check" and "add" by hand.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Thread-safe" doesn't mean "any two operations can be called together in any order and get the result you intended"</h3>
+    <p>A type can guarantee that each of its individual members won't corrupt its internal state, without guaranteeing anything about the meaningful ordering of a business-level sequence of calls (e.g., "check the balance, then withdraw" across two separate thread-safe method calls can still race at the business-logic level, even if each individual method is perfectly safe on its own). Thread safety is about protecting a type's internal invariants — not a substitute for designing atomic operations for the specific higher-level guarantees your logic actually needs.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Exposing mutable state raw and documenting "remember to lock" as the only protection</h4>
+    <p>❌ A public mutable field or auto-property, with correctness resting entirely on every caller reading and following a comment.</p>
+    <p>✅ Encapsulate the synchronization inside the class itself (Strategy 3), so there's no raw state for a caller to mishandle in the first place.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming an instance member is safe because it "seems simple"</h4>
+    <p>❌ Sharing a plain <code class="icode">List&lt;T&gt;</code> or <code class="icode">Dictionary&lt;TKey,TValue&gt;</code> across threads without checking its documentation, because adding an item feels like a trivial operation.</p>
+    <p>✅ Apply the documented convention: instance members are not thread-safe unless the type explicitly says so. Check first, or default to assuming it isn't.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Not documenting the thread-safety contract you actually built</h4>
+    <p>❌ Building a genuinely thread-safe class but leaving its documentation silent on the subject, forcing every future caller to read the implementation to find out.</p>
+    <p>✅ State the contract explicitly — "all members of this type are thread-safe" or, just as usefully, "this type is not thread-safe; synchronize externally if sharing across threads." A deliberate, documented decision either way beats silence.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use Each Strategy?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">🧊</span>
+            <div class="label">Immutability</div>
+            <div class="desc">Whenever the type genuinely represents a value, not an evolving thing — the default first choice.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">📦</span>
+            <div class="label">Minimize sharing</div>
+            <div class="desc">Whenever data can flow through parameters/return values instead of a shared field — often it can.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🔐</span>
+            <div class="label">Encapsulated sync</div>
+            <div class="desc">When a type genuinely needs mutable, shared internal state — own the synchronization yourself.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">⚠️</span>
+            <div class="label">Caller-managed sync</div>
+            <div class="desc">Reserve for rare, well-justified, extremely clearly documented cases — not a first resort.</div>
+        </div>
+    </div>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> before writing a single <code class="icode">lock</code> statement inside a class, ask "does this data need to be mutable at all?" and then "does it need to be shared across threads at all?" Most of the time, honest answers to those two questions eliminate the need for most of the synchronization code you were about to write.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Thread-safe design</strong> = shape the type so callers can't get it wrong, instead of trusting them not to.<br /><br />
+        <strong>Remember:</strong><br />
+        · Immutable state needs zero synchronization — nothing to race on.<br />
+        · Less shared state means less to protect in the first place.<br />
+        · Necessary synchronization belongs inside the class, not scattered across every caller.<br />
+        · Instance members: assume unsafe unless documented otherwise. Statics: generally expected safe.<br />
+        · A thread-safe collection's individual operations being safe doesn't make your composed sequence of calls automatically safe too.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">The strongest thread-safety strategy is <strong>immutability</strong> — no mutable state means no synchronization is ever needed, tying directly back to <code>readonly struct</code> and records.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Minimize shared mutable state</strong> generally — prefer passing data through parameters/return values over reachable shared fields.</li>
+            <li style="margin-bottom:0.4rem;">Where synchronization is genuinely necessary, <strong>encapsulate it inside the class</strong> rather than exposing raw mutable state and expecting every caller to lock correctly around it.</li>
+            <li style="margin-bottom:0.4rem;">A real .NET convention: <strong>instance members are not guaranteed thread-safe unless documented</strong>; <strong>static members are generally expected to be thread-safe</strong>.</li>
+            <li style="margin-bottom:0.4rem;">Individually thread-safe operations, composed together by a caller, do not automatically produce a thread-safe combined operation — favor a single atomic API (like <code>GetOrAdd</code>) over composing "check" and "act" yourself.</li>
+            <li style="margin-bottom:0.4rem;">Document a type's actual thread-safety contract explicitly — don't leave callers guessing.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen the full hierarchy of thread-safe design strategies and built a cache class that actually applies them. Let's check the reasoning, not just the vocabulary.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why is immutability considered the strongest thread-safety strategy, rather than just one option alongside locking?</p>
+        <ul class="options">
+            <li>A) Immutable objects are always stored on the stack, which is inherently thread-safe</li>
+            <li>B) With no mutable state after construction, there's nothing for a race condition to happen to — the risk is eliminated structurally, not merely managed with a lock</li>
+            <li>C) The .NET runtime automatically parallelizes access to immutable objects for better performance</li>
+            <li>D) Immutable objects cannot be passed between threads at all, so no coordination is ever needed</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A race condition requires shared, mutable, unsynchronized state. Immutability removes the "mutable" ingredient entirely — there's no write for a concurrent read to race against — so the object is safe to share across threads with zero synchronization, not just safer or less likely to have a problem.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Storage location (stack vs. heap) is unrelated to thread safety — reference-type immutable objects live on the heap and are still perfectly safe to share, because of their immutability, not their storage location.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no automatic parallelization happening — the safety comes from there being nothing to mutate, not from any runtime optimization.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Immutable objects can absolutely be freely passed between and shared across threads — that's exactly the point; it's precisely what makes them so useful for concurrent code.</p>
+                <p><strong>Reinforcement:</strong> Immutability doesn't manage the risk of a race condition the way a lock does — it removes the possibility outright.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A class exposes a public mutable Dictionary field directly, with an XML comment saying "callers must lock around this before use." What is the primary design weakness of this approach, compared to encapsulating the synchronization inside the class?</p>
+        <ul class="options">
+            <li>A) Public fields are always slower to access than properties</li>
+            <li>B) Correctness now depends on every single caller, everywhere, remembering and correctly following the comment — one missed call site reintroduces a real race condition</li>
+            <li>C) Dictionary cannot be made public under any circumstances in C#</li>
+            <li>D) The comment itself causes a compiler warning that breaks the build</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the "caller-managed synchronization" weakest strategy from this lesson's hierarchy — the correctness burden is scattered across every call site, forever, rather than enforced in one place. Any single developer who misses the comment, in any file, reopens the race condition.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Field vs. property access speed is not the issue being discussed here — the concern is correctness and the distribution of responsibility for synchronization, not raw performance.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A Dictionary field absolutely can be made public in C# — the point is that doing so for shared mutable state is a design weakness, not that it's disallowed by the language.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A comment has no effect on compilation whatsoever — the weakness described is a design and correctness issue, not a build error.</p>
+                <p><strong>Reinforcement:</strong> Encapsulating synchronization inside the class puts correctness in exactly one place — the class's own implementation — instead of trusting every caller to get it right independently.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> According to the documented .NET thread-safety convention covered in this lesson, what should you assume about the instance members of a type like List&lt;T&gt; unless its documentation says otherwise?</p>
+        <ul class="options">
+            <li>A) They are thread-safe, because most .NET types are safe by default</li>
+            <li>B) They are NOT guaranteed thread-safe — the convention is that instance members are unsafe unless explicitly documented as safe, while static members are generally expected to be safe</li>
+            <li>C) Only generic types like List&lt;T&gt; are thread-safe; non-generic collections are not</li>
+            <li>D) Thread safety cannot be determined without reading the type's source code directly</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the real, documented .NET convention: instance members are not guaranteed thread-safe by default — a type has to explicitly document that guarantee (as ConcurrentDictionary&lt;TKey,TValue&gt; does) for you to rely on it. Static members are generally expected to be safe for concurrent use.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This gets the default backwards — the safe default assumption is the opposite: assume NOT thread-safe unless documented.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Being generic has nothing to do with thread safety — the convention applies uniformly regardless of whether a type uses generics.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The documentation itself is the intended source of truth for this — that's exactly why the convention exists, so callers don't have to read implementation source code to know what's safe.</p>
+                <p><strong>Reinforcement:</strong> "Not documented as safe" should always be read as "assume unsafe" — this is a real, load-bearing convention across the .NET BCL, not a guess.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A developer uses a ConcurrentDictionary but writes: `if (!cache.ContainsKey(key)) { cache[key] = ComputeValue(key); }` from multiple threads. Why can this still exhibit a race condition, even though ConcurrentDictionary's individual members are thread-safe?</p>
+        <ul class="options">
+            <li>A) ConcurrentDictionary does not actually implement any internal synchronization</li>
+            <li>B) Two threads can both pass the ContainsKey check as false before either one's assignment lands, so ComputeValue can run twice and one computed value can silently overwrite the other</li>
+            <li>C) The indexer setter on ConcurrentDictionary throws an exception when called from a background thread</li>
+            <li>D) ContainsKey and the indexer cannot be used together under any circumstances</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the check-then-act race described in Common Confusion — ContainsKey and the indexer assignment are each individually thread-safe, but composing them as two separate steps recreates the same race-condition shape from the race-conditions lesson. The fix is to use a single atomic operation like GetOrAdd instead of composing the check and the write yourself.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> ConcurrentDictionary genuinely does synchronize its individual operations internally — the problem here is composing two safe operations, not a failure of its internal synchronization.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Nothing about calling these members from a background thread causes an exception — the danger is silent, not an error you'd immediately notice.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> They can be used together — the code compiles and often appears to work — the problem is specifically the race between the check and the write when done from multiple threads, not a hard restriction on using them together at all.</p>
+                <p><strong>Reinforcement:</strong> A thread-safe collection makes each individual call safe — it does not make an arbitrary sequence of calls you compose yourself safe. Prefer a single atomic method when one exists.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> You're designing a new class that will hold configuration values loaded once at startup and never changed afterward, read concurrently by many request-handling threads. Which strategy from this lesson's hierarchy best fits this scenario?</p>
+        <ul class="options">
+            <li>A) Encapsulated synchronization — wrap every property getter in a lock, just to be safe</li>
+            <li>B) Immutability — since the values never change after being loaded, design the type to be immutable so it needs no synchronization at all</li>
+            <li>C) Caller-managed synchronization — document that every caller must lock before reading any property</li>
+            <li>D) This scenario cannot be made thread-safe because multiple threads will read it concurrently</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> "Loaded once, never changed afterward" is precisely the profile of a value that should be immutable — this lesson's strongest strategy applies directly. An immutable configuration object can be read by any number of concurrent threads with zero locking, because there's no mutation to protect against after construction.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Locking around a value that never changes adds pure overhead and complexity for no safety benefit — there's nothing to protect once construction is complete, so this is unnecessary.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is the weakest strategy in the hierarchy, and it's entirely unnecessary here — there's no reason to burden every caller with locking around data that structurally cannot change.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Concurrent reads of immutable data are completely safe by definition — many threads reading, with nobody ever writing, is exactly the case that requires no coordination at all.</p>
+                <p><strong>Reinforcement:</strong> "Read by many, written once (or never, after construction)" is the textbook signal to reach for immutability first — it's the cheapest and safest fix available.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You've now moved from reacting to concurrency bugs to designing them out from the start. Up next: applying all of this to a genuinely harder problem — consuming multiple async streams concurrently.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

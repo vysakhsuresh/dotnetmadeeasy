@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>215 - Concurrent Collections · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        A Dictionary&lt;TKey,TValue&gt; wasn't built with concurrent mutation in mind. The types in System.Collections.Concurrent were.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Back in the Dictionary internals lesson, you saw exactly how <code class="icode">Dictionary&lt;TKey,TValue&gt;</code> achieves fast average-case lookups — hash codes, buckets, and a chained-entry structure it quietly grows and rehashes as it fills up. All of that internal bookkeeping — resizing the bucket array, relinking chains, moving entries around — assumes one thing that was never stated out loud: that only one piece of code is touching the dictionary at any given moment.</p>
+    <p>Now put that same <code class="icode">Dictionary&lt;TKey,TValue&gt;</code> inside a <code class="icode">Parallel.ForEach</code> loop body, or share it across several worker tasks, and let more than one thread write to it at the same instant. The assumption breaks — and the results range from wrong values to a genuinely corrupted internal structure. <strong>In this lesson, you'll learn why ordinary collections aren't safe for concurrent mutation, meet the purpose-built alternatives in <code class="icode">System.Collections.Concurrent</code> — <code class="icode">ConcurrentDictionary&lt;TKey,TValue&gt;</code>, <code class="icode">ConcurrentQueue&lt;T&gt;</code>, <code class="icode">ConcurrentBag&lt;T&gt;</code>, and <code class="icode">ConcurrentStack&lt;T&gt;</code> — and see a real, well-documented gotcha in <code class="icode">ConcurrentDictionary.GetOrAdd</code> that surprises even experienced developers.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>concurrent collection</strong> is a collection type deliberately engineered so that multiple threads can safely read from and write to it at the same time, without you having to wrap every access in your own locking code. You use it exactly like a regular collection — add, remove, look up — but the type itself handles the coordination needed to keep its internal state correct when several threads touch it simultaneously.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><code class="icode">System.Collections.Concurrent</code> is a namespace of thread-safe collection types, each the concurrent counterpart of a familiar collection:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Concurrent type</th><th>Familiar counterpart</th><th>Shape</th></tr></thead>
+            <tbody>
+                <tr><td><code class="icode">ConcurrentDictionary&lt;TKey,TValue&gt;</code></td><td><code class="icode">Dictionary&lt;TKey,TValue&gt;</code></td><td>Key/value lookup</td></tr>
+                <tr><td><code class="icode">ConcurrentQueue&lt;T&gt;</code></td><td><code class="icode">Queue&lt;T&gt;</code></td><td>First-in, first-out</td></tr>
+                <tr><td><code class="icode">ConcurrentStack&lt;T&gt;</code></td><td><code class="icode">Stack&lt;T&gt;</code></td><td>Last-in, first-out</td></tr>
+                <tr><td><code class="icode">ConcurrentBag&lt;T&gt;</code></td><td>(no direct plain equivalent)</td><td>Unordered collection, optimized for the same thread adding and removing its own items</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Every one of these guarantees that any single operation — an add, a remove, a lookup — completes correctly and leaves the collection in a valid state, no matter how many threads call into it at the same instant. That guarantee is the entire reason this namespace exists.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Plain Collections Assume One Thread at a Time</h3>
+    <p><code class="icode">Dictionary&lt;TKey,TValue&gt;</code>, <code class="icode">List&lt;T&gt;</code>, and every other collection in <code class="icode">System.Collections.Generic</code> were designed and optimized for the overwhelmingly common case: one thread using the collection at a time. That design choice buys real performance — no locking overhead on every single operation — but it means these types provide <strong>no protection at all</strong> when multiple threads mutate them concurrently.</p>
+    <p>What actually goes wrong is worth being concrete about, because "not thread-safe" can sound like a vague warning rather than a real, mechanical failure:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Corrupted internal state</strong> — recall from the Dictionary internals lesson that adding an entry can trigger resizing the internal bucket array and relinking chains. If two threads both trigger this at the same moment, the dictionary's internal bookkeeping can end up in a genuinely inconsistent state — not just "the wrong answer," but structurally broken.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Thrown exceptions</strong> — a classic, very real symptom is <code class="icode">InvalidOperationException</code> with a message like "Collection was modified; enumeration operation may not execute" — one thread iterating a <code class="icode">List&lt;T&gt;</code> or <code class="icode">Dictionary&lt;TKey,TValue&gt;</code> while another thread adds or removes an item at the same time.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Silently lost updates</strong> — two threads both reading a count, both incrementing their own copy, both writing it back — one of those writes simply overwrites the other, and an update quietly disappears with no error at all.</li>
+    </ul>
+    <p>The precise mechanics of <em>why</em> concurrent, unsynchronized access to shared state produces these symptoms — what a race condition actually is, step by step — gets its own full, dedicated treatment elsewhere in this Part. What matters here is simply this: <strong>plain collections were never built to survive concurrent mutation, and reaching for one under those conditions is a real, common source of production bugs.</strong></p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed, whenever multiple threads genuinely need to read and write the <em>same</em> collection concurrently — say, several <code class="icode">Parallel.ForEach</code> worker threads all recording results into one shared structure — is a collection type that has already solved the coordination problem internally, so every caller can just use it normally without hand-rolling locking logic themselves.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Purpose-Built Concurrent Collections</h3>
+    <p>That's exactly what <code class="icode">System.Collections.Concurrent</code> provides: collections engineered from the ground up to keep their internal state correct under concurrent access, using synchronization techniques far more refined than "wrap every operation in one big lock" — which is exactly what makes them worth reaching for instead of just locking a plain collection yourself, covered next.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🔴 Dictionary&lt;TKey,TValue&gt; under concurrent writes</h4>
+            <ul>
+                <li>No internal synchronization at all</li>
+                <li>Multiple threads adding entries can corrupt the internal bucket/chain structure</li>
+                <li>Symptoms: wrong values, thrown exceptions, or a dictionary that's simply broken</li>
+                <li>Fast for the single-threaded case it was designed for</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🟢 ConcurrentDictionary&lt;TKey,TValue&gt; under concurrent writes</h4>
+            <ul>
+                <li>Internally synchronized to stay correct under concurrent access</li>
+                <li>Multiple threads can safely add, update, and read at the same time</li>
+                <li>No corruption, no "collection modified" exceptions from concurrent use</li>
+                <li>Some overhead compared to an unsynchronized Dictionary, in exchange for that safety</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">ConcurrentDictionary — fine-grained internal synchronization, not one big lock</h3>
+    <p>The simplest way to make any collection thread-safe would be to wrap a plain <code class="icode">Dictionary&lt;TKey,TValue&gt;</code> with a single <code class="icode">lock</code> around every operation — one gate that only one thread can pass through at a time, for <em>any</em> access, anywhere in the dictionary. That works, but it means every operation, even two completely unrelated ones touching different keys, has to wait its turn behind the same single gate. Under real concurrent load, that single gate becomes the bottleneck.</p>
+    <p><code class="icode">ConcurrentDictionary&lt;TKey,TValue&gt;</code> takes a more refined approach: internally, it divides its storage into multiple segments, each with its own, finer-grained synchronization. Conceptually, two threads writing to keys that land in <em>different</em> internal segments can often proceed genuinely concurrently, without waiting on each other at all — only threads contending for the <em>same</em> segment (or the same key) actually need to coordinate. This is what makes <code class="icode">ConcurrentDictionary</code> scale meaningfully better under concurrent load than "a plain <code class="icode">Dictionary</code> plus one big <code class="icode">lock</code>" — it isn't just thread-safe, it's designed to let genuinely unrelated operations avoid blocking each other in the first place.</p>
+
+    <div class="flow-container">
+        <div class="flow-title">ONE BIG LOCK vs FINE-GRAINED SYNCHRONIZATION</div>
+        <div class="flow-step">
+            <div class="step-label">Dictionary&lt;TKey,TValue&gt; + one lock around everything</div>
+            <ul><li>Thread A writing key "X" and Thread B writing key "Y" — completely unrelated keys — still wait for each other, because there's only one gate for the whole structure.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">ConcurrentDictionary&lt;TKey,TValue&gt; — internally segmented</div>
+            <ul><li>Thread A writing key "X" and Thread B writing key "Y" can often proceed at the same time, if their keys land in different internal segments — far less unnecessary waiting.</li></ul>
+        </div>
+    </div>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The GetOrAdd gotcha — a real, well-documented surprise</h3>
+    <p>This is the single most important gotcha in this lesson, and it trips up developers who reasonably assume more than the API actually guarantees. <code class="icode">ConcurrentDictionary&lt;TKey,TValue&gt;.GetOrAdd(key, valueFactory)</code> looks like it should mean: "if the key exists, return its value; otherwise, run <code class="icode">valueFactory</code> exactly once to compute the value, store it, and return it." The first half of that is true. <strong>The second half is not guaranteed.</strong></p>
+    <div class="code-block"><code>ConcurrentDictionary&lt;string, ExpensiveObject&gt; cache = new();
+
+// If two threads call this for the SAME missing key at the same moment,
+// valueFactory can run on BOTH threads — even though only one result
+// actually ends up stored in the dictionary.
+ExpensiveObject value = cache.GetOrAdd(key, k =&gt; new ExpensiveObject(k));</code></div>
+    <p>Here's what actually happens, and it's a documented, real characteristic of the type — not a bug: under contention, when two or more threads call <code class="icode">GetOrAdd</code> for the <em>same missing key</em> at close to the same instant, <code class="icode">ConcurrentDictionary</code> may invoke <code class="icode">valueFactory</code> more than once — once per racing thread. Only <strong>one</strong> of those computed values actually gets stored in the dictionary; the rest are simply discarded once the "winning" thread's value is committed. Every caller does still get back the same, single, correctly-stored value — the dictionary's <em>contents</em> stay consistent — but if <code class="icode">valueFactory</code> has side effects (incrementing a counter, writing a log line, opening a network connection, allocating an expensive unmanaged resource), those side effects can happen more than once, for no visible reason at the call site.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> Why this happens — and what it does not mean</div>
+        <p>This isn't sloppy engineering — it's a deliberate trade-off. Guaranteeing <code class="icode">valueFactory</code> runs <em>exactly</em> once per key, always, would require holding a lock across the entire "check if present, then compute, then store" sequence for that key — including however long the factory itself takes to run, which could be arbitrarily slow. <code class="icode">ConcurrentDictionary</code> instead prioritizes not blocking other threads for that entire duration, accepting that the factory might occasionally run redundantly under contention as the cost of staying fast and non-blocking for everyone else.</p>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Several worker threads (via <code class="icode">Parallel.ForEach</code>) tallying word counts into a shared dictionary — a genuinely common shape:</p>
+
+    <div class="code-block"><code>var wordCounts = new ConcurrentDictionary&lt;string, int&gt;();
+
+Parallel.ForEach(documents, document =&gt;
+{
+    foreach (string word in Tokenize(document))
+    {
+        // AddOrUpdate: if "word" is missing, start it at 1;
+        // if it already exists, atomically increment the existing count
+        wordCounts.AddOrUpdate(
+            word,
+            addValue: 1,
+            updateValueFactory: (key, existingCount) =&gt; existingCount + 1);
+    }
+});</code></div>
+    <p>Walking through it:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Many documents are being tokenized concurrently across worker threads, and every one of them writes into the <em>same</em> shared <code class="icode">wordCounts</code> dictionary.</li>
+        <li style="margin-bottom:0.4rem;"><code class="icode">AddOrUpdate</code> handles both the "first time seeing this word" and "seen it before, bump the count" cases atomically — no separate check-then-act steps that could race against another thread in between.</li>
+        <li style="margin-bottom:0.4rem;">A plain <code class="icode">Dictionary&lt;string, int&gt;</code> here would risk exactly the corruption and lost-update problems described above — this is a textbook case for a concurrent collection.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A per-key caching layer, where the <code class="icode">GetOrAdd</code> gotcha actually matters — and how to work around it when it does:</p>
+
+    <div class="code-block"><code>public class ExchangeRateCache
+{
+    private readonly ConcurrentDictionary&lt;string, Lazy&lt;decimal&gt;&gt; _cache = new();
+    private readonly IExchangeRateProvider _provider;
+
+    public ExchangeRateCache(IExchangeRateProvider provider) =&gt; _provider = provider;
+
+    public decimal GetRate(string currencyPair)
+    {
+        // Wrapping the value in Lazy&lt;T&gt; means GetOrAdd may still construct
+        // more than one Lazy&lt;decimal&gt; instance under contention — but only
+        // the WINNING Lazy&lt;T&gt; instance ever has its .Value evaluated,
+        // so the actual expensive fetch only really runs once.
+        Lazy&lt;decimal&gt; lazyRate = _cache.GetOrAdd(
+            currencyPair,
+            key =&gt; new Lazy&lt;decimal&gt;(() =&gt; _provider.FetchLiveRate(key)));
+
+        return lazyRate.Value;
+    }
+}</code></div>
+    <p>Without the <code class="icode">Lazy&lt;T&gt;</code> wrapper, calling <code class="icode">_provider.FetchLiveRate(key)</code> directly inside <code class="icode">valueFactory</code> would risk that expensive, possibly rate-limited network call firing more than once under contention for a currency pair nobody has cached yet — exactly the gotcha described above, now with a real, costly side effect attached. Wrapping the factory's result in <code class="icode">Lazy&lt;T&gt;</code> is a well-known, practical mitigation: <code class="icode">GetOrAdd</code> might still construct a few "loser" <code class="icode">Lazy&lt;decimal&gt;</code> instances under contention, but constructing a <code class="icode">Lazy&lt;T&gt;</code> itself does nothing expensive — the actual fetch only happens when <code class="icode">.Value</code> is read on whichever <code class="icode">Lazy&lt;T&gt;</code> instance actually won and got stored.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The other concurrent collections, briefly</h3>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Type</th><th>Typical use</th></tr></thead>
+            <tbody>
+                <tr><td><code class="icode">ConcurrentQueue&lt;T&gt;</code></td><td>Multiple threads enqueueing work items; other threads dequeueing them in roughly first-in-first-out order.</td></tr>
+                <tr><td><code class="icode">ConcurrentStack&lt;T&gt;</code></td><td>Multiple threads pushing/popping when last-in-first-out order is what's actually needed (e.g. a pool of reusable objects).</td></tr>
+                <tr><td><code class="icode">ConcurrentBag&lt;T&gt;</code></td><td>Collecting results from parallel work (like the failure list in the Parallel.ForEach lesson's real-world example) when order genuinely doesn't matter — it's specifically optimized for the common pattern where each thread mostly adds and removes its own items.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🏢</span> One Filing Cabinet, One Key vs. Many Drawers, Many Keys</div>
+        <p>A plain collection protected by one big <code class="icode">lock</code> is like a filing cabinet with a single master key — only one person can be doing <em>anything</em> with the cabinet at a time, even if two people just want completely different drawers. Everyone else stands in line, no matter how unrelated their task actually is.</p>
+        <p><code class="icode">ConcurrentDictionary</code> is more like a filing cabinet with many separate drawers, each with its own lock. Two people wanting different drawers can work at the same time without ever getting in each other's way; only two people reaching for the <em>exact same</em> drawer actually have to wait their turn. That's the practical benefit of fine-grained internal synchronization over one big lock around everything.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>Recall from the Dictionary internals lesson that a plain <code class="icode">Dictionary&lt;TKey,TValue&gt;</code> uses a hash code to route each key to a bucket, then chains together any entries that collide within that bucket. <code class="icode">ConcurrentDictionary</code> builds on that same fundamental hash-table idea, but internally partitions its buckets into a number of segments, each guarded by its own lock — rather than one lock protecting the entire bucket array. Whether a given operation on a particular key needs to wait for another thread depends on whether that other thread happens to be working in the <em>same</em> segment; unrelated keys in different segments generally don't contend with each other at all.</p>
+    <p>The exact number of internal segments and the precise resizing behavior are implementation details that can (and have) evolved across .NET versions — deliberately not part of the guaranteed public contract. What <em>is</em> a stable, documented guarantee is the behavioral contract: every public member is safe to call from multiple threads concurrently, the collection's own internal state will never be corrupted by that concurrent use, and — as covered above — certain methods like <code class="icode">GetOrAdd</code> and <code class="icode">AddOrUpdate</code> may invoke your supplied delegate more than once under contention, because achieving "runs exactly once, always" would require sacrificing the very concurrency the type exists to provide.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Thread-safe" doesn't mean "every multi-step sequence of operations is atomic"</h3>
+    <p>Each <em>individual</em> method call on a concurrent collection is safe and internally consistent. But a sequence of separate calls — like checking <code class="icode">ContainsKey</code>, then separately calling <code class="icode">Add</code> — is <strong>not</strong> automatically atomic as a whole, even on a concurrent collection: another thread can slip in between those two calls and change things. That's exactly why <code class="icode">ConcurrentDictionary</code> provides combined, genuinely atomic operations like <code class="icode">GetOrAdd</code> and <code class="icode">AddOrUpdate</code> instead of expecting you to compose "check" and "act" yourself.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "GetOrAdd running the factory twice means the dictionary now has two entries" — no</h3>
+    <p>It's easy to assume the redundant-execution gotcha means the dictionary ends up in a corrupted or duplicated state. It does not — the dictionary's actual <em>contents</em> stay perfectly consistent; exactly one value ends up stored per key, and every caller (even the "losing" ones) receives that same single, correct value back. What can happen more than once is purely the <em>side effects</em> of computing the discarded candidate values — not the dictionary's own data integrity.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Sharing a plain Dictionary/List across threads "because it's just reads"</h4>
+    <p>❌ Assuming that as long as most threads only read a shared plain collection, it's safe even though one thread occasionally writes to it too.</p>
+    <p>✅ Even a single concurrent writer, alongside any readers, is enough to trigger corruption or an "enumeration failed" exception on a plain collection. If <em>any</em> thread might mutate a collection while other threads use it concurrently, that collection needs to be a concurrent type (or protected by a lock).</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Putting expensive or side-effecting code directly inside a GetOrAdd valueFactory</h4>
+    <p>❌ <strong>Wrong</strong> — a factory that performs a network call or increments a shared counter directly:</p>
+    <div class="code-block"><code>var cache = new ConcurrentDictionary&lt;string, Data&gt;();
+Data data = cache.GetOrAdd(key, k =&gt;
+{
+    _fetchCounter++;              // can run more than once under contention!
+    return FetchFromDatabase(k);  // can genuinely hit the database more than once!
+});</code></div>
+    <p>✅ <strong>Correct</strong> — wrap the expensive work in <code class="icode">Lazy&lt;T&gt;</code> so only the winning value is ever actually evaluated, as shown in the real-world example above, or accept and design around the possibility of redundant execution when the factory truly must run eagerly.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for a concurrent collection when a plain collection plus one lock would be simpler</h4>
+    <p>❌ Defaulting to <code class="icode">ConcurrentDictionary</code> everywhere "just in case," even for a collection that only ever needs a single, well-placed critical section around a handful of related operations.</p>
+    <p>✅ Concurrent collections shine when multiple threads genuinely need to read and write the <em>same</em> collection concurrently, independently of each other. When you actually need several related operations to happen together as one atomic unit — not just one call at a time — a plain collection guarded by a single, well-placed <code class="icode">lock</code> (covered in full in the next lesson) is often simpler to reason about and just as correct.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">✅</span>
+            <div class="label">Multiple threads genuinely share one collection</div>
+            <div class="desc">Parallel.ForEach workers writing results, concurrent request handlers sharing an in-memory cache.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">⚛️</span>
+            <div class="label">You need a single operation to be atomic</div>
+            <div class="desc">GetOrAdd, AddOrUpdate, TryAdd — one call, correct under contention, no manual check-then-act.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🔒</span>
+            <div class="label">Multi-step sequences still need a lock</div>
+            <div class="desc">If several related operations must happen together atomically, a lock around a plain collection may be clearer.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🚫</span>
+            <div class="label">Not needed for single-threaded use</div>
+            <div class="desc">A plain Dictionary/List is faster and perfectly correct when only one thread ever touches it.</div>
+        </div>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> If more than one thread might genuinely read <em>and</em> write the same collection at overlapping times, reach for the matching type in <code class="icode">System.Collections.Concurrent</code>. If only one thread ever touches a given collection instance, a plain collection is simpler and faster — the concurrency guarantee would be solving a problem you don't actually have.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Plain collections</strong> = built for one thread at a time — concurrent mutation corrupts them.<br />
+        <strong>Concurrent collections</strong> = built for many threads at once — each individual operation stays correct.<br /><br />
+        <strong>Remember:</strong><br />
+        · ConcurrentDictionary uses fine-grained internal synchronization, not one big lock — that's what lets unrelated keys avoid contending with each other.<br />
+        · GetOrAdd's valueFactory can run more than once under contention — only one result gets stored, but side effects can repeat.<br />
+        · Individual operations are atomic; a sequence of several separate calls is not, even on a concurrent collection.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Plain collections like <code>Dictionary&lt;TKey,TValue&gt;</code> and <code>List&lt;T&gt;</code> are not safe for concurrent mutation — they can corrupt their internal state or throw when multiple threads write (or write-while-reading) at the same time.</li>
+            <li style="margin-bottom:0.4rem;"><code>System.Collections.Concurrent</code> provides purpose-built, thread-safe alternatives: <code>ConcurrentDictionary&lt;TKey,TValue&gt;</code>, <code>ConcurrentQueue&lt;T&gt;</code>, <code>ConcurrentStack&lt;T&gt;</code>, <code>ConcurrentBag&lt;T&gt;</code>.</li>
+            <li style="margin-bottom:0.4rem;"><code>ConcurrentDictionary</code> achieves thread safety through fine-grained internal synchronization (segmented, not one big lock), which is what lets unrelated keys avoid unnecessarily blocking each other.</li>
+            <li style="margin-bottom:0.4rem;"><strong><code>GetOrAdd</code>'s valueFactory can be invoked more than once under contention for the same missing key</strong> — only one computed value is actually stored, but if the factory has side effects, wrap it in <code>Lazy&lt;T&gt;</code> or design around the possibility of redundant execution.</li>
+            <li style="margin-bottom:0.4rem;">Reach for a concurrent collection when multiple threads genuinely share one collection; reach for a plain collection plus a single well-placed <code>lock</code> (next lesson) when several related steps need to happen together as one atomic unit.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen why plain collections break under concurrent mutation, and the single most important gotcha in ConcurrentDictionary. Let's check both landed clearly.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Several worker threads write to a shared plain Dictionary&lt;string, int&gt; at the same time, with no locking. What's the most accurate description of the risk?</p>
+        <ul class="options">
+            <li>A) No risk — Dictionary&lt;TKey,TValue&gt; automatically synchronizes concurrent writes internally</li>
+            <li>B) A real risk — concurrent, unsynchronized mutation can corrupt the dictionary's internal structure or throw exceptions, since it was designed assuming single-threaded access</li>
+            <li>C) The dictionary will simply reject the second thread's write with a clear error message</li>
+            <li>D) The code won't compile, since Dictionary&lt;TKey,TValue&gt; cannot be shared across threads</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Dictionary&lt;TKey,TValue&gt; provides no internal synchronization — it was designed and optimized for single-threaded use. Concurrent unsynchronized writes can corrupt its internal bucket/chain structure or produce exceptions like "Collection was modified" during enumeration.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the misconception this lesson corrects — Dictionary&lt;TKey,TValue&gt; has no built-in thread safety at all.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no graceful rejection mechanism — the failure modes are corruption, exceptions, or silently wrong data, not a clean error.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The code compiles and runs fine — the problem is a runtime correctness issue under concurrent access, not a compile-time restriction.</p>
+                <p><strong>Reinforcement:</strong> "Not thread-safe" for a plain collection means real, concrete failure modes under concurrent mutation — not a theoretical warning.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What actually makes ConcurrentDictionary&lt;TKey,TValue&gt; scale better under concurrent load than a plain Dictionary&lt;TKey,TValue&gt; wrapped in one single lock?</p>
+        <ul class="options">
+            <li>A) ConcurrentDictionary doesn't use hash tables internally at all</li>
+            <li>B) ConcurrentDictionary uses fine-grained internal synchronization (multiple segments, each separately guarded), so unrelated keys often don't contend with each other, unlike one lock guarding the entire structure</li>
+            <li>C) ConcurrentDictionary skips synchronization entirely and simply gets lucky most of the time</li>
+            <li>D) ConcurrentDictionary stores at most one entry per thread, avoiding contention by design</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> ConcurrentDictionary's advantage over "Dictionary plus one big lock" comes from partitioning its internal storage into segments, each with its own synchronization, so operations on unrelated keys in different segments can often proceed at the same time instead of queuing behind a single gate.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> ConcurrentDictionary is still fundamentally a hash table, building on the same hashing/bucket ideas as Dictionary&lt;TKey,TValue&gt;, just with added internal synchronization.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> ConcurrentDictionary is genuinely, deliberately synchronized — its thread safety is an engineered guarantee, not a matter of chance.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no per-thread entry limit — any number of entries can be stored and accessed by any number of threads.</p>
+                <p><strong>Reinforcement:</strong> Fine-grained, segmented synchronization — not the absence of synchronization — is what makes ConcurrentDictionary scale well under concurrent access.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Two threads call cache.GetOrAdd("btc-usd", key =&gt; FetchExpensiveRate(key)) for the same, currently-missing key at nearly the same instant. What is the documented, expected behavior?</p>
+        <ul class="options">
+            <li>A) FetchExpensiveRate is guaranteed to run exactly once, no matter how many threads race for the same key</li>
+            <li>B) FetchExpensiveRate may run on both threads, but only one of the two computed results actually ends up stored in the dictionary — both callers receive that same stored value</li>
+            <li>C) One thread throws an exception while the other succeeds</li>
+            <li>D) The dictionary ends up with two separate entries for "btc-usd"</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the documented GetOrAdd gotcha. Under contention for the same missing key, the valueFactory can be invoked by more than one racing thread, but ConcurrentDictionary only stores one winning result — every caller, including the "losing" thread(s), receives that same single stored value back.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the assumption the gotcha violates — "exactly once" is not guaranteed under contention, precisely because guaranteeing it would require holding a lock for the factory's entire duration.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Neither thread throws because of the race itself — both complete normally and receive a valid, consistent result.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The dictionary's data stays consistent — exactly one entry per key is stored, even though the factory may have been evaluated more than once behind the scenes.</p>
+                <p><strong>Reinforcement:</strong> GetOrAdd guarantees consistent stored data, not that valueFactory runs exactly once — that distinction is the whole point of this gotcha.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A GetOrAdd valueFactory directly increments a shared "cache miss" counter and performs a paid, rate-limited API call. Why is this risky?</p>
+        <ul class="options">
+            <li>A) It isn't risky — GetOrAdd guarantees the factory runs exactly once per key</li>
+            <li>B) Under contention, the factory could run more than once for the same key, so the counter could be incremented more than once and the paid API could be called more than once for a single logical cache miss</li>
+            <li>C) GetOrAdd does not allow side effects inside the factory and will throw at runtime</li>
+            <li>D) The risk only applies to ConcurrentQueue&lt;T&gt;, not ConcurrentDictionary&lt;TKey,TValue&gt;</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the practical consequence of the GetOrAdd gotcha applied to real side effects — a factory with side effects (incrementing a counter, calling a paid/rate-limited API) can have those side effects happen more than once under contention, even though only one computed value is actually stored.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the false assumption that causes this exact bug in real code.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> GetOrAdd places no restriction on what the factory delegate does — it compiles and runs fine with side effects inside it; the risk is behavioral (possible redundant execution), not a runtime restriction that throws.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The gotcha is specific to ConcurrentDictionary's GetOrAdd/AddOrUpdate methods and their factory delegates — it isn't a ConcurrentQueue&lt;T&gt; behavior at all.</p>
+                <p><strong>Reinforcement:</strong> Wrapping expensive or side-effecting factory work in Lazy&lt;T&gt; (as shown in the real-world example) is the standard mitigation for exactly this scenario.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A method only ever runs on a single thread and never shares its local Dictionary&lt;TKey,TValue&gt; with any other thread. Should it be changed to ConcurrentDictionary&lt;TKey,TValue&gt;?</p>
+        <ul class="options">
+            <li>A) Yes, always — concurrent collections are strictly better in every scenario</li>
+            <li>B) No — with no concurrent access ever happening, a plain Dictionary is simpler and faster; the concurrency guarantee would be solving a problem that doesn't exist here</li>
+            <li>C) Yes, because Dictionary&lt;TKey,TValue&gt; is deprecated in modern .NET</li>
+            <li>D) It depends entirely on how many items the dictionary holds</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Concurrent collections exist specifically to solve the problem of correctness under concurrent access — a problem that simply doesn't apply when only one thread ever touches the collection. In that case, a plain Dictionary is both simpler to reason about and faster, with no synchronization overhead being paid for a guarantee that isn't needed.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Concurrent collections carry real overhead for the synchronization they provide — reaching for them unconditionally, even for genuinely single-threaded code, is unnecessary cost for no benefit.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Dictionary&lt;TKey,TValue&gt; is not deprecated — it remains the standard, correct choice for single-threaded scenarios.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Item count is unrelated to whether concurrent access safety is needed — the deciding factor is whether multiple threads actually touch the collection concurrently, not its size.</p>
+                <p><strong>Reinforcement:</strong> Choose a concurrent collection based on whether multiple threads genuinely share it — not as a reflexive default.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know when a plain collection breaks under concurrency, and which purpose-built type to reach for instead. Next up: the actual synchronization primitives — lock, SemaphoreSlim, and Interlocked — for the cases a concurrent collection alone doesn't cover.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

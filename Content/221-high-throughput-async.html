@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>221 - High-Throughput Async · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The capstone of Part IV: everything you've learned about async and concurrency, applied together, on purpose.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Across this Part you've gone deep on individual mechanisms — how a Task actually works, how the SynchronizationContext decides where a continuation resumes, how the ThreadPool grows and shrinks, when <code class="icode">ValueTask</code> earns its keep, how cancellation really propagates, how Parallel.ForEach and Channels and concurrent collections and locking primitives each solve their own piece of the concurrency puzzle, and — the last three lessons — the precise shape of race conditions, deadlocks, and thread-safe design.</p>
+    <p>Each of those lessons made sense on its own. The harder, more valuable skill is knowing how to <em>combine</em> them — under real load, where a single wrong choice (one blocking call, one unbounded queue, one unnecessary allocation) doesn't just cause a bug, it quietly caps how much traffic your entire system can handle. This closing lesson is about that combination: a short list of prioritized, practical rules for building genuinely high-throughput async .NET systems, and then one realistic pipeline that puts several of them to work together, with callouts naming exactly which lesson in this Part each piece is demonstrating.</p>
+
+    <!-- ====== BIG PICTURE — recap table ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What This Part Built, and What It's For</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Topic (this Part)</th><th>What it gives a high-throughput system</th></tr></thead>
+            <tbody>
+                <tr><td>Task internals</td><td>Understanding what a Task/state machine actually costs, instead of treating it as free</td></tr>
+                <tr><td>SynchronizationContext</td><td>Knowing when a continuation is forced back onto one specific thread — and why that's dangerous under load</td></tr>
+                <tr><td>ThreadPool internals</td><td>Understanding the shared, finite resource every blocking call quietly taxes</td></tr>
+                <tr><td>ValueTask</td><td>A deliberate, narrow tool for cutting allocations on the very hottest paths</td></tr>
+                <tr><td>Cancellation deep dive</td><td>Graceful, propagating shutdown instead of abrupt kills or endless work</td></tr>
+                <tr><td>Parallel Programming / Parallel.ForEach</td><td>The right tool for CPU-bound, data-parallel work</td></tr>
+                <tr><td>Channels</td><td>Safe, efficient producer/consumer hand-off — the backbone of the pipeline below</td></tr>
+                <tr><td>Concurrent Collections</td><td>Shared state that doesn't need hand-rolled locking</td></tr>
+                <tr><td>Locking &amp; Synchronization</td><td>The primitives behind everything that does need explicit coordination</td></tr>
+                <tr><td>Race Conditions</td><td>The precise bug every synchronization choice above is defending against</td></tr>
+                <tr><td>Deadlocks</td><td>The precise failure mode "async all the way" and consistent lock ordering prevent</td></tr>
+                <tr><td>Thread-Safe Design</td><td>Designing correctness in up front, rather than patching it in after an incident</td></tr>
+                <tr><td>Async Streams (concurrency revisit)</td><td>Merging multiple live sources concurrently, with real per-item cost awareness</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Everything below draws on this table without repeating each lesson's full detail — treat this as the moment those threads get pulled together into one coherent set of engineering priorities.</p>
+
+    <!-- ====== PRINCIPLE 1 ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Principle 1 — Avoid Thread Pool Starvation (The #1 Rule)</h2>
+    <p>Every other principle in this lesson matters less if this one is violated. The ThreadPool is a shared, finite resource — every request, every background job, every piece of concurrent work in your process draws from the same pool. A single blocking call (<code class="icode">.Result</code>, <code class="icode">.Wait()</code>, a synchronous database driver call, a blocking file read) on a code path that's supposed to be async doesn't just slow down that one operation — it ties up a thread that could otherwise be serving a completely unrelated request. Do that under enough concurrent load, and the pool runs out of threads faster than it can grow new ones, and <em>everything</em> — not just the offending code path — starts queuing and slowing down.</p>
+    <div class="callout">
+        <strong>💡 The rule, stated plainly:</strong> no blocking calls anywhere on an async code path. "Async all the way," from this Part's deadlocks lesson and this course's async-mistakes lesson, isn't just about avoiding a single deadlock — under load, it's the difference between a system that scales and one that silently falls over well before its CPU or memory limits are even close.
+    </div>
+
+    <!-- ====== PRINCIPLE 2 ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Principle 2 — Bounded Channels for Backpressure, Not Unbounded Queues</h2>
+    <p>An unbounded in-memory queue feels safe right up until the moment producers outpace consumers — then it grows without limit, and the process eventually runs out of memory, usually at the worst possible time (peak load). A <em>bounded</em> <code class="icode">Channel&lt;T&gt;</code> — covered fully elsewhere in this Part — flips that failure mode into something manageable: once it's full, a producer's <code class="icode">WriteAsync</code> call simply awaits until the consumer catches up, applying natural backpressure instead of unbounded growth.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ Unbounded queue</h4>
+            <ul>
+                <li>Producers never wait, no matter how far behind consumers fall</li>
+                <li>Memory grows without limit under sustained overload</li>
+                <li>Failure mode: out-of-memory, usually at peak load</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Bounded Channel&lt;T&gt;</h4>
+            <ul>
+                <li>Producers await once the channel is full — natural backpressure</li>
+                <li>Memory usage stays predictable and capped</li>
+                <li>Failure mode: producers slow down, gracefully, instead of the process crashing</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== PRINCIPLE 3 ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Principle 3 — Choose Task vs. ValueTask Deliberately, Not Everywhere</h2>
+    <p><code class="icode">ValueTask</code>, covered fully elsewhere in this Part, exists to cut an allocation on a specific, narrow shape of hot path — typically a method that very often completes synchronously (a cache hit, a buffered read). It comes with real rules to respect (don't await it twice, don't share it across concurrent awaiters) that <code class="icode">Task</code> doesn't require you to think about at all. Reaching for <code class="icode">ValueTask</code> reflexively, everywhere, trades a small, usually-irrelevant allocation savings for genuinely harder-to-reason-about code across your whole codebase.</p>
+    <div class="callout">
+        <strong>💡 Default to <code class="icode">Task</code>.</strong> Reach for <code class="icode">ValueTask</code> only on paths a profiler has actually shown to be hot enough that the allocation matters — most code, even in a high-throughput system, never needs it.
+    </div>
+
+    <!-- ====== PRINCIPLE 4 ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Principle 4 — Task.WhenAll for I/O, Parallel.ForEach for CPU</h2>
+    <p>These solve genuinely different shapes of problem, and reaching for the wrong one wastes resources without adding real throughput:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Workload shape</th><th>Right tool</th><th>Why</th></tr></thead>
+            <tbody>
+                <tr><td>Several independent I/O-bound operations (HTTP calls, DB queries) that mostly just <em>wait</em></td><td><code class="icode">Task.WhenAll</code></td><td>None of them need a dedicated thread while waiting — await lets many run "concurrently" without occupying many threads at all.</td></tr>
+                <tr><td>A large batch of genuinely CPU-bound work (heavy computation per item, across many items)</td><td><code class="icode">Parallel.ForEach</code> (or its async counterpart, covered elsewhere in this Part)</td><td>This work genuinely needs CPU cores running in parallel — spreading it across the ThreadPool's worker threads is the actual bottleneck-relieving move here.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Using <code class="icode">Parallel.ForEach</code> on I/O-bound work wastes threads holding them busy while they wait on I/O for no benefit — the same mistake as wrapping already-async I/O in <code class="icode">Task.Run</code>, covered in this course's async-mistakes lesson. Using <code class="icode">Task.WhenAll</code> on heavy CPU-bound work doesn't get you genuine parallel CPU execution the way <code class="icode">Parallel.ForEach</code> does — it's the wrong tool for that shape of problem too.</p>
+
+    <!-- ====== PRINCIPLE 5 ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Principle 5 — Minimize Per-Operation Allocations on Hot Paths</h2>
+    <p>Every allocation on a hot path is memory the garbage collector will eventually have to reclaim — and GC pressure is real, measurable latency that shows up as pauses and jitter under sustained load, ties back directly to the allocation and GC material from Advanced Part I. In async, high-throughput code, allocations hide in easy-to-miss places: a lambda that captures a variable allocates a closure object every time it's created (from Advanced Part II's delegates material); LINQ chains over hot-path collections allocate iterators and intermediate sequences; boxing a value type into an <code class="icode">object</code> parameter allocates on the heap. None of these are wrong in general-purpose code — they're only worth hunting down specifically on paths that run extremely frequently, where the accumulated allocation rate is what's actually driving GC overhead.</p>
+
+    <!-- ====== CLOSING WORKED EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Putting It Together — A High-Throughput Event-Processing Pipeline</h2>
+    <p>Here's a realistic shape for a system ingesting events from a queue, processing them concurrently with a bounded degree of parallelism, and writing results out — applying several of this Part's techniques together, each one called out explicitly.</p>
+
+    <div class="code-block"><code>public sealed class EventProcessingPipeline
+{
+    // Principle 2 — bounded Channel<T>: producers slow down under
+    // sustained overload instead of growing memory without limit.
+    private readonly Channel&lt;InboundEvent&gt; _inbox =
+        Channel.CreateBounded&lt;InboundEvent&gt;(new BoundedChannelOptions(1_000)
+        {
+            FullMode = BoundedChannelFullMode.Wait
+        });
+
+    private readonly IEnrichmentClient _enrichmentClient;
+    private readonly IRiskClient _riskClient;
+    private readonly Channel&lt;ProcessedResult&gt; _outbox;
+    private int _totalProcessed; // protected via Interlocked below
+
+    public ChannelWriter&lt;InboundEvent&gt; Ingress =&gt; _inbox.Writer;
+
+    // Bounded degree of parallelism: a fixed, deliberately small
+    // number of consumer workers pulling from one shared channel —
+    // not one Task.Run per event, which would flood the ThreadPool.
+    public async Task RunAsync(int degreeOfParallelism, CancellationToken ct)
+    {
+        var workers = Enumerable.Range(0, degreeOfParallelism)
+            .Select(_ =&gt; ProcessLoopAsync(ct))
+            .ToArray();
+
+        await Task.WhenAll(workers); // Principle 1: no blocking call here
+    }
+
+    private async Task ProcessLoopAsync(CancellationToken ct)
+    {
+        // Cancellation threaded all the way through — graceful
+        // shutdown, not an abrupt kill.
+        await foreach (InboundEvent evt in _inbox.Reader.ReadAllAsync(ct))
+        {
+            await ProcessOneAsync(evt, ct); // async all the way — never .Result
+        }
+    }
+
+    private async Task ProcessOneAsync(InboundEvent evt, CancellationToken ct)
+    {
+        // Principle 4 — genuinely independent I/O calls: Task.WhenAll,
+        // not Parallel.ForEach (there's no CPU-bound work here to
+        // spread across cores; both calls are just waiting on I/O).
+        Task&lt;EnrichmentData&gt; enrichTask = _enrichmentClient.FetchAsync(evt.CustomerId, ct);
+        Task&lt;RiskScore&gt; scoreTask = _riskClient.ScoreAsync(evt, ct);
+        await Task.WhenAll(enrichTask, scoreTask);
+
+        var result = new ProcessedResult(evt, enrichTask.Result, scoreTask.Result);
+
+        // A shared counter, updated from many concurrent workers —
+        // exactly the shared-mutable-state shape the race-conditions
+        // lesson warned about. Interlocked keeps it correct without
+        // a full lock for this single value.
+        Interlocked.Increment(ref _totalProcessed);
+
+        // Writing out through another bounded channel — same
+        // backpressure principle applied to the outbound side too.
+        await _outbox.Writer.WriteAsync(result, ct);
+    }
+}</code></div>
+
+    <p>Callouts, tying each piece back to this Part:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Bounded ingress and egress channels</strong> — Principle 2, and this Part's Channels lesson: backpressure instead of unbounded memory growth on both ends of the pipeline.</li>
+        <li style="margin-bottom:0.4rem;"><strong>A fixed, small pool of consumer workers</strong> reading from one shared channel — bounded parallelism, the same shape this Part's Parallel Programming material applies to CPU work, here applied to a controlled degree of concurrent consumption instead of one task per event flooding the ThreadPool (Principle 1).</li>
+        <li style="margin-bottom:0.4rem;"><strong><code class="icode">Task.WhenAll</code> for the two independent I/O calls</strong> inside <code class="icode">ProcessOneAsync</code> — Principle 4: genuinely I/O-bound, concurrent, no thread wasted per call while waiting.</li>
+        <li style="margin-bottom:0.4rem;"><strong><code class="icode">Interlocked.Increment</code></strong> on the shared counter — straight out of the race-conditions lesson: a shared, mutable value, updated safely without a full lock for a single-value operation.</li>
+        <li style="margin-bottom:0.4rem;"><strong><code class="icode">CancellationToken</code> threaded through every await</strong> — the cancellation deep-dive material, extended here across an entire multi-stage pipeline rather than a single call.</li>
+        <li style="margin-bottom:0.4rem;"><strong>No <code class="icode">.Result</code>, no <code class="icode">.Wait()</code>, anywhere</strong> — Principle 1 and the deadlocks lesson: nothing here can ever tie up a thread the pipeline itself needs to keep moving.</li>
+    </ul>
+    <p>Notice what's <em>not</em> here: no <code class="icode">ValueTask</code> (Principle 3 — this pipeline's operations aren't hot enough, per-call, to justify it unless profiling said otherwise), no manual <code class="icode">lock</code> around the channels (they're already internally thread-safe, per the Thread-Safe Design lesson's encapsulation principle), and no unbounded collections anywhere in the data path (Principle 2, applied consistently). Every choice traces back to a specific lesson in this Part, applied because the workload's shape called for it — not out of habit.</p>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        High throughput isn't one trick — it's a short list of disciplines, applied consistently:<br /><br />
+        <strong>1. Never block the pool.</strong> Async all the way, everywhere, no exceptions.<br />
+        <strong>2. Bound your queues.</strong> Backpressure beats an out-of-memory crash under load.<br />
+        <strong>3. Match the tool to the workload.</strong> WhenAll for I/O waiting, Parallel.ForEach for CPU work, ValueTask only where profiling justifies it.<br />
+        <strong>4. Watch your allocations on the hot path.</strong> Every allocation there is GC pressure you'll pay for later.<br />
+        <strong>5. Design safety in, don't patch it in.</strong> Immutability and encapsulated synchronization, from the last few lessons, over ad hoc locking sprinkled wherever a bug appeared.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><strong>Avoiding thread pool starvation</strong> — no blocking calls on any async path — is the single highest-priority rule; violating it undermines every other optimization.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Bounded <code>Channel&lt;T&gt;</code> pipelines</strong> give you backpressure instead of unbounded memory growth under sustained load.</li>
+            <li style="margin-bottom:0.4rem;">Choose <strong><code>Task</code> vs. <code>ValueTask</code></strong> deliberately, on measured hot paths only — not as a default everywhere.</li>
+            <li style="margin-bottom:0.4rem;">Match the coordination tool to the workload shape: <strong><code>Task.WhenAll</code> for I/O concurrency</strong>, <strong><code>Parallel.ForEach</code> for CPU concurrency</strong>.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Minimize allocations on hot paths</strong> — closures, LINQ, and boxing all add up to real GC pressure at scale.</li>
+            <li style="margin-bottom:0.4rem;">A real high-throughput system is the sum of this whole Part applied together, deliberately — Task internals, SynchronizationContext, the ThreadPool, cancellation, Parallel Programming, Channels, concurrent collections, locking, and the race-condition, deadlock, and thread-safe design principles that closed it out.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen the whole Part's toolkit combined into one system. Let's check you can reason about the trade-offs, not just recite the rules.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why is "avoid thread pool starvation" described as the highest-priority rule for a high-throughput async system, ahead of choices like Task vs. ValueTask?</p>
+        <ul class="options">
+            <li>A) ValueTask is deprecated and should never be used in production systems</li>
+            <li>B) The ThreadPool is a shared, finite resource used by the entire process — a single blocking call on an async path can degrade every unrelated request, not just the one that blocked, undermining any other optimization made elsewhere</li>
+            <li>C) Task vs. ValueTask has no measurable performance difference in any scenario</li>
+            <li>D) Thread pool starvation only affects background jobs, never request-handling code</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Because the ThreadPool is shared across the whole process, one blocking call doesn't just cost the operation that blocked — it removes a thread from the pool that unrelated concurrent work also needed. That system-wide impact is why this rule outranks narrower, path-specific optimizations like ValueTask, which only affect the specific call sites where it's applied.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> ValueTask is a real, supported, current .NET type for a specific narrow use case — it isn't deprecated; the lesson's point is about using it deliberately, not avoiding it entirely.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There is a measurable difference in the specific scenario ValueTask targets (very frequently, synchronously-completing calls) — the lesson's guidance is about scope of use, not about the difference not existing.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Thread pool starvation affects any code path drawing from the shared pool, including request-handling code in a web server — that's exactly why it's such a severe, wide-reaching problem.</p>
+                <p><strong>Reinforcement:</strong> A shared, finite resource being misused has system-wide consequences — that's precisely why this rule sits above narrower, more local optimizations.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A pipeline uses an unbounded in-memory queue between a fast producer and a slower consumer. Under sustained heavy load, what failure mode does this risk, and how does a bounded Channel&lt;T&gt; address it?</p>
+        <ul class="options">
+            <li>A) The unbounded queue risks unlimited memory growth as the producer outpaces the consumer; a bounded channel applies backpressure by making the producer's write await once the channel is full, keeping memory usage predictable</li>
+            <li>B) Both approaches behave identically — "bounded" only affects how items are logged, not memory usage</li>
+            <li>C) An unbounded queue is always faster because it never blocks the producer, with no real downside</li>
+            <li>D) A bounded channel prevents the consumer from ever falling behind the producer</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> An unbounded queue lets the producer keep adding items no matter how far behind the consumer falls, so memory grows without limit under sustained overload — a real production risk. A bounded channel caps that growth: once full, the producer's WriteAsync call awaits until the consumer catches up, trading unbounded memory growth for a predictable, gracefully-slowed producer.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> The behavioral difference is about memory growth and producer flow control, not logging — this is a substantive functional difference, not cosmetic.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Never blocking the producer is exactly the downside under sustained overload — it's what allows unbounded memory growth in the first place, which is a real cost, not a benefit.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A bounded channel doesn't prevent the consumer from falling behind — it changes what happens when that occurs (the producer waits) rather than preventing the underlying speed mismatch.</p>
+                <p><strong>Reinforcement:</strong> Backpressure via a bounded channel turns an unpredictable, potentially catastrophic failure mode (OOM) into a predictable, gracefully-degrading one (producers slow down).</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A method needs to call three independent external HTTP APIs and combine their results, where each call is dominated by network wait time with minimal local CPU work. Which coordination tool fits this workload, and why?</p>
+        <ul class="options">
+            <li>A) Parallel.ForEach, because it's the general-purpose tool for any concurrent work</li>
+            <li>B) Task.WhenAll, because the work is I/O-bound (dominated by waiting, not computation) — none of the calls need a dedicated thread while waiting, so awaiting them together is efficient without wasting thread pool capacity</li>
+            <li>C) A sequence of Task.Run calls, one per API, run one after another</li>
+            <li>D) Neither tool applies — HTTP calls cannot be run concurrently in .NET</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is squarely I/O-bound work — the calls spend almost all their time waiting on the network, not consuming CPU. Task.WhenAll lets all three run concurrently while each await frees its thread during the wait, exactly the shape this lesson's Principle 4 recommends for I/O concurrency.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Parallel.ForEach is built for CPU-bound, data-parallel work — using it here would waste thread-pool threads holding them busy while they just wait on network I/O, providing no real benefit.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Running the calls one after another (sequentially, even via Task.Run) throws away the concurrency opportunity entirely — the calls would wait for each other unnecessarily, which is exactly what Task.WhenAll avoids.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> HTTP calls can absolutely run concurrently in .NET — that's precisely what Task.WhenAll over multiple async HTTP calls achieves, and it's a completely standard, well-supported pattern.</p>
+                <p><strong>Reinforcement:</strong> I/O-bound and waiting-dominated means Task.WhenAll; CPU-bound and computation-dominated means Parallel.ForEach — matching the tool to the actual bottleneck is the whole point of Principle 4.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> In the EventProcessingPipeline example, why is Interlocked.Increment used for _totalProcessed instead of a plain _totalProcessed++?</p>
+        <ul class="options">
+            <li>A) Plain ++ does not compile on an int field in C#</li>
+            <li>B) Multiple concurrent worker tasks update _totalProcessed at the same time; a plain ++ is read-add-write and not atomic, risking the exact lost-update race condition covered earlier in this Part, while Interlocked.Increment performs the update as one atomic step</li>
+            <li>C) Interlocked.Increment is required by the compiler whenever a field is named with an underscore prefix</li>
+            <li>D) It has no functional benefit here — it's used purely for stylistic consistency with the rest of the codebase</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> With degreeOfParallelism worker tasks all calling ProcessOneAsync concurrently, _totalProcessed is genuinely shared and mutable — exactly the shape the race-conditions lesson built. A plain ++ risks lost updates under concurrent access; Interlocked.Increment performs the read-add-write as a single atomic hardware-level operation, closing that gap.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> _totalProcessed++ compiles completely fine on a shared int field — the problem is a runtime correctness risk under concurrency, not a compile-time restriction.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Naming conventions have no bearing on whether Interlocked is required — the need comes entirely from concurrent shared access, not from how the field happens to be named.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a genuine correctness fix, not a style choice — using plain ++ here would reintroduce a real, reproducible race condition under concurrent load.</p>
+                <p><strong>Reinforcement:</strong> Any shared counter touched by concurrent workers needs the same protection the race-conditions lesson taught — Interlocked is the lightweight, appropriate tool for a single-value update like this one.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> The pipeline example deliberately avoids using ValueTask anywhere. Given this lesson's guidance on Task vs. ValueTask, what's the most likely reasoning?</p>
+        <ul class="options">
+            <li>A) ValueTask cannot be used inside a Channel-based pipeline under any circumstances</li>
+            <li>B) The pipeline's operations involve genuine I/O waits (enrichment and risk-scoring calls) rather than being dominated by very frequent, synchronously-completing calls — exactly the profile where Task remains the right default and ValueTask's allocation savings wouldn't meaningfully matter without evidence otherwise</li>
+            <li>C> ValueTask is only legal in synchronous, non-async methods</li>
+            <li>D) Using ValueTask would make the code fail to compile when combined with async/await</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This lesson's Principle 3 says to default to Task and reach for ValueTask only on paths a profiler has shown to be hot enough that the allocation matters — typically calls that complete synchronously very often. The pipeline's per-event work involves genuine external I/O waits, not the profile ValueTask specifically targets, so Task remains the appropriate, simpler default here.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no restriction preventing ValueTask from being used alongside channels — the choice here is about workload shape and deliberate defaults, not a technical incompatibility.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> ValueTask is fully usable in async methods with await — it's a real, supported async return type, not restricted to synchronous code.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> ValueTask works correctly with async/await when used according to its rules — there's no compile failure from combining them; the reasoning here is about deliberate design choice, not a technical limitation.</p>
+                <p><strong>Reinforcement:</strong> ValueTask is a scalpel for a specific, measured hot-path shape — defaulting to Task everywhere else, as this pipeline does, is exactly the disciplined choice Principle 3 recommends.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 That completes Part IV — Async &amp; Concurrency. From the mechanics of a single Task all the way to a full, deliberately-engineered high-throughput pipeline, you now have the complete toolkit — and, just as importantly, the judgment for when each tool actually earns its place.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

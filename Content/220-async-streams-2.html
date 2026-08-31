@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>220 - Async Streams · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        await foreach is inherently sequential. What happens when you need several async streams at once?
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Earlier in this course you met <code class="icode">IAsyncEnumerable&lt;T&gt;</code> and <code class="icode">await foreach</code> — a sequence of values where getting the next one might require waiting, consumed one item at a time. That's the whole story for a single stream. But now that this Part has given you Channels, the ThreadPool, cancellation internals, and the full concurrency toolkit, a harder and very real question comes into focus: what if you have <em>several</em> independent async streams — several live sensor feeds, several paginated API sources, several open connections — and you need to process items from all of them as they arrive, not one stream fully drained before the next even starts?</p>
+    <p>That turns out to be a genuinely harder problem than it sounds. A single <code class="icode">await foreach</code> is, by construction, sequential — it can never race ahead to check a second stream while waiting on the first. Getting real concurrency across multiple streams needs an actual coordination point.</p>
+    <p><strong>In this lesson, you'll build that coordination point using a <code class="icode">Channel&lt;T&gt;</code> as a merge point for multiple concurrent producers, go deeper on how cancellation interacts with an async iterator's own internal awaits, and look at the real, measurable per-item overhead of async streams — distinct from a plain synchronous iterator — so you know when that overhead actually matters.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Merging</strong> async streams means combining several independent <code class="icode">IAsyncEnumerable&lt;T&gt;</code> sources into a single stream that a consumer can <code class="icode">await foreach</code> over — where items show up in whatever order they actually become available across all the sources, not grouped by which source produced them, and not waiting for one source to finish before moving to the next.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A single <code class="icode">await foreach</code> loop calls <code class="icode">MoveNextAsync()</code> on one enumerator, one call at a time — inherently sequential by the shape of the interface itself. There is no built-in language construct for "await foreach over several sources at once, interleaved by arrival time." To get that, you need an explicit fan-in: one or more producer tasks, each independently draining its own source stream, all writing into a single shared, thread-safe hand-off point — precisely the job a <code class="icode">Channel&lt;T&gt;</code>, covered elsewhere in this Part, exists to do. A consumer then <code class="icode">await foreach</code>s over the channel, seeing a merged, arrival-ordered stream of everything the producers wrote.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> Why you can't just Task.WhenAll your way out of this</div>
+        <p><code class="icode">Task.WhenAll</code> coordinates a fixed set of Tasks that each produce <em>one</em> final value, all started up front. An async stream produces <em>many</em> values, over an open-ended period of time, and you want to react to each one as it shows up — not wait for every stream to fully finish before seeing anything. That's a fundamentally different shape of coordination problem, which is exactly why merging streams needs its own dedicated pattern rather than reusing the tools from earlier lessons on coordinating single-value Tasks.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Naively "Combining" Streams Is Either Slow or Unfair</h3>
+    <p>Say you have three live async streams — three exchange feeds, or three queue partitions — and you need to react to whichever one has a new item, as soon as it does. The naive approach, looping through each stream and calling <code class="icode">await foreach</code> on the first one fully before moving to the second, drains stream 1 completely before ever looking at stream 2 or 3 — even if stream 2 has had ten items waiting the entire time. That's not "processing multiple streams concurrently" at all; it's processing them one after another, badly, with extra ceremony.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is genuine concurrency: each source stream advancing independently, on its own schedule, with items surfacing to the consumer in whatever order they actually arrive — not an order imposed by which source happens to be listed first in your code.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — A Channel as a Fan-In Point</h3>
+    <p>Give every source stream its own independent producer task, all writing into one shared <code class="icode">Channel&lt;T&gt;</code>, and let a single consumer read from that channel. Each producer advances at its own pace; the channel — a thread-safe, purpose-built hand-off structure covered fully elsewhere in this Part — takes care of safely coordinating multiple concurrent writers and one reader, which is exactly the kind of shared-mutable-state coordination the earlier lessons in this Part warned you never to hand-roll yourself.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">MERGING N ASYNC STREAMS THROUGH A CHANNEL</div>
+        <div style="text-align:center;font-size:0.9rem;color:var(--text-main,#E2E8F0);padding:0.5rem 0;">
+            <div>Stream 1 (own producer task) ⟶ ⎤</div>
+            <div>Stream 2 (own producer task) ⟶ ⎥ &nbsp;<strong>Channel&lt;T&gt;</strong>&nbsp; ⎥ ⟶ single consumer's <code>await foreach</code></div>
+            <div>Stream 3 (own producer task) ⟶ ⎦</div>
+        </div>
+        <div style="text-align:center;font-size:0.85rem;color:var(--text-muted,#94A3B8);margin-top:0.6rem;">Each producer advances independently. The channel is the one shared, thread-safe hand-off point. The consumer sees a single, arrival-ordered stream.</div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">BUILDING THE MERGE, STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">1. Create one shared channel</div>
+            <ul><li>Every producer writes into the same <code>Channel&lt;T&gt;</code>; the consumer reads from the same channel's reader.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. Spawn one producer task per source stream</div>
+            <ul><li>Each task independently runs its own <code>await foreach</code> over its own source, writing each item it receives into the channel as soon as it arrives — no producer waits on any other producer.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. Complete the channel once every producer is done</div>
+            <ul><li><code>Task.WhenAll</code> over the producer tasks, then <code>channel.Writer.Complete()</code> — this is what eventually lets the consumer's loop end naturally instead of waiting forever.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. The consumer await foreachs over the channel</div>
+            <ul><li>One simple, sequential loop on the consumer side — the concurrency already happened upstream, among the producers; the consumer just sees a single merged stream.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>A general-purpose merge helper — combine any number of async streams of the same type into one:</p>
+
+    <div class="code-block"><code>public static async IAsyncEnumerable&lt;T&gt; MergeAsync&lt;T&gt;(
+    IEnumerable&lt;IAsyncEnumerable&lt;T&gt;&gt; sources,
+    [EnumeratorCancellation] CancellationToken ct = default)
+{
+    var channel = Channel.CreateUnbounded&lt;T&gt;();
+
+    async Task PumpAsync(IAsyncEnumerable&lt;T&gt; source)
+    {
+        await foreach (T item in source.WithCancellation(ct))
+        {
+            await channel.Writer.WriteAsync(item, ct);
+        }
+    }
+
+    var producers = sources.Select(s =&gt; PumpAsync(s)).ToArray();
+
+    // When every producer has finished (or one has faulted),
+    // signal that no more items are coming.
+    _ = Task.WhenAll(producers).ContinueWith(
+        t =&gt; channel.Writer.TryComplete(t.Exception),
+        TaskScheduler.Default);
+
+    await foreach (T item in channel.Reader.ReadAllAsync(ct))
+    {
+        yield return item;
+    }
+}</code></div>
+
+    <p>Walking through the important lines:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Each <code class="icode">PumpAsync</code> call is its own independent task — it advances its own source stream on its own schedule, with no coordination needed between producers themselves.</li>
+        <li style="margin-bottom:0.4rem;"><code class="icode">channel.Writer.TryComplete(t.Exception)</code> propagates a producer's failure into the channel itself — an exception from any single source surfaces to the consumer's <code class="icode">await foreach</code> rather than vanishing into an unobserved task, exactly the fire-and-forget trap covered in this course's async-mistakes lesson.</li>
+        <li style="margin-bottom:0.4rem;">The <code class="icode">ct</code> token is threaded into <em>every</em> internal await — both <code class="icode">source.WithCancellation(ct)</code> on the way in and <code class="icode">channel.Writer.WriteAsync(item, ct)</code> on the way out — which matters more than it might look; see Cancellation below.</li>
+    </ul>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A trading dashboard subscribed to live price ticks from several exchange connections at once — each connection exposes its own <code class="icode">IAsyncEnumerable&lt;PriceTick&gt;</code>, and the dashboard needs one unified, arrival-ordered feed to render:</p>
+
+    <div class="code-block"><code>IAsyncEnumerable&lt;PriceTick&gt; nyseStream = _nyseConnection.SubscribeAsync(symbol, ct);
+IAsyncEnumerable&lt;PriceTick&gt; nasdaqStream = _nasdaqConnection.SubscribeAsync(symbol, ct);
+IAsyncEnumerable&lt;PriceTick&gt; lseStream = _lseConnection.SubscribeAsync(symbol, ct);
+
+await foreach (PriceTick tick in MergeAsync(
+    new[] { nyseStream, nasdaqStream, lseStream }, ct))
+{
+    _dashboard.UpdatePrice(tick.Exchange, tick.Price);
+    // Reacts to whichever exchange ticks first — NYSE, NASDAQ, and
+    // LSE all advance independently; nothing here waits for one
+    // exchange's feed to be exhausted before reacting to another.
+}</code></div>
+
+    <p>Without the merge, the dashboard would either have to poll each connection in a round-robin (adding latency and complexity) or fully drain one exchange's feed before ever looking at another (which, for a live, effectively-endless stream, would mean never seeing the other two exchanges at all). The channel-based merge gives genuinely fair, low-latency, concurrent consumption of all three feeds through one simple consumer loop.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📰</span> A Newsroom With One Inbox</div>
+        <p>Picture several foreign correspondents, each filing reports independently as news happens in their own city — nobody waits for the Tokyo correspondent to finish an entire day's reports before the London correspondent is allowed to file anything. Each report, from whichever correspondent, drops into one shared inbox the moment it's ready. A single editor works through that inbox in the order reports actually arrive — not grouped by city, not waiting for any one correspondent to "finish" (some may never finish, filing indefinitely). That inbox is the channel; the correspondents are the producer tasks; the editor's single pass through the inbox is the consumer's <code class="icode">await foreach</code>.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD — cancellation and overhead ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Cancellation, Threaded Through Every Internal Await — Not Just the Outer Loop</h3>
+    <p>You already know <code class="icode">.WithCancellation(token)</code> on the consuming side of an <code class="icode">await foreach</code>, and <code class="icode">[EnumeratorCancellation]</code> for correctly wiring a token into an async-iterator method's own parameter. Merging multiple streams raises the stakes on a point that's easy to under-appreciate with a single stream: an iterator method can have <em>internal</em> awaits that have nothing to do with the enumerator's own <code class="icode">MoveNextAsync()</code> call — a retry delay, an internal buffered write, a connection handshake — and every single one of those internal awaits needs the <em>same</em> token passed into it explicitly, or it simply won't observe cancellation at all.</p>
+    <p>In the <code class="icode">MergeAsync</code> example above, notice that <code class="icode">ct</code> appears three separate times: once on <code class="icode">source.WithCancellation(ct)</code> (so a producer stops pulling from its slow source promptly), once on <code class="icode">channel.Writer.WriteAsync(item, ct)</code> (so a producer stuck waiting for channel capacity — see the bounded-channel backpressure pattern elsewhere in this Part — also unblocks promptly), and once more on the consumer's own <code class="icode">channel.Reader.ReadAllAsync(ct)</code>. Miss any one of those three, and cancelling the token stops <em>some</em> of the pipeline while leaving another part of it running — this is exactly the "CancellationToken accepted but not passed through" mistake from this course's async-mistakes lesson, just with more internal awaits for it to hide in.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Per-Item Overhead — Each MoveNextAsync Is a State-Machine Resume</h3>
+    <p>As covered elsewhere in this Part on Task internals, an <code class="icode">async</code> method compiles down to a state machine, and each resumption of that state machine after a suspension point is real, if small, work — not free. An async-iterator method (one using both <code class="icode">async</code> and <code class="icode">yield return</code>) combines <em>two</em> kinds of suspension in one state machine: pausing at an <code class="icode">await</code>, and pausing at a <code class="icode">yield return</code>. Every single call to <code class="icode">MoveNextAsync()</code> — one per item produced — is effectively a resume-and-run-forward-to-the-next-pause operation on that state machine.</p>
+    <p>For a stream producing a handful of items with real I/O waits in between, this overhead is completely irrelevant — the I/O wait dwarfs it by orders of magnitude. But for a "hot" async stream producing many small items in rapid succession — thousands or millions per second, with little or no genuine waiting between them — that per-item state-machine overhead becomes a real, measurable cost, distinct from and generally larger than the cost of advancing a plain synchronous <code class="icode">IEnumerator&lt;T&gt;.MoveNext()</code>, which is just an ordinary method call with no async infrastructure involved at all.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Advancing to the next item</th><th>What's involved</th></tr></thead>
+            <tbody>
+                <tr><td>Plain synchronous iterator (<code class="icode">yield return</code> only)</td><td>A single state machine, resumed with an ordinary method call — no async machinery.</td></tr>
+                <tr><td>Async iterator (<code class="icode">async IAsyncEnumerable&lt;T&gt;</code>)</td><td>A state machine combining both kinds of suspension, resumed via <code class="icode">MoveNextAsync()</code> — genuinely more moving parts per item.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>The practical takeaway isn't "avoid async streams" — it's "measure before assuming a hot async stream is free just because each individual <code class="icode">await</code> looks cheap in isolation." If a profiler shows the per-item overhead actually matters for your specific throughput target, that's exactly the kind of decision the capstone lesson at the end of this Part revisits directly.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "await foreach is already concurrent, since it's async" — no</h3>
+    <p>A single <code class="icode">await foreach</code> over a single <code class="icode">IAsyncEnumerable&lt;T&gt;</code> is strictly sequential: it calls <code class="icode">MoveNextAsync()</code>, waits for that specific call to complete, processes the item, and only then calls <code class="icode">MoveNextAsync()</code> again. "Async" here means "doesn't block a thread while waiting" — it does not mean "multiple items are being produced or processed at the same time." Genuine concurrency across streams requires the explicit fan-in pattern this lesson builds.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Calling MoveNextAsync concurrently on the same enumerator is not the answer</h3>
+    <p>It might be tempting to try to "parallelize" a single stream by having multiple threads call <code class="icode">MoveNextAsync()</code> on the same <code class="icode">IAsyncEnumerator&lt;T&gt;</code> instance at once. Don't — an enumerator's instance members are not documented as thread-safe (the same instance-member convention covered elsewhere in this Part applies here directly), and calling into the same enumerator concurrently from multiple threads is itself a race condition on the enumerator's own internal state, not a valid concurrency technique.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Forgetting to propagate a producer's exception into the merged stream</h4>
+    <p>❌ Starting producer tasks with a bare <code class="icode">_ = Task.Run(...)</code> or ignoring their results entirely — if one source's stream throws, the failure vanishes into an unobserved Task, exactly the fire-and-forget trap from earlier in this course, and the consumer never finds out.</p>
+    <p>✅ Route a producer's failure into <code class="icode">channel.Writer.TryComplete(exception)</code>, as shown above, so it surfaces where the consumer will actually see it.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Passing a CancellationToken to the outer loop but not to internal awaits</h4>
+    <p>❌ Wiring <code class="icode">.WithCancellation(ct)</code> onto the consumer's own loop, while a producer's internal <code class="icode">channel.Writer.WriteAsync(item)</code> or a retry delay inside a producer never receives the same token.</p>
+    <p>✅ Thread the same token into every internal await along the whole pipeline — the token has to reach each suspension point individually; nothing propagates it automatically.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming a hot async stream has negligible overhead without measuring</h4>
+    <p>❌ Reaching for <code class="icode">async IAsyncEnumerable&lt;T&gt;</code> for an extremely high-frequency, low-latency producer (millions of tiny items per second) purely out of habit, without checking whether the per-item state-machine overhead actually matters for that workload.</p>
+    <p>✅ Profile the actual throughput need first. For genuinely hot, tight-loop production of many small items with little real waiting, a different shape (batching items, or a plain synchronous producer feeding a channel) may outperform a naive one-item-per-<code class="icode">MoveNextAsync()</code> design.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">🔀</span>
+            <div class="label">Genuinely independent sources</div>
+            <div class="desc">Multiple live feeds, connections, or paginated sources that should all be consumed concurrently.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">⚖️</span>
+            <div class="label">Fairness matters</div>
+            <div class="desc">You need items processed roughly in arrival order across sources, not source-by-source.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🚫</span>
+            <div class="label">Not for a single stream</div>
+            <div class="desc">One source needs nothing more than a plain await foreach — don't add a channel for no reason.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">📏</span>
+            <div class="label">Measure at extreme throughput</div>
+            <div class="desc">Only worry about per-item state-machine overhead once profiling shows it actually matters.</div>
+        </div>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>One stream</strong> = a plain <code>await foreach</code>, inherently sequential.<br />
+        <strong>Many streams, concurrently</strong> = one producer task per source, all writing into one shared Channel&lt;T&gt;, one consumer reading the merged result.<br /><br />
+        <strong>Remember:</strong><br />
+        · await foreach never means "multiple items in flight at once" on its own.<br />
+        · A Channel&lt;T&gt; is the coordination point — not manual locking, not shared collections you built yourself.<br />
+        · Thread the same CancellationToken into every internal await in the pipeline, not just the outer loop.<br />
+        · Each MoveNextAsync() is a real state-machine resume — cheap per call, but not zero, and it adds up at extreme throughput.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A single <code>await foreach</code> is inherently <strong>sequential</strong> — genuine concurrency across multiple streams requires an explicit coordination point.</li>
+            <li style="margin-bottom:0.4rem;">A <strong>Channel&lt;T&gt;</strong> makes an excellent merge point: independent producer tasks each drain their own stream and write into the shared channel; one consumer reads the merged, arrival-ordered result.</li>
+            <li style="margin-bottom:0.4rem;">Route producer exceptions into the channel (e.g., <code>TryComplete(exception)</code>) so failures reach the consumer instead of vanishing as unobserved Task exceptions.</li>
+            <li style="margin-bottom:0.4rem;">A <code>CancellationToken</code> has to be threaded into <em>every</em> internal await in the pipeline, not just the outer consumer loop — nothing propagates it automatically.</li>
+            <li style="margin-bottom:0.4rem;">Each <code>MoveNextAsync()</code> call on an async iterator is a real state-machine resume — small, but nonzero, and worth measuring on genuinely hot, high-frequency streams.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've built a real merge pattern for concurrent async streams and gone deeper on cancellation and overhead. Let's check the reasoning behind each piece.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why can't a single `await foreach` loop, by itself, process items from two different IAsyncEnumerable&lt;T&gt; sources concurrently?</p>
+        <ul class="options">
+            <li>A) await foreach only accepts exactly one source and does not support multiple arguments</li>
+            <li>B) await foreach calls MoveNextAsync() one call at a time on a single enumerator and waits for each call to complete before the next — it's inherently sequential by the shape of the interface, regardless of which single source it targets</li>
+            <li>C) IAsyncEnumerable&lt;T&gt; instances cannot be created for more than one source in the same method</li>
+            <li>D) The C# compiler does not allow more than one await foreach statement per method</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> await foreach's mechanics — await e.MoveNextAsync(), then process Current, then repeat — are fundamentally one-call-at-a-time on one enumerator. There's no built-in notion of "also check a second source while waiting on the first" within a single loop; that coordination has to be built explicitly, which is exactly why this lesson introduces the channel-based merge.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The limitation isn't about argument count or syntax — it's about the sequential nature of how a single enumerator is driven, regardless of how many sources exist elsewhere in your code.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> You can absolutely create and hold multiple IAsyncEnumerable&lt;T&gt; instances in one method — the limitation is specifically about consuming them concurrently through one await foreach.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Multiple await foreach statements are legal in one method (e.g., one after another) — that still doesn't make them run concurrently; each one still completes sequentially before the next runs, unless explicitly coordinated.</p>
+                <p><strong>Reinforcement:</strong> Sequential-by-default is the whole reason a fan-in coordination point, like a channel, is needed for genuine multi-stream concurrency.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In the MergeAsync pattern from this lesson, what is the purpose of routing a producer task's exception into channel.Writer.TryComplete(exception) rather than letting the producer task simply fail on its own?</p>
+        <ul class="options">
+            <li>A) It automatically retries the failed producer up to three times</li>
+            <li>B) It ensures the failure surfaces to the consumer's await foreach loop, instead of silently vanishing as an unobserved Task exception</li>
+            <li>C) It converts the exception into a warning-level log entry instead of a thrown exception</li>
+            <li>D) It pauses all other producers until the failed one is manually restarted</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> If a producer task simply fails without this step, its exception sits on a Task nobody is awaiting directly — exactly the unobserved-exception fire-and-forget trap from earlier in this course. Routing it through TryComplete(exception) makes the channel itself fault, which the consumer's await foreach will then surface as a real, catchable exception.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing about TryComplete implements retry logic — it's purely about propagating a failure signal to the consumer, not recovering from it automatically.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The exception is not converted to a log entry — it remains a real exception that the consumer's loop will throw when reached.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Other producers are unaffected by one producer's failure being routed this way — they continue running independently; only the channel's eventual completion carries the failure.</p>
+                <p><strong>Reinforcement:</strong> Without an explicit path for producer failures to reach the consumer, they disappear silently — exactly the kind of bug that's invisible until it causes a real incident.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A merge pipeline passes ct into the consumer's channel.Reader.ReadAllAsync(ct), but a producer's internal channel.Writer.WriteAsync(item) call omits the token. What happens when the token is cancelled while that specific producer is blocked waiting for channel capacity?</p>
+        <ul class="options">
+            <li>A) The whole pipeline stops immediately and uniformly, because cancellation is automatically global once any one call observes it</li>
+            <li>B) That specific producer's blocked write can keep waiting indefinitely, since it was never given the token — cancellation only reliably reaches the parts of the pipeline the token was actually passed into</li>
+            <li>C) The producer throws a compile-time error because WriteAsync requires a CancellationToken argument</li>
+            <li>D) The channel automatically cancels every pending write for you once the consumer's token fires</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Cancellation is cooperative and has to be threaded into each individual await explicitly — this lesson's whole point about internal awaits. A WriteAsync call that never received the token has no way to know cancellation was requested and can remain blocked, even while other parts of the pipeline that did receive the token respond correctly.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Cancellation does not propagate automatically across unrelated awaits — each suspension point needs the token passed in explicitly to observe it, exactly as covered in this course's cancellation material.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> WriteAsync has an overload that doesn't require a token, so omitting it compiles fine — the danger here is a silent behavioral gap, not a compiler error.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no automatic global cancellation sweep across a channel's pending operations — each call only responds to cancellation if it was itself given the token.</p>
+                <p><strong>Reinforcement:</strong> A token has to reach every individual suspension point in a pipeline by hand — missing even one spot leaves a corner of the pipeline that cancellation can't touch.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why is it inaccurate to say a single await foreach loop is "already running concurrently" simply because it's marked async?</p>
+        <ul class="options">
+            <li>A) Because async in this context only means the wait for the next item doesn't block a thread while it waits — it does not mean multiple items are being produced or processed at the same time</li>
+            <li>B) Because await foreach is actually a compiler error in modern C#</li>
+            <li>C) Because IAsyncEnumerable&lt;T&gt; can only ever produce exactly one item total</li>
+            <li>D) Because concurrency in .NET requires the explicit use of the Parallel class</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> "Async" here describes not blocking a thread while waiting for the next item — a thread-efficiency property. It says nothing about multiple pieces of work happening at once. A single await foreach still processes exactly one item at a time, sequentially, regardless of how non-blocking each individual wait is.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> await foreach is completely valid, standard C# syntax for consuming an IAsyncEnumerable&lt;T&gt; — it's not an error at all.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> IAsyncEnumerable&lt;T&gt; can produce any number of items, including unboundedly many — that's the entire point of a stream, not a one-item limitation.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Concurrency can be achieved through multiple mechanisms in .NET — the Parallel class is one option among several (including the Channel-based pattern in this lesson), not a required gateway to any form of concurrency.</p>
+                <p><strong>Reinforcement:</strong> Don't conflate "non-blocking" with "concurrent" — they're related but distinct properties, and this confusion is exactly what leads people to expect a plain await foreach to somehow parallelize on its own.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A hot async stream produces one million tiny items per second with almost no real waiting between them. Compared to an equivalent plain synchronous iterator (yield return only, no async), what should you expect about per-item overhead, and what's the right response?</p>
+        <ul class="options">
+            <li>A) There is no meaningful difference at all — MoveNextAsync and MoveNext have identical cost in every case</li>
+            <li>B) The async iterator's MoveNextAsync involves a state machine handling both await- and yield-based suspension, which is real per-call overhead beyond a plain synchronous MoveNext — worth measuring, and addressing only if profiling shows it actually matters for the required throughput</li>
+            <li>C) Async iterators are always strictly faster than synchronous ones regardless of workload</li>
+            <li>D) The overhead only exists the very first time MoveNextAsync is called, then disappears for all later calls</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> An async iterator's state machine has to handle two kinds of suspension (await and yield return) at once, and every MoveNextAsync() call is a resume-and-run-to-next-pause operation on that machine — genuinely more moving parts than a plain synchronous MoveNext(), which is just an ordinary method call. At extreme, low-latency throughput this overhead can matter; the right response is measuring it, not assuming either "it's fine" or "it's a dealbreaker" without evidence.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There genuinely is a structural difference in what each call involves — claiming zero difference contradicts the actual mechanics covered in this lesson.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Async iterators are not universally faster — for most workloads (real I/O waits between items) the overhead is irrelevant; for hot, tight-loop production it can be a genuine, measurable cost, which is the opposite of "always faster."</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The state-machine overhead applies to each MoveNextAsync() call individually, not just the first one — it doesn't disappear after warm-up.</p>
+                <p><strong>Reinforcement:</strong> The right instinct is "measure before optimizing" — this overhead is real but only worth addressing once profiling shows it's actually the bottleneck for your specific throughput target.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You can now genuinely process multiple async streams concurrently, thread cancellation through a whole pipeline correctly, and reason about per-item overhead instead of guessing. This Part's final lesson pulls every technique you've learned together into one high-throughput system.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

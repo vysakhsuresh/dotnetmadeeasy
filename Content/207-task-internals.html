@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>207 - Task Internals · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Every async method you've ever written became a hidden class too — the third member of a family you already know.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You've used <code>Task</code> and <code>Task&lt;T&gt;</code> since Intermediate lesson 151. You know a <code>Task</code> is a "promise" — an object standing in for work that hasn't finished yet. You know <code>await</code> suspends a method without blocking a thread (lesson 152). What none of those lessons showed you is what <code>async</code> actually <em>compiles into</em> — and the answer will feel very familiar. You've already opened up two other compiler-generated machines this book: lesson 189 showed you the hidden "display class" behind a capturing lambda, and lesson 196 opened up the hidden state-machine class behind <code>yield return</code>. An <code>async</code> method compiles into a third machine from the exact same family — a state machine with a numbered state field and resume logic — except this one doesn't produce an <code>IEnumerable&lt;T&gt;</code>. It builds and returns a <code>Task</code>.</p>
+    <p><strong>In this lesson, you'll see the states a <code>Task</code> actually moves through, how continuations attach to a completing Task, and — the centerpiece — the literal shape of the state machine the C# compiler generates for an <code>async</code> method: the <code>IAsyncStateMachine</code> struct, the <code>AsyncTaskMethodBuilder</code>/<code>AsyncTaskMethodBuilder&lt;T&gt;</code> that actually constructs and completes the <code>Task</code> object you get back, and exactly how it's the third recognizable member of the compiler-generated-state-machine family you now know on sight.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <code>Task</code> object is not the work itself. It's a ticket — an object that <em>tracks</em> a piece of work: whether it's finished, what it produced (for <code>Task&lt;T&gt;</code>), whether it failed, and who's waiting to be told when it's done. You've held that mental model since lesson 151. This lesson goes one level deeper: what actually flips that ticket from "not done" to "done," and what the compiler builds to make that happen automatically every time you write <code>async</code>.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><code>System.Threading.Tasks.Task</code> is a class representing an asynchronous operation's eventual completion, result, or failure — a <strong>future</strong> in the general computer-science sense (other ecosystems call the same idea a "promise"). Internally, a <code>Task</code> carries a status field, a place to store either a result (<code>Task&lt;TResult&gt;</code>) or a captured exception, and a list of registered continuations — delegates to invoke once the task transitions to a completed state. Completing a <code>Task</code> is the trigger event that runs every continuation registered on it.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> A Task is a completion signal with a mailbox attached</div>
+        <p>Two things live inside every <code>Task</code>: a place to record how the operation ended (succeeded with a value, succeeded with nothing, failed with an exception, or was canceled), and a list of "call me when you know the answer" registrations. Everything else — <code>await</code>, <code>ContinueWith</code>, <code>WhenAll</code> — is built on exactly those two things.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Pausing and Resuming a Method Needs Somewhere to Live</h3>
+    <p>An ordinary method call is a stack frame: its local variables live on the call stack, and the instant the method returns, that frame is gone. But an <code>async</code> method needs to do something a normal method can't — pause partway through at an <code>await</code>, hand control back to the caller, and later resume from that <em>exact</em> point, with every local variable still holding the value it had when execution paused. The stack frame that existed at the moment of the pause is long gone by the time the resume happens; something else has to remember where you were and what you were holding.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Move the Method's State onto the Heap, and Give the Caller Something to Track It</h3>
+    <p>You already know this solution's shape from lessons 189 and 196: when something needs to survive past where the stack would normally erase it, promote it to a field on a heap-allocated object. That's exactly what the compiler does for <code>async</code> methods — it builds a class (or struct) with a field for every local variable and parameter that needs to survive an <code>await</code>, plus a numeric field recording exactly where execution paused. And because the <em>caller</em> also needs a way to know when that paused work eventually finishes, the compiler wires that same state machine to an <code>AsyncTaskMethodBuilder</code>, whose entire job is to create the <code>Task</code> object the caller gets back, and complete it — with a result, or with a captured exception — the moment the state machine reaches its end.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">THREE COMPILER-GENERATED STATE MACHINES, ONE FAMILY</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:0.95rem;">Lesson 189</div>
+                <div style="font-size:0.85rem;margin:0.4rem 0;">Capturing lambda</div>
+                <div style="font-size:0.8rem;color:var(--text-muted,#94A3B8);">→ "display class" holding captured variables as fields</div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:0.95rem;">Lesson 196</div>
+                <div style="font-size:0.85rem;margin:0.4rem 0;"><code>yield return</code></div>
+                <div style="font-size:0.8rem;color:var(--text-muted,#94A3B8);">→ state-machine class implementing <code>IEnumerable&lt;T&gt;</code>/<code>IEnumerator&lt;T&gt;</code></div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:0.95rem;">Lesson 207 (this one)</div>
+                <div style="font-size:0.85rem;margin:0.4rem 0;"><code>async</code></div>
+                <div style="font-size:0.8rem;color:var(--text-muted,#94A3B8);">→ state-machine struct implementing <code>IAsyncStateMachine</code>, driven by an <code>AsyncTaskMethodBuilder</code></div>
+            </div>
+        </div>
+        <div style="text-align:center;font-size:0.85rem;color:var(--text-muted,#94A3B8);padding-top:0.6rem;">
+            All three solve the same underlying problem — "a local variable needs to outlive the stack frame it was declared in" — with the same underlying trick: promote it to a field on a compiler-generated type. What differs each time is <em>what that type produces</em>: a delegate, an <code>IEnumerable&lt;T&gt;</code>, or — here — a <code>Task</code>.
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Part 1 — The States a Task Moves Through</h3>
+    <p>Every <code>Task</code> has a <code>Status</code> that moves forward through a fixed set of values (exposed as the <code>TaskStatus</code> enum). You'll rarely inspect this directly in application code, but it's exactly what <code>await</code>, <code>.IsCompleted</code>, and <code>.IsFaulted</code> are reading under the hood:</p>
+    <div class="flow-container">
+        <div class="flow-title">TASK LIFECYCLE</div>
+        <div class="flow-step">
+            <div class="step-label">Created</div>
+            <ul><li>The <code>Task</code> object exists, but hasn't necessarily been handed to the scheduler yet (rare in everyday code — mostly relevant to manually constructed <code>Task</code> objects created but not yet started).</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">WaitingForActivation / WaitingToRun / Running</div>
+            <ul><li>For most <code>async</code>-method-produced Tasks and <code>Task.Run</code> work, the task is either waiting for its turn on the thread pool or is actively executing right now.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">RanToCompletion — <em>or</em> Faulted — <em>or</em> Canceled</div>
+            <ul>
+                <li><strong>RanToCompletion</strong> — finished normally; for <code>Task&lt;T&gt;</code>, <code>.Result</code> is now safe to read without blocking.</li>
+                <li><strong>Faulted</strong> — an exception escaped the operation; it's captured on the Task rather than thrown immediately.</li>
+                <li><strong>Canceled</strong> — the operation observed a <code>CancellationToken</code> (lesson 153) and stopped cooperatively via <code>OperationCanceledException</code>.</li>
+            </ul>
+        </div>
+    </div>
+    <p>These last three are the terminal states — once a <code>Task</code> reaches one of them, it never changes again, and that's the exact moment its registered continuations run.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Part 2 — How a Continuation Attaches and Fires</h3>
+    <p><code>await</code> is, underneath, a request to attach a continuation. When you write <code>await someTask;</code>, the compiler-generated code checks whether <code>someTask</code> is already complete. If it is, execution just carries on synchronously — no continuation needed. If it isn't, the rest of your method is packaged up as a callback and registered on the task, and control returns immediately to <em>your</em> caller. Later, when <code>someTask</code> reaches a terminal state, it walks its list of registered continuations and invokes each one — which, for an <code>await</code>, means "resume the state machine that was waiting on this task," typically by posting that resumption onto the thread pool (more on exactly where continuations run in the next two lessons, on <code>SynchronizationContext</code> and the <code>ThreadPool</code>).</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Take a small <code>async</code> method with one <code>await</code> in the middle and a local variable used on both sides of it:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task&lt;int&gt; GetTotalAsync(int orderId)
+{
+    int baseAmount = 100;                       // local BEFORE the await
+    int fetched = await FetchDiscountAsync(orderId); // suspend here
+    return baseAmount - fetched;                 // local used AFTER the await
+}</code></pre>
+    <p>This is not compiled as an ordinary method. The moment the compiler sees <code>async</code>, it generates a struct — conventionally named something like <code>&lt;GetTotalAsync&gt;d__0</code> — implementing <code>IAsyncStateMachine</code>, plus a rewritten version of <code>GetTotalAsync</code> that constructs one, initializes an <code>AsyncTaskMethodBuilder&lt;int&gt;</code>, and kicks it off. Written out by hand — simplified, but faithful to the real shape:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// Conceptually equivalent to what the compiler generates:
+private struct &lt;GetTotalAsync&gt;d__0 : IAsyncStateMachine
+{
+    public int &lt;&gt;1__state;                       // WHERE execution paused (-1 = not started / running, 0 = resuming after the await)
+    public int orderId;                            // captured parameter → field
+    public int &lt;baseAmount&gt;5__1;                  // local BEFORE the await → field
+    public AsyncTaskMethodBuilder&lt;int&gt; &lt;&gt;t__builder; // builds and completes the returned Task&lt;int&gt;
+    private TaskAwaiter&lt;int&gt; &lt;&gt;u__1;               // holds the awaiter for the in-flight FetchDiscountAsync call
+
+    public void MoveNext()
+    {
+        int result;
+        try
+        {
+            if (&lt;&gt;1__state != 0)
+            {
+                &lt;baseAmount&gt;5__1 = 100;                    // int baseAmount = 100;
+                var awaiter = FetchDiscountAsync(orderId).GetAwaiter();
+                if (!awaiter.IsCompleted)
+                {
+                    &lt;&gt;1__state = 0;
+                    &lt;&gt;u__1 = awaiter;
+                    &lt;&gt;t__builder.AwaitUnsafeOnCompleted(ref awaiter, ref this); // schedule the resume; RETURN to the caller now
+                    return;                                    // ← the state machine "pauses" here
+                }
+            }
+            else
+            {
+                awaiter = &lt;&gt;u__1;                             // resuming: recover the completed awaiter
+            }
+
+            int fetched = awaiter.GetResult();                 // int fetched = await FetchDiscountAsync(...);
+            result = &lt;baseAmount&gt;5__1 - fetched;                // return baseAmount - fetched;
+        }
+        catch (Exception ex)
+        {
+            &lt;&gt;1__state = -2;
+            &lt;&gt;t__builder.SetException(ex);                    // faults the returned Task
+            return;
+        }
+        &lt;&gt;1__state = -2;
+        &lt;&gt;t__builder.SetResult(result);                       // completes the returned Task with its result
+    }
+
+    public void SetStateMachine(IAsyncStateMachine sm) { /* rarely needed for the struct form */ }
+}
+
+// Your original method becomes essentially:
+public Task&lt;int&gt; GetTotalAsync(int orderId)
+{
+    var machine = new &lt;GetTotalAsync&gt;d__0
+    {
+        orderId = orderId,
+        &lt;&gt;t__builder = AsyncTaskMethodBuilder&lt;int&gt;.Create(),
+        &lt;&gt;1__state = -1
+    };
+    machine.&lt;&gt;t__builder.Start(ref machine); // runs MoveNext() once, synchronously, up to the first incomplete await
+    return machine.&lt;&gt;t__builder.Task;        // the caller gets THIS immediately — long before the method's logic finishes
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> Calling <code>GetTotalAsync(42)</code> doesn't run your method to completion. It builds the state machine, calls <code>Start</code> — which runs <code>MoveNext()</code> once — and hands back whatever <code>Task&lt;int&gt;</code> the builder has created, possibly before <code>FetchDiscountAsync</code> has even returned. If <code>FetchDiscountAsync</code>'s task isn't finished yet, <code>MoveNext()</code> registers itself as that task's continuation (via <code>AwaitUnsafeOnCompleted</code>) and returns — control genuinely returns to whoever called <code>GetTotalAsync</code>, exactly as lesson 152 described. Later, when the discount task completes, <code>MoveNext()</code> runs a <em>second</em> time, this time entering the <code>else</code> branch, recovering the saved awaiter, computing the subtraction, and calling <code>SetResult</code> on the builder — which is the exact moment the <code>Task&lt;int&gt;</code> your original caller is holding actually completes and any of its own continuations fire.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Consider an ASP.NET Core action method that fetches an order, applies a discount lookup, and saves the result:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">[HttpPost("checkout")]
+public async Task&lt;IActionResult&gt; CheckoutAsync(int orderId)
+{
+    var order = await _db.Orders.FindAsync(orderId);   // await #1 — suspend point
+    var discount = await _pricing.GetDiscountAsync(order); // await #2 — suspend point
+    order.Total -= discount;
+    await _db.SaveChangesAsync();                       // await #3 — suspend point
+    return Ok(order);
+}</code></pre>
+    <p>This one method compiles into a state machine with <em>three</em> possible resume points, one field per <code>await</code>'s awaiter, and fields for <code>orderId</code>, <code>order</code>, and <code>discount</code> — every local that needs to survive across a suspend. Every one of those three <code>await</code>s is a real place where the request-handling thread is released back to the ASP.NET Core thread pool to go handle other incoming requests, and where — once the awaited work finishes — the state machine's <code>MoveNext()</code> is scheduled again to pick up exactly where it left off. This is precisely how a modern web server handles thousands of concurrent, in-flight requests with a modest number of threads: nobody is dedicating a thread to sit and wait through three separate I/O operations per request.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🎟️</span> A Claim Ticket for Dry Cleaning</div>
+        <p>Drop off a shirt at the dry cleaner and you get a claim ticket, not the shirt. The ticket doesn't do the cleaning — it's just something you (or anyone else holding it) can use to ask "is it ready?" or to be told the moment it is. A <code>Task</code> is that ticket. The state machine behind an <code>async</code> method is the counter clerk: they take your order, hand you the ticket immediately, then quietly do the actual work — pausing between steps as needed — and only mark the ticket "ready" (complete the <code>Task</code>, via the builder's <code>SetResult</code>/<code>SetException</code>) once the shirt genuinely is. Everyone holding a copy of that ticket number gets notified the same way, whether they've been waiting five seconds or five minutes.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">DETAILS THAT MATTER ONCE YOU'RE REASONING ABOUT REAL ASYNC CODE</div>
+        <div class="flow-step">
+            <div class="step-label">1. WHY A STRUCT, NOT A CLASS — AND WHEN IT STOPS BEING ONE</div>
+            <ul><li>Unlike the <code>yield return</code> machine from lesson 196 (always a class), the compiler generates the <code>async</code> state machine as a <strong>struct</strong> when it safely can, specifically to avoid a heap allocation in the common case where the method completes synchronously without ever truly suspending (its first incomplete <code>await</code> never happens). The moment it actually needs to suspend — the awaited task isn't finished yet — the runtime boxes that struct onto the heap so its address stays stable across the pause, because a resuming continuation absolutely cannot be resuming into a stack frame that's since been reused for something else. This is the exact same "does it actually need heap storage" judgment call lesson 189 showed for capture-free vs. capturing lambdas — applied here to a different kind of state machine.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE AsyncTaskMethodBuilder IS WHAT ACTUALLY OWNS THE Task</div>
+            <ul><li><code>AsyncTaskMethodBuilder</code> (for <code>async Task</code> methods) and <code>AsyncTaskMethodBuilder&lt;TResult&gt;</code> (for <code>async Task&lt;T&gt;</code> methods) are the pieces that construct the actual <code>Task</code>/<code>Task&lt;T&gt;</code> object handed back to your caller, and later call <code>SetResult</code> or <code>SetException</code> on it once the state machine reaches its end. Your <code>async</code> method's return statement never directly touches a <code>Task</code> at all — it's entirely mediated through the builder. This is also the exact extension point <code>ValueTask&lt;T&gt;</code> (lesson 210) hooks into via a different builder, to skip allocating a <code>Task</code> object at all when possible.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. AwaitUnsafeOnCompleted IS WHERE THE CONTINUATION ACTUALLY GETS REGISTERED</div>
+            <ul><li>When an <code>await</code> hits an incomplete task, the generated code calls the builder's <code>AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine)</code>. This is what actually registers "call <code>MoveNext()</code> on this exact state machine instance again" as the continuation on the awaited task — and it's also the exact point where <code>SynchronizationContext</code> capture happens (the subject of the next lesson): by default, the awaiter captures the current context so the continuation can be marshaled back to the right place to resume on.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. EXCEPTIONS ARE CAUGHT ONCE, AT THE OUTER TRY, AND CAPTURED — NOT RE-THROWN IMMEDIATELY</div>
+            <ul><li>Notice the entire rewritten <code>MoveNext()</code> body sits inside one big <code>try</code>/<code>catch</code>. Any exception your method throws — including one that bubbles up from an <code>await</code>ed task via <code>awaiter.GetResult()</code> re-throwing a captured exception — lands in that <code>catch</code> and gets handed to the builder's <code>SetException</code>, which stores it on the <code>Task</code> rather than crashing the process immediately. It only re-surfaces when <em>your</em> caller <code>await</code>s that Task (or touches <code>.Result</code>) — precisely the mechanism the Intermediate exception-handling lesson described from the outside; this is what produces it.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "async makes a method run on another thread" — no, the state machine is what pauses, not a dedicated thread</h3>
+    <p>Nothing about the generated state machine inherently means work is happening on a background thread. <code>MoveNext()</code> runs synchronously on whatever thread invokes it — which, for the very first call (via <code>Start</code>), is the calling thread itself, right up until the first genuinely incomplete <code>await</code>. Only when the awaited operation is something that itself uses another thread (like CPU-bound work wrapped in <code>Task.Run</code>) does a different thread actually get involved. <code>async</code>/<code>await</code> is about suspending and resuming a method, not about scheduling it onto a specific thread.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "This state machine is the same kind of thing as the yield return one from lesson 196" — related, but not identical</h3>
+    <p>Both are compiler-generated types with a numbered state field and fields standing in for locals that must survive a pause — the same underlying trick. But they implement completely different interfaces and drive completely different outcomes: the <code>yield return</code> machine implements <code>IEnumerable&lt;T&gt;</code>/<code>IEnumerator&lt;T&gt;</code> and is pulled forward one item at a time by <code>MoveNext()</code> calls from a <code>foreach</code>; the <code>async</code> machine implements <code>IAsyncStateMachine</code> and is pushed forward by completions of the tasks it's awaiting, via a builder that owns a <code>Task</code>. Seeing the family resemblance ("compiler promotes locals to fields, tracks a resume point") doesn't mean they're interchangeable machinery.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Assuming an async method "starts running later," like a scheduled job</h4>
+    <p>❌ Believing that calling an <code>async</code> method just queues it for some future point, doing nothing immediately. As the Simple Example showed, <code>Start(ref machine)</code> runs <code>MoveNext()</code> <strong>synchronously, right now</strong>, all the way up to the first genuinely incomplete <code>await</code> — real work happens before your caller gets the returned <code>Task</code> back. ✅ Understand that everything up to the first suspend point runs immediately, on the calling thread, exactly like ordinary code.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Treating the compiler-generated field/type names as a stable contract</h4>
+    <p>❌ Writing reflection code, or reasoning about behavior, based on names like <code>&lt;&gt;1__state</code> or <code>&lt;GetTotalAsync&gt;d__0</code> appearing exactly that way across builds or compiler versions. ✅ These are Roslyn implementation details — genuinely useful for building the correct mental model (as this lesson does), but never something to depend on programmatically. They can and do shift between compiler versions.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Forgetting that constructing the state machine itself is not free</h4>
+    <p>❌ Assuming an <code>async</code> method with no real work has zero cost. Calling it still constructs a state machine value (possibly boxed if it must suspend), sets up an <code>AsyncTaskMethodBuilder</code>, and allocates a <code>Task</code> object for the builder to hand back — real, if usually small, overhead on every single call. In an extremely hot, high-call-frequency path where synchronous completion is common, this per-call cost is exactly the motivating problem lesson 210 (<code>ValueTask</code>) exists to address. ✅ For ordinary application code this overhead is negligible and not worth avoiding — reach for <code>ValueTask</code> deliberately, only where profiling shows it matters.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <p>You've been writing <code>async</code> methods since Intermediate Part VII — this lesson isn't a new tool, it's the mental model underneath the tool you already reach for constantly.</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ This mental model matters most when</h4>
+            <ul>
+                <li>Reasoning about exactly when work actually starts vs. when a <code>Task</code> is merely returned.</li>
+                <li>Understanding why exceptions surface at the <code>await</code> point rather than at the point they were thrown.</li>
+                <li>Reading a debugger call stack showing frames like <code>&lt;CheckoutAsync&gt;d__4.MoveNext()</code> — you now know exactly what that frame is.</li>
+                <li>Diagnosing why an async method with no <code>await</code> at all runs entirely synchronously (no suspend point ever gets reached).</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ You still don't hand-write a state machine</h4>
+            <ul>
+                <li><code>async</code>/<code>await</code> remains the correct way to write asynchronous code in everyday C# — nothing here suggests writing <code>IAsyncStateMachine</code> implementations by hand.</li>
+                <li>Manually constructing and completing raw <code>Task</code> objects (via <code>TaskCompletionSource</code>) is reserved for bridging non-Task-based async APIs — not a substitute for <code>async</code>/<code>await</code> in ordinary code.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Calling an async method</strong> = "build the state machine, hand it to a builder, run it up to the first real pause, hand back whatever Task the builder created"<br />
+        <strong>The state field</strong> = exactly where execution paused, same idea as lesson 196's yield state field<br />
+        <strong>The captured fields</strong> = every local/parameter that must survive across a pause, same idea as lesson 189's display class<br />
+        <strong>The AsyncTaskMethodBuilder</strong> = the thing that owns the returned Task and completes it (SetResult/SetException) when the state machine finishes<br /><br />
+        <strong>Remember:</strong><br />
+        · A <code>Task</code> is a completion signal plus a list of continuations to run when it fires.<br />
+        · <code>async</code> methods compile into a state machine implementing <code>IAsyncStateMachine</code> — the third member of the compiler-generated state-machine family, after lambda closures (189) and <code>yield return</code> iterators (196).<br />
+        · <code>AwaitUnsafeOnCompleted</code> is where a continuation actually registers itself on the awaited task.<br />
+        · Everything up to the first real suspend point runs synchronously, on the calling thread, the instant the method is called.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <code>Task</code> is a completion tracker — a status, a result-or-exception slot, and a list of continuations to invoke on completion.</li>
+            <li style="margin-bottom:0.4rem;">A <code>Task</code> moves through states (Created → Running → RanToCompletion/Faulted/Canceled) — the terminal states are exactly when its continuations fire.</li>
+            <li style="margin-bottom:0.4rem;">An <code>async</code> method compiles into a compiler-generated struct (or class, once it must be boxed) implementing <code>IAsyncStateMachine</code>, with a numeric state field and one field per surviving local — the same pattern as lessons 189 and 196, applied to a third kind of machine.</li>
+            <li style="margin-bottom:0.4rem;">An <code>AsyncTaskMethodBuilder</code>/<code>AsyncTaskMethodBuilder&lt;T&gt;</code> is what actually creates and completes the real <code>Task</code>/<code>Task&lt;T&gt;</code> object your caller receives.</li>
+            <li style="margin-bottom:0.4rem;">Everything up to the first genuinely incomplete <code>await</code> runs synchronously, immediately, on the calling thread — the returned <code>Task</code> only represents whatever's left after that.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've opened up the third member of the compiler-generated state-machine family. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What does a <code>Task</code> object primarily represent?</p>
+        <ul class="options">
+            <li>A) A dedicated background thread running the operation</li>
+            <li>B) An object tracking the eventual completion, result, or failure of an operation, along with any continuations to run when it finishes</li>
+            <li>C) A copy of the result value, computed eagerly at the moment the Task is created</li>
+            <li>D) A queue of work items waiting to be run</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A Task is a tracking object — a status, a slot for a result or captured exception, and a list of continuations to invoke once it completes. It's a promise/future, not the work itself.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A Task doesn't inherently mean a dedicated thread is running — plenty of Tasks represent I/O-bound work with no thread actively blocked on it at all, as the ThreadPool lesson covers next.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The result isn't computed at creation time — for an async-method-produced Task, the method may not even have started its real work when the Task is returned.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A Task is a single operation's tracker, not a queue — the thread pool's work queue is a separate concept, covered in lesson 209.</p>
+                <p><strong>Reinforcement:</strong> Task = completion tracker + continuation list. That's the whole idea underneath async/await.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> When you call an <code>async</code> method, what actually runs immediately, on the calling thread?</p>
+        <ul class="options">
+            <li>A) Nothing — the entire method body is deferred until something awaits the returned Task</li>
+            <li>B) The state machine's MoveNext() runs synchronously, up to and including the first genuinely incomplete await, before the returned Task is handed back</li>
+            <li>C) The whole method body runs to completion synchronously, and the Task is just a wrapper around the already-computed result</li>
+            <li>D) A new thread is spawned to run the method, and the calling thread continues immediately without running any of the method's code</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As the Simple Example's builder.Start(ref machine) call showed, MoveNext() runs immediately and synchronously, executing everything up through the first await whose task isn't already complete — only then does control actually return to the caller.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is the exact misconception Common Mistakes calls out — real work happens before the Task is even returned, not only once someone later awaits it.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> If that were true, await would be pointless — the entire reason a Task can be "not yet complete" is that execution genuinely paused partway through.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> async does not inherently spawn a thread — MoveNext() runs on whatever thread called the method, at least up to the first suspend point.</p>
+                <p><strong>Reinforcement:</strong> "Async" means "can pause," not "runs later" or "runs elsewhere" — everything up to the first real pause is ordinary, immediate, same-thread execution.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> What is the role of <code>AsyncTaskMethodBuilder</code>/<code>AsyncTaskMethodBuilder&lt;T&gt;</code> in the compiler-generated machinery?</p>
+        <ul class="options">
+            <li>A) It stores the numeric state field that tracks where execution paused</li>
+            <li>B) It creates the actual Task/Task&lt;T&gt; object returned to the caller, and later completes it (SetResult/SetException) once the state machine finishes</li>
+            <li>C) It is a public API developers call directly instead of using async/await</li>
+            <li>D) It replaces the need for a CancellationToken in async methods</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As Under the Hood point 2 explained, the builder owns the Task's lifecycle — it constructs the Task the caller receives and calls SetResult or SetException on it once MoveNext() reaches the state machine's end.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The state field lives on the state machine struct itself (&lt;&gt;1__state), not on the builder — they're separate pieces working together.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The builder is compiler-generated infrastructure, invoked by the rewritten method body — application code writes async/await and never touches an AsyncTaskMethodBuilder directly.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> CancellationToken is an entirely separate, orthogonal mechanism (lesson 211) — the builder has nothing to do with cancellation signaling.</p>
+                <p><strong>Reinforcement:</strong> Your return statement in an async method never touches a Task directly — the builder mediates the entire relationship.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> How does the async-method state machine relate to the yield-return state machine from lesson 196?</p>
+        <ul class="options">
+            <li>A) They are exactly the same generated type — async is just yield return with a different keyword</li>
+            <li>B) They share the same underlying pattern (a numeric state field plus fields for surviving locals), but implement different interfaces and produce different outcomes — IEnumerable&lt;T&gt; vs. a Task via a builder</li>
+            <li>C) They are unrelated — async methods don't use a state machine at all</li>
+            <li>D) The async state machine is a special case that only exists inside yield return methods</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As Common Confusion #2 explained, both promote surviving locals to fields and track a resume point with a state field — the same family trait — but one implements IEnumerable&lt;T&gt;/IEnumerator&lt;T&gt; and is pulled by foreach, while the other implements IAsyncStateMachine and is pushed forward by task completions through a builder that owns a Task.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> They're genuinely different generated types serving different interfaces — recognizing the shared pattern doesn't make them interchangeable.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This entire lesson demonstrates the opposite — async methods absolutely compile to a real state machine, just as documented and shown in the Simple Example.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> async and yield return are independent language features — a method can use one, the other, or (in the case of async iterators, covered later) both together, but neither requires the other.</p>
+                <p><strong>Reinforcement:</strong> Same family trick — promote locals to fields, track a resume point — applied to two different jobs.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> An async method throws an exception partway through its body, after an await. What happens to that exception?</p>
+        <ul class="options">
+            <li>A) It crashes the process immediately, the same way an unhandled exception in ordinary synchronous code would</li>
+            <li>B) It's silently discarded, since exceptions can't cross an await boundary</li>
+            <li>C) It's caught by the generated MoveNext()'s outer try/catch and captured onto the returned Task via the builder's SetException — it only re-surfaces when a caller awaits (or otherwise observes) that Task</li>
+            <li>D) It's automatically retried up to three times before being reported</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> As Under the Hood point 4 showed, the entire rewritten method body sits inside one try/catch inside MoveNext(); any exception lands there and is handed to SetException, which stores it on the Task rather than throwing it right away — it only re-throws at the point a caller awaits that Task.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly what the Task-based capture mechanism exists to avoid — an async Task method's exceptions are captured, not thrown immediately on some arbitrary thread.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> The exception is very much preserved, not discarded — it's stored on the Task precisely so a caller can observe it later.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing about the Task/async machinery does automatic retries — that would need to be application-level logic (e.g. a resiliency library), not something the compiler-generated state machine provides.</p>
+                <p><strong>Reinforcement:</strong> Exceptions in async methods are captured onto the Task, not thrown immediately — this is the mechanism, not just a fact to memorize.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You've opened the hood on Task and async itself. Next: where the resumed continuation actually runs — SynchronizationContext.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

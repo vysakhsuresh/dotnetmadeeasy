@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>218 - Deadlocks · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        A race condition is bad timing. A deadlock is no timing at all — forever.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>The previous lesson's bug kept running — quietly, wrongly, but running. This lesson's bug is the opposite: nothing crashes, nothing throws, no exception ever appears in your logs. The request just... never comes back. The button stays greyed out. The CPU sits at 0%, doing absolutely nothing, forever. That silence is often more alarming than a crash, because there's no stack trace pointing at the problem — just threads that are technically alive and permanently stuck.</p>
+    <p>This is a <strong>deadlock</strong>, and one specific flavor of it — the async version, built on the <code class="icode">SynchronizationContext</code> mechanics covered elsewhere in this Part — is one of the single most infamous gotchas in all of .NET. It's infamous precisely because the code that causes it looks completely reasonable.</p>
+    <p><strong>In this lesson, you'll get the precise definition of a deadlock, walk through the classic two-lock ordering deadlock step by step, then walk through the async sync-over-async deadlock in exactly the same level of detail — as this Part's payoff for everything you've learned about the SynchronizationContext — and finish with the standard prevention techniques, including the one fix that matters most.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>deadlock</strong> is a standoff: two (or more) threads, each holding something the other one needs, and each one refusing to move forward until it gets the thing it's waiting for — which the other thread is never going to hand over, because <em>it's</em> waiting too. Nobody backs down. Nobody proceeds. The threads aren't crashed — they're simply frozen, permanently, in a mutual standoff.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A deadlock occurs when two or more threads each hold a resource that another thread in the group needs, and each is blocked waiting to acquire a resource that a different thread in the group already holds — forming a <strong>cycle</strong> of dependencies where no thread in the cycle can ever make progress. Nothing external is going to break that cycle on its own; without intervention, it lasts as long as the process does.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> The one word that matters: cycle</div>
+        <p>Thread A waiting on Thread B is completely normal — that's most of what synchronization <em>is</em>. The problem is specifically a <strong>cycle</strong>: A is waiting on something B holds, <em>and</em> B is waiting on something A holds. Follow the chain of "waiting on" arrows, and if it ever loops back to where you started, you have a deadlock. No cycle, no deadlock — no matter how much waiting is happening.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — The Very Fix for Race Conditions Introduces a New Risk</h3>
+    <p>The previous lesson's fix for race conditions was synchronization — locks that make sure only one thread touches a piece of shared state at a time. That's correct and necessary. But the moment a piece of code needs to hold <em>more than one</em> lock at once — which happens constantly in real systems, where an operation might need to protect two different accounts, two different caches, or two different resources simultaneously — a new failure mode opens up: what if two different threads try to acquire the same two locks, but in opposite order?</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>What's needed is either a guarantee that a cycle of "waiting on" relationships can never form in the first place, or a way to detect that you're stuck and back out instead of waiting forever.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Discipline About Lock Order, and Never Blocking on Async</h3>
+    <p>.NET doesn't detect deadlocks for you and magically resolve them — there's no runtime watchdog that notices a cycle and breaks it. Preventing deadlocks is entirely on you, the developer, through disciplined patterns: consistent lock ordering, avoiding unnecessary nested locking, timeouts that fail fast instead of hanging forever, and — for the async-specific variant this lesson spends real time on — simply never blocking synchronously on asynchronous code.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">THE CYCLE, VISUALIZED</div>
+        <div style="text-align:center;font-size:0.95rem;color:var(--text-main,#E2E8F0);padding:0.5rem 0;">
+            <div><strong>Thread A</strong> holds Lock X, waiting for Lock Y</div>
+            <div style="font-size:1.3rem;color:var(--accent-purple,#8B5CF6);margin:0.3rem 0;">⬇ waits on ⬇</div>
+            <div><strong>Thread B</strong> holds Lock Y, waiting for Lock X</div>
+            <div style="font-size:1.3rem;color:var(--accent-purple,#8B5CF6);margin:0.3rem 0;">⬇ waits on ⬇</div>
+            <div>...which loops right back to <strong>Thread A</strong> ⟲</div>
+        </div>
+        <div style="text-align:center;font-size:0.85rem;color:var(--text-muted,#94A3B8);margin-top:0.6rem;">Neither thread can ever proceed — each is waiting on the other to move first, and neither will.</div>
+    </div>
+    <p>This is the shape of every deadlock in this lesson, whether it's two explicit locks or — as you'll see — a thread and its own async continuation. Two participants, each holding something the other needs, forming a closed loop of waiting.</p>
+
+    <!-- ====== HOW IT WORKS — Part 1: the classic two-lock deadlock ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Classic Two-Lock Ordering Deadlock</h2>
+
+    <p>This is the textbook version, and it's worth building fully because the async version later in this lesson is structurally the same shape wearing different clothes. Two locks, two threads, opposite acquisition order:</p>
+
+    <div class="code-block"><code>private readonly object _lockA = new();
+private readonly object _lockB = new();
+
+// Runs on Thread A
+void TransferFromAccountXToY()
+{
+    lock (_lockA)
+    {
+        Thread.Sleep(50); // simulates work — gives Thread B time to grab _lockB
+        lock (_lockB)
+        {
+            // move money from X to Y
+        }
+    }
+}
+
+// Runs on Thread B, at roughly the same time
+void TransferFromAccountYToX()
+{
+    lock (_lockB)
+    {
+        Thread.Sleep(50); // simulates work — gives Thread A time to grab _lockA
+        lock (_lockA)
+        {
+            // move money from Y to X
+        }
+    }
+}</code></div>
+
+    <div class="flow-container">
+        <div class="flow-title">STEP BY STEP — HOW THE DEADLOCK FORMS</div>
+        <div class="flow-step">
+            <div class="step-label">STEP 1 — Thread A acquires _lockA</div>
+            <ul><li>TransferFromAccountXToY enters its outer <code>lock (_lockA)</code> block successfully — nobody else holds it yet.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 2 — Thread B acquires _lockB</div>
+            <ul><li>At almost the same moment, TransferFromAccountYToX enters its outer <code>lock (_lockB)</code> block — also successfully, since Thread A never touched _lockB.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 3 — Thread A tries to acquire _lockB — and blocks</div>
+            <ul><li>Thread A reaches its inner <code>lock (_lockB)</code>. But Thread B is holding _lockB right now. Thread A blocks, waiting for Thread B to release it.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 4 — Thread B tries to acquire _lockA — and blocks</div>
+            <ul><li>Thread B reaches its inner <code>lock (_lockA)</code>. But Thread A is holding _lockA right now — and Thread A is stuck waiting on Step 3. Thread B blocks too.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 5 — DEADLOCK: the cycle is closed</div>
+            <ul><li>Thread A is waiting for Thread B to release _lockB. Thread B is waiting for Thread A to release _lockA. Neither will ever release anything, because releasing happens only after the inner lock succeeds — which will never happen. Both threads wait forever.</li></ul>
+        </div>
+    </div>
+
+    <p><strong>Why this happened:</strong> the two threads acquired the same two locks in <em>opposite order</em> — A took X-then-Y, B took Y-then-X. If both methods had acquired the locks in the same order (both always X-then-Y), this specific interleaving could never produce a cycle: whichever thread got <code class="icode">_lockA</code> first would simply proceed to acquire <code class="icode">_lockB</code> uncontested, finish, and release both, letting the other thread through cleanly afterward.</p>
+
+    <div class="callout">
+        <strong>💡 The standard fix:</strong> always acquire multiple locks in the same, globally consistent order, everywhere in your codebase — not just within one method, but across every code path that ever needs both locks. A team convention like "always lock accounts in ascending ID order" turns this entire failure mode into something that structurally cannot occur, regardless of timing.
+    </div>
+
+    <!-- ====== HOW IT WORKS — Part 2: the async sync-over-async deadlock ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Async Deadlock — Blocking on a Captured Context</h2>
+
+    <p>This one doesn't need two explicit locks at all. It needs exactly one thread, one blocking call, and a captured <code class="icode">SynchronizationContext</code> — the mechanism covered in depth elsewhere in this Part. It's arguably even more infamous than the two-lock version, because the code that triggers it looks completely innocent: someone just wanted to call an async method from a synchronous one and "just get the result."</p>
+
+    <div class="code-block"><code>// A classic UI event handler (WPF/WinForms) or an ASP.NET (classic,
+// pre-Core) request handler — both have a real SynchronizationContext
+private void OnButtonClick(object sender, EventArgs e)
+{
+    // "I just need the value, right now" — blocks the calling thread
+    string data = GetDataAsync().Result;
+
+    MessageLabel.Text = data;
+}
+
+private async Task&lt;string&gt; GetDataAsync()
+{
+    // e.g., an HTTP call, a database query — genuinely awaited I/O
+    await Task.Delay(1000);
+    return "done";
+}</code></div>
+
+    <div class="flow-container">
+        <div class="flow-title">STEP BY STEP — HOW THE ASYNC DEADLOCK FORMS</div>
+        <div class="flow-step">
+            <div class="step-label">STEP 1 — The UI thread calls .Result, and blocks</div>
+            <ul><li><code>OnButtonClick</code> runs on the UI thread. It calls <code>GetDataAsync().Result</code>, which synchronously blocks the UI thread right there, refusing to return until the Task completes.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 2 — GetDataAsync starts, and captures the context</div>
+            <ul><li>Before blocking took effect, <code>GetDataAsync()</code> had already started running (on the UI thread, since that's who called it) and reached its own <code>await Task.Delay(1000)</code>. Because a <code>SynchronizationContext</code> is present (the UI thread's), the awaiter captures it — the continuation after this await is scheduled to resume specifically on <em>that</em> context, i.e., back on the UI thread.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 3 — The timer fires; the continuation is queued for the UI thread</div>
+            <ul><li>One second later, the delay completes. The runtime tries to resume <code>GetDataAsync</code>'s continuation (the code after the await, including the <code>return "done";</code>) — but per Step 2, it's required to run that continuation specifically on the UI thread's captured context, not just any available thread.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 4 — But the UI thread is still stuck at Step 1</div>
+            <ul><li>The one and only thread allowed to run that continuation is the UI thread — and the UI thread is parked inside <code>.Result</code>, synchronously blocked, not pumping its message queue, not picking up any queued work at all. It is completely unavailable to run the very continuation it's waiting on.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 5 — DEADLOCK: the cycle is closed</div>
+            <ul><li>The UI thread is waiting for the Task to complete. The Task can only complete once its continuation runs. The continuation can only run on the UI thread. The UI thread is busy waiting for the Task. Nothing ever moves. Forever.</li></ul>
+        </div>
+    </div>
+
+    <p>Notice the shape: it's the exact same "hold something, wait for something the other side needs" cycle as the two-lock example — just with the UI thread playing both "Thread A" (blocked, holding the thread itself) and, indirectly, "Thread B" (the only one who can release it, via the continuation it captured and now can't run).</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>❌ Deadlocks (has a real SynchronizationContext)</h4>
+            <ul>
+                <li>Classic ASP.NET (System.Web, pre-Core)</li>
+                <li>WPF</li>
+                <li>WinForms</li>
+                <li>Any UI thread with a message pump</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Usually doesn't deadlock (no captured context)</h4>
+            <ul>
+                <li>ASP.NET Core (no <code>SynchronizationContext</code> by default)</li>
+                <li>Console applications</li>
+                <li>Plain thread-pool background work</li>
+            </ul>
+        </div>
+    </div>
+    <p>This is exactly what makes the bug so treacherous in practice: the same <code class="icode">.Result</code> call that deadlocks instantly in a WPF click handler might run perfectly fine in a console app or in ASP.NET Core, because there's no captured context forcing the continuation onto a specific, currently-blocked thread. Code that "works fine" in one host can hang the moment it's reused in another — one of the reasons blocking on async is dangerous everywhere, not just where you've personally seen it fail.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🚪</span> Two People, Two Doors, Each Needing the Other's Key</div>
+        <p>Picture two people, each locked in their own small room, each holding the only key to the <em>other</em> person's door. Person A can't leave until Person B unlocks A's door. Person B can't leave until Person A unlocks B's door. But to reach the other person's door and unlock it, each one first has to leave their own room — which they can't do, because they're locked in. Both are, in principle, completely free to act — nothing is broken — but the specific order in which "must happen first" is required makes it structurally impossible for either one to move. That's a deadlock: not a malfunction, but a perfectly logical standoff that nonetheless never resolves.</p>
+        <p>The async version is the same standoff with a twist: it's really just <em>one</em> person, who steps out to run an errand, but arranges beforehand that they'll only let themselves back in through their own front door — then locks themselves in a phone booth waiting for that errand to finish, unable to get back to their own front door to open it.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>The two-lock deadlock happens purely at the level of the operating system's lock/monitor implementation — <code class="icode">lock</code> in C# compiles down to <code class="icode">Monitor.Enter</code>/<code class="icode">Monitor.Exit</code> (wrapped in a try/finally), and it's the monitor's blocking-wait semantics that produce the standoff once a cycle of ownership forms. Nothing about async or the thread pool is involved at all — this can happen with plain <code class="icode">Thread</code>s and nothing else.</p>
+    <p>The async deadlock, by contrast, is entirely about the <code class="icode">SynchronizationContext</code>/<code class="icode">TaskScheduler</code> continuation-scheduling mechanism covered elsewhere in this Part: an awaiter that captures a context doesn't just "resume somewhere" — it specifically posts the continuation back to that captured context, and a context tied to a single thread (like a UI thread) can only ever run posted work when that thread is free to pick it up. <code class="icode">.Result</code> and <code class="icode">.Wait()</code> don't yield the thread while they block — they hold it hostage — which is exactly the ingredient that turns an ordinary await into a permanent hang the moment a captured context is in play.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. A deadlock ≠ a race condition</h3>
+    <p>The previous lesson's bug and this lesson's bug are often lumped together as "concurrency bugs," but they're close to opposites. A race condition is threads that keep running and produce a wrong <em>answer</em>. A deadlock is threads that stop producing anything at all, forever. If your symptom is "the program is stuck, CPU idle, nothing progressing," that's a deadlock; if it's "the program finished but the number is wrong," that's a race condition.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "It works fine in my console app, so it's safe" — not necessarily</h3>
+    <p>As the comparison above showed, the exact same <code class="icode">.Result</code> call is often harmless in a console app or ASP.NET Core (no captured context to fight over) and fatal in WPF, WinForms, or classic ASP.NET. Testing sync-over-async code only in a context-free host proves nothing about its safety in a context-bearing one.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "Adding more threads will fix a deadlock" — it won't</h3>
+    <p>A deadlock isn't caused by thread scarcity; it's caused by a cycle of mutual waiting. Throwing more threads at the thread pool doesn't break that cycle — the specific threads already involved in the standoff are still stuck, waiting on each other, no matter how many other threads are free to do unrelated work.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Inconsistent lock ordering across a codebase</h4>
+    <p>❌ One method acquires <code class="icode">_lockA</code> then <code class="icode">_lockB</code>; a different method, written months later by someone else, acquires <code class="icode">_lockB</code> then <code class="icode">_lockA</code> — with no shared convention documenting the expected order.</p>
+    <p>✅ Establish and document a single, global ordering convention for any locks that might ever be held together, and enforce it in code review — this is a team discipline problem as much as a technical one.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Reaching for .Result or .Wait() to "just get the value" from a library method</h4>
+    <p>❌ A synchronous-looking method internally calls <code class="icode">.Result</code> on an async operation because changing the surrounding method's signature to <code class="icode">async Task</code> felt inconvenient at the time.</p>
+    <p>✅ Follow "async all the way" — let the async-ness propagate up through the calling method's own signature, all the way to a point where it can genuinely be awaited, exactly as covered in this course's async-mistakes lesson.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Nesting locks "just in case" without needing to</h4>
+    <p>❌ Acquiring a second lock inside a first lock's block reflexively, even when the operation didn't actually need to hold both at once.</p>
+    <p>✅ Hold a lock for the shortest, narrowest scope necessary, and avoid acquiring a second lock while already holding a first unless the operation genuinely requires both simultaneously — fewer simultaneously-held locks means fewer opportunities for a cycle to form.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? — prevention techniques ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Prevention Techniques</h2>
+
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">🔢</span>
+            <div class="label">Consistent lock ordering</div>
+            <div class="desc">Always acquire multiple locks in the same, globally agreed order across the whole codebase.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🪆</span>
+            <div class="label">Avoid nested locks where possible</div>
+            <div class="desc">Fewer simultaneously-held locks means fewer chances for a cycle of waiting to ever form.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">⏱️</span>
+            <div class="label">Lock-acquisition timeouts</div>
+            <div class="desc">Fail fast instead of waiting forever — see Monitor.TryEnter below.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🔁</span>
+            <div class="label">Async all the way</div>
+            <div class="desc">Never block synchronously on async code — the single most effective fix for the async variant.</div>
+        </div>
+    </div>
+
+    <p>The third technique deserves a concrete look — <code class="icode">Monitor.TryEnter</code> with a timeout, a real, documented API specifically for avoiding an indefinite wait on a lock:</p>
+
+    <div class="code-block"><code>bool acquired = Monitor.TryEnter(_lockA, TimeSpan.FromSeconds(2));
+if (acquired)
+{
+    try
+    {
+        // do the protected work
+    }
+    finally
+    {
+        Monitor.Exit(_lockA); // always release in a finally
+    }
+}
+else
+{
+    // Couldn't get the lock within 2 seconds — fail fast:
+    // log it, retry with backoff, or surface an error.
+    // Better than hanging the thread indefinitely.
+    _logger.LogWarning("Timed out waiting for _lockA");
+}</code></div>
+    <p>A timeout doesn't <em>prevent</em> the underlying cause of a deadlock — the two locks can still be acquired in the wrong order somewhere — but it turns "the application hangs forever, silently" into "one operation fails quickly, loudly, and recoverably," which is a dramatically better failure mode in production.</p>
+
+    <div class="callout">
+        <strong>💡 The single most effective fix for the async variant:</strong> never block synchronously on asynchronous code. No <code class="icode">.Result</code>, no <code class="icode">.Wait()</code>, no <code class="icode">GetAwaiter().GetResult()</code> on a path that a caller with a captured <code class="icode">SynchronizationContext</code> might ever hit. "Async all the way" isn't a style preference here — it's the difference between code that works everywhere and code that's one WPF button click away from hanging forever.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Deadlock</strong> = a cycle of "I'm waiting for something you're holding, and you're waiting for something I'm holding" — nobody can ever move.<br /><br />
+        <strong>Remember:</strong><br />
+        · Two locks, opposite acquisition order, unlucky timing → classic deadlock. Fix: consistent lock ordering.<br />
+        · A blocking call (.Result/.Wait()) on a thread with a captured SynchronizationContext ties up the exact thread the awaited continuation needs to resume on → async deadlock.<br />
+        · A deadlock isn't a crash — it's silence. No exception, no stack trace, just a thread (or the whole app) that stops responding forever.<br />
+        · Monitor.TryEnter with a timeout converts "hang forever" into "fail fast and recover."<br />
+        · The best fix for the async variant is never blocking on async in the first place — "async all the way."
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <strong>deadlock</strong> is a cycle of threads, each holding a resource another thread in the cycle needs, and each waiting on a resource another thread already holds — none of them can ever proceed.</li>
+            <li style="margin-bottom:0.4rem;">The classic <strong>two-lock deadlock</strong> happens when threads acquire the same locks in opposite order — fixed by always acquiring locks in one consistent, global order.</li>
+            <li style="margin-bottom:0.4rem;">The <strong>async deadlock</strong> happens when a blocking call (<code>.Result</code>/<code>.Wait()</code>) ties up the exact thread that a captured <code>SynchronizationContext</code> requires for the awaited continuation to resume — classic in ASP.NET (pre-Core), WPF, and WinForms.</li>
+            <li style="margin-bottom:0.4rem;"><code>Monitor.TryEnter</code> with a timeout lets code fail fast and recover instead of hanging indefinitely.</li>
+            <li style="margin-bottom:0.4rem;">The single most effective fix for the async variant is simple: never block synchronously on async code — "async all the way," everywhere.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've walked through both classic deadlock shapes step by step. Let's check the cycle mechanics actually landed.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What is the precise, defining characteristic that makes a set of blocked threads a deadlock, rather than just normal waiting?</p>
+        <ul class="options">
+            <li>A) More than two threads are involved</li>
+            <li>B) A cycle exists — each thread in the group is waiting on a resource held by another thread also in the group, so none of them can ever make progress</li>
+            <li>C) The threads are all running on the same CPU core</li>
+            <li>D) One of the threads has thrown an unhandled exception</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Ordinary waiting (Thread A waiting on Thread B, with B free to eventually finish and release what A needs) is normal and resolves fine. A deadlock specifically requires a cycle — B is also, directly or indirectly, waiting on something A holds — so the waiting never resolves for anyone in the cycle.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A deadlock can involve exactly two threads, as both worked examples in this lesson showed — no minimum of three or more is required.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Deadlocks aren't about which physical core threads run on — they're about the logical dependency cycle between what each thread holds and what it's waiting for.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A deadlock produces no exception at all — that's part of what makes it so hard to diagnose; the threads are alive and blocked, not crashed.</p>
+                <p><strong>Reinforcement:</strong> The word to hold onto is "cycle" — waiting alone is fine; waiting that loops back on itself is a deadlock.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Thread A locks X then tries to lock Y. Thread B locks Y then tries to lock X. What is the standard, most effective fix for this specific pattern?</p>
+        <ul class="options">
+            <li>A) Add Thread.Sleep calls to make the timing less likely to overlap</li>
+            <li>B) Always acquire X and Y in the same, consistent order everywhere in the codebase, so this opposite-order interleaving can't occur</li>
+            <li>C) Use async/await instead of lock for both methods</li>
+            <li>D) Increase the number of available thread-pool threads</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The deadlock exists specifically because the two locks are acquired in opposite order by two different code paths. If every code path always acquires X before Y, whichever thread gets X first simply proceeds through Y uncontested — the cycle that causes a deadlock becomes structurally impossible, regardless of timing.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Adding sleeps changes the odds of hitting the bad interleaving but doesn't remove the underlying possibility — it's a way to hide the bug, not fix it, and the bug remains fully capable of occurring.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Swapping to async/await doesn't address lock ordering at all — the same opposite-order acquisition problem can occur with any synchronization primitive.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> More thread-pool threads doesn't free up the two specific threads already stuck in the cycle — it's unrelated to the cause.</p>
+                <p><strong>Reinforcement:</strong> Consistent, global lock ordering is the standard, well-documented fix for exactly this classic pattern.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> In a WPF button-click handler, code calls <code>GetDataAsync().Result</code>. Inside GetDataAsync, execution reaches an await on a Task.Delay. Why does the UI thread end up deadlocked?</p>
+        <ul class="options">
+            <li>A) Task.Delay always throws an exception when called from a UI thread</li>
+            <li>B) The awaited continuation is scheduled to resume specifically on the UI thread's captured SynchronizationContext, but the UI thread is itself blocked inside .Result and can never pick up and run that continuation</li>
+            <li>C) .Result silently returns null instead of waiting, so there's no actual deadlock, just a wrong value</li>
+            <li>D) WPF does not support async methods at all, so this code fails to compile</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Because a SynchronizationContext is captured, the continuation after the await must run on the UI thread specifically. But that same UI thread is parked inside .Result, blocked and not processing any queued work — including its own continuation. Task and continuation are stuck waiting on each other, with the UI thread on both ends of the cycle.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Task.Delay works completely normally here — the problem isn't the delay itself, it's where its continuation is required to resume.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> .Result genuinely blocks the calling thread waiting for the real result (or exception) — it doesn't silently short-circuit to null; that's exactly why the thread hangs rather than returning something wrong quickly.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This code compiles and runs completely normally — the failure is a runtime hang, not a compile-time error, which is exactly what makes it so dangerous.</p>
+                <p><strong>Reinforcement:</strong> The async deadlock is entirely about where a continuation is required to run versus whether that specific thread is actually free to run it.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> The exact same `.Result` call that deadlocks in a WPF button handler is moved, unchanged, into an ASP.NET Core minimal API endpoint. What's the most likely outcome, and why?</p>
+        <ul class="options">
+            <li>A) It deadlocks identically, because .Result always blocks regardless of host</li>
+            <li>B) It generally does not deadlock, because ASP.NET Core does not install a SynchronizationContext by default, so there's no captured context forcing the continuation onto the specific blocked thread</li>
+            <li>C) It throws a compile-time error because ASP.NET Core doesn't support .Result</li>
+            <li>D) It runs faster than the async version, with no downsides</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The deadlock specifically requires a captured SynchronizationContext tying the continuation to one particular thread. ASP.NET Core doesn't install one by default, so the continuation can resume on any available thread-pool thread — the cycle that caused the WPF hang doesn't form here, even though .Result is still blocking a thread (which remains wasteful, just not fatal in this specific way).</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> .Result does always block the calling thread, but blocking alone isn't sufficient for a deadlock — it also needs the captured-context cycle, which isn't present here.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> .Result is a normal property on Task&lt;T&gt; and compiles fine in any host, including ASP.NET Core — the difference here is purely behavioral, not a compile error.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Blocking a thread-pool thread still wastes thread pool capacity even when it doesn't deadlock — it's not faster or free of downsides, just not fatally hung in this particular way.</p>
+                <p><strong>Reinforcement:</strong> Whether sync-over-async deadlocks depends on the host's SynchronizationContext — "it works in this host" is never proof it's safe everywhere.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A team wants a way to avoid an indefinite hang when two operations occasionally contend for the same lock, preferring to fail fast and retry rather than risk a full deadlock. Which technique fits this need?</p>
+        <ul class="options">
+            <li>A) Monitor.TryEnter with a timeout, falling back to a logged failure or retry if the lock isn't acquired in time</li>
+            <li>B) Wrapping every lock call in a try/catch to suppress any exception it might throw</li>
+            <li>C) Replacing lock with Task.Run so the work happens on a different thread</li>
+            <li>D) Increasing the Thread.Sleep duration inside the critical section</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> Monitor.TryEnter with a TimeSpan is the documented, standard API specifically for this — it attempts to acquire the lock but gives up after the specified duration, letting the caller fail fast (log, retry, surface an error) instead of blocking indefinitely.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> A plain lock statement generally doesn't throw for ordinary contention — it just blocks — so wrapping it in try/catch does nothing to address an indefinite wait.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Moving the work to a different thread via Task.Run doesn't change whether that thread can still get stuck in the same lock-ordering cycle — it relocates the problem, it doesn't solve it.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A longer sleep just changes timing odds — it doesn't provide any mechanism for giving up and failing fast, and doesn't remove the underlying possibility of a cycle.</p>
+                <p><strong>Reinforcement:</strong> Monitor.TryEnter with a timeout is the concrete, documented tool for "fail fast instead of hanging forever" — worth reaching for whenever indefinite blocking on a lock is an unacceptable risk.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand both classic deadlock shapes — the two-lock ordering deadlock and the notorious async sync-over-async deadlock — and how to prevent each. Next up: pulling the whole synchronization cluster of this Part together into proactive design guidance — Thread-Safe Design.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

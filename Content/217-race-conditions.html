@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>217 - Race Conditions · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Same code. Same input. A different answer — because two threads happened to arrive in a different order this time.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>"Race condition" is a phrase that gets thrown around loosely — earlier in this Part it's been used as shorthand for "something went wrong with threads." That looseness stops here. A race condition is a specific, precisely defined kind of bug, and understanding it precisely is what makes every synchronization tool elsewhere in this Part — <code class="icode">lock</code>, <code class="icode">Interlocked</code>, concurrent collections — make sense as a <em>fix</em> rather than a ritual you perform because someone told you to.</p>
+    <p>Here's the uncomfortable part: a race condition can sit in a codebase for months, pass every test run, survive code review, and ship to production — and still be a real, live bug the entire time. It's just been waiting for the right (wrong) timing.</p>
+    <p><strong>In this lesson, you'll get a precise definition of a race condition, build one from scratch with a shared counter that is genuinely, reproducibly wrong, see exactly why <code class="icode">count++</code> is not the atomic operation it looks like, understand why these bugs are so brutal to debug, and tour the standard fixes — ending with the strongest fix of all: making the bug impossible by removing shared mutable state entirely.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>race condition</strong> is what happens when two or more threads touch the same piece of data at the same time, at least one of them is changing it, and nobody coordinated the order. The program's correctness ends up depending on which thread happens to run first, second, or in between — a matter of pure timing, which is precisely the one thing you have no control over.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A race condition occurs when the observable behavior of a program depends on the relative timing or interleaving of multiple threads accessing <strong>shared, mutable state</strong>, without sufficient synchronization to make that access safe. Three ingredients have to be present <em>together</em> for a race condition to even be possible:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Ingredient</th><th>Meaning</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Shared</strong> state</td><td>More than one thread can reach the same piece of data (a field, a static, a captured variable).</td></tr>
+                <tr><td><strong>Mutable</strong> state</td><td>That data can actually change after it's created — there's something to overwrite.</td></tr>
+                <tr><td><strong>Unsynchronized</strong> access</td><td>At least one thread writes to it, and nothing coordinates the order in which threads read or write.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Remove any one of the three and the race condition becomes structurally impossible — not "unlikely," <em>impossible</em>. That last sentence is the single most important idea in this lesson, and it's the thread this lesson pulls on all the way to the end.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> A precise definition, on purpose</div>
+        <p>A race condition is not "a bug that happens with threads." It's not a deadlock (that's next lesson — a deadlock is threads that stop entirely; a race condition is threads that keep running and produce a <em>wrong answer</em>). It's not "code that's slow under load." It is specifically: shared + mutable + unsynchronized, with an outcome that depends on timing. Every example in this lesson satisfies all three conditions, and every fix works by removing at least one of them.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Code That Looks Like One Step Is Actually Several</h3>
+    <p>Most C# statements that look like a single, indivisible action are, at the machine level, several separate steps. <code class="icode">counter++</code> reads as "increment the counter" — one idea, one line, one semicolon. But the processor can't literally add 1 directly inside memory; it has to bring the current value into a register, do the arithmetic there, and write the result back. That's three steps, not one. On a single thread, nobody ever notices, because nothing else can run in between those three steps. The instant a <em>second</em> thread can also read, modify, and write that same location, the gap between those steps becomes a place where information can be lost.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
+    <p>Multithreaded and concurrent code exists precisely to let multiple pieces of work happen at the same time — that's the entire value proposition of everything else in this Part. But "at the same time" means the runtime is free to interleave those three-step operations from different threads in essentially any order it likes. What's needed is a way to either (a) make sure the interleaving can't corrupt shared data, or (b) make sure there's no shared, mutable data for the interleaving to corrupt in the first place.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Synchronization, or No Sharing At All</h3>
+    <p>That's exactly what the synchronization primitives and concurrent collections elsewhere in this Part exist to provide — a way to make a multi-step operation on shared state behave, from every other thread's point of view, as if it happened all at once. This lesson builds the motivating bug first, so those tools land as answers to a problem you've actually watched happen, rather than incantations to memorize.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">THE THREE INGREDIENTS, VISUALIZED</div>
+        <div class="flow-step">
+            <div class="step-label">INGREDIENT 1 — SHARED</div>
+            <ul><li>A field, a <code>static</code> variable, or a variable captured by multiple closures/tasks — reachable from more than one thread.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">+</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">INGREDIENT 2 — MUTABLE</div>
+            <ul><li>The value can change after creation — there's a write happening somewhere, by at least one of the threads involved.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">+</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">INGREDIENT 3 — UNSYNCHRONIZED</div>
+            <ul><li>Nothing (no <code>lock</code>, no <code>Interlocked</code>, no concurrent collection) coordinates the order of that access.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">RESULT — RACE CONDITION IS POSSIBLE</div>
+            <ul><li>The outcome now depends on the unpredictable relative timing of the threads involved — a genuine race, with no guaranteed winner.</li></ul>
+        </div>
+    </div>
+    <p>Notice this diagram never mentions "how many threads" or "how often." Two threads, running for a fraction of a second, on a lightly-loaded system, are enough — this isn't about scale, it's about the presence of all three ingredients at once.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — count++ Is Not One Step</h2>
+
+    <p>Here is the classic textbook example, for good reason: it's small, it's real, and it's genuinely reproducible. <code class="icode">counter++</code> looks like a single atomic instruction. It compiles to three:</p>
+    <div class="code-block"><code>// counter++ conceptually becomes:
+int temp = counter;   // 1. READ  — load the current value
+temp = temp + 1;      // 2. ADD   — compute the new value
+counter = temp;       // 3. WRITE — store it back</code></div>
+
+    <p>Now watch what happens when two threads run this same three-step sequence against the same <code class="icode">counter</code>, with no synchronization, and their steps happen to interleave:</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Time</th><th>Thread A</th><th>Thread B</th><th><code>counter</code> in memory</th></tr></thead>
+            <tbody>
+                <tr><td>T0</td><td>—</td><td>—</td><td>10</td></tr>
+                <tr><td>T1</td><td><strong>READ</strong> counter → 10</td><td>—</td><td>10</td></tr>
+                <tr><td>T2</td><td>—</td><td><strong>READ</strong> counter → 10</td><td>10</td></tr>
+                <tr><td>T3</td><td>ADD 1 → 11 (in A's local temp)</td><td>—</td><td>10</td></tr>
+                <tr><td>T4</td><td>—</td><td>ADD 1 → 11 (in B's local temp)</td><td>10</td></tr>
+                <tr><td>T5</td><td><strong>WRITE</strong> 11 → counter</td><td>—</td><td>11</td></tr>
+                <tr><td>T6</td><td>—</td><td><strong>WRITE</strong> 11 → counter</td><td><strong>11</strong> ❌</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Two increments happened. The counter should read <strong>12</strong>. It reads <strong>11</strong>. Thread B read the value <em>before</em> Thread A's write landed, computed its own "new" value from that same stale 10, and then overwrote Thread A's update with its own — silently. Thread A's increment isn't wrong, isn't logged as an error, isn't thrown away with a warning. It just never happened, from the counter's point of view. This is called a <strong>lost update</strong>, and it's the single most common shape a race condition takes.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Here's that same lost-update bug, scaled up into code you can actually run and watch fail:</p>
+
+    <div class="code-block"><code>int counter = 0;
+
+var tasks = new List&lt;Task&gt;();
+for (int i = 0; i &lt; 1_000; i++)
+{
+    tasks.Add(Task.Run(() =&gt;
+    {
+        for (int j = 0; j &lt; 1_000; j++)
+        {
+            counter++;   // read, add, write — no synchronization
+        }
+    }));
+}
+
+await Task.WhenAll(tasks);
+
+Console.WriteLine(counter);
+// Expected: 1,000,000
+// Actual:   something LESS than 1,000,000 — and a DIFFERENT
+//           number nearly every time you run it</code></div>
+
+    <p>Walking through it:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">1,000 tasks each increment <code class="icode">counter</code> 1,000 times — 1,000,000 total increments, if none are ever lost.</li>
+        <li style="margin-bottom:0.4rem;">All three ingredients from the Big Picture are present: <code class="icode">counter</code> is <strong>shared</strong> (every task closes over the same local variable), it's <strong>mutable</strong> (it changes 1,000,000 times), and there's no <strong>synchronization</strong> around the read-add-write.</li>
+        <li style="margin-bottom:0.4rem;">Run this on a genuinely multi-core machine under real thread-pool concurrency, and the printed total is reliably <em>below</em> 1,000,000 — and it moves around between runs, because it depends on exactly how the increments happened to interleave that time.</li>
+    </ul>
+
+    <div class="callout">
+        <strong>💡 Try it yourself, mentally:</strong> if you ran this program 10 times, you would not expect to see the same wrong number 10 times. That variability — a different, unpredictable answer on every run of the exact same code — is the fingerprint of a race condition. A bug that reproduces identically every time is (almost always) something else.
+    </div>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Swap "counter" for something a business actually cares about, and the same bug gets a name like "overselling." Picture an e-commerce checkout service tracking remaining stock for a popular item as a plain shared field:</p>
+
+    <div class="code-block"><code>public class InventoryService
+{
+    private int _stockRemaining = 3; // only 3 left!
+
+    // ❌ Two customers' checkout requests can run this
+    // concurrently on the thread pool — classic race condition
+    public bool TryReserve()
+    {
+        if (_stockRemaining &gt; 0)
+        {
+            _stockRemaining--;   // read, add(-1), write — not atomic
+            return true;
+        }
+        return false;
+    }
+}</code></div>
+
+    <p>With only 3 items left and a flash-sale spike of concurrent requests, two customers' checkouts can both read <code class="icode">_stockRemaining</code> as <code class="icode">1</code> before either one's decrement lands, and both get told "reservation succeeded." The store has now promised the same last item to two different customers — a real, customer-facing incident, from the exact same lost-update shape as the counter example, just wearing business clothes.</p>
+
+    <p>The fix — using the tools covered elsewhere in this Part — closes the gap between "check" and "act":</p>
+    <div class="code-block"><code>public class InventoryService
+{
+    private int _stockRemaining = 3;
+    private readonly object _lock = new();
+
+    // ✅ Fixed with a lock — the check-and-decrement
+    // now happens as one indivisible step
+    public bool TryReserve()
+    {
+        lock (_lock)
+        {
+            if (_stockRemaining &gt; 0)
+            {
+                _stockRemaining--;
+                return true;
+            }
+            return false;
+        }
+    }
+}</code></div>
+    <p>The <code class="icode">lock</code> statement — covered in full elsewhere in this Part — is exactly the kind of synchronization primitive that removes ingredient 3 (unsynchronized access) without removing the sharing itself.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🏧</span> Two ATMs, One Account, No Lock</div>
+        <p>Imagine a joint bank account with $100 in it, and two ATM withdrawals happening at almost the same instant — one for $70, one for $50 — at two different physical machines. Each machine independently checks the balance ("is $100 ≥ $70? Yes."), independently approves the withdrawal, and independently subtracts its amount afterward. If both machines check the balance <em>before</em> either one writes its update back, both approve — and the bank has just handed out $120 from a $100 account.</p>
+        <p>The balance was <strong>shared</strong> (both machines can read and write it), <strong>mutable</strong> (withdrawals change it), and <strong>unsynchronized</strong> (neither machine coordinated with the other about the order of "check" and "act"). That's every race condition in this lesson, dressed up as a very expensive banking bug — which is exactly why real banking systems synchronize this kind of check-then-act operation with exactly the tools this lesson is building toward.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>It's worth being precise about <em>why</em> <code class="icode">counter++</code> isn't atomic, rather than just accepting it as a rule. At the intermediate-language level, a field increment like this genuinely does compile down to separate load, add, and store instructions — there is no single CPU instruction in the general case that C# emits to "increment a shared field, guaranteed no other thread can interleave." Even operations that <em>feel</em> smaller than <code class="icode">counter++</code> — a plain field read, a plain field write — can, in principle, be affected by the runtime's memory model in ways that surprise people coming from single-threaded intuition. The takeaway is not "memorize which specific operations are unsafe" — it's "assume ordinary reads and writes of shared mutable state are <em>not</em> automatically safe under concurrency, and reach for an explicit synchronization tool whenever more than one thread can touch the same mutable data."</p>
+    <p>This is also exactly why <code class="icode">Interlocked.Increment</code> — one of the standard fixes below — exists as a distinct API rather than everyone just trusting <code class="icode">counter++</code>: it maps to a genuine hardware-level atomic instruction, doing in one indivisible step what <code class="icode">counter++</code> does in three separate ones.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. A race condition ≠ a deadlock</h3>
+    <p>These get lumped together as "threading bugs," but they're nearly opposite failure modes. A race condition is threads that keep running and quietly produce a <em>wrong result</em>. A deadlock — the very next lesson in this Part — is threads that stop running entirely, each waiting on the other forever, producing no result at all. Different symptom, different cause, different fix.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "It didn't happen on my machine" is not evidence it can't happen</h3>
+    <p>A race condition's window of opportunity — the gap between the read and the write — might be a few nanoseconds. On a lightly-loaded single-core dev machine, with few threads genuinely running in parallel, that window may almost never get hit. Under production concurrency — many simultaneous requests, real multi-core parallelism, unpredictable scheduling pauses — the exact same code hits that window constantly. The bug was there the whole time; the conditions to trigger it reliably just weren't.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "It passed every test" is not proof of correctness for concurrent code</h3>
+    <p>A traditional unit test runs the same code the same way, usually on one thread, and either it produces the right answer or it doesn't — deterministically. Concurrent code doesn't work that way: running the exact same test a thousand times might pass all thousand times and still contain a live race condition, simply because the unlucky interleaving never happened to occur during those thousand runs. "It worked when I tested it" genuinely is not evidence of correctness here — it's just evidence that you didn't get unlucky during testing.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Assuming a simple-looking operation is atomic</h4>
+    <p>❌ Treating <code class="icode">counter++</code>, <code class="icode">list.Add(x)</code> on a plain <code class="icode">List&lt;T&gt;</code>, or a check-then-set pair (<code class="icode">if (dict.ContainsKey(k)) ... dict[k] = v;</code>) as if the single line of C# guarantees a single indivisible operation underneath.</p>
+    <p>✅ Assume the opposite by default for any operation on shared mutable state: it's probably multiple steps, and those steps can be interleaved by another thread unless something explicitly prevents it.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Testing only on a single-core mental model</h4>
+    <p>❌ Reasoning about concurrent code as if only one thread can truly be "in" it at a time, because that's what it feels like watching a debugger step through one thread.</p>
+    <p>✅ Reason about every possible interleaving of the threads involved — including ones that seem unlikely. If an interleaving is possible, given enough load and enough time, it eventually happens.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for a lock as the only tool, out of habit</h4>
+    <p>❌ Wrapping every piece of shared state in a lock, everywhere, without asking whether the state needed to be shared and mutable in the first place.</p>
+    <p>✅ Ask first whether the shared mutable state can be avoided entirely (see "When Should I Use It?" below) — a lock is a correct fix, but it's not the <em>only</em> fix, and it's not always the best one.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? — the fixes ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use Each Fix?</h2>
+    <p>Every fix for a race condition works by removing one of the three ingredients from the Big Picture. Here's the standard toolkit, ranked from "patch the symptom" to "make the bug structurally impossible":</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Fix</th><th>Which ingredient it removes</th><th>When to reach for it</th></tr></thead>
+            <tbody>
+                <tr><td><code class="icode">lock</code> (a synchronization primitive)</td><td>Unsynchronized access</td><td>General-purpose — protects a block of code that touches shared state, covered fully among the locking primitives elsewhere in this Part.</td></tr>
+                <tr><td><code class="icode">Interlocked.Increment</code> / similar</td><td>Unsynchronized access</td><td>Simple single-value operations (increment, add, compare-and-swap) — cheaper than a full lock for just that.</td></tr>
+                <tr><td>A concurrent collection</td><td>Unsynchronized access</td><td>Shared collections specifically — purpose-built, covered fully elsewhere in this Part, to be safe without you hand-rolling locking around every operation.</td></tr>
+                <tr><td><strong>Immutability</strong></td><td>Mutability itself</td><td>The strongest fix — removes the possibility at the design level rather than patching around it. See below.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <strong>💡 The strongest fix isn't a lock — it's nothing to lock.</strong> An object that is genuinely immutable after construction cannot have a race condition on its own state, for a simple structural reason: ingredient 2 (mutability) is gone. There's no write for another thread's read to race against, because there's no write, ever, after the object is built. This is exactly why <code class="icode">readonly struct</code> and records — from Advanced Part I — are concurrency tools, not just "cleaner code" tools: an immutable value can be freely read by any number of threads simultaneously, with zero synchronization, and zero risk. Where you have a choice, designing shared data to be immutable eliminates an entire category of bug that locking merely manages.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Race condition</strong> = shared + mutable + unsynchronized + timing decides the outcome.<br /><br />
+        <strong>Remember:</strong><br />
+        · A "simple" operation like <code>x++</code> is really read → add → write, three separate steps.<br />
+        · Interleave those three steps across threads and an update can be silently lost.<br />
+        · No crash, no exception, no error message — just a quietly wrong number.<br />
+        · Different outcome on different runs is the signature of a race condition.<br />
+        · Fix it by synchronizing access (<code>lock</code>, <code>Interlocked</code>, concurrent collections) — or, better, by removing the mutability entirely.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <strong>race condition</strong> requires all three ingredients at once: shared state, mutable state, and unsynchronized access — remove any one and it can't happen.</li>
+            <li style="margin-bottom:0.4rem;"><code>count++</code> is not atomic — it's read, add, write, and another thread can interleave in the gap, silently losing an update.</li>
+            <li style="margin-bottom:0.4rem;">Race conditions are notoriously hard to debug because they're <strong>non-deterministic</strong> — they may not reproduce on a given run, in testing, or on a lightly-loaded dev machine, and still be real under production concurrency.</li>
+            <li style="margin-bottom:0.4rem;">"It worked when I tested it" is not evidence of correctness for concurrent code — passing tests can coexist with a live race condition that just never got triggered.</li>
+            <li style="margin-bottom:0.4rem;">Standard fixes — <code>lock</code>, <code>Interlocked</code>, concurrent collections — all work by adding synchronization around shared mutable state.</li>
+            <li style="margin-bottom:0.4rem;">The <strong>strongest</strong> fix is immutability: an object with no mutable state after construction has nothing for a race condition to happen to.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've built a genuine race condition from scratch and seen exactly why it happens. Let's check the precise definition — and the reasoning behind the fixes — actually stuck.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Which combination of conditions is required for a race condition to be possible?</p>
+        <ul class="options">
+            <li>A) Any code that runs on more than one CPU core at the same time</li>
+            <li>B) Shared state, that state being mutable, and access to it that isn't synchronized between threads</li>
+            <li>C) A program that uses more than one thread, regardless of what those threads do</li>
+            <li>D) Code that runs slower than expected under heavy load</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> All three ingredients are required together — shared state that multiple threads can reach, that state being mutable so there's something to overwrite, and unsynchronized access so nothing coordinates the timing. Remove any one and a race condition on that data becomes impossible.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Running on multiple cores is necessary for true parallelism but says nothing about whether shared mutable state is involved — plenty of multi-core code has no shared mutable state and no race condition risk.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Multiple threads alone aren't enough — if those threads never touch the same mutable data, there's nothing to race on.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Slowness is a performance characteristic, not a correctness bug — a race condition is about a wrong <em>result</em>, not a slow one.</p>
+                <p><strong>Reinforcement:</strong> Shared + mutable + unsynchronized is the precise, complete definition — memorize the trio, not a vague feeling about "threading bugs."</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Two threads both execute <code>counter++</code> on the same shared <code>int</code>, with no synchronization, and their operations happen to interleave badly. What is the most accurate description of the result?</p>
+        <ul class="options">
+            <li>A) The program throws an exception immediately when the interleaving occurs</li>
+            <li>B) One of the two increments can be silently lost — the counter ends up one less than expected, with no error or warning</li>
+            <li>C) The compiler detects the conflict and serializes the two increments automatically</li>
+            <li>D) counter becomes negative or corrupted to a nonsensical value</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Because counter++ is read-add-write, one thread can read the pre-update value, compute its own increment from it, and write that back after overwriting the other thread's update — a lost update. The counter is still a valid, plausible-looking number; it's just wrong by exactly the number of lost increments, and nothing flags it.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no exception — the code runs without error; it just silently produces a mathematically wrong total.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The C# compiler does not detect or serialize this at compile time — that's exactly why explicit synchronization tools exist; nothing protects you automatically.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The value stays a sensible-looking integer, just undercounted — it doesn't become corrupted or negative from this particular bug.</p>
+                <p><strong>Reinforcement:</strong> A lost update is quiet and plausible-looking, which is exactly what makes it dangerous — nothing about the output screams "bug" on its own.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A developer runs their multithreaded counter code once on their laptop, gets the correct total, and concludes the code is thread-safe. What's the flaw in that reasoning?</p>
+        <ul class="options">
+            <li>A) There is no flaw — a single successful run is sufficient proof of thread safety</li>
+            <li>B) A race condition is non-deterministic; a bug can exist and simply not get triggered on a given run, especially under light load or on a lightly-loaded dev machine, and still be real under production concurrency</li>
+            <li>C) Laptops cannot run multithreaded code correctly, only servers can</li>
+            <li>D) The code must have used Task.Run incorrectly if it produced the correct answer at all</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Race conditions depend on a specific, often narrow timing window being hit. A single run — especially on a lightly-loaded machine where the risky interleaving may rarely occur — can easily produce the correct answer even though the underlying code is genuinely unsafe. Correctness under concurrency has to be reasoned about structurally (are the three ingredients present?), not just observed empirically once.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the trap — a passing run is not proof of correctness for concurrent code, unlike deterministic single-threaded code where a correct run is much stronger evidence.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Laptops run multithreaded code correctly all the time; the issue isn't the hardware, it's whether the risky interleaving happened to occur during that particular run.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Getting the correct answer once doesn't imply anything was used incorrectly — it can happen with genuinely broken, unsynchronized code that simply got lucky that run.</p>
+                <p><strong>Reinforcement:</strong> "It worked when I tested it" is not evidence of correctness for concurrent code — reason about the three ingredients, don't rely on a single observed run.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why is an immutable object (e.g., a <code>readonly struct</code> or a record with init-only properties) described as the strongest fix for race conditions, rather than just another synchronization option alongside <code>lock</code>?</p>
+        <ul class="options">
+            <li>A) Immutable objects run faster than mutable ones on every operation</li>
+            <li>B) Immutability removes the "mutable" ingredient entirely — with nothing to write after construction, there's nothing for another thread's read to race against, so the bug becomes structurally impossible rather than merely guarded against</li>
+            <li>C) The .NET runtime automatically wraps every immutable object in a lock behind the scenes</li>
+            <li>D) Immutable objects can only ever be accessed by one thread at a time by design</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A race condition requires shared, mutable, unsynchronized state. lock and Interlocked address the "unsynchronized" part while leaving the state mutable and shared — they manage the risk. Immutability instead removes mutability itself: once nothing can change after construction, there's no write for a concurrent read to race against, so the object can be freely shared across any number of threads with zero risk and zero synchronization code.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Immutability's benefit here is correctness and simplicity, not an inherent universal speed advantage — performance depends on the specific scenario.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no automatic locking involved at all — the safety comes from there being nothing to protect, not from hidden synchronization machinery.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The opposite is true — an immutable object can be accessed by any number of threads simultaneously, precisely because there's no mutation to coordinate.</p>
+                <p><strong>Reinforcement:</strong> Locking manages a risk that immutability eliminates outright — that's what makes it the strongest available fix, not just one option among equals.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> An <code>InventoryService.TryReserve()</code> method checks <code>if (_stockRemaining &gt; 0)</code> and then decrements <code>_stockRemaining</code> as two separate statements, with no lock. What makes this a race condition, specifically?</p>
+        <ul class="options">
+            <li>A) The method name contains "Try", which always implies thread-unsafe code</li>
+            <li>B) Two threads can both read _stockRemaining as greater than zero before either one's decrement is written back, so both succeed even though only one unit of stock actually existed to give out</li>
+            <li>C) Integers in C# cannot be safely read by more than one thread under any circumstances</li>
+            <li>D) The bug only occurs if _stockRemaining is declared as a static field</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is a check-then-act race — the same shape as the lost-update bug, just with a condition attached. Both threads can pass the "is stock &gt; 0" check using the same stale value before either one's decrement is visible to the other, so the method reports success to both callers even though there wasn't enough stock for both.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A method's name has no effect on its actual thread safety — this is purely about the presence or absence of synchronization around the shared state.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Plain reads of an int can generally be observed safely in the sense of not tearing a value on typical hardware, but that's a different concern from this check-then-act race — the danger here is the gap between the check and the write, not the read mechanics of int itself.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The field doesn't need to be static — any field or shared variable reachable from multiple threads (an instance field on a service used by concurrent requests, exactly as shown, is plenty) can exhibit this bug.</p>
+                <p><strong>Reinforcement:</strong> A race condition doesn't require a bare increment — any unsynchronized check-then-act sequence on shared mutable state has the same lost-update shape, just applied to a decision instead of a plain add.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have a precise, working definition of a race condition — and you've watched one happen. Next up: the other classic concurrency failure mode, where threads don't produce a wrong answer, they simply stop forever — deadlocks.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
