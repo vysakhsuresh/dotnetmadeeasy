@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>196 - IEnumerable&lt;T&gt; Internals · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Every yield return method you've ever written became an entire hidden class. This lesson opens that class up and reads it line by line.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You've used <code>IEnumerable&lt;T&gt;</code> since Foundations lesson 038. You've written <code>yield return</code> dozens of times since — in custom collections, in custom LINQ extensions, in the <code>Where</code> and <code>Select</code> reimplementations from Intermediate Part IV. Every one of those lessons told you the same thing in passing: "the compiler turns this into a state machine." None of them showed you that state machine's actual shape. This lesson does exactly that — no more taking it on faith.</p>
+    <p><strong>You'll see the literal interface members behind <code>foreach</code>, the exact statement-by-statement translation the compiler performs on a <code>foreach</code> loop, and — the centerpiece — a full, field-by-field walkthrough of the hidden class the compiler generates for a <code>yield return</code> method: its numeric state field, its captured-variable fields, and exactly how <code>MoveNext()</code> resumes execution from precisely where the last call left off. By the end, "<code>Where</code> is lazy because it's built with <code>yield return</code>" stops being a fact you were told and becomes a mechanism you can trace yourself.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><code>IEnumerable&lt;T&gt;</code> and <code>IEnumerator&lt;T&gt;</code> are two small, separate contracts that together define "something that can be walked through, one item at a time." You've used both since Foundations. What this lesson adds is the machinery underneath: what the compiler actually builds when you write <code>yield return</code> instead of hand-writing an enumerator class yourself, and exactly why that machinery is what makes an entire LINQ operator like <code>Where</code> do nothing at all until something starts pulling items through it.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition — the Exact Interface Shapes</h3>
+    <p>Both interfaces, in full, exactly as the BCL declares them:</p>
+    <div class="code-block"><code>public interface IEnumerable&lt;out T&gt; : IEnumerable
+{
+    IEnumerator&lt;T&gt; GetEnumerator();
+}
+
+public interface IEnumerator&lt;out T&gt; : IEnumerator, IDisposable
+{
+    T Current { get; }
+    // Inherited from the non-generic IEnumerator:
+    // bool MoveNext();
+    // void Reset();
+    // object Current { get; }  (the non-generic version)
+}</code></div>
+    <p><code>IEnumerator&lt;T&gt;</code> additionally implements <code>IDisposable</code> — this is why the compiler-generated <code>foreach</code> translation you'll see in a moment always wraps the loop in something that guarantees <code>Dispose()</code> runs, even when the loop exits early via <code>break</code>, <code>return</code>, or an exception. An iterator that holds an open file handle, a database connection, or any other unmanaged resource relies on that guarantee to clean up correctly no matter how the loop ends.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🗑️</span> Why <code>Reset()</code> Is Effectively Dead Code</div>
+        <p><code>Reset()</code> exists for historical reasons — it predates generics, from the days of COM-style enumerators used by early .NET collection classes. In practice, almost no modern <code>IEnumerator&lt;T&gt;</code> implementation does anything meaningful with it. Every compiler-generated <code>yield return</code> state machine — which is the overwhelming majority of enumerators you'll ever touch in modern C# — implements <code>Reset()</code> by simply throwing <code>NotSupportedException</code>. If you need to "start over," the real, idiomatic answer is to call <code>GetEnumerator()</code> again and get a brand-new enumerator — never to call <code>Reset()</code> on an existing one.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Hand-Writing Enumerators Is Tedious and Error-Prone</h3>
+    <p>Foundations lesson 038 showed you what a hand-written <code>IEnumerator&lt;T&gt;</code> looks like: a private class, a position field, a <code>MoveNext()</code> that increments it and bounds-checks, a <code>Current</code> that indexes into the source. For a flat array, that's manageable. For logic with branches, loops, or multiple exit conditions — imagine hand-writing the enumerator for something like "every third even number, skipping the first five, until a total exceeds 100" — the position bookkeeping alone becomes its own small, fragile state machine, entirely separate from the logic it's supposed to express.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Let the Compiler Write the State Machine</h3>
+    <p><code>yield return</code> lets you write the iteration logic as ordinary-looking, straight-line code with loops and conditionals — the ones from the paragraph above — and the C# compiler mechanically rewrites the entire method body into a class that implements <code>IEnumerable&lt;T&gt;</code> and <code>IEnumerator&lt;T&gt;</code>, correctly, every time. You never see that class in your source code. It exists only in the compiled assembly. This lesson's whole purpose is showing you what it actually contains.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">TWO SEPARATE COMPILER TRANSLATIONS, CHAINED TOGETHER</div>
+        <div style="text-align:center;font-size:0.9rem;color:var(--text-muted,#94A3B8);margin-bottom:0.6rem;">You write two ordinary-looking pieces of code:</div>
+        <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.8rem;border-radius:4px;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;margin:0 auto 0.8rem;max-width:480px;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">IEnumerable&lt;int&gt; EvensBelow(int max)
+{
+    for (int i = 0; i &lt; max; i++)
+        if (i % 2 == 0)
+            yield return i;
+}
+
+foreach (int n in EvensBelow(10))
+    Console.WriteLine(n);</code></pre>
+        <div style="text-align:center;font-size:1.2rem;color:var(--accent-purple,#8B5CF6);">▼ TWO compiler translations happen, independently ▼</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.8rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:0.95rem;text-align:center;margin-bottom:0.4rem;">Translation A — the METHOD BODY</div>
+                <div style="font-size:0.8rem;text-align:center;">
+                    <code>EvensBelow</code>'s body becomes a hidden class implementing <code>IEnumerable&lt;int&gt;</code> / <code>IEnumerator&lt;int&gt;</code> — a state machine.
+                </div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:0.95rem;text-align:center;margin-bottom:0.4rem;">Translation B — the foreach LOOP</div>
+                <div style="font-size:0.8rem;text-align:center;">
+                    The <code>foreach</code> becomes a <code>GetEnumerator()</code> call plus a <code>try</code>/<code>finally</code>-wrapped <code>while (MoveNext())</code> loop.
+                </div>
+            </div>
+        </div>
+        <div style="text-align:center;font-size:0.85rem;color:var(--text-muted,#94A3B8);padding-top:0.4rem;">
+            Neither translation knows about the other. They meet purely through the shared <code>IEnumerable&lt;T&gt;</code>/<code>IEnumerator&lt;T&gt;</code> contract — which is exactly why any hand-written enumerator (Foundations 038) plugs into <code>foreach</code> just as seamlessly as a compiler-generated one.
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Part 1 — Exactly How <code>foreach</code> Desugars</h3>
+    <p>This is Translation B from above, shown in full. It's the same shape you saw a first look at in Foundations 038, repeated here precisely because everything else in this lesson depends on it:</p>
+    <div class="code-block"><code>// You write:
+foreach (var item in source)
+{
+    DoSomething(item);
+}
+
+// The compiler generates (roughly):
+{
+    IEnumerator&lt;T&gt; e = source.GetEnumerator();
+    try
+    {
+        while (e.MoveNext())
+        {
+            T item = e.Current;
+            DoSomething(item);
+        }
+    }
+    finally
+    {
+        e.Dispose(); // ALWAYS runs — even on break, return, or an exception inside the loop
+    }
+}</code></div>
+    <p>The <code>try</code>/<code>finally</code> is the detail worth pausing on. It means <code>Dispose()</code> is called on the enumerator no matter how the loop body exits — a <code>break</code> midway through, a <code>return</code> from inside the loop, or an exception thrown by <code>DoSomething</code>. This matters more than it looks: as you'll see below, a <code>yield return</code> state machine's <code>Dispose()</code> is what runs any <code>finally</code> blocks that exist <em>inside</em> the iterator method itself — so a resource opened inside an iterator (a file, a connection) is guaranteed to close correctly even if the caller abandons the loop halfway through.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Part 2 — the Real Meat: What <code>yield return</code> Compiles Into</h3>
+    <p>Now Translation A. Take a small iterator method with one captured parameter and one local variable used across iterations:</p>
+    <div class="code-block"><code>public IEnumerable&lt;int&gt; CountUpBy(int start, int step)
+{
+    int current = start;
+    while (current &lt; 20)
+    {
+        yield return current;
+        current += step;
+    }
+}</code></div>
+    <p>The compiler does not compile this as an ordinary method at all. The moment it sees <code>yield return</code> in a method body, it switches to generating an entire hidden class — conventionally named something like <code>&lt;CountUpBy&gt;d__0</code> — that implements both <code>IEnumerable&lt;int&gt;</code> and <code>IEnumerator&lt;int&gt;</code> on the same type. Four pieces make it work:</p>
+    <div class="flow-container">
+        <div class="flow-title">THE FOUR PIECES OF A yield return STATE MACHINE</div>
+        <div class="flow-step">
+            <div class="step-label">1. A NUMERIC STATE FIELD</div>
+            <ul><li>A private <code>int</code> field (typically named something like <code>&lt;&gt;1__state</code>) records exactly which point in the method the last <code>MoveNext()</code> call paused at — "before the loop," "just yielded inside the loop," "finished." Every <code>MoveNext()</code> call starts by checking this field and jumping straight to the matching point via a <code>switch</code>, rather than starting the method over from line one.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. FIELDS FOR EVERY PARAMETER AND EVERY LOCAL THAT MUST SURVIVE BETWEEN YIELDS</div>
+            <ul><li><code>start</code>, <code>step</code>, and <code>current</code> all become ordinary instance fields on the hidden class — because a local variable on the call stack disappears the instant a method returns, but this method needs to "return" (pause) after every single <code>yield return</code> and still remember <code>current</code>'s exact value for next time. Only fields on a heap-allocated object can survive that.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. A FIELD FOR THE CURRENT YIELDED VALUE</div>
+            <ul><li>A private field (backing the public <code>Current</code> property) holds whatever value the most recent <code>yield return</code> produced, so <code>Current</code> can simply return it without recomputing anything.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. A MoveNext() METHOD CONTAINING YOUR ENTIRE METHOD BODY, REWRITTEN</div>
+            <ul><li>Your original loop, condition, and <code>yield return</code> statements all move — largely intact — into <code>MoveNext()</code>, with a <code>goto</code>-based jump table at the top (driven by the state field) that resumes execution at the exact statement after wherever the previous call left off, and a <code>return true</code> injected at every point that used to be a <code>yield return</code>.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Here is the hidden class the compiler generates for <code>CountUpBy</code> above, written out by hand — simplified for readability, but faithful to the real shape and the real fields you'd see decompiling the actual IL:</p>
+    <div class="code-block"><code>// Conceptually equivalent to what the compiler generates for CountUpBy(start, step):
+private sealed class &lt;CountUpBy&gt;d__0 : IEnumerable&lt;int&gt;, IEnumerator&lt;int&gt;
+{
+    private int &lt;&gt;1__state;      // WHERE execution paused
+    private int &lt;&gt;2__current;    // the value the last yield return produced
+    public int start;             // captured parameter → field
+    public int step;              // captured parameter → field
+    private int &lt;current&gt;5__2;   // the LOCAL "current" from your method → field
+
+    public int Current =&gt; &lt;&gt;2__current;
+
+    public bool MoveNext()
+    {
+        switch (&lt;&gt;1__state)
+        {
+            case 0: goto StateZero;   // fresh enumerator, never started
+            case 1: goto StateOne;    // resuming after a previous yield return
+            default: return false;    // already finished
+        }
+
+        StateZero:
+        &lt;&gt;1__state = -1;
+        &lt;current&gt;5__2 = start;       // int current = start;
+
+        WhileCheck:
+        if (!(&lt;current&gt;5__2 &lt; 20))
+            goto Done;
+
+        &lt;&gt;2__current = &lt;current&gt;5__2;  // about to yield return current;
+        &lt;&gt;1__state = 1;                 // remember: "paused right after a yield"
+        return true;                     // ← THIS is what yield return actually compiles to
+
+        StateOne:
+        &lt;&gt;1__state = -1;
+        &lt;current&gt;5__2 += step;           // current += step;   (resumes HERE next MoveNext() call)
+        goto WhileCheck;
+
+        Done:
+        return false;
+    }
+
+    public void Dispose() { /* runs any pending finally blocks from your method */ }
+    public void Reset() =&gt; throw new NotSupportedException();
+
+    // IEnumerable&lt;int&gt;.GetEnumerator() — usually just returns "this" the first time it's called
+    public IEnumerator&lt;int&gt; GetEnumerator() =&gt; this;
+}
+
+// And your original method becomes essentially:
+public IEnumerable&lt;int&gt; CountUpBy(int start, int step)
+{
+    var machine = new &lt;CountUpBy&gt;d__0();
+    machine.start = start;
+    machine.step = step;
+    return machine;
+}</code></div>
+    <p><strong>Code → Meaning → Result:</strong> Calling <code>CountUpBy(2, 3)</code> does not run any of your loop logic — it only constructs the state-machine object and stashes the two parameters into fields. The first real work happens on the first <code>MoveNext()</code> call, which runs from the top of the method down to the first <code>yield return</code>, records "state 1" and the yielded value, and returns <code>true</code>. The <em>next</em> <code>MoveNext()</code> call doesn't restart the method — it jumps straight past the <code>while</code> check to the line right after the <code>yield return</code> (<code>current += step;</code>), because the state field told it exactly where to resume. This is the entire trick: pausing and resuming a method isn't magic — it's a saved integer, a <code>switch</code>, and fields standing in for what would otherwise be stack-local variables.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>You've already met the real-world payoff of this mechanism, in Intermediate lesson 111 (Filtering), without seeing the full machinery behind it. <code>Enumerable.Where</code> is, at its core, exactly this pattern:</p>
+    <div class="code-block"><code>// Conceptually how System.Linq.Enumerable.Where is implemented:
+public static IEnumerable&lt;T&gt; Where&lt;T&gt;(this IEnumerable&lt;T&gt; source, Func&lt;T, bool&gt; predicate)
+{
+    ArgumentNullException.ThrowIfNull(source);
+    ArgumentNullException.ThrowIfNull(predicate);
+    return WhereIterator(source, predicate); // validation is eager; iteration is not — see lesson 121
+}
+
+private static IEnumerable&lt;T&gt; WhereIterator&lt;T&gt;(IEnumerable&lt;T&gt; source, Func&lt;T, bool&gt; predicate)
+{
+    foreach (T item in source)
+    {
+        if (predicate(item))
+            yield return item;
+    }
+}</code></div>
+    <p>Now you can trace, field by field, exactly why <code>products.Where(p =&gt; p.Stock &gt; 0)</code> does nothing the instant it's called. That call constructs a state-machine object — call it <code>&lt;WhereIterator&gt;d__1</code> — with fields for the captured <code>source</code> and <code>predicate</code>, and a state field sitting at its initial value. No item of <code>products</code> has been touched. Your <code>p =&gt; p.Stock &gt; 0</code> delegate has not been invoked even once. Only when something calls <code>MoveNext()</code> — a <code>foreach</code>, a <code>ToList()</code>, an <code>Any()</code> — does the generated code actually start pulling items from <code>source</code> and testing them against <code>predicate</code>, one at a time, pausing with a <code>return true</code> after every match. This is, precisely and completely, why deferred execution (the subject of lesson 199 next) is a fact about LINQ rather than a design choice someone bolted on separately — it falls straight out of what <code>yield return</code> compiles to.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔖</span> A Bookmark That Remembers More Than the Page Number</div>
+        <p>Think of an ordinary bookmark: it remembers a page number, nothing more. A <code>yield return</code> state machine is a bookmark that also remembers every variable that was "in your head" while reading — which loop you were in, what you'd counted so far, what you were about to do next. Close the book (return from <code>MoveNext()</code>), and when you open it again (call <code>MoveNext()</code> a second time), you don't just find the right page — you pick up mid-thought, exactly where you left off, with every value you were tracking still intact. That's what the state field plus the captured-variable fields together provide: not just "where," but the entire mental state needed to resume correctly.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">DETAILS THAT MATTER ONCE YOU'RE WRITING REAL ITERATORS</div>
+        <div class="flow-step">
+            <div class="step-label">1. THE GENERATED CLASS IS ALSO ITS OWN ENUMERATOR — WITH A ONE-TIME TWIST</div>
+            <ul><li>The same generated class implements both <code>IEnumerable&lt;T&gt;</code> and <code>IEnumerator&lt;T&gt;</code>. To correctly support two independent <code>foreach</code> loops running over the same call's result at once, its <code>GetEnumerator()</code> checks whether it's being called from the thread that originally created it and hasn't handed itself out yet — if so, it returns <code>this</code> directly (a small, real optimization avoiding an extra allocation); otherwise it constructs a fresh copy of the whole state machine, with the captured fields copied over, so the second walk-through gets its own independent state field and current-value field, exactly the same guarantee Foundations 038 described for hand-written enumerators.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. try/finally INSIDE AN ITERATOR BECOMES PART OF Dispose()</div>
+            <ul><li>If your <code>yield return</code> method body has a <code>try</code>/<code>finally</code> around some of its logic, the compiler doesn't just leave that as ordinary code inside <code>MoveNext()</code> — it also wires the <code>finally</code> block into the generated <code>Dispose()</code> method, so that if a <code>foreach</code> consuming your iterator exits early (<code>break</code>, an exception, a LINQ operator like <code>First()</code> that stops early), the compiler-generated <code>foreach</code> translation's own <code>finally { e.Dispose(); } </code> from Part 1 guarantees your cleanup code still runs, even though <code>MoveNext()</code> never reached the natural end of your loop.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. A yield return METHOD'S CODE DOESN'T RUN UNTIL MoveNext() — NOT EVEN VALIDATION</div>
+            <ul><li>Since the entire method body becomes <code>MoveNext()</code>, any code you write at the "top" of an iterator method — including argument validation — is just as deferred as everything else. This is exactly the bug lesson 121 (Custom LINQ Extensions) built an entire "Under the Hood" section around: an eager outer method plus a private <code>yield return</code> inner method is the standard fix, and now you know precisely why it's necessary — there is no "top of the method" that runs early; there is only <code>MoveNext()</code>, called on demand.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. STRUCT-BASED ENUMERATORS EXIST TOO — AND ARE A DIFFERENT OPTIMIZATION ENTIRELY</div>
+            <ul><li>The state machine shown above is a <code>class</code> — a heap allocation. Some hand-written BCL types (notably <code>List&lt;T&gt;</code>'s own <code>GetEnumerator()</code>) instead return a <code>struct</code> that implements <code>IEnumerator&lt;T&gt;</code>, avoiding that allocation entirely when the compiler can see the concrete type at compile time. This is a separate, deliberate hand-written optimization — not something <code>yield return</code> itself produces — and it's the entire subject of lesson 200 (LINQ Performance) later in this module.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "The state machine re-runs the whole method on every MoveNext() call" — no, it resumes</h3>
+    <p>This is the single most common misreading of how iterators work. <code>MoveNext()</code> does not restart your method from the top each time — the <code>switch</code> on the state field, shown explicitly in the Simple Example above, jumps directly to the exact statement after the last <code>yield return</code>. Code before that point in the method genuinely does not run again. This is precisely why an iterator can have expensive setup logic once, at the top, that only executes on the very first <code>MoveNext()</code> call — a real, commonly used pattern.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Captured fields" here are not the same mechanism as lambda closures from lesson 189</h3>
+    <p>Both mechanisms solve the same underlying problem — a local variable needs to outlive the method call where it was declared — and both solve it by promoting the variable to a field on a heap-allocated object. But they're genuinely separate compiler features with separate generated types: lambda closures produce a "display class" (lesson 189) wrapping captured variables for a delegate; iterator methods produce this entirely different state-machine class, with its own state field and its own fields, purely for <code>yield return</code>. It's easy to conflate them because the underlying trick — "put the variable on the heap instead of the stack" — is philosophically identical, but seeing one doesn't mean you're looking at the other.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Assuming a captured mutable field is snapshotted at the moment the iterator is created</h4>
+    <p>❌ Passing a mutable object into an iterator method and assuming its state "at creation time" is what the iterator will see:</p>
+    <div class="code-block"><code>IEnumerable&lt;int&gt; ReadValues(List&lt;int&gt; source)
+{
+    foreach (int v in source) // "source" is a FIELD on the state machine — read live, every MoveNext()
+        yield return v;
+}
+
+var list = new List&lt;int&gt; { 1, 2, 3 };
+var iterator = ReadValues(list); // nothing has run yet — the field just holds a reference to 'list'
+list.Add(4);                      // mutated BEFORE enumeration starts
+foreach (var v in iterator) Console.WriteLine(v); // prints 1, 2, 3, 4 — sees the mutation</code></div>
+    <p>✅ The captured field holds a reference, read fresh on every access inside <code>MoveNext()</code> — just like any other field. If a stable snapshot at creation time is what's needed, copy the data explicitly (e.g. <code>source.ToList()</code>) before passing it in.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Calling <code>Reset()</code> expecting it to rewind a compiler-generated enumerator</h4>
+    <p>❌ <code>enumerator.Reset();</code> on a state machine produced from a <code>yield return</code> method — this throws <code>NotSupportedException</code> at runtime, as covered in "What Is It?" above. ✅ Call <code>GetEnumerator()</code> again to get a fresh, independent enumerator instead — that's the only supported way to "start over" with modern iterators.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Forgetting that state-machine construction is not free, even before the first <code>MoveNext()</code></h4>
+    <p>❌ Assuming calling an iterator method "does nothing at all" — it does construct an object and copy every captured parameter/local into a field, which is a real (if small) heap allocation, before any of your logic runs. In a hot loop that calls an iterator method millions of times but only ever needs the first item, this per-call allocation is a real, measurable cost — one of the specific tradeoffs revisited in lesson 200's performance discussion. ✅ Recognize that "deferred" means "the body hasn't run yet," not "nothing has happened yet" — the object itself already exists.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <p>You've been using <code>yield return</code> since Intermediate Part IV — this lesson isn't teaching you a new tool, it's giving you the mental model to reason correctly about the tool you already reach for.</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ This mental model matters most when</h4>
+            <ul>
+                <li>Debugging why a query "hasn't run yet" — you can now point at exactly which field holds which piece of state, instead of treating it as a black box.</li>
+                <li>Reasoning about captured mutable state inside a custom iterator, as Mistake 1 above shows.</li>
+                <li>Explaining, precisely, why <code>Where</code>/<code>Select</code> are lazy — the answer is now mechanical, not just quoted.</li>
+                <li>Reading a decompiled stack trace or a debugger's call stack that shows a frame like <code>&lt;GetEnumerator&gt;d__3.MoveNext()</code> — you now know exactly what that frame is.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ You still don't need to hand-write a state machine</h4>
+            <ul>
+                <li><code>yield return</code> remains the correct, idiomatic way to write an iterator in everyday C# — nothing here suggests writing the generated class by hand.</li>
+                <li>The compiler's generated names (<code>&lt;&gt;1__state</code>, <code>&lt;CountUpBy&gt;d__0</code>) are implementation details, not a contract — they can and do change between compiler versions.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Calling an iterator method</strong> = "allocate the bookmark object; don't open the book yet"<br />
+        <strong>MoveNext()</strong> = "open to exactly where the bookmark is, read until the next yield return, place the bookmark there, close the book"<br />
+        <strong>The state field</strong> = the bookmark's page number<br />
+        <strong>The captured-variable fields</strong> = everything you were "holding in your head" while reading, preserved across each pause<br /><br />
+        <strong>Remember:</strong><br />
+        · <code>foreach</code> desugars to <code>GetEnumerator()</code> + a <code>try</code>/<code>finally</code>-wrapped <code>while (MoveNext())</code> loop — always, guaranteed disposal.<br />
+        · <code>yield return</code> compiles your method body into a class holding a state field, one field per surviving local/parameter, and a rewritten <code>MoveNext()</code>.<br />
+        · <code>Reset()</code> is dead weight on virtually every modern enumerator — call <code>GetEnumerator()</code> again instead.<br />
+        · <code>Where</code>, <code>Select</code>, and nearly every LINQ-to-Objects operator are exactly this pattern — which is precisely why they're lazy.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><code>IEnumerable&lt;T&gt;</code> promises <code>GetEnumerator()</code>; <code>IEnumerator&lt;T&gt;</code> promises <code>Current</code>, <code>MoveNext()</code>, a largely-vestigial <code>Reset()</code>, and (via <code>IDisposable</code>) a guaranteed cleanup hook.</li>
+            <li style="margin-bottom:0.4rem;"><code>foreach</code> is compiler sugar for <code>GetEnumerator()</code> followed by a <code>try</code>/<code>finally</code>-wrapped <code>while (MoveNext())</code> loop — <code>Dispose()</code> always runs, even on early exit.</li>
+            <li style="margin-bottom:0.4rem;">A <code>yield return</code> method compiles into a hidden class with a numeric state field, one field per captured local/parameter, and a rewritten <code>MoveNext()</code> that resumes exactly where the last call paused.</li>
+            <li style="margin-bottom:0.4rem;">Nothing in an iterator's body runs until <code>MoveNext()</code> is called — including validation code, as lesson 121 covered and this lesson explains mechanically.</li>
+            <li style="margin-bottom:0.4rem;"><code>Where</code>, <code>Select</code>, and nearly every LINQ-to-Objects operator are built exactly this way — which is the real, mechanical reason they're lazily evaluated, the subject of lesson 199 next.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've opened up the hidden class behind <code>yield return</code> and traced exactly how it resumes. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What does the compiler-generated numeric "state field" inside a <code>yield return</code> state machine actually track?</p>
+        <ul class="options">
+            <li>A) The number of items produced so far</li>
+            <li>B) Exactly which point in the original method body execution should resume from on the next <code>MoveNext()</code> call</li>
+            <li>C) The current value of <code>Current</code></li>
+            <li>D) Whether the enumerator has been disposed</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in the Simple Example's hand-written equivalent, <code>&lt;&gt;1__state</code> is checked by a <code>switch</code> at the top of <code>MoveNext()</code> to jump directly to the exact line after the last <code>yield return</code> — it's a resume point, not a counter.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing in the state machine inherently counts total items produced — the state field only ever encodes "where," never "how many."</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The current yielded value has its own separate field (<code>&lt;&gt;2__current</code> in the example), distinct from the state field.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Disposal isn't tracked through the same state field in the way this answer implies — it's a separate concern handled by <code>Dispose()</code> and any <code>finally</code> blocks wired into it.</p>
+                <p><strong>Reinforcement:</strong> The state field is a resume pointer — the entire "pause and resume" trick depends on it alone.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why does a local variable used across multiple <code>yield return</code> statements need to become a field on the generated class, instead of staying an ordinary local variable?</p>
+        <ul class="options">
+            <li>A) C# doesn't allow local variables inside methods that use <code>yield return</code></li>
+            <li>B) An ordinary local variable lives on the call stack and disappears the moment the method returns — but <code>MoveNext()</code> effectively "returns" after every <code>yield return</code>, so only a field on the heap-allocated state-machine object can survive between those calls</li>
+            <li>C) Fields are always faster to access than local variables</li>
+            <li>D) It's purely a Roslyn implementation preference with no functional necessity</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As explained in How It Works (Part 2), each <code>yield return</code> compiles to a <code>return true</code> — a genuine method return. Anything that needs to persist across that return must live somewhere other than the stack frame that just unwound, which is exactly what promoting it to a field on the state-machine object accomplishes.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Local variables are entirely legal inside iterator methods — the compiler simply relocates the ones that must survive across yields.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Speed isn't the motivation at all — it's a hard correctness requirement, not a performance choice.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a functional necessity, not a stylistic one — without it, resuming a paused iterator correctly would be impossible.</p>
+                <p><strong>Reinforcement:</strong> Fields on the state machine exist specifically to survive what would otherwise be a method return between every single <code>yield return</code>.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A second <code>MoveNext()</code> call is made on a <code>yield return</code>-generated enumerator. What actually happens?</p>
+        <ul class="options">
+            <li>A) The entire method body runs again from the very first line</li>
+            <li>B) Execution jumps, via the state field's saved value, directly to the statement immediately following the previous <code>yield return</code>, and continues from there</li>
+            <li>C) It throws <code>NotSupportedException</code>, since state machines only support being called once</li>
+            <li>D) It re-evaluates only the loop's condition, skipping the rest of the method entirely</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As the Simple Example's <code>CountUpBy</code> walkthrough showed explicitly, the second call's <code>switch (&lt;&gt;1__state)</code> jumps straight to <code>StateOne</code> — past the <code>while</code> check, directly to <code>current += step;</code> — never re-executing the initialization that ran on the first call.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the Common Confusion misconception this lesson calls out directly — the method does not restart; it resumes.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Calling <code>MoveNext()</code> repeatedly is the entire normal, expected usage pattern — <code>foreach</code> itself does exactly this in a loop; it's <code>Reset()</code> that throws, not repeated <code>MoveNext()</code> calls.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Resumption happens at the exact statement after the last <code>yield return</code>, which may be well past any loop condition check, not limited to re-checking the condition alone.</p>
+                <p><strong>Reinforcement:</strong> "Resume from where you paused," not "start over" — that's the single idea the whole state machine exists to implement.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why is <code>products.Where(p => p.Stock > 0)</code> guaranteed to invoke the predicate zero times the instant it's called, before any enumeration begins?</p>
+        <ul class="options">
+            <li>A) Because <code>Where</code> checks whether <code>products</code> is empty before doing anything else</li>
+            <li>B) Because <code>Where</code>'s internals are built with <code>yield return</code>, so calling it only constructs a state-machine object with fields for the captured source and predicate — the method body (which invokes the predicate) only runs once <code>MoveNext()</code> is called</li>
+            <li>C) Because the C# compiler caches the result of every <code>Where</code> call automatically</li>
+            <li>D) Because <code>Func&lt;T,bool&gt;</code> delegates are evaluated lazily by the CLR regardless of how they're used</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As the Real-World Example traced directly, <code>WhereIterator</code>'s body — the <code>foreach</code> that actually calls <code>predicate(item)</code> — becomes <code>MoveNext()</code>. Calling <code>Where</code> only builds the object holding <code>source</code> and <code>predicate</code> as fields; none of that body has executed yet.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> No such emptiness check happens at call time — the deferral has nothing to do with the contents of <code>products</code> at all.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no compiler-level caching of LINQ call results — each call to <code>Where</code> simply builds a fresh state machine, as shown throughout this lesson.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Delegates themselves aren't inherently lazy — invoking a <code>Func&lt;T,bool&gt;</code> directly runs it immediately. The laziness here comes specifically from <code>Where</code>'s <code>yield return</code>-based implementation, not from any property of delegates in general.</p>
+                <p><strong>Reinforcement:</strong> The predicate is just a field on the state machine until <code>MoveNext()</code> actually reaches the line that calls it.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A <code>yield return</code> iterator method contains a <code>try</code>/<code>finally</code> block that closes a file handle. A caller's <code>foreach</code> loop over this iterator exits early via <code>break</code>. Does the file handle still get closed?</p>
+        <ul class="options">
+            <li>A) No — early exit via <code>break</code> skips all cleanup code inside the iterator entirely</li>
+            <li>B) Yes — the compiler's <code>foreach</code> translation wraps the loop in <code>try</code>/<code>finally</code> and calls <code>Dispose()</code> on the enumerator regardless of how the loop exits, and the compiler wires the iterator's own <code>finally</code> block into that generated <code>Dispose()</code></li>
+            <li>C) Only if the caller manually calls <code>Dispose()</code> themselves after the <code>break</code></li>
+            <li>D) It depends on whether the file handle was opened before or after the first <code>yield return</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As both Part 1 (the <code>foreach</code> desugaring's <code>try</code>/<code>finally</code>) and Under the Hood point 2 explained, the two mechanisms compose deliberately: <code>foreach</code> always disposes the enumerator on exit, and the compiler routes any <code>finally</code> block from inside your iterator body into that same generated <code>Dispose()</code> — so cleanup runs even on early exit.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the guarantee the <code>try</code>/<code>finally</code>-wrapped <code>foreach</code> translation exists to prevent — cleanup is never silently skipped on early exit.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The compiler-generated <code>foreach</code> code calls <code>Dispose()</code> automatically — no manual intervention from the caller is required or expected.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The guarantee doesn't depend on timing relative to any particular <code>yield return</code> — it depends only on the resource being opened inside a <code>try</code> whose matching <code>finally</code> does the closing.</p>
+                <p><strong>Reinforcement:</strong> <code>IEnumerator&lt;T&gt;</code> extending <code>IDisposable</code>, plus <code>foreach</code>'s guaranteed <code>try</code>/<code>finally</code>, is precisely what makes resource cleanup inside an iterator reliable even under early termination.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You've opened the hood on <code>IEnumerable&lt;T&gt;</code> itself. Next: the interface that looks identical at the call site but works nothing like this underneath — <code>IQueryable&lt;T&gt;</code>.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

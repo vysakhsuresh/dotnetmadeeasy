@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>197 - IQueryable&lt;T&gt; · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Where and Select mean two completely different things depending on one silent fact: the compile-time type of what you're calling them on.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Intermediate lesson 110 gave you the conceptual shape of <code>IQueryable&lt;T&gt;</code>: "it builds an expression tree instead of running a delegate, so a provider can translate it." That was deliberately a first look — enough to use EF Core sensibly without misunderstanding it, but stopping well short of the actual interface and the actual mechanism that makes the translation possible at all. Now that you've spent lesson 196 inside <code>IEnumerable&lt;T&gt;</code>'s real machinery, and lesson 188/189 inside expression trees and lambda compilation, you have everything needed to open <code>IQueryable&lt;T&gt;</code> up completely.</p>
+    <p><strong>You'll see the exact interface — <code>Expression</code>, <code>ElementType</code>, <code>Provider</code> — and the single most important fact about LINQ that most developers never learn explicitly: <code>System.Linq.Queryable</code> and <code>System.Linq.Enumerable</code> define methods with the <em>exact same names</em> but <em>completely different bodies</em>, and the compiler silently picks between them based on nothing but the compile-time type of your sequence.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><code>IQueryable&lt;T&gt;</code> is an <code>IEnumerable&lt;T&gt;</code> that also carries a self-description: the expression tree that built it so far, and a reference to the object that knows how to actually run that tree against a real data source. Every <code>.Where(...)</code>, <code>.OrderBy(...)</code>, or <code>.Select(...)</code> call you chain onto it doesn't filter, sort, or project anything — it hands back a <em>new</em> <code>IQueryable&lt;T&gt;</code> wrapping a slightly bigger expression tree than the one before it.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition — the Exact Interface</h3>
+    <div class="code-block"><code>public interface IQueryable&lt;out T&gt; : IEnumerable&lt;T&gt;, IQueryable, IEnumerable
+{
+    // Inherited from the non-generic IQueryable:
+    // Type ElementType { get; }         — the runtime element type (typeof(T))
+    // Expression Expression { get; }    — the expression tree built SO FAR
+    // IQueryProvider Provider { get; }  — the object that knows how to RUN that tree
+}
+
+public interface IQueryProvider
+{
+    IQueryable CreateQuery(Expression expression);
+    IQueryable&lt;TElement&gt; CreateQuery&lt;TElement&gt;(Expression expression);
+    object Execute(Expression expression);
+    TResult Execute&lt;TResult&gt;(Expression expression);
+}</code></div>
+    <p>Three members beyond what <code>IEnumerable&lt;T&gt;</code> already gave you: <code>ElementType</code> (rarely used directly — mostly for reflection-heavy generic scenarios), <code>Expression</code> (the tree — everything you've built by chaining operators, all the way back to the original source), and <code>Provider</code> — the piece that turns that tree into an actual result. <code>IQueryProvider</code>'s <code>CreateQuery</code> builds a <em>new</em> <code>IQueryable&lt;T&gt;</code> from an expression tree without running anything (this is what every <code>Queryable</code> operator calls internally); <code>Execute</code> actually runs a tree and hands back a real value or sequence (this is what enumeration — or a scalar-returning call like <code>Count()</code> — ultimately triggers).</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🌳</span> The Key Fact This Lesson Is Built On</div>
+        <p>A concrete <code>IQueryable&lt;T&gt;</code> implementation — like EF Core's <code>DbSet&lt;T&gt;</code> — is really just a small wrapper carrying two things: an <code>Expression</code> tree that describes "everything asked for so far," and a <code>Provider</code> reference back to whatever knows how to turn that tree into SQL (or any other target). Every operator you chain builds a bigger tree and a new wrapper around it. <strong>Nothing runs until <code>Provider.Execute</code> is called</strong> — and that's the entire mechanism this lesson exists to make concrete.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — LINQ's Method Names Are Already Taken</h3>
+    <p>By the time <code>IQueryable&lt;T&gt;</code> was designed, <code>System.Linq.Enumerable</code> already owned <code>Where</code>, <code>Select</code>, <code>OrderBy</code>, and dozens of other extension methods on <code>IEnumerable&lt;T&gt;</code> — every one of them taking a plain delegate and running it immediately, item by item, in-process. That's the entire mechanism lesson 196 dissected. A translatable, provider-driven query needs the exact same vocabulary — the same familiar <code>Where</code>, <code>Select</code>, <code>OrderBy</code> — but it categorically cannot use <code>Enumerable</code>'s implementations, because those implementations invoke a compiled delegate directly, and a compiled delegate's logic cannot be inspected or turned into SQL after the fact (the exact limitation lesson 188 covered in depth).</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — a Second, Parallel Set of Methods, Resolved by Compile-Time Type</h3>
+    <p>.NET's answer is <code>System.Linq.Queryable</code> — a second static class, with extension methods bearing the exact same names, extending <code>IQueryable&lt;T&gt;</code> instead of <code>IEnumerable&lt;T&gt;</code>, and accepting <code>Expression&lt;Func&lt;T,bool&gt;&gt;</code> instead of <code>Func&lt;T,bool&gt;</code>. Because C#'s overload resolution is driven entirely by the compile-time type of the expression you're calling the method on, the exact same-looking line of code — <code>source.Where(x =&gt; x.Price &gt; 100)</code> — silently resolves to a completely different method depending on whether <code>source</code> is typed as <code>IEnumerable&lt;T&gt;</code> or <code>IQueryable&lt;T&gt;</code>. No runtime check, no branching, no reflection — it's decided once, at compile time, and baked permanently into the emitted IL.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">TWO CLASSES, SAME METHOD NAMES, COMPLETELY DIFFERENT BODIES</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;margin-bottom:0.5rem;">System.Linq.Enumerable</div>
+                <div style="font-size:0.85rem;line-height:1.7;text-align:center;">
+                    Extends <code>IEnumerable&lt;T&gt;</code><br />
+                    Parameter type: <code>Func&lt;T,bool&gt;</code><br />
+                    Body: a <code>yield return</code> loop (lesson 196) that <strong>runs</strong> your delegate, item by item
+                </div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;margin-bottom:0.5rem;">System.Linq.Queryable</div>
+                <div style="font-size:0.85rem;line-height:1.7;text-align:center;">
+                    Extends <code>IQueryable&lt;T&gt;</code><br />
+                    Parameter type: <code>Expression&lt;Func&lt;T,bool&gt;&gt;</code><br />
+                    Body: wraps the tree onto <code>source.Expression</code> and calls <code>Provider.CreateQuery</code> — <strong>runs nothing</strong>
+                </div>
+            </div>
+        </div>
+        <div style="text-align:center;font-size:0.85rem;color:var(--text-muted,#94A3B8);padding-top:0.6rem;">Same call site. Same method name. The compile-time type of the receiver decides which class answers.</div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <p>Here is what <code>Queryable.Where</code> actually looks like — genuinely, not a simplification of some hidden complexity. The real implementation in the BCL does almost exactly this:</p>
+    <div class="code-block"><code>// The REAL shape of Queryable.Where (simplified only in variable names):
+public static IQueryable&lt;T&gt; Where&lt;T&gt;(
+    this IQueryable&lt;T&gt; source,
+    Expression&lt;Func&lt;T, bool&gt;&gt; predicate)
+{
+    return source.Provider.CreateQuery&lt;T&gt;(
+        Expression.Call(
+            null,
+            // the MethodInfo for THIS SAME Where&lt;T&gt; method, via reflection
+            GetMethodInfo(Where, source, predicate),
+            source.Expression,      // the tree built so far
+            Expression.Quote(predicate) // your lambda, wrapped as another tree node
+        )
+    );
+}</code></div>
+    <p>Notice what's genuinely absent from this method: there is no loop. There is no call to <code>predicate(...)</code> anywhere. <code>Queryable.Where</code> never touches a single element of <code>T</code> — it builds one new <code>MethodCallExpression</code> node (representing "a call to <code>Where</code>, with these arguments"), attaches your predicate's own expression tree as a child of it, appends the whole thing onto <code>source.Expression</code>, and asks the provider to wrap the result in a new <code>IQueryable&lt;T&gt;</code>. That's the entire method.</p>
+
+    <div class="flow-container">
+        <div class="flow-title">A CHAINED QUERY, STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">1. dbSet.Where(...)</div>
+            <ul><li><code>dbSet.Expression</code> starts as a simple node representing "the whole <code>Products</code> table." <code>Queryable.Where</code> wraps it in a new <code>MethodCallExpression</code> for "Where, with this predicate," and calls <code>Provider.CreateQuery</code>, getting back a new <code>IQueryable&lt;Product&gt;</code> whose <code>.Expression</code> is that bigger tree.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. .OrderBy(...) — chained onto the RESULT of step 1</div>
+            <ul><li><code>Queryable.OrderBy</code> does the exact same thing: wrap the previous <code>IQueryable&lt;T&gt;</code>'s <code>.Expression</code> (which already contains the <code>Where</code> call) in yet another <code>MethodCallExpression</code>, this time for "OrderBy." One tree, growing by one more layer.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. .Select(...) — chained again</div>
+            <ul><li>Same pattern, one more layer. After three chained calls, <code>.Expression</code> is a single tree with three nested <code>MethodCallExpression</code> nodes — <code>Select</code> wrapping <code>OrderBy</code> wrapping <code>Where</code> wrapping the original table reference. <strong>Not one line of your predicate, key selector, or projection has executed.</strong></li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. ONLY NOW — enumeration (foreach, ToList(), await ...ToListAsync()) — TRIGGERS Provider.Execute</div>
+            <ul><li>The provider receives the entire three-layer tree in one shot, walks it top to bottom, recognizes each <code>MethodCallExpression</code> node by name (<code>Where</code>, <code>OrderBy</code>, <code>Select</code>) and translates the whole thing into a single SQL statement with a <code>WHERE</code>, an <code>ORDER BY</code>, and a column list — sent to the database in one round trip, not three.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>You can watch the tree grow, one call at a time, just by printing <code>.Expression</code> — it has a readable, if verbose, string representation:</p>
+    <div class="code-block"><code>IQueryable&lt;Product&gt; step0 = context.Products; // an IQueryable&lt;Product&gt;, backed by EF Core
+
+Console.WriteLine(step0.Expression);
+// DbSet&lt;Product&gt;()
+
+IQueryable&lt;Product&gt; step1 = step0.Where(p =&gt; p.Price &gt; 100);
+
+Console.WriteLine(step1.Expression);
+// Where(DbSet&lt;Product&gt;(), p =&gt; (p.Price &gt; 100))
+// ↑ step0's ENTIRE tree, now wrapped in a new "Where" call node
+
+IQueryable&lt;Product&gt; step2 = step1.OrderBy(p =&gt; p.Name);
+
+Console.WriteLine(step2.Expression);
+// OrderBy(Where(DbSet&lt;Product&gt;(), p =&gt; (p.Price &gt; 100)), p =&gt; p.Name)
+// ↑ step1's tree, now wrapped AGAIN — one single, ever-growing tree
+
+// Nothing above touched the database. This line does:
+List&lt;Product&gt; results = step2.ToList();
+// ONLY NOW: step2.Provider.Execute(step2.Expression) runs, translates
+// the WHOLE tree to one SQL statement, and materializes the results.</code></div>
+    <p><strong>Code → Meaning → Result:</strong> Each variable — <code>step0</code>, <code>step1</code>, <code>step2</code> — is a fully independent, immutable <code>IQueryable&lt;T&gt;</code>, each wrapping its own progressively larger expression tree. None of them share mutable state, and building three of them costs nothing but three small allocations — no query, no connection, no SQL, until <code>.ToList()</code> is finally called on the last one.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>Recall this exact query from Intermediate lesson 145 — you now have the complete, mechanical story behind it:</p>
+    <div class="code-block"><code>List&lt;Product&gt; products = await context.Products
+    .Where(p =&gt; p.Price &gt; 20)
+    .OrderBy(p =&gt; p.Name)
+    .ToListAsync();</code></div>
+    <p>Trace it fully, one call at a time:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><code>context.Products</code> is a <code>DbSet&lt;Product&gt;</code>, which implements <code>IQueryable&lt;Product&gt;</code> — its <code>.Expression</code> is a simple root node, and its <code>.Provider</code> is EF Core's own <code>IQueryProvider</code> implementation.</li>
+        <li style="margin-bottom:0.4rem;"><code>.Where(p =&gt; p.Price &gt; 20)</code> resolves to <code>Queryable.Where</code> — not <code>Enumerable.Where</code> — because <code>DbSet&lt;Product&gt;</code>'s compile-time type is <code>IQueryable&lt;Product&gt;</code>. The lambda becomes an <code>Expression&lt;Func&lt;Product,bool&gt;&gt;</code>, and a new <code>IQueryable&lt;Product&gt;</code> is returned, wrapping a bigger tree.</li>
+        <li style="margin-bottom:0.4rem;"><code>.OrderBy(p =&gt; p.Name)</code> does the same thing again, on top of the previous result.</li>
+        <li style="margin-bottom:0.4rem;"><code>.ToListAsync()</code> is EF Core's own materializing method — internally, it calls <code>Provider.Execute</code> (in its async form) with the fully-built tree, which is exactly the moment EF Core's real query provider walks it, generates <code>SELECT [p].* FROM [Products] AS [p] WHERE [p].[Price] &gt; 20 ORDER BY [p].[Name]</code>, sends it to the database in one round trip, and materializes the rows into <code>Product</code> objects.</li>
+    </ul>
+    <p>Every part of this was already familiar from lesson 145 as a black box labeled "translation happens." Now you can point at the exact three interface members — <code>Expression</code>, <code>Provider</code>, and the <code>CreateQuery</code>/<code>Execute</code> pair — that make it happen, and the exact static class (<code>Queryable</code>, not <code>Enumerable</code>) whose method bodies are responsible.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📝</span> Amending a Legal Document vs Actually Doing the Thing</div>
+        <p>Imagine a legal contract being amended clause by clause: "add a clause requiring X," "add a clause requiring Y." Each amendment produces a new, complete version of the document — nobody has actually gone and <em>done</em> X or Y yet; the document simply now describes a larger set of obligations than before. <code>Queryable.Where</code>, <code>.OrderBy</code>, and <code>.Select</code> are exactly this: each one hands back a new, complete "document" (the expression tree) describing a slightly bigger set of instructions than the one before it. Only when someone finally takes the finished document to the courthouse to be executed — <code>Provider.Execute</code>, triggered by enumeration — does anything in the real world actually happen, and it happens all at once, based on the document's final, complete form.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">HOW OVERLOAD RESOLUTION SILENTLY PICKS THE RIGHT CLASS</div>
+        <div class="flow-step">
+            <div class="step-label">1. IT'S ORDINARY C# EXTENSION METHOD RESOLUTION — NOTHING SPECIAL TO LINQ</div>
+            <ul><li>Both <code>Enumerable.Where&lt;T&gt;(this IEnumerable&lt;T&gt; ...)</code> and <code>Queryable.Where&lt;T&gt;(this IQueryable&lt;T&gt; ...)</code> are visible extension methods once both namespaces are <code>using</code>'d (which the default LINQ usings bring in together). The compiler picks the most specific applicable one for the receiver's compile-time type — and since <code>IQueryable&lt;T&gt;</code> extends <code>IEnumerable&lt;T&gt;</code>, both are technically applicable whenever the receiver is an <code>IQueryable&lt;T&gt;</code>, but the compiler always prefers the more specific, more-derived-type overload: <code>Queryable</code>'s.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE LAMBDA'S COMPILATION FOLLOWS THE PARAMETER TYPE, NOT THE OTHER WAY AROUND</div>
+            <ul><li>Once <code>Queryable.Where</code> is selected as the target method, its parameter type is <code>Expression&lt;Func&lt;T,bool&gt;&gt;</code> — so the exact same lambda syntax <code>p =&gt; p.Price &gt; 20</code> is compiled by the mechanism from lesson 188 into a tree, not a delegate. Nothing about the lambda's own source text changed; only which method it's being handed to did.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE "RECEIVER TYPE" IS THE COMPILE-TIME TYPE — NOT THE RUNTIME TYPE</div>
+            <ul><li>This decision is made once, by the compiler, baked permanently into the IL — it has nothing to do with what the object actually is at runtime. A variable declared <code>IEnumerable&lt;Product&gt;</code> that happens to hold a <code>DbSet&lt;Product&gt;</code> at runtime still resolves <code>.Where(...)</code> to <code>Enumerable.Where</code> at compile time — and since <code>DbSet&lt;Product&gt;</code> is also a real <code>IEnumerable&lt;Product&gt;</code>, that code compiles and even runs, but it silently loses the ability to translate to SQL, because <code>Enumerable.Where</code>'s implementation expects a plain <code>Func&lt;T,bool&gt;</code> and simply loops. This is a genuinely common, subtle real-world bug — covered fully in the Common Mistakes section below.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. Expression.Quote — WHY YOUR LAMBDA APPEARS "WRAPPED" INSIDE THE OUTER TREE</div>
+            <ul><li>In the real <code>Queryable.Where</code> body shown in How It Works, your predicate — itself already an <code>Expression&lt;Func&lt;T,bool&gt;&gt;</code> — gets wrapped one more time via <code>Expression.Quote</code> before being attached as an argument to the outer <code>MethodCallExpression</code>. This lets an expression tree contain, as data, an entire other expression tree as one of its arguments — which is exactly what a call like <code>Where(source, predicate)</code> needs: the tree for "call Where" needs to carry the tree for the predicate itself as one of its pieces, not run it.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "There's one <code>Where</code> method that behaves differently for different sources" — no, there are genuinely two separate methods</h3>
+    <p><code>Enumerable.Where</code> and <code>Queryable.Where</code> are two entirely distinct methods, in two distinct static classes, with two distinct bodies compiled from two distinct source files inside the BCL. They happen to share a name and a broadly similar signature shape, which is precisely the illusion this lesson is built to dispel — at the call site they're indistinguishable; underneath, one loops and invokes a delegate (lesson 196), the other builds tree nodes and calls a provider.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Chaining <code>.Where().OrderBy().Select()</code> does not run three separate round trips, or even three separate steps at translation time</h3>
+    <p>Each call produces a new <code>IQueryable&lt;T&gt;</code> with a progressively bigger single tree — but the provider doesn't translate <code>Where</code>, then translate <code>OrderBy</code>, then translate <code>Select</code>, stitching results together. It receives the entire final tree in one call to <code>Execute</code> and analyzes the whole thing holistically, which is exactly how it produces one clean SQL statement with a <code>WHERE</code>, an <code>ORDER BY</code>, and a column list, rather than three separate queries chained together.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Declaring a parameter as <code>IEnumerable&lt;T&gt;</code> when the real source is an EF Core <code>IQueryable&lt;T&gt;</code></h4>
+    <p>❌ A method that quietly widens the type it accepts:</p>
+    <div class="code-block"><code>// ❌ Accepts IEnumerable&lt;T&gt; — silently forces Enumerable.Where, no matter what's passed in
+List&lt;Product&gt; GetExpensive(IEnumerable&lt;Product&gt; source, decimal min)
+    =&gt; source.Where(p =&gt; p.Price &gt; min).ToList();
+
+// Caller passes an EF Core DbSet&lt;Product&gt; — a real IQueryable&lt;Product&gt; at runtime
+var expensive = GetExpensive(context.Products, 100m);
+// Inside GetExpensive, "source" is COMPILE-TIME typed as IEnumerable&lt;Product&gt;.
+// .Where(...) resolves to Enumerable.Where — which means EF Core must first
+// materialize the ENTIRE table into memory (to satisfy IEnumerable&lt;T&gt;'s contract)
+// before the filter runs, in-process, on every single row.</code></div>
+    <p>✅ Accept <code>IQueryable&lt;T&gt;</code> when the caller may be passing a translatable source, so <code>.Where(...)</code> resolves to <code>Queryable.Where</code> and stays translatable all the way to the database:</p>
+    <div class="code-block"><code>// ✅ Accepts IQueryable&lt;T&gt; — Where resolves to Queryable.Where, stays translatable
+List&lt;Product&gt; GetExpensive(IQueryable&lt;Product&gt; source, decimal min)
+    =&gt; source.Where(p =&gt; p.Price &gt; min).ToList();</code></div>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming <code>Provider.Execute</code> runs once per chained operator</h4>
+    <p>❌ Believing that <code>.Where(...).OrderBy(...).Select(...)</code> triggers the provider three separate times, once per call — leading to worrying about "three queries" that don't actually happen. ✅ Understand that each intermediate call only builds a bigger <code>Expression</code> and returns a new <code>IQueryable&lt;T&gt;</code> wrapper — <code>Provider.Execute</code> (or <code>CreateQuery</code>, for the intermediate steps, which still doesn't run anything) is called only when something finally enumerates the result.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Reason about the exact <code>IQueryable&lt;T&gt;</code> mechanism when</h4>
+            <ul>
+                <li>Deciding how to type a method parameter that might receive an EF Core <code>DbSet&lt;T&gt;</code> or query result — <code>IQueryable&lt;T&gt;</code> vs <code>IEnumerable&lt;T&gt;</code> is a real, consequential choice, as Mistake 1 showed.</li>
+                <li>Debugging an unexpectedly slow EF Core query — knowing the tree is built once and translated once helps you reason about where a translation gap or an accidental early materialization might be hiding.</li>
+                <li>Explaining precisely why the same-looking LINQ syntax behaves so differently over a <code>List&lt;T&gt;</code> versus a <code>DbSet&lt;T&gt;</code> — you can now point at two entirely separate static classes.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ You still don't implement <code>IQueryable&lt;T&gt;</code> or <code>IQueryProvider</code> yourself</h4>
+            <ul>
+                <li>Building a real, general-purpose query provider (walking arbitrary trees, generating correct SQL for arbitrary shapes) is a serious undertaking — EF Core's own provider is a large, mature subsystem. Consuming <code>IQueryable&lt;T&gt;</code> correctly is the everyday skill; writing a provider from scratch almost never is.</li>
+            </ul>
+        </div>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> When a method parameter's only job is to be enumerated once, in-memory, <code>IEnumerable&lt;T&gt;</code> is simplest. When that parameter might come from EF Core (or any translatable source) and you want filtering/sorting/paging to stay translatable all the way to the query, type it as <code>IQueryable&lt;T&gt;</code> instead — the difference is which static class answers your LINQ calls.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>IQueryable&lt;T&gt;</strong> = "an ever-growing expression tree, plus a reference to whoever can run it"<br />
+        <strong>Every Queryable operator call</strong> = "wrap the tree a little bigger, hand back a new immutable wrapper — run nothing"<br />
+        <strong>Enumeration (foreach, ToList, Count)</strong> = "the ONE moment <code>Provider.Execute</code> is finally called, on the whole tree, at once"<br /><br />
+        <strong>Remember:</strong><br />
+        · <code>Enumerable.Where</code> and <code>Queryable.Where</code> are two different methods, chosen by the compile-time type of your sequence — never a runtime check.<br />
+        · <code>.Expression</code> is one single, cumulative tree — chaining doesn't create separate trees per call.<br />
+        · <code>.Provider</code> is the object that actually knows how to run the tree — LINQ's own operators never do that work themselves.<br />
+        · Typing a parameter <code>IEnumerable&lt;T&gt;</code> instead of <code>IQueryable&lt;T&gt;</code> silently forces the wrong <code>Where</code> — a real, easy-to-miss bug.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><code>IQueryable&lt;T&gt;</code> extends <code>IEnumerable&lt;T&gt;</code> and adds exactly three members: <code>Expression</code>, <code>ElementType</code>, and <code>Provider</code> (an <code>IQueryProvider</code>).</li>
+            <li style="margin-bottom:0.4rem;"><code>System.Linq.Queryable</code>'s operators share names with <code>System.Linq.Enumerable</code>'s but have completely different bodies — they build/extend an expression tree via <code>Provider.CreateQuery</code>, never running a delegate.</li>
+            <li style="margin-bottom:0.4rem;">The compiler chooses between the two static classes based purely on the compile-time type of the sequence — never a runtime check, never mixed at the call site.</li>
+            <li style="margin-bottom:0.4rem;">A chain like <code>.Where(...).OrderBy(...).Select(...)</code> builds one single, cumulative expression tree, wrapped a little bigger with each call — nothing runs until the tree is handed to <code>Provider.Execute</code>, triggered by enumeration.</li>
+            <li style="margin-bottom:0.4rem;">This exact mechanism is what powers every EF Core query you've written since Intermediate lesson 145 — you now know precisely what happens between your LINQ and the generated SQL.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've traced exactly how <code>IQueryable&lt;T&gt;</code> builds and defers a query. Let's check your understanding.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Beyond what <code>IEnumerable&lt;T&gt;</code> already provides, what three members does <code>IQueryable&lt;T&gt;</code> add?</p>
+        <ul class="options">
+            <li>A) <code>Count</code>, <code>Sum</code>, <code>Average</code></li>
+            <li>B) <code>Expression</code>, <code>ElementType</code>, and <code>Provider</code></li>
+            <li>C) <code>Connection</code>, <code>CommandText</code>, <code>Parameters</code></li>
+            <li>D) <code>GetEnumerator</code>, <code>MoveNext</code>, <code>Current</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As shown in the exact interface definition, <code>IQueryable&lt;T&gt;</code> adds <code>Expression</code> (the tree built so far), <code>ElementType</code>, and <code>Provider</code> (the <code>IQueryProvider</code> that can actually run the tree) on top of everything <code>IEnumerable&lt;T&gt;</code> already contributes.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Those are LINQ extension methods usable on any sequence, not members of the <code>IQueryable&lt;T&gt;</code> interface itself.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Those are ADO.NET-level concepts EF Core's provider works with internally — they aren't part of the provider-agnostic <code>IQueryable&lt;T&gt;</code>/<code>IQueryProvider</code> contract itself.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Those belong to <code>IEnumerable&lt;T&gt;</code>/<code>IEnumerator&lt;T&gt;</code>, covered fully in lesson 196 — <code>IQueryable&lt;T&gt;</code> inherits them but they aren't the members it specifically adds.</p>
+                <p><strong>Reinforcement:</strong> <code>Expression</code> + <code>Provider</code> is the whole mechanism — everything else in this lesson explains what those two members are used for.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What determines whether <code>source.Where(x => x.Price > 100)</code> resolves to <code>Enumerable.Where</code> or <code>Queryable.Where</code>?</p>
+        <ul class="options">
+            <li>A) The runtime type of the object actually stored in <code>source</code> at the moment the code executes</li>
+            <li>B) The compile-time (declared) type of <code>source</code> — <code>IEnumerable&lt;T&gt;</code> resolves to <code>Enumerable.Where</code>, <code>IQueryable&lt;T&gt;</code> resolves to <code>Queryable.Where</code></li>
+            <li>C) Whether Entity Framework Core is referenced anywhere in the project</li>
+            <li>D) A runtime check the CLR performs inside <code>Where</code> itself before deciding which logic to run</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As Under the Hood explained, this is ordinary C# extension method overload resolution, resolved entirely at compile time based on the declared type of <code>source</code> — it's baked into the emitted IL before the program ever runs.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the Mistake 1 trap — a variable declared <code>IEnumerable&lt;T&gt;</code> resolves to <code>Enumerable.Where</code> even when it holds a real <code>DbSet&lt;T&gt;</code> (an <code>IQueryable&lt;T&gt;</code>) at runtime.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Whether EF Core is referenced has no bearing on which overload the compiler selects — that decision depends only on the declared type in your own code.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There is no such runtime dispatch — <code>Enumerable.Where</code> and <code>Queryable.Where</code> are two entirely separate compiled methods; only one of them is ever called, decided at compile time.</p>
+                <p><strong>Reinforcement:</strong> Compile-time type, not runtime type, decides which of the two identically-named methods answers the call — every time, with no exceptions.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> After writing <code>var q = context.Products.Where(p => p.Price > 100).OrderBy(p => p.Name);</code> and nothing else, what has actually happened against the database?</p>
+        <ul class="options">
+            <li>A) Two separate queries have already run — one for each chained operator</li>
+            <li>B) One query has run, combining both operators</li>
+            <li>C) Nothing has run against the database at all — <code>q</code> only holds a bigger expression tree than <code>context.Products</code> started with, plus a reference to the same provider</li>
+            <li>D) The connection to the database has been opened, but no query has been sent yet</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> As shown throughout How It Works and the Simple Example, each chained <code>Queryable</code> operator only builds a new, bigger <code>Expression</code> and wraps it via <code>Provider.CreateQuery</code> — no execution happens until something enumerates <code>q</code>.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Neither operator individually triggers execution — this misconception is directly addressed in Common Confusion point 2.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> No SQL has been generated or sent yet at all — that only happens once <code>Provider.Execute</code> is invoked, which chaining alone never does.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Building an expression tree doesn't require or trigger opening a database connection — that's part of the eventual execution step, not query construction.</p>
+                <p><strong>Reinforcement:</strong> Building an <code>IQueryable&lt;T&gt;</code> chain is purely in-memory tree construction — completely inert until enumerated.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A method is declared <code>List&lt;Product&gt; Filter(IEnumerable&lt;Product&gt; source, decimal min) => source.Where(p => p.Price > min).ToList();</code> and is called with an EF Core <code>DbSet&lt;Product&gt;</code> as the argument. What actually happens?</p>
+        <ul class="options">
+            <li>A) A compiler error, since <code>DbSet&lt;Product&gt;</code> cannot be passed where <code>IEnumerable&lt;Product&gt;</code> is expected</li>
+            <li>B) It compiles and runs, but <code>.Where(...)</code> resolves to <code>Enumerable.Where</code> because the parameter is typed <code>IEnumerable&lt;T&gt;</code> — EF Core must materialize the entire table into memory before the filter can run, in-process</li>
+            <li>C) EF Core automatically detects the mismatch and upgrades the call to <code>Queryable.Where</code> at runtime</li>
+            <li>D) The filter still runs as SQL, since <code>DbSet&lt;Product&gt;</code> is an <code>IQueryable&lt;Product&gt;</code> at runtime regardless of the parameter's declared type</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly Mistake 1 from this lesson. <code>DbSet&lt;Product&gt;</code> genuinely does implement <code>IEnumerable&lt;Product&gt;</code>, so the call compiles and runs fine — but inside <code>Filter</code>, <code>source</code>'s compile-time type is <code>IEnumerable&lt;Product&gt;</code>, so <code>Where</code> resolves to <code>Enumerable.Where</code>, forcing full materialization before filtering.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>DbSet&lt;Product&gt;</code> genuinely satisfies <code>IEnumerable&lt;Product&gt;</code> — this compiles without any error, which is precisely what makes the mistake so easy to miss.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There is no runtime "upgrade" mechanism — overload resolution is fixed at compile time based purely on the declared parameter type, as question 2 established.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The runtime type of the object passed in is irrelevant to which <code>Where</code> overload gets called inside <code>Filter</code> — only the parameter's declared type matters there.</p>
+                <p><strong>Reinforcement:</strong> Type a parameter <code>IQueryable&lt;T&gt;</code>, not just <code>IEnumerable&lt;T&gt;</code>, whenever you want LINQ chained on it to stay translatable to the database.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly what's inside every EF Core query you write. Next: how a provider like EF Core actually reads that tree — by walking it, one node at a time.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
