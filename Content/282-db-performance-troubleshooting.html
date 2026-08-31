@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>282 - DB Performance Troubleshooting · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Part VIII's capstone. Every tool you've picked up in this Part is useless until you know how to actually see what's happening — this lesson is about looking, first, before reaching for any of them.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>An endpoint that used to return in 80ms now takes 4 seconds. Somewhere in this Part you've learned a fix for almost every possible cause: split queries and compiled queries for query shape problems, transaction and concurrency tuning for contention, connection pool sizing for exhaustion under load, <span class="icode">ExecuteUpdate</span>/<span class="icode">ExecuteDelete</span> for bulk-change overhead, caching for repeated expensive reads, raw SQL for the rare confirmed hot path. That's a full toolbox — and a full toolbox is exactly useless if you reach into it before you know which tool the actual problem needs.</p>
+    <p>233's profiling lesson taught you this discipline at the whole-application level: profile first, optimize precisely, verify with a benchmark. This capstone applies that exact discipline specifically to the database layer — because "the database" is often blamed for a slowdown that turns out to live somewhere else entirely, and even when the database genuinely is the problem, guessing which of this Part's eight lessons' worth of tools to reach for wastes real time compared to just looking.</p>
+    <p><strong>In this lesson, you'll learn how to actually see the SQL EF Core generates, how to tell whether a slow endpoint's real bottleneck is the database at all, the concrete red flags that show up in query logs and connection metrics, and a prioritized decision framework for reaching for the right specific fix from this entire Part — instead of applying every technique everywhere.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Database performance troubleshooting</strong> is the disciplined process of finding out, with actual evidence, whether a slow application is slow because of the database at all — and if so, exactly which specific thing about the database access is slow — before changing any code. It's the same "measure first" instinct 233 built, aimed specifically at the layer where a huge share of real-world slowdowns actually live.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Concretely, this means: making EF Core's generated SQL visible (<span class="icode">.ToQueryString()</span>, EF Core's logging category, or a query-logging interceptor built on 272's interceptor hook), separating database time from application and network time so you know which layer to even look at, and recognizing the specific, well-known symptoms of the most common real database performance problems — N+1 query patterns, missing indexes, and connection pool exhaustion — directly in that evidence, rather than by guessing.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — "The Database Is Slow" Is a Guess Dressed Up as a Diagnosis</h3>
+    <p>When an endpoint is slow, "the database" is one of the easiest, most reflexive things to blame — and it's frequently wrong, or only half right. The real cause might be application code doing unrelated expensive work, a slow downstream HTTP call, network latency that has nothing to do with SQL, or — inside the database layer itself — any one of several genuinely different problems (N+1 queries, a missing index, pool exhaustion, an unnecessarily wide projection) that each need a completely different fix. Applying the wrong fix doesn't just waste time; it can leave the real problem untouched while everyone believes it's been addressed.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Make the Invisible Visible, Then Match the Evidence to the Right Tool</h3>
+    <p>EF Core doesn't hide what it's doing — <span class="icode">.ToQueryString()</span>, its structured logging, and interceptors all exist specifically to make the generated SQL, the query timing, and the connection behavior directly observable. Once that evidence is in front of you, matching it to the right fix from this Part stops being a guess and becomes a lookup.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — the Whole Part, One Diagram</h2>
+    <div class="flow-container">
+        <div class="flow-title">EVERYTHING THIS PART TAUGHT, AS ONE DECISION TREE</div>
+        <div class="flow-step">
+            <div class="step-label">1. Is it actually the database? (this lesson)</div>
+            <ul><li>Separate database time from application/network time before assuming anything about SQL.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. If yes — what does the evidence show?</div>
+            <ul>
+                <li>Repeated near-identical queries in the log → N+1 pattern → an <span class="icode">Include()</span>/projection fix (205, query optimization lessons earlier in this Part)</li>
+                <li>One query is slow on its own, plan shows a full/clustered-index scan → missing index, or over-fetching → indexing, split queries, or a narrower projection</li>
+                <li>A hot, unchanging query shape runs constantly at high volume → a compiled query (earlier in this Part)</li>
+                <li>Failures/timeouts acquiring a connection under load → pool exhaustion → connection/pool sizing (277)</li>
+                <li>A specific known query needs to change a huge number of rows at once → bulk operations (279) instead of tracked entities</li>
+                <li>A specific read is expensive and repeated often, with an acceptable staleness window → caching at the right layer (280)</li>
+                <li>Genuinely complex reporting SQL, or a rare, profiled, confirmed hot path → raw SQL selectively (278, 281) — the exception, not the default</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. Apply the one specific fix the evidence pointed to — then measure again</div>
+            <ul><li>Never apply several of these speculatively at once — you won't know which one (if any) actually mattered, and you'll have spent effort on techniques the evidence never asked for.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS — SEEING THE SQL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Three Ways to See What EF Core Actually Generates</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. ToQueryString() — the fastest way to check one query, right in your IDE</h3>
+    <div class="code-block"><code>IQueryable&lt;Order&gt; query = context.Orders
+    .Where(o =&gt; o.CustomerId == customerId)
+    .Include(o =&gt; o.LineItems);
+
+string sql = query.ToQueryString();
+Console.WriteLine(sql);</code></div>
+    <p><span class="icode">.ToQueryString()</span> renders the exact SQL a given <span class="icode">IQueryable&lt;T&gt;</span> would produce, without executing it — the quickest way to sanity-check a suspicious-looking query while you're still writing it, and exactly the tool 281 pointed to for deciding whether EF Core's generated SQL is really the problem before reaching for raw SQL.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. EF Core's logging category — every query, as the application actually runs</h3>
+    <div class="code-block"><code>optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information)
+    .EnableSensitiveDataLogging();   // shows parameter VALUES too — dev/staging only, never production</code></div>
+    <p>Or, wired through standard ASP.NET Core logging configuration, filtering the <span class="icode">Microsoft.EntityFrameworkCore.Database.Command</span> category specifically. This is the tool for seeing the real, full sequence of queries an endpoint issues under realistic conditions — which is exactly what reveals an N+1 pattern: not one query looking wrong in isolation, but the same query shape repeating, once per loop iteration, in the log.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. A query-logging interceptor — 272's hook, put to real diagnostic use</h3>
+    <p>272 introduced <span class="icode">DbCommandInterceptor</span> as a hook into EF Core's command pipeline without yet giving it a concrete job. Here's that job: a custom interceptor that times every command and logs the ones that cross a threshold, giving you a built-in, always-on slow-query log without any external tooling.</p>
+    <div class="code-block"><code>public class SlowQueryLoggingInterceptor(ILogger&lt;SlowQueryLoggingInterceptor&gt; logger) : DbCommandInterceptor
+{
+    private static readonly TimeSpan Threshold = TimeSpan.FromMilliseconds(500);
+
+    public override ValueTask&lt;DbDataReader&gt; ReaderExecutedAsync(
+        DbCommand command,
+        CommandExecutedEventData eventData,
+        DbDataReader result,
+        CancellationToken cancellationToken = default)
+    {
+        if (eventData.Duration &gt; Threshold)
+        {
+            logger.LogWarning("Slow query ({DurationMs}ms): {Sql}",
+                eventData.Duration.TotalMilliseconds, command.CommandText);
+        }
+
+        return base.ReaderExecutedAsync(command, eventData, result, cancellationToken);
+    }
+}
+
+// Registered once, at DbContext configuration — exactly like 272's example:
+options.AddInterceptors(new SlowQueryLoggingInterceptor(logger));</code></div>
+    <p>Unlike <span class="icode">.ToQueryString()</span>, which you point at one query deliberately, this interceptor watches everything, all the time — a permanent, low-effort early warning system for exactly the kind of regression that turned an 80ms endpoint into a 4-second one.</p>
+
+    <!-- ====== SIMPLE EXAMPLE — IS IT EVEN THE DATABASE? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — Confirming It's Actually the Database, Not Something Else</h2>
+    <p>Before touching a single query, separate where the endpoint's time is actually going. The query log from the tools above already gives you the database's own share directly — sum the durations of every query logged for one request, and compare that total against the endpoint's overall response time:</p>
+    <div class="code-block"><code>// From the interceptor/log for one request:
+//   Query 1: 12ms
+//   Query 2: 9ms
+//   Query 3: 14ms
+//   Total DB time: 35ms
+//
+// Endpoint's total response time (from request logging / APM): 2,400ms</code></div>
+    <p>35ms of database time inside a 2,400ms response is a loud, unambiguous signal: the database is <em>not</em> where this endpoint's time is going, no matter how instinctively "check the queries" felt like the right first move. This is 233's "profile first" discipline applied concretely — dotnet-counters/dotnet-trace or an APM tool would point you at the application code, an external call, or serialization instead, and no amount of query tuning would have touched the real 2,365ms.</p>
+    <p>Conversely, if that same log showed <strong>2,100ms of the 2,400ms</strong> spent in database queries, you'd have exactly the opposite, equally clear signal — and now it's worth looking at <em>which</em> queries, and why.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE — RED FLAGS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Reading the Red Flags in Real Evidence</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Red Flag 1 — the N+1 pattern, unmistakable in a query log</h3>
+    <div class="code-block"><code>SELECT * FROM Orders WHERE CustomerId = @p0        -- 1 query, returns 200 orders
+SELECT * FROM Customers WHERE Id = @p0             -- runs once...
+SELECT * FROM Customers WHERE Id = @p0             -- ...and again...
+SELECT * FROM Customers WHERE Id = @p0             -- ...and again, 200 times total</code></div>
+    <p>This is 205's N+1 problem, seen directly as evidence rather than described in the abstract: one query, then the exact same query shape repeated once per row of the first result. The fix is exactly what 205 taught — <span class="icode">.Include(o =&gt; o.Customer)</span> or an equivalent single projection, never trying to speed up the 200 individual queries themselves.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Red Flag 2 — missing-index symptoms in a query plan</h3>
+    <p>At a conceptual level (the exact tool for viewing a plan is database-specific — SQL Server's <em>Actual Execution Plan</em>, PostgreSQL's <span class="icode">EXPLAIN ANALYZE</span>, and so on), the symptom to recognize is the same everywhere: a query that should touch a handful of rows instead shows a <strong>full table scan</strong> or a <strong>full clustered-index scan</strong> — the database reading every single row in the table, in order, to find the few that match, instead of jumping directly to them via an index. A query filtering on a column with no supporting index is the classic cause; adding the right index turns that full scan into a fast, targeted lookup.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Red Flag 3 — connection pool exhaustion under load</h3>
+    <p>This one rarely shows up as a slow query at all — it shows up as requests failing or timing out specifically while trying to <em>acquire</em> a connection, under real concurrent load, even though any individual query runs fine in isolation. This ties directly back to 277's connection pool sizing lesson: if the pool's maximum size is too small for genuine concurrent demand, requests queue waiting for a connection to free up, and past a certain wait, they time out entirely. The fix isn't query tuning at all — it's revisiting pool size, <span class="icode">DbContext</span> lifetime, and whether connections are being held longer than necessary, exactly as 277 covered.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🩺</span> A Doctor Reading Test Results, Not Guessing From Symptoms Alone</div>
+        <p>"The database is slow" from a gut feeling is like diagnosing a patient purely from "I feel tired" — technically a real symptom, but nowhere near enough to prescribe anything specific. Query logs and execution plans are the test results: a repeated identical blood-panel request (N+1), a scan of the entire body instead of the one affected area (a missing index), a waiting room with more patients than available doctors (pool exhaustion). Each specific result points at a specific, different treatment — and a good doctor orders the right test before prescribing anything, rather than trying every available treatment at once and hoping one of them helps.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD — THE PRIORITIZED FRAMEWORK ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — the Practical, Prioritized Workflow</h2>
+    <div class="flow-container">
+        <div class="flow-title">THE WORKFLOW THAT CLOSES OUT PART VIII</div>
+        <div class="flow-step">
+            <div class="step-label">STEP 1 — MEASURE FIRST: is this even the database?</div>
+            <ul><li>Compare total logged database time for the slow request against its overall response time (or use dotnet-trace/an APM tool for the wider application picture, per 233). If database time is a small fraction of the total, stop — look at application code, external calls, or network instead.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 2 — IF IT IS THE DATABASE: find the real, measured bottleneck, not the assumed one</div>
+            <ul><li>Turn on query logging or the interceptor above. Look for the specific red flags: repeated near-identical queries (N+1), one specific query dominating the total (candidate for indexing or a plan look), or connection-acquisition failures under load (pool exhaustion) rather than query duration itself.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 3 — REACH FOR THE ONE SPECIFIC TOOL THE EVIDENCE POINTS TO</div>
+            <ul><li>A missing <span class="icode">Include()</span> or a projection for N+1. <span class="icode">AsSplitQuery()</span> for a cartesian-explosion shape from multiple collection includes. A genuinely hot, unchanging query shape for a compiled query. <span class="icode">ExecuteUpdate</span>/<span class="icode">ExecuteDelete</span> instead of tracked entities for a bulk-change job. An index for a scan. Connection pool sizing for exhaustion. Caching at the right layer (280) for a repeated, expensive, cache-tolerant read. Raw SQL (278/281), selectively, only for the rare confirmed case that survives all of the above.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">STEP 4 — VERIFY: measure the same thing again, the same way</div>
+            <ul><li>Re-run the same query log/timing comparison from Step 1 after the fix. A real fix shows up as a real, measured change — not a feeling that things seem faster now.</li></ul>
+        </div>
+    </div>
+    <div class="callout">
+        <strong>💡 The whole Part, in one sentence:</strong> Measure first, find the real bottleneck the evidence actually points to, then reach for the one specific right tool from this Part — never apply every technique everywhere on the assumption that more optimization is automatically better.
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "A slow endpoint always means slow SQL"</h3>
+    <p>Not necessarily, and the Simple Example above showed exactly why — a request can spend the overwhelming majority of its time somewhere that has nothing to do with the database at all. Confirming where the time actually goes, first, is what separates real troubleshooting from a guess that happens to involve a query log.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Turning on EnableSensitiveDataLogging() in production gives better diagnostics"</h3>
+    <p>It gives you parameter values inline in the log, which is genuinely useful for local debugging — but those values can include real customer data, which is exactly the kind of thing that shouldn't be sitting in a production log. Reserve <span class="icode">EnableSensitiveDataLogging()</span> for development and staging; a production slow-query interceptor like the one above should log the parameterized command text and timing, not raw parameter values.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Applying several of this Part's techniques speculatively, all at once</h4>
+    <p>❌ Adding a compiled query, a cache layer, and an index, all in the same change, "just in case," without evidence any specific one was the actual problem — now a future regression is far harder to attribute, because three things changed at once. ✅ Apply the one fix the evidence points to, then measure again, exactly as Step 4 describes — one variable at a time.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Treating "the query log looks busy" as proof of a problem, without a duration baseline</h4>
+    <p>❌ Seeing a long list of queries in a log and assuming that volume alone means something is wrong, without comparing actual durations against a known-good baseline or against the endpoint's total response time. ✅ A busy-looking log with low total duration is often completely fine — judge by measured time, not by how much text scrolled past.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Diagnosing pool exhaustion as "slow queries" and reaching for query-level fixes</h4>
+    <p>❌ Seeing timeouts under load and immediately suspecting individual query performance, when the actual symptom — failures acquiring a connection at all, with individually fast queries once one is obtained — points specifically at 277's pool-sizing territory instead. ✅ Distinguish "a query is slow" from "the request never even got a connection in time" — they need completely different fixes.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use This Workflow?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Situation</th><th>What to do</th></tr></thead>
+            <tbody>
+                <tr><td>An endpoint feels slow, cause unknown</td><td>Step 1 — confirm whether the database is even where the time goes, before touching any query</td></tr>
+                <tr><td>Repeated near-identical queries in the log, one per loop iteration</td><td>N+1 — fix with Include()/projection, not per-query tuning</td></tr>
+                <tr><td>One query dominates total time, plan shows a full/clustered-index scan</td><td>Add the missing index (or narrow an over-wide projection)</td></tr>
+                <tr><td>Timeouts/failures specifically acquiring a connection under load</td><td>Revisit pool sizing and DbContext lifetime (277) — not query tuning</td></tr>
+                <tr><td>A confirmed hot, unchanging query shape at genuinely high volume</td><td>A compiled query, from earlier in this Part</td></tr>
+                <tr><td>A confirmed, profiled hot path where EF Core's generated SQL specifically is the bottleneck</td><td>Raw SQL, selectively (278, 281) — after everything above has been ruled out</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>MEASURE</strong> — is it even the database? (.ToQueryString(), query logging, an interceptor)<br />
+        <strong>DIAGNOSE</strong> — what does the evidence actually show? (N+1, a scan, pool exhaustion)<br />
+        <strong>FIX</strong> — reach for the one specific tool the evidence pointed to, from this Part's toolbox.<br />
+        <strong>VERIFY</strong> — measure the same way again; a real fix shows up as a real number.<br /><br />
+        <strong>Remember:</strong> a full toolbox doesn't mean using every tool — it means having the right one ready once the evidence tells you which.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><strong>.ToQueryString()</strong>, EF Core's own logging category, and a <strong>query-logging interceptor</strong> (built on 272's hook) are how you make EF Core's generated SQL and timing directly visible.</li>
+            <li style="margin-bottom:0.4rem;">Confirm the database is actually where a slow endpoint's time is going — comparing logged database time against total response time — before assuming anything about SQL, exactly the discipline 233 taught at the whole-application level.</li>
+            <li style="margin-bottom:0.4rem;">Real red flags are recognizable directly in the evidence: <strong>repeated near-identical queries</strong> (N+1, 205), <strong>full/clustered-index scans</strong> in a query plan (a missing index), and <strong>connection-acquisition failures under load</strong> (pool exhaustion, 277) — each needs a genuinely different fix.</li>
+            <li style="margin-bottom:0.4rem;">The prioritized workflow that closes out Part VIII: <strong>measure first, find the real bottleneck the evidence points to, then reach for the one specific right tool</strong> — a missing Include, AsSplitQuery, a genuinely-hot compiled query, ExecuteUpdate/ExecuteDelete, an index, caching, or, rarely, raw SQL — rather than applying every technique everywhere.</li>
+            <li style="margin-bottom:0.4rem;">Verify with the same measurement after the fix — a real improvement shows up as a real, comparable number, not a feeling.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">This closes out Part VIII — these questions pull together the whole Part's tools through the lens of the diagnostic workflow that ties them together.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A request takes 2,400ms total. Query logging shows only 35ms spent across all its database queries combined. What should happen next?</p>
+        <ul class="options">
+            <li>A) Immediately add indexes to every table the endpoint touches, since 35ms is still non-zero</li>
+            <li>B) Look outside the database — application code, an external call, or network — since the database accounts for a tiny fraction of the total time</li>
+            <li>C) Rewrite the queries in raw SQL, since EF Core is clearly the bottleneck</li>
+            <li>D) Increase the connection pool size, since the request is slow</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> 35ms out of 2,400ms is a clear, measured signal that the database is not where this request's time is going — the honest next step is to look at application code, downstream calls, or network, not the database.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Indexing wouldn't meaningfully move a 2,400ms total when the database only accounts for 35ms of it — this would be effort spent on a part of the system that isn't the problem.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The evidence shows the opposite of "EF Core is the bottleneck" — the database layer is fast; rewriting it in raw SQL addresses nothing real here.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Pool exhaustion shows up as failures/delays acquiring a connection, not as fast queries inside a slow overall request — nothing in this scenario points at pool sizing.</p>
+                <p><strong>Reinforcement:</strong> Confirming where time actually goes, first, is what separates real diagnosis from a reflexive database-shaped guess.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A query log shows one query fetching 300 orders, immediately followed by the exact same "SELECT * FROM Customers WHERE Id = @p0" query shape repeated 300 times. What does this pattern indicate, and what's the correct fix?</p>
+        <ul class="options">
+            <li>A) A missing index on Customers.Id — add an index</li>
+            <li>B) An N+1 query problem — fix with .Include() or an equivalent single projection, not by speeding up the 300 individual queries</li>
+            <li>C) Connection pool exhaustion — increase the pool size</li>
+            <li>D) A cache is needed for the Customers table</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> One query followed by the same query shape repeated once per row of the first result is the textbook N+1 signature from 205 — the fix reshapes the query to fetch everything in one round trip, via Include() or a projection, never by optimizing the repeated individual queries.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A missing index would show up as one slow query with a scan in its plan, not as the same fast query shape repeated many times — this is a query-count problem, not a query-speed problem.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Pool exhaustion shows up as failures acquiring a connection, not as a specific repeating query pattern like this one.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Caching could mask this symptom for previously-seen customer IDs, but it doesn't fix the underlying N+1 shape — new, uncached customers would still trigger the same repeated-query pattern.</p>
+                <p><strong>Reinforcement:</strong> The repeated-query-shape pattern in a log is the concrete, visible evidence of N+1 — recognizing it directly in real logs is the whole point of this capstone.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Under real production load, requests start failing with timeouts specifically while trying to obtain a database connection — but any individual query, once a connection is obtained, runs quickly. Which lesson's territory does this point to?</p>
+        <ul class="options">
+            <li>A) 278's stored procedures — the queries should be moved into procedures</li>
+            <li>B) 277's connection pool sizing and DbContext lifetime — the pool likely can't keep up with genuine concurrent demand</li>
+            <li>C) 280's caching strategies — the queries need to be cached</li>
+            <li>D) 205's N+1 problem — the queries are triggering extra round trips</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Failures specifically acquiring a connection, with fast queries once one is obtained, is exactly the signature of pool exhaustion under load — the fix is revisiting pool size and how long connections are held, straight from 277.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Stored procedures address query logic, not the separate problem of connections themselves being unavailable — this symptom isn't about what the queries do once running.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Caching reduces how often queries run, which could indirectly reduce connection demand, but it doesn't address a pool that's genuinely undersized for real concurrent load — and it's not the diagnosis this specific symptom points to.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> N+1 shows up as many repeated queries in a log, not as failures specifically acquiring a connection — these are different symptoms with different root causes.</p>
+                <p><strong>Reinforcement:</strong> "Can't get a connection" and "query is slow" are different symptoms with genuinely different fixes — telling them apart correctly is exactly what this capstone is built to teach.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Which best describes the prioritized workflow this capstone — and this whole Part — recommends?</p>
+        <ul class="options">
+            <li>A) Apply every optimization technique from this Part to every endpoint, to be safe</li>
+            <li>B) Measure first to find the real, evidence-backed bottleneck, then apply the one specific tool that evidence points to, then measure again to verify</li>
+            <li>C) Always start with raw SQL, since it's the most powerful and flexible option available</li>
+            <li>D) Skip measurement and trust developer intuition, since experienced developers can usually tell what's slow</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the exact four-step workflow the lesson closes with — measure, diagnose from real evidence, apply the one specific fix, verify — mirroring 233's profile-then-optimize-then-verify discipline, applied to the database layer.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson explicitly warns against this in Common Mistakes — applying multiple techniques speculatively wastes effort and makes it impossible to know what actually helped.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> 281 already established raw SQL as the selective exception for confirmed cases, not a starting point — this directly contradicts that lesson's judgment-based approach.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> 233 established that intuition about performance is famously, repeatedly wrong — this capstone builds directly on that same "measure, don't guess" principle.</p>
+                <p><strong>Reinforcement:</strong> Measure → diagnose → fix precisely → verify is the single thread connecting every lesson in this entire Part.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> What is the primary diagnostic advantage of the query-logging interceptor shown in this lesson, compared to calling .ToQueryString() on individual queries?</p>
+        <ul class="options">
+            <li>A) It shows the exact SQL for a single query before it runs, without needing to execute it</li>
+            <li>B) It runs continuously across the whole application, catching and flagging any query that crosses a duration threshold, rather than requiring you to already suspect a specific query</li>
+            <li>C) It automatically fixes N+1 problems it detects</li>
+            <li>D) It replaces the need for connection pool monitoring entirely</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> An interceptor built on 272's hook runs continuously, watching every command the application issues and flagging slow ones automatically — a standing early-warning system, versus .ToQueryString()'s targeted, one-query-at-a-time check on something you already suspect.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That's specifically what .ToQueryString() does, not the interceptor — the interceptor observes queries as they actually execute, with real timing, rather than rendering SQL without running it.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The interceptor only observes and logs — it takes no automatic corrective action; fixing an N+1 pattern it reveals is still a manual code change.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Connection pool exhaustion is a separate concern from query duration — this interceptor doesn't monitor pool/connection-acquisition behavior at all.</p>
+                <p><strong>Reinforcement:</strong> .ToQueryString() is a targeted, deliberate check; a logging interceptor is a standing, always-on one — different tools for different moments in the workflow.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 That's Part VIII complete. You went from "correct EF Core" to genuinely production-ready judgment — query optimization, compiled queries, transactions, concurrency, connection management, stored procedures, bulk operations, caching, honest SQL-vs-EF-Core reasoning, and now the discipline to diagnose a real, slow, misbehaving application by evidence instead of instinct. Measure first. Every time.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
