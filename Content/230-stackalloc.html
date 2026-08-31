@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>230 - stackalloc · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The one allocation the garbage collector will never, ever see — because it isn't on the heap at all.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Back in Advanced Part I, the stack-vs-heap lesson mentioned <code>stackalloc</code> in a single forward-looking paragraph and then deliberately moved on, promising "a dedicated Advanced module later." This is that module. You now have everything you need to understand it properly: precisely how the stack reclaims memory (last lesson's whole topic), and exactly what a <code>ref struct</code> is and why it's the safe wrapper around what <code>stackalloc</code> produces (the previous lesson).</p>
+    <p><code>stackalloc</code> is the one allocation mechanism in all of C# that has genuinely nothing to do with the garbage collector — not "rarely collected," not "usually cheap to collect" — <em>never tracked by the GC at all</em>, because it never touches the managed heap in the first place.</p>
+    <p><strong>In this lesson, you'll learn exactly what <code>stackalloc</code> allocates and where, the modern span-wrapped syntax that makes it safe to use in ordinary code, genuine real-world use cases for it, and the one real danger — stack overflow — that makes it a tool you reach for deliberately, not by default.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><code>stackalloc</code> allocates a block of memory directly on the <strong>current method's own stack frame</strong> — the exact same region of memory that already holds your local <code>int</code>s and <code>decimal</code>s, per the mental model from two lessons ago. It is reclaimed the instant the method returns, automatically, with zero GC involvement — exactly like every other local value-type variable.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><code>stackalloc</code> is a C# operator that reserves a contiguous block of uninitialized (or, for value types, zero-initialized by default) memory on the calling method's stack frame, and produces either a pointer to that memory (the original, <code>unsafe</code>-only syntax) or a <code>Span&lt;T&gt;</code>/<code>ReadOnlySpan&lt;T&gt;</code> wrapping it (the modern, safe syntax introduced in C# 7.3). Because that memory is not tracked by the garbage collector at all — it isn't part of any generation, it has no object header, it's never scanned during a collection — using <code>stackalloc</code> produces genuinely zero heap allocation for that buffer.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Modern — Span-wrapped (idiomatic)</h4>
+            <ul>
+                <li><code>Span&lt;byte&gt; buffer = stackalloc byte[256];</code></li>
+                <li>No <code>unsafe</code> keyword required</li>
+                <li>Bounds-checked, safe indexing via <code>Span&lt;T&gt;</code>'s own guarantees</li>
+                <li>The idiomatic, recommended way to write it today</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>⚠️ Legacy — raw pointer (unsafe)</h4>
+            <ul>
+                <li><code>byte* buffer = stackalloc byte[256];</code></li>
+                <li>Requires an <code>unsafe</code> context</li>
+                <li>No bounds checking — you can read/write past the end silently</li>
+                <li>Predates <code>Span&lt;T&gt;</code> (C# 7.3); still found in older or performance-critical <code>unsafe</code> code</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem</h3>
+    <p>Some hot-path code needs a small, short-lived scratch buffer — a handful of bytes to build a hash, a few dozen characters to format a number, a temporary staging area while parsing. The obvious tool is <code>new byte[64]</code>, but that's a heap allocation: it goes through the allocator, gets an object header, gets tracked by Gen0, and eventually has to be traced and collected — real, if individually small, work for the GC, as the Generational GC lesson in Advanced Part I covered in detail. In a method called millions of times per second, thousands of these tiny, disposable arrays add up to real, measurable GC pressure, purely for memory that's used for microseconds and then thrown away.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution</h3>
+    <p>If a buffer's entire lifetime fits neatly within one method call — allocated at the top, used and discarded before the method returns — it has exactly the lifetime profile the stack already handles for free, as the previous stack-vs-heap lesson established. <code>stackalloc</code> lets you deliberately put that buffer there instead of the heap: reclamation is automatic and instantaneous on return, with zero tracing, zero collection, and zero GC pressure whatsoever — the fastest possible way to get temporary memory in .NET, precisely because it sidesteps the garbage collector entirely rather than merely being cheap for it to collect.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">new byte[64] VS stackalloc byte[64]</div>
+        <div class="flow-step">
+            <div class="step-label">new byte[64] — HEAP ARRAY</div>
+            <ul>
+                <li>Allocated on the managed heap, in Gen0</li>
+                <li>Gets an object header and type pointer</li>
+                <li>Tracked by the GC — scanned on every applicable collection until it's reclaimed</li>
+                <li>Survives the method that created it, if something still references it</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">vs</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">stackalloc byte[64] — STACK BUFFER</div>
+            <ul>
+                <li>Allocated on the current method's stack frame — same region as local <code>int</code>s and <code>decimal</code>s</li>
+                <li>No object header — it's raw bytes, not a tracked object</li>
+                <li>Never touched by the GC — not part of any generation, never scanned</li>
+                <li>Reclaimed instantly, automatically, the moment the method returns — cannot outlive the call</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The modern, idiomatic syntax</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Span&lt;byte&gt; buffer = stackalloc byte[256];
+
+buffer[0] = 0xFF;          // bounds-checked, safe indexing
+buffer.Fill(0);            // ordinary Span&lt;T&gt; API, no unsafe code
+var slice = buffer[..16];  // slicing works exactly as it does for any Span&lt;T&gt;</code></pre>
+    <p>Notice that <code>buffer</code> is typed as <code>Span&lt;byte&gt;</code> — a <code>ref struct</code>, per the previous lesson. That's not incidental: it's the exact mechanism that makes this safe. Because <code>Span&lt;T&gt;</code> can never be boxed, stored in a field, captured by a closure, or held across an <code>await</code>, the compiler guarantees this stack-allocated buffer can never be smuggled somewhere it would outlive the stack frame it lives on. The <code>ref struct</code> restrictions from the last lesson exist largely <em>because</em> of exactly this scenario.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The legacy, unsafe syntax — for context, not for regular use</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">unsafe
+{
+    byte* buffer = stackalloc byte[256];
+    buffer[0] = 0xFF; // no bounds checking — buffer[9999] compiles and corrupts memory silently
+}</code></pre>
+    <p>This is the original <code>stackalloc</code> syntax, predating <code>Span&lt;T&gt;</code> (which arrived in C# 7.2/7.3). It requires an <code>unsafe</code> context, gives you a raw pointer with no bounds checking at all, and you'll still encounter it in older codebases and in genuinely low-level <code>unsafe</code> interop code. For virtually all new code, prefer the <code>Span&lt;T&gt;</code>-wrapped form — you get identical stack-allocation behavior with real safety on top, at no performance cost.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — formatting a number without allocating a string</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public static void WriteFormattedId(int id, TextWriter writer)
+{
+    Span&lt;char&gt; digits = stackalloc char[10]; // int.MaxValue has 10 digits, max
+
+    if (id.TryFormat(digits, out int written))
+    {
+        writer.Write(digits[..written]);
+    }
+}</code></pre>
+    <p><strong>Why this avoids allocation entirely:</strong> <code>int.TryFormat</code> writes the formatted digits directly into the span-wrapped stack buffer — no intermediate <code>string</code> is ever allocated on the heap just to hold the digits before writing them out. Compare this to the far more common <code>writer.Write(id.ToString())</code>, which allocates a new heap string on every single call. For a method called millions of times, that's a real, measurable difference in GC pressure for a code path that gains nothing lasting from the allocation — the string exists for microseconds and is immediately discarded.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — a bounded, safe hashing buffer with an ArrayPool fallback</h2>
+    <p>Real production code almost never uses a fixed-size <code>stackalloc</code> blindly — it uses a small, safe threshold, and falls back to <code>ArrayPool&lt;T&gt;</code> (covered elsewhere in this Part) for anything larger:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">private const int StackAllocThreshold = 256;
+
+public static string ComputeHash(ReadOnlySpan&lt;byte&gt; data)
+{
+    Span&lt;byte&gt; hashBuffer = stackalloc byte[32]; // SHA-256 output is always exactly 32 bytes — safe, fixed
+
+    if (data.Length &lt;= StackAllocThreshold)
+    {
+        Span&lt;byte&gt; scratch = stackalloc byte[StackAllocThreshold];
+        data.CopyTo(scratch);
+        SHA256.HashData(scratch[..data.Length], hashBuffer);
+    }
+    else
+    {
+        // Too large for a safe stack buffer — rent from the pool instead
+        byte[] rented = ArrayPool&lt;byte&gt;.Shared.Rent(data.Length);
+        try
+        {
+            data.CopyTo(rented);
+            SHA256.HashData(rented.AsSpan(0, data.Length), hashBuffer);
+        }
+        finally
+        {
+            ArrayPool&lt;byte&gt;.Shared.Return(rented);
+        }
+    }
+
+    return Convert.ToHexString(hashBuffer);
+}</code></pre>
+    <p>Notice the pattern: the <code>stackalloc</code> size is a small, fixed, compile-time-known constant (<code>StackAllocThreshold</code>, 256 bytes) — never sized directly by <code>data.Length</code>, which could be arbitrarily large if it ultimately traces back to user input. Anything above the threshold is routed to <code>ArrayPool&lt;T&gt;</code> instead, which can safely handle any size without risking the stack. This threshold-plus-fallback shape is the standard, idiomatic way real .NET code (including parts of the BCL itself) uses <code>stackalloc</code> safely.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📏</span> A tape measure you already have in your pocket</div>
+        <p>Reaching for <code>new byte[64]</code> is like walking to a hardware store every time you need to measure something — reliable, but there's real overhead in the trip, even for a five-second job. <code>stackalloc</code> is like already having a small tape measure in your pocket: instant, free, no trip required — but your pocket only has so much room. Try to carry a stepladder in there (an oversized or unbounded <code>stackalloc</code>) and something breaks. That's exactly why you use the pocket tape measure for small, quick, genuinely bounded jobs, and go to the hardware store — <code>ArrayPool&lt;T&gt;</code> — for anything bigger.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — the real danger: stack overflow</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">WHY STACKALLOC SIZE DISCIPLINE ISN'T OPTIONAL</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. STACK SPACE IS SMALL AND FIXED, PER THREAD</div>
+            <ul>
+                <li>As the stack-vs-heap lesson established: each thread's stack is typically around 1 MB by default on the mainstream .NET runtime — tiny compared to the heap, and not resizable at run time.</li>
+                <li>Every local value type, every <code>stackalloc</code> buffer, and every nested method call's own frame all compete for that same small, fixed budget.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">2. TWO WAYS TO EXHAUST IT WITH stackalloc</div>
+            <ul>
+                <li><strong>A single, too-large allocation</strong> — <code>stackalloc byte[10_000_000]</code> alone can exceed the entire stack budget in one call.</li>
+                <li><strong>A small allocation repeated inside a loop or unbounded/deep recursion</strong> — each recursive call or loop iteration that calls <code>stackalloc</code> again adds another buffer to the stack that doesn't get reclaimed until <em>that specific call</em> returns, so a deep recursive chain can exhaust the stack even with individually tiny buffers.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">3. THE RESULT: StackOverflowException — AND IT CANNOT BE CAUGHT</div>
+            <ul>
+                <li>When a thread's stack is genuinely exhausted, the CLR raises a <code>StackOverflowException</code> — but unlike essentially every other exception in .NET, <strong>this one cannot be caught by any <code>try</code>/<code>catch</code> block, anywhere, under any circumstances.</strong></li>
+                <li>A real stack overflow terminates the process immediately. There's no graceful recovery, no logging opportunity, no cleanup — the runtime cannot safely continue running once the stack itself is corrupted, so it takes the entire process down rather than risk further corruption.</li>
+                <li>This is a deliberate .NET design decision, not an oversight: by the time a stack overflow is detected, the runtime can no longer trust that it has enough stack space left to run exception-handling machinery safely at all.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">4. WHAT THIS MEANS FOR HOW YOU USE stackalloc</div>
+            <ul>
+                <li>Sizes must be small and genuinely bounded — a compile-time constant, or a runtime value that's checked against a safe maximum before use.</li>
+                <li><strong>Never</strong> size a <code>stackalloc</code> directly from unbounded user input, request data, or any value you don't fully control the upper bound of.</li>
+                <li>The standard, safe pattern: check the requested size against a small threshold; if it fits, <code>stackalloc</code>; if it doesn't, fall back to <code>ArrayPool&lt;T&gt;</code> — exactly as shown in the Real-World Example.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "stackalloc always requires unsafe code"</h3>
+    <p>Only the legacy raw-pointer form does. The modern <code>Span&lt;byte&gt; buffer = stackalloc byte[256];</code> form requires no <code>unsafe</code> keyword whatsoever and has been the idiomatic way to write this since C# 7.3 — the safety comes from the <code>ref struct</code> guarantees of <code>Span&lt;T&gt;</code>, covered in the previous lesson.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "A StackOverflowException is like any other exception — just wrap it in try/catch"</h3>
+    <p>This is the single most important correction in this lesson: it cannot be caught. Ever. By anything. A stack overflow terminates the process on the spot. This is fundamentally different from every other exception you've worked with across this entire course, and it's precisely why the size discipline in this lesson matters so much more than it would for an ordinary recoverable error.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "stackalloc memory is garbage collected, just very quickly"</h3>
+    <p>No — it isn't garbage collected at all, at any speed. "Very fast collection" and "no collection involved whatsoever" sound similar but aren't the same thing. <code>stackalloc</code> memory is never part of any GC generation, is never traced, and is never subject to a collection pause. It's reclaimed purely by the stack pointer moving back when the method returns — the exact same zero-GC mechanism as any other local variable, as the previous lesson established.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Sizing a stackalloc directly from user or request input</h4>
+    <p>❌ <code>Span&lt;byte&gt; buffer = stackalloc byte[userSuppliedLength];</code> — if <code>userSuppliedLength</code> comes from anywhere an attacker or careless caller could influence, this is a genuine, process-crashing denial-of-service vector, not just a bug.</p>
+    <p>✅ Clamp against a small, safe constant threshold, and route anything larger to <code>ArrayPool&lt;T&gt;</code> — never trust an external value as a stack allocation size directly.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Calling stackalloc inside a loop, growing the live stack footprint each iteration</h4>
+    <p>❌ Placing a <code>stackalloc</code> inside a <code>for</code> loop body when the buffer isn't actually needed fresh each iteration, or inside recursive calls without a hard depth limit — each nested call's buffer stacks on top of the last, un-reclaimed until that specific call returns.</p>
+    <p>✅ Hoist a single <code>stackalloc</code> above the loop when one reusable buffer will do, and always cap recursion depth explicitly when a recursive method also uses <code>stackalloc</code>.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for stackalloc as a default "faster than new[]" habit</h4>
+    <p>❌ Replacing every small array allocation in a codebase with <code>stackalloc</code> on the assumption that it's simply, unconditionally better.</p>
+    <p>✅ Reserve it for genuinely hot, measured paths with small, provably bounded sizes — for ordinary code, a small heap array is simple, safe by construction, and the GC handles Gen0 garbage cheaply anyway (per the Generational GC lesson). The next two lessons in this Part cover exactly how to know whether a path is hot enough to deserve this treatment in the first place.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Use stackalloc when</h4>
+            <ul>
+                <li>The buffer is small — typically well under a kilobyte — and genuinely, provably bounded.</li>
+                <li>Its entire lifetime fits within one method call — used and discarded before returning.</li>
+                <li>The code path is measured as genuinely hot (parsing, hashing, formatting on a proven bottleneck).</li>
+                <li>You wrap it in <code>Span&lt;T&gt;</code>, not the legacy raw-pointer form.</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>❌ Avoid stackalloc when</h4>
+            <ul>
+                <li>The size isn't known to be small and bounded at compile time or by an enforced runtime check.</li>
+                <li>It would sit inside a loop or unbounded/deep recursion without a hard cap.</li>
+                <li>The buffer needs to outlive the current method call (use <code>ArrayPool&lt;T&gt;</code> or an ordinary array instead).</li>
+                <li>The code path isn't actually hot — the complexity isn't earning its keep.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> If you can't confidently state the exact maximum size, in bytes, that a <code>stackalloc</code> could ever request at that call site — don't use it, or add an explicit check that falls back to <code>ArrayPool&lt;T&gt;</code> above a safe threshold. "Small and provably bounded" is not optional.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>stackalloc</strong> = a local value-type variable, just bigger — same stack frame, same automatic reclamation on return, zero GC involvement.<br /><br />
+        <strong>Small and bounded, always.</strong> The stack is roughly 1 MB per thread, shared with every other local and every nested call frame.<br /><br />
+        <strong>The one failure mode that can't be caught:</strong> a real <code>StackOverflowException</code> kills the process instantly — <code>try</code>/<code>catch</code> cannot save you. This is exactly why size discipline here is non-negotiable, not merely good practice.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><code>stackalloc</code> allocates directly on the current method's stack frame — not the managed heap — so it is never tracked or collected by the GC, and is reclaimed instantly the moment the method returns.</li>
+            <li style="margin-bottom:0.4rem;">The modern, idiomatic syntax — <code>Span&lt;byte&gt; buffer = stackalloc byte[256];</code> — needs no <code>unsafe</code> code and gets full bounds-checking safety from <code>Span&lt;T&gt;</code>'s <code>ref struct</code> guarantees.</li>
+            <li style="margin-bottom:0.4rem;">Real use cases are small, short-lived, bounded buffers on genuinely hot paths — parsing, hashing, number formatting — where avoiding even a small heap allocation measurably matters.</li>
+            <li style="margin-bottom:0.4rem;">The danger is real: a too-large allocation, or one repeated inside a loop or deep recursion, can exhaust the roughly-1MB-per-thread stack and trigger a <code>StackOverflowException</code> — an exception that, uniquely, cannot be caught by <code>try</code>/<code>catch</code> and terminates the process immediately.</li>
+            <li style="margin-bottom:0.4rem;">Never size a <code>stackalloc</code> from unbounded input — use a small fixed threshold and fall back to <code>ArrayPool&lt;T&gt;</code> for anything larger.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You now understand exactly where stackalloc memory lives, how to use it safely, and precisely what can go wrong. Let's confirm it.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why is memory allocated with <code>stackalloc</code> never subject to garbage collection?</p>
+        <ul class="options">
+            <li>A) Because it's collected by a separate, faster GC generation reserved specifically for stack memory</li>
+            <li>B) Because it's allocated on the current method's stack frame, not the managed heap, so it was never part of any GC generation to begin with</li>
+            <li>C) Because the JIT compiler marks it as permanently rooted, preventing collection</li>
+            <li>D) Because it's automatically pinned, which exempts it from garbage collection</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The GC only manages the heap. <code>stackalloc</code> memory lives on the stack — an entirely separate region — so it was never eligible for GC tracking in the first place, not merely fast to collect.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no such special GC generation — the stack isn't part of the generational GC system at all.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> "Rooted" is a heap-object GC concept describing reachability; it doesn't apply to stack memory, which was never a GC-managed object.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Pinning is a mechanism for preventing the GC from moving a heap object during compaction — irrelevant to stack memory, which the GC never touches regardless.</p>
+                <p><strong>Reinforcement:</strong> "Not GC-tracked" and "quickly GC-collected" are genuinely different things — stackalloc memory is the former, not the latter.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What is the modern, idiomatic way to write a <code>stackalloc</code> expression in current C#, and why is it preferred?</p>
+        <ul class="options">
+            <li>A) <code>byte* buffer = stackalloc byte[256];</code> inside an <code>unsafe</code> block — it's the only syntax that ever existed</li>
+            <li>B) <code>Span&lt;byte&gt; buffer = stackalloc byte[256];</code> — no <code>unsafe</code> code needed, with bounds-checked safety from Span&lt;T&gt;'s ref struct guarantees</li>
+            <li>C) <code>object buffer = stackalloc byte[256];</code> — boxed for safe, general-purpose storage</li>
+            <li>D) <code>List&lt;byte&gt; buffer = stackalloc byte[256];</code> — wrapped in a resizable collection</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Wrapping the stackalloc'd memory in a <code>Span&lt;byte&gt;</code> requires no <code>unsafe</code> context and gives you bounds-checked, safe indexing — this has been the idiomatic form since C# 7.3, and is what the previous lesson's ref struct restrictions specifically exist to make safe.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is the legacy, pre-Span&lt;T&gt; syntax — it still works but requires <code>unsafe</code> and offers no bounds checking; it's not the recommended modern form.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This wouldn't compile — a ref struct like Span&lt;byte&gt; can never be boxed to <code>object</code>, and even the raw pointer form can't be assigned to <code>object</code> directly.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>stackalloc</code> doesn't produce a <code>List&lt;T&gt;</code>-compatible value, and wrapping stack memory in a resizable heap collection would defeat the entire point of stack allocation.</p>
+                <p><strong>Reinforcement:</strong> The Span&lt;T&gt;-wrapped form is both safer and no slower than the raw pointer form — there's essentially no reason to prefer the legacy syntax in new code.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A method calls <code>stackalloc</code> to reserve memory sized directly from a value read off an incoming network request, with no upper bound check. What is the most serious risk?</p>
+        <ul class="options">
+            <li>A) A minor memory leak that a future GC collection will eventually clean up</li>
+            <li>B) A potential StackOverflowException triggered by attacker- or caller-controlled input, which cannot be caught by try/catch and terminates the process immediately</li>
+            <li>C) A compile-time error, since stackalloc size must always be a literal constant</li>
+            <li>D) Slightly degraded performance, but no correctness or stability risk</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the danger the lesson calls out explicitly: an unbounded, externally-influenced stackalloc size is a genuine process-crashing risk — and because a real stack overflow cannot be caught by any try/catch, there's no way to recover from it once it happens.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> stackalloc memory is never subject to GC in the first place, so there's no "future collection" that applies here — and the actual risk is far more severe than a leak.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> stackalloc size can be a runtime-computed expression, not only a compile-time constant — that flexibility is exactly what makes the unchecked-input scenario dangerous.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This significantly understates the risk — an uncaught stack overflow is a full process crash, not a minor performance issue.</p>
+                <p><strong>Reinforcement:</strong> Never size a stackalloc from unbounded external input — always clamp against a small, safe threshold and fall back to ArrayPool&lt;T&gt; above it.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why is a <code>StackOverflowException</code> fundamentally different from almost every other exception type in .NET?</p>
+        <ul class="options">
+            <li>A) It can only be thrown from within async methods</li>
+            <li>B) It cannot be caught by any try/catch block anywhere in the process, and terminates the process immediately when it occurs</li>
+            <li>C) It is automatically retried by the CLR up to three times before propagating</li>
+            <li>D) It only occurs in Debug builds, never in Release builds</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the single most important, distinctive fact about a real stack overflow in .NET — by the time it's detected, the runtime can't trust it has enough remaining stack space to safely run exception-handling machinery, so it terminates the process outright rather than attempting recovery.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Stack overflow can occur in any method — synchronous or asynchronous — that exhausts its thread's stack, typically via deep or runaway recursion.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no automatic retry mechanism — the process terminates immediately upon detection.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Stack overflow is a real runtime condition tied to actual stack exhaustion — it occurs in Release builds exactly as it does in Debug builds, whenever the stack genuinely runs out.</p>
+                <p><strong>Reinforcement:</strong> This uncatchable, process-ending behavior is precisely why size discipline around stackalloc (and deep recursion generally) is a hard requirement, not just good style.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A developer needs a buffer to compute a hash of data whose size could range from a few bytes up to several megabytes, depending on the caller. What's the correct approach based on this lesson?</p>
+        <ul class="options">
+            <li>A) Always use stackalloc, sized exactly to the input data's length, since stackalloc is always faster than any alternative</li>
+            <li>B) Use stackalloc for a small, fixed-size threshold amount, and fall back to ArrayPool&lt;T&gt; for any input larger than that threshold</li>
+            <li>C) Never use stackalloc under any circumstances when input size varies at all</li>
+            <li>D) Use stackalloc only inside a loop that processes the data one megabyte at a time</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the threshold-plus-fallback pattern shown in the Real-World Example — stackalloc handles the common, small case cheaply and safely, while ArrayPool&lt;T&gt; safely absorbs anything above the safe stack threshold, regardless of how large the input gets.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Sizing stackalloc directly from a potentially multi-megabyte input is precisely the dangerous, unbounded pattern this lesson warns against — it risks a process-terminating stack overflow.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> stackalloc remains an excellent choice for the small, common case even when the overall input size varies — the fix is bounding it with a threshold, not avoiding it entirely.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Calling stackalloc repeatedly inside a loop, especially for large data, risks accumulating stack usage across iterations depending on how the loop is structured, and adds unnecessary complexity compared to the simple threshold-and-fallback approach.</p>
+                <p><strong>Reinforcement:</strong> The threshold-and-fallback pattern is the standard, production-proven way to get stackalloc's speed for the common case without its risk for the uncommon one.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You've delivered on the promise from Advanced Part I — you now know exactly what stackalloc allocates, how to use it safely, and precisely why its one real danger demands real discipline. Next, you'll pull every tool from this Part together into one coherent, zero-allocation programming style.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
