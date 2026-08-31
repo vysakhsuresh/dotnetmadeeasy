@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>190 - Closures · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        You already know a closure captures a variable by reference. Now let's open the compiler's output and see exactly what "capture" compiles down to — and why that's precisely why closures can quietly leak memory.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Lesson 102 established the rule you've relied on ever since: a lambda captures the <em>variable itself</em>, not a snapshot of its value, and that variable's lifetime stretches to match the lambda's. You've used that rule correctly a hundred times. But here's a question 102 never answered: <strong>where does that captured variable actually live?</strong> A local variable is supposed to die with its stack frame. If <code>threshold</code> in <code>price =&gt; price &gt; threshold</code> is a completely ordinary local, how does it survive the method returning?</p>
+    <p>The honest answer is that it doesn't stay an ordinary local at all — the compiler quietly turns it into something else entirely before your code ever runs. Understanding exactly what that "something else" is explains not just how closures work, but a specific, real category of memory-leak bug that only makes sense once you've seen the compiler's output.</p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>When the C# compiler sees a lambda that reaches outside itself for a variable, it doesn't leave that variable where you wrote it. It moves it into a small, invisible, compiler-generated class — one field per captured variable — and rewrites both your method and the lambda to read and write through that class instead. The "closure" you've been picturing as a lambda with a backpack of variables is, quite literally, an object on the heap. The backpack has a real type, and you can inspect it.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>This compiler-generated class is informally called a <strong>closure class</strong> or <strong>display class</strong> (in Roslyn's own source code and in decompiled output you'll often see it literally named something like <code>&lt;&gt;c__DisplayClass0_0</code>). It holds one instance field for every variable captured by any lambda in that particular scope. The enclosing method's own references to those variables are rewritten by the compiler to go through a field access on an instance of this class instead of a normal local slot. The lambda body itself becomes an instance method on that same generated class, and the delegate you hold — the <code>Func&lt;T&gt;</code> or <code>Action</code> you assign the lambda to — has its target set to that instance. None of this is something you opt into or can turn off; it happens automatically, silently, the moment the compiler sees a lambda reference a variable that isn't its own parameter.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Stack Frames Are Temporary, Closures Aren't</h3>
+    <p>An ordinary local variable lives on the stack, inside its method's stack frame. The moment that method returns, its stack frame is popped and every local in it is gone — that memory is immediately reused by whatever the CPU calls next. This is fast and it's exactly what a stack is for. But a closure's entire reason for existing is to keep working <em>after</em> the method that created it has returned — <code>CreateCounter()</code> in lesson 102 returns a <code>Func&lt;int&gt;</code> that keeps incrementing long after <code>CreateCounter</code>'s own stack frame is long gone. A plain stack-allocated <code>int count</code> simply cannot do that; the stack doesn't work that way.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Promote the Variable to the Heap</h3>
+    <p>The compiler's fix is to stop treating a captured variable as a stack local at all. By moving it into a field on a heap-allocated object, its lifetime is no longer tied to any stack frame — it's tied to ordinary garbage-collection reachability, exactly like any other object field. As long as something reachable (a delegate, another object, a static field) still references that closure-class instance, the field — and the value it holds — stays alive. This is the entire mechanism that makes closures possible at all: <strong>a captured local variable becomes, in effect, a heap-allocated field, which is precisely why it survives after its enclosing method returns.</strong></p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight</div>
+        <p>Lesson 102 taught you the observable behavior: captured variables live by reference and outlive their method. This lesson explains the mechanism underneath that behavior: the compiler achieves it by silently relocating the variable's storage from a stack frame to a field on a heap object. Same fact, one level deeper.</p>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHAT YOU WRITE vs WHAT THE COMPILER GENERATES</div>
+        <div class="flow-step">
+            <div class="step-label">YOU WRITE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">static Func&lt;int&gt; CreateCounter()
+{
+    int count = 0;
+    return () =&gt; ++count;
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">ROSLYN GENERATES (SIMPLIFIED — REAL NAMES ARE MANGLED)</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">sealed class DisplayClass0_0     // a hidden, compiler-generated class
+{
+    public int count;             // the captured variable, now a FIELD
+
+    public int Lambda0()          // the lambda body, now a METHOD
+        =&gt; ++count;
+}
+
+static Func&lt;int&gt; CreateCounter()
+{
+    var dc = new DisplayClass0_0(); // heap-allocated instance
+    dc.count = 0;
+    return new Func&lt;int&gt;(dc.Lambda0); // delegate targets THIS instance
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">WHY IT SURVIVES</div>
+            <ul><li>The returned <code>Func&lt;int&gt;</code> holds a reference to <code>dc</code>. As long as anything holds the <code>Func&lt;int&gt;</code>, <code>dc</code> — and its <code>count</code> field — stays reachable, and the GC will never collect it.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">ONE CLOSURE CLASS CAN SERVE MULTIPLE LAMBDAS</div>
+        <div class="flow-step">
+            <div class="step-label">1. ROSLYN GROUPS CAPTURES BY SCOPE, NOT BY LAMBDA</div>
+            <p style="color:var(--text-main,#E2E8F0);font-size:0.9rem;margin:0.2rem 0;">This is the detail lesson 102 never needed to mention: if two or more lambdas in the <em>same</em> enclosing scope capture the <em>same</em> variables (or overlapping sets of variables), Roslyn does not generate a separate hidden class per lambda. It generates <strong>one</strong> display class for that scope, with a field for each distinct captured variable, and adds one method to that same class per lambda. This is a genuine compiler optimization — fewer allocations, fewer objects for the GC to track — not just an implementation detail you'd never notice.</p>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. SHARED FIELDS MEAN SHARED MUTATION IS VISIBLE ACROSS LAMBDAS</div>
+            <p style="color:var(--text-main,#E2E8F0);font-size:0.9rem;margin:0.2rem 0;">Because both lambdas become methods on the <em>same instance</em>, a mutation one lambda makes to a shared captured variable is immediately visible to the other lambda — not because of anything special about closures "communicating," but simply because they're two methods reading and writing the same object field.</p>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. VARIABLES CAPTURED BY DIFFERENT, NON-OVERLAPPING LAMBDAS GET SEPARATE CLASSES</div>
+            <p style="color:var(--text-main,#E2E8F0);font-size:0.9rem;margin:0.2rem 0;">If a method has two lambdas that don't share any captured variables, or that capture variables from genuinely different scopes (like different loop iterations), the compiler is free to generate separate display-class instances for them — it groups by what's actually shared, not just by "everything in this method."</p>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Here are two lambdas in the same method, both capturing <code>runningTotal</code>. Watch how mutating it from one lambda is visible from the other — a direct, observable consequence of them sharing one generated field.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+class Program
+{
+    static (Action&lt;int&gt; add, Func&lt;int&gt; read) CreateAccumulator()
+    {
+        int runningTotal = 0; // captured by BOTH lambdas below
+
+        Action&lt;int&gt; add = amount =&gt; runningTotal += amount;
+        Func&lt;int&gt; read = () =&gt; runningTotal;
+
+        return (add, read);
+        // Under the hood: ONE display class instance, with a "runningTotal" field.
+        // "add" and "read" are two methods on that SAME instance.
+    }
+
+    static void Main()
+    {
+        var (add, read) = CreateAccumulator();
+
+        add(10);
+        add(25);
+        Console.WriteLine(read()); // 35 — "read" sees mutations made through "add"
+    }
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>add</code> and <code>read</code> look like two independent delegates, but they're really two methods sharing one hidden object's <code>runningTotal</code> field. That's not a coincidence of "closures being clever" — it's the direct, mechanical result of Roslyn generating one display class for the scope both lambdas were written in.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — A Closure-Shaped Memory Leak</h2>
+    <p>Now the payoff for understanding the mechanism: a genuinely common production bug that only makes sense once you know a captured variable is really a heap field kept alive by whatever holds the delegate. Picture a reporting screen that loads a large dataset once, and wires up a "refresh" button whose handler is a lambda:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class ReportViewModel
+{
+    // Loaded once when the report opens — potentially tens of megabytes.
+    private readonly List&lt;RowData&gt; _fullDataset;
+
+    public ReportViewModel(List&lt;RowData&gt; fullDataset, IEventAggregatorLike bus)
+    {
+        _fullDataset = fullDataset;
+        var rowCountAtLoad = _fullDataset.Count; // small int — the ONLY thing this handler needs
+
+        // ❌ This lambda captures "this" implicitly (via the instance method group
+        // it could have used instead) — but even written this way, it captures
+        // "rowCountAtLoad" AND, because it's an instance context, potentially "this."
+        bus.RefreshRequested += () =&gt;
+        {
+            Console.WriteLine($"Refresh requested. Loaded {rowCountAtLoad} rows at open.");
+        };
+        // "bus" is a long-lived, application-scoped event source (lesson 191 covers
+        // exactly this shape of leak from the event side). As long as "bus" is alive,
+        // its invocation list holds this lambda's delegate — and that delegate's
+        // target is a display-class instance that, depending on what it captured,
+        // may be keeping this whole ReportViewModel (and _fullDataset) reachable
+        // long after the report window was closed.
+    }
+}</code></pre>
+    <p>The specific danger: if that lambda had captured <code>this</code> instead of just the small <code>int rowCountAtLoad</code> — which happens automatically the moment a lambda inside an instance method references <em>any</em> instance field or instance method, not just when you type <code>this</code> explicitly — then the generated closure class's field wouldn't hold a small integer. It would hold a reference to the entire <code>ReportViewModel</code>, which in turn keeps <code>_fullDataset</code> reachable. A long-lived event bus subscribed to by a lambda like that keeps the <em>whole view model and its entire dataset</em> alive in memory for as long as the bus itself is alive — even after the report screen has been closed and the user has moved on. This is a textbook "closure keeps a large object alive longer than expected" leak, and it's exactly the publisher/subscriber shape lesson 191 covers from the events side — this lesson is the closures-side explanation of the same underlying mechanism.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🎒</span> The Backpack Isn't a Metaphor — It's a Real Object</div>
+        <p>Lesson 102 described a closure as "a lambda plus a backpack of the outer variables it needs." That was already accurate — but now you know the backpack is not a figure of speech. It's a literal object, allocated on the heap, with a compiler-generated class and real fields. If you pack something heavy into that backpack — an entire dataset, an entire view model, via <code>this</code> — the backpack doesn't get lighter just because you only meant to carry one small item. Whatever's reachable through the backpack's fields stays alive as long as the backpack does, and the backpack stays alive as long as anything is still holding the lambda.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — The Loop Variable, Revisited at the Object Level</h2>
+    <p>Lesson 102 taught the modern, per-iteration <code>foreach</code> scoping rule as an observable fact: since C# 5, each iteration gets its own fresh loop variable, so a lambda created inside a <code>foreach</code> captures a distinct value per iteration with no workaround needed. You now have the vocabulary to see exactly <em>why</em>, at the object level, instead of just trusting the rule:</p>
+    <div class="flow-container">
+        <div class="flow-title">WHY foreach IS SAFE AND A CLASSIC for IS NOT — IN DISPLAY-CLASS TERMS</div>
+        <div class="flow-step">
+            <div class="step-label">A CLASSIC for LOOP: ONE VARIABLE, ONE DISPLAY-CLASS INSTANCE FOR THE WHOLE LOOP</div>
+            <ul><li><code>for (int i = 0; i &lt; 3; i++)</code> declares exactly one <code>i</code>. The compiler allocates <strong>one</strong> display-class instance before the loop starts, and every lambda created on every iteration becomes another method on that <em>same</em> instance, all reading and writing the same <code>i</code> field. That's why all three lambdas see <code>i == 3</code> after the loop ends — there was only ever one field to see.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">A foreach LOOP (SINCE C# 5): A FRESH DISPLAY-CLASS INSTANCE PER ITERATION</div>
+            <ul><li>Because the language specifies a genuinely new iteration variable each pass, the compiler allocates a <strong>new</strong> display-class instance — with its own field — on every single iteration. A lambda created on iteration 2 gets a display-class instance whose field was only ever set to that iteration's value; it has no way to see a later iteration's value, because it isn't even the same object.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">THE MANUAL FIX FROM LESSON 102 DOES THE SAME THING, BY HAND</div>
+            <ul><li><code>int local = i;</code> written inside a classic <code>for</code> loop's body forces the compiler to treat <code>local</code> as a fresh variable declared inside the loop body — giving it its own per-iteration display-class instance, exactly mirroring what <code>foreach</code> does automatically.</li></ul>
+        </div>
+    </div>
+    <p>Nothing about the <em>rule</em> has changed from lesson 102 — this is the same behavior, described one layer lower. The reason "each iteration gets its own closure-captured variable" isn't a special loop feature; it's a direct consequence of how many separate display-class instances the compiler ends up allocating, which in turn depends entirely on how many separate variables actually exist to capture.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Every lambda gets its own hidden class" — not necessarily</h3>
+    <p>It's tempting to assume a 1:1 mapping between lambdas and generated closure classes. As shown above, Roslyn groups by <em>scope and shared captures</em>, not by lambda count. Two, five, or ten lambdas in the same method that all capture the same set of variables can share one display-class instance with ten methods on it. Don't reason about closures by counting lambdas — reason about which variables each one actually touches.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Capturing 'this' is obviously visible in the code" — often it isn't</h3>
+    <p>A lambda inside an instance method captures <code>this</code> the moment it references <em>any</em> instance member — a field, a property, or even calling another instance method — even if you never type the word <code>this</code> anywhere. This is the single most common way a closure ends up keeping an entire object graph alive by accident: the capture is invisible at the call site, and only becomes visible once you think in terms of "what does the generated display class's field actually point to."</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Handing a long-lived subscription a lambda that implicitly captures an entire object</h4>
+    <p>❌ Subscribing a lambda that references an instance field to a <code>static</code> event, an application-scoped event aggregator, or any publisher that will outlive the current object — as shown in the real-world example, this keeps the whole object reachable for as long as the publisher lives, not just the field the lambda actually needed.</p>
+    <p>✅ Extract only the small values genuinely needed into local variables <em>before</em> creating the long-lived lambda, and capture those instead of referencing instance members directly. If you need actual instance behavior, prefer a named method group subscription you can explicitly unsubscribe (<code>-=</code>) — which lesson 191 covers as the direct fix for this exact leak shape from the publisher's side.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming shared captures between lambdas is a bug, not a feature</h4>
+    <p>❌ Being surprised when two lambdas in the same method see each other's mutations to a shared captured variable, and treating it as unexpected or accidental coupling.</p>
+    <p>✅ Recognize it as the intended behavior — it's the same reference-capture semantics from lesson 102, now visible as two methods sharing one object's field. If you genuinely need two lambdas to be independent, make sure they don't reference the same outer variable, or copy the value into separate locals first.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">You don't "opt into" this mechanism — it's automatic and universal the moment a lambda captures an outer variable. What you control is <strong>what</strong> gets captured, and that's the lever worth pulling deliberately.</li>
+        <li style="margin-bottom:0.4rem;">Before handing a lambda to anything long-lived — a static event, an application-scoped service, a cache, a background timer callback — pause and ask exactly which variables it references, and whether any of them (including an implicit <code>this</code>) are larger or longer-lived than the lambda strictly needs.</li>
+        <li style="margin-bottom:0.4rem;">Reach for this mental model whenever you're debugging unexplained memory growth in a long-running .NET process — profilers routinely surface these hidden display-class instances by name (<code>&lt;&gt;c__DisplayClass...</code>), and knowing what that name means turns a confusing heap dump into an obvious fix.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        A captured variable = a field on a compiler-generated, heap-allocated class.<br />
+        A lambda body = a method on that same class.<br />
+        Multiple lambdas sharing captures = multiple methods on <strong>one</strong> instance — a real Roslyn optimization.<br />
+        The delegate you hold = a reference to that instance. As long as the delegate is reachable, so is everything its display class points to — including an implicitly captured <code>this</code>.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">The compiler turns each captured variable into a field on a hidden, heap-allocated closure class, and turns the lambda body into a method on that class.</li>
+            <li style="margin-bottom:0.4rem;">A captured local's lifetime extends beyond its enclosing method precisely because it stops being a stack local and becomes a heap-allocated field — that relocation is the entire mechanism that makes closures work.</li>
+            <li style="margin-bottom:0.4rem;">Multiple lambdas in the same scope that capture overlapping variables can share <strong>one</strong> generated closure class — a genuine Roslyn optimization, not a per-lambda allocation every time.</li>
+            <li style="margin-bottom:0.4rem;">A lambda handed to a long-lived publisher (a static event, an application-scoped service) can keep an entire object graph alive far longer than intended — especially via an implicitly captured <code>this</code> — a real, well-documented .NET memory-leak shape.</li>
+            <li style="margin-bottom:0.4rem;">The per-iteration <code>foreach</code> scoping from lesson 102 is this same mechanism at work: a fresh iteration variable each pass means a fresh display-class instance each pass, so each lambda genuinely captures something different.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen exactly what the compiler generates for a closure, and how that explains both a real memory-leak pattern and the loop-variable behavior from lesson 102. Let's confirm the details.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why does a captured local variable survive after its enclosing method returns, when an ordinary local variable does not?</p>
+        <ul class="options">
+            <li>A) The .NET runtime keeps every method's stack frame alive forever, just in case</li>
+            <li>B) The compiler moves the captured variable's storage from the stack frame into a field on a heap-allocated, compiler-generated class, so its lifetime becomes tied to normal GC reachability instead of the stack frame</li>
+            <li>C) Captured variables are copied into the CPU's registers, which never get reused</li>
+            <li>D) The C# runtime pauses garbage collection whenever a lambda exists</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the exact mechanism this lesson covers — the compiler generates a hidden class with a field for the captured variable, and the delegate's target references an instance of that class. Once it's a heap field, ordinary GC reachability rules apply, and stack-frame lifetime is no longer relevant.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Stack frames genuinely are popped and reused when a method returns — nothing keeps them alive. The captured variable isn't on the stack anymore by the time this matters.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> CPU registers aren't involved in this mechanism at all — this is a compile-time transformation of where the variable's storage lives (stack vs. heap object field), not a hardware-level detail.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Garbage collection continues to run normally; a closure's object simply stays reachable (and therefore uncollected) for as long as something references it, exactly like any other heap object.</p>
+                <p><strong>Reinforcement:</strong> A captured variable's extended lifetime is a direct, mechanical consequence of it becoming a heap-allocated field instead of a stack local.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Two lambdas are written in the same method and both capture the same outer variable <code>total</code>. What does the compiler typically generate?</p>
+        <ul class="options">
+            <li>A) Two separate hidden classes, one per lambda, each with its own independent copy of <code>total</code></li>
+            <li>B) One hidden class with a <code>total</code> field, and both lambda bodies become separate methods on that same instance</li>
+            <li>C) A compile-time error, since two lambdas cannot capture the same variable</li>
+            <li>D) <code>total</code> is duplicated into a thread-local variable for each lambda</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Roslyn groups captures by scope, generating one display class per set of shared captured variables, with one method per lambda on that shared instance — a genuine optimization over allocating a separate object per lambda.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> If this were true, mutating <code>total</code> through one lambda would not be visible to the other — but it is, precisely because they share one field on one instance.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Multiple lambdas capturing the same variable is not only legal, it's one of the most common closure patterns — used throughout lessons 098 and 102.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no thread-local mechanism involved here; this is an ordinary instance field on an ordinary (if hidden) class.</p>
+                <p><strong>Reinforcement:</strong> Don't count lambdas to predict how many hidden classes exist — count the distinct sets of variables actually being captured.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A lambda inside an instance method reads one of the object's private fields directly (not through a local copy) and is subscribed to a <code>static</code> event that lives for the entire application's lifetime. What is the risk?</p>
+        <ul class="options">
+            <li>A) There is no risk — only explicitly typing <code>this</code> inside a lambda causes a capture</li>
+            <li>B) The lambda implicitly captures <code>this</code>, so the entire object — not just the one field — stays reachable (and un-garbage-collected) for as long as the static event lives</li>
+            <li>C) The lambda will throw a <code>NullReferenceException</code> once the object would otherwise have been collected</li>
+            <li>D) The field's value is frozen at subscription time and never updates again</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Referencing any instance member from inside a lambda captures <code>this</code> implicitly, even without typing the word. Since the display class's field then holds a reference to the whole object, and a <code>static</code> event's invocation list holds the delegate (and therefore that display class) for the application's entire lifetime, the whole object becomes unreachable-proof — a real memory leak.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the "invisible capture" trap covered in Common Confusion — referencing an instance field or method captures <code>this</code> just as much as writing <code>this</code> explicitly would.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no exception here — quite the opposite problem. The object is kept alive and valid, which is precisely why it's a silent memory leak rather than a crash.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The field is captured by reference through <code>this</code>, exactly like any other captured variable — it reflects the object's current, live value whenever the lambda runs, not a frozen snapshot.</p>
+                <p><strong>Reinforcement:</strong> An implicit <code>this</code> capture is one of the most common ways a closure accidentally keeps far more alive than intended.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why does a classic <code>for</code> loop's lambda capture end up seeing the loop's final value, while a <code>foreach</code> loop's lambda capture (since C# 5) sees each iteration's own value?</p>
+        <ul class="options">
+            <li>A) <code>foreach</code> lambdas are evaluated immediately, before the loop finishes; <code>for</code> lambdas are evaluated only after</li>
+            <li>B) A classic <code>for</code> loop has one loop variable, so the compiler allocates one shared display-class instance for the whole loop; <code>foreach</code> creates a genuinely new iteration variable each pass, so the compiler allocates a new display-class instance each pass</li>
+            <li>C) <code>for</code> loops cannot be used with lambdas at all in modern C#</li>
+            <li>D) The difference is purely cosmetic and has no effect on captured values</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the object-level explanation of lesson 102's rule: how many separate display-class instances get allocated depends directly on how many genuinely separate variables exist. One shared loop counter means one shared instance and one shared field; a fresh per-iteration variable means a fresh instance and field each time.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Both kinds of lambdas run only when actually invoked, after being added to whatever collection or delegate holds them — evaluation timing isn't the distinguishing factor here.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>for</code> loops and lambdas work together fine, as shown throughout lesson 102 — the issue is specifically about what gets captured, not whether it's legal.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a real, observable, functional difference in captured behavior — not a stylistic one — as demonstrated by lesson 102's <code>012</code> vs. <code>333</code> output comparison.</p>
+                <p><strong>Reinforcement:</strong> The loop-variable trap and its fix are both fully explained by counting how many display-class instances actually get allocated.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly what a closure compiles to — a heap-allocated class with fields for captured variables and methods for lambda bodies — and why that mechanism is both what makes closures work and how they can accidentally leak memory. Next: the same "publisher holds a strong reference" leak shape, from the events side.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

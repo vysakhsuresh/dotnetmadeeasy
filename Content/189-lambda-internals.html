@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>189 - Lambda Internals · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        "Does this lambda allocate?" is not a mystery — it's a question with a precise, mechanical answer once you know what the compiler actually generates for it.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You've written hundreds of lambdas by now — <code>x =&gt; x * 2</code>, <code>o =&gt; o.Total &gt; 100</code>, <code>() =&gt; Console.WriteLine("done")</code>. Every single one of them looks like the same kind of thing: a small, self-contained expression with an arrow. But from the compiler's point of view, they are not remotely the same. Some compile to a private static method with a single, permanently cached delegate instance — created once, reused forever, allocating nothing on the millionth call. Others compile to something much heavier: a hidden class, instantiated fresh every time the surrounding method runs.</p>
+    <p>You already know from Advanced Part I (lessons 169–176) exactly how the GC and Gen0 allocation work — that heap allocation is cheap in .NET, but never free, and that it's the compacting generational collector, not magic, that keeps "cheap" true. This lesson connects that knowledge directly to lambdas: which kind you're writing, in any given case, and exactly why.</p>
+    <p><strong>By the end, "does this lambda allocate?" stops being a guess you'd need a profiler to answer and becomes something you can determine just by reading the lambda itself.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A lambda expression isn't a runtime feature at all — it's pure compile-time syntax. By the time your program is running, the lambda you wrote no longer exists as a lambda; the C# compiler (Roslyn) has already rewritten it into one of a small number of ordinary, boring C# constructs it knows how to generate: a method, sometimes a whole extra class, and a delegate value pointing at one of them. Which specific shape it becomes depends entirely on one question: <strong>does the lambda need to read any state from outside its own parameters?</strong></p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition — Three Compilation Strategies</h3>
+    <p>Depending on what a lambda references, the compiler chooses one of three strategies:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>No captures at all</strong> — the lambda only uses its own parameters and static members. The compiler emits a <strong>private static method</strong>, and — critically — generates code to build the delegate wrapping it <em>once</em>, caching that single instance in a compiler-generated static field for reuse on every subsequent evaluation.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Captures local variables (but not <code>this</code>)</strong> — the lambda reads a local variable, or a parameter, from its enclosing method. The compiler generates a hidden <strong>"display class"</strong> (informally, a closure class) with a field for each captured variable, turns the lambda into an instance method on that class, and allocates a fresh instance of the display class each time the enclosing method runs and needs it.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Captures <code>this</code> only</strong> — the lambda reads instance members (fields, properties) of the containing object, but no local variables. The compiler can often turn the lambda into a private <strong>instance method directly on the enclosing type itself</strong> — no separate display class is needed, because the already-existing <code>this</code> reference is all the captured state the lambda requires.</li>
+    </ul>
+    <p>None of this is a hidden implementation detail Microsoft keeps quiet about — it's documented, standard C# compiler (Roslyn) behavior, visible the moment you decompile a build's IL.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🪶 Capture-Free Lambda</h4>
+            <ul>
+                <li><code>x =&gt; x * 2</code></li>
+                <li>Becomes: a private static method</li>
+                <li>Delegate instance: created <strong>once</strong>, cached, reused forever</li>
+                <li>Allocation per call: <strong>none</strong>, after the first</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🎒 Capturing Lambda</h4>
+            <ul>
+                <li><code>x =&gt; x * multiplier</code></li>
+                <li>Becomes: an instance method on a compiler-generated display class</li>
+                <li>Delegate instance: a <strong>new</strong> one each time it's created</li>
+                <li>Allocation per creation: display class object + delegate object</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — A Lambda Needs Somewhere to Keep Its Captured State</h3>
+    <p>C#'s IL has methods, but a method by itself has nowhere to durably store a captured variable between calls — a method's local variables live on the stack and disappear the instant it returns. Yet a lambda like <code>x =&gt; x &gt; threshold</code>, once created inside some method, needs to keep working correctly even after that enclosing method has returned and its stack frame is long gone. Something has to own <code>threshold</code>'s value for as long as the lambda (and any delegate pointing at it) is still alive.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Promote the Captured State to an Object on the Heap</h3>
+    <p>The compiler's answer is exactly the same technique you already know from every other class in C#: put the state in fields on an object, and objects on the managed heap outlive the method that created them — that's precisely what the GC and generational collection from Advanced Part I exist to manage safely. A "display class" is nothing exotic; it's an ordinary, compiler-authored class, with ordinary fields, subject to the exact same Gen0 bump-pointer allocation and eventual collection as any object you'd write yourself.</p>
+    <p>But that machinery is only needed when there's actually captured state to hold. When a lambda captures nothing, there's nothing to keep alive beyond the method's lifetime — so the compiler skips the display class (and the per-call allocation) entirely, and goes one step further: since the resulting delegate is always functionally identical no matter how many times it's built, it only needs to be built once, ever.</p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight</div>
+        <p>The compiler isn't being clever for its own sake — it's applying the minimum machinery each specific lambda actually requires. A capture-free lambda needs no storage beyond its parameters, so it gets none. A capturing lambda needs somewhere durable to hold what it captured, so — and only so — it gets a heap-allocated object to hold it.</p>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            THE COMPILER'S DECISION, AS A CHECKLIST
+        </div>
+        <div class="flow-step" style="text-align:center;">You write a lambda</div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step" style="text-align:center;">Does it read any local variable or parameter from the enclosing scope?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;">NO</div>
+                <div style="font-size:0.85rem;margin-top:0.3rem;">→ private static method, cached singleton delegate</div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;">YES</div>
+                <div style="font-size:0.85rem;margin-top:0.3rem;">Does it capture ONLY <code>this</code> / instance members, with no locals?</div>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+                <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.6rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);font-size:0.85rem;">YES → private <strong>instance</strong> method on the enclosing type, no new class</div>
+                <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.6rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);font-size:0.85rem;">NO (locals captured) → new display class, instantiated per activation</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">CASE 1 — A CAPTURE-FREE LAMBDA, DECOMPILED CONCEPTUALLY</div>
+        <div class="flow-step">
+            <div class="step-label">YOUR CODE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Func&lt;int, int&gt; doubler = x =&gt; x * 2;</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">ROUGHLY WHAT THE COMPILER GENERATES</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// Compiler-generated, elsewhere in the class:
+private static Func&lt;int, int&gt;? _cachedDoubler;
+private static int Doubler_Method(int x) =&gt; x * 2;
+
+// At the call site, roughly:
+Func&lt;int, int&gt; doubler = _cachedDoubler ??= new Func&lt;int, int&gt;(Doubler_Method);</code></pre>
+            <ul><li>The first time this line runs, the cached field is empty, so the delegate is built and stashed. Every later time this exact line runs — even on a completely different call to the enclosing method — the cached instance is reused. No new delegate, no new anything, gets allocated after the first time.</li></ul>
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <div class="flow-title">CASE 2 — A CAPTURING LAMBDA, DECOMPILED CONCEPTUALLY</div>
+        <div class="flow-step">
+            <div class="step-label">YOUR CODE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Func&lt;int, int&gt; MakeMultiplier(int factor)
+{
+    return x =&gt; x * factor; // captures 'factor'
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">ROUGHLY WHAT THE COMPILER GENERATES</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// Compiler-generated hidden "display class":
+private sealed class &lt;&gt;c__DisplayClass0
+{
+    public int factor;
+    public int Lambda_Method(int x) =&gt; x * this.factor;
+}
+
+Func&lt;int, int&gt; MakeMultiplier(int factor)
+{
+    var displayClass = new &lt;&gt;c__DisplayClass0(); // NEW allocation, every call
+    displayClass.factor = factor;
+    return new Func&lt;int, int&gt;(displayClass.Lambda_Method); // NEW delegate too
+}</code></pre>
+            <ul><li>Every call to <code>MakeMultiplier</code> allocates a fresh display class instance to hold that call's own <code>factor</code>, plus a fresh delegate wrapping it. There's no caching possible here — each call legitimately needs its own independent copy of <code>factor</code>, so reusing one instance across calls would be incorrect, not just unoptimized.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+class Program
+{
+    // No captures — compiled once, delegate cached and reused
+    static Func&lt;int, bool&gt; GetIsEvenCheck() =&gt; x =&gt; x % 2 == 0;
+
+    // Captures 'minimum' — a fresh display class + delegate every call
+    static Func&lt;int, bool&gt; GetIsAtLeast(int minimum) =&gt; x =&gt; x &gt;= minimum;
+
+    static void Main()
+    {
+        var check1 = GetIsEvenCheck();
+        var check2 = GetIsEvenCheck();
+        Console.WriteLine(ReferenceEquals(check1, check2)); // True — SAME cached delegate instance, both calls
+
+        var atLeast5 = GetIsAtLeast(5);
+        var atLeast10 = GetIsAtLeast(10);
+        Console.WriteLine(ReferenceEquals(atLeast5, atLeast10)); // False — two DIFFERENT delegate instances,
+                                                                   // each wrapping its own captured 'minimum'
+    }
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>ReferenceEquals</code> makes the compiler's two strategies directly observable. <code>GetIsEvenCheck</code>'s lambda captures nothing, so both calls hand back the literal same cached object — nothing new was allocated the second time. <code>GetIsAtLeast</code>'s lambda captures <code>minimum</code>, which is different on each call, so it necessarily gets its own fresh display class and delegate every time — there's no way to share an instance when the captured value itself differs per call.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>An order-processing service filters a large in-memory batch of orders on every request. One version accidentally captures a per-request variable it doesn't need to; the fixed version doesn't:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public record Order(int Id, decimal Total, bool IsCancelled);
+
+public class OrderReportService
+{
+    // ❌ Captures 'requestId' even though it's never used inside the lambda body —
+    //    a common accident when a lambda is copy-pasted from a context that DID need it.
+    public List&lt;Order&gt; GetActiveOrders_Wasteful(List&lt;Order&gt; orders, string requestId)
+    {
+        Console.WriteLine($"[{requestId}] Filtering orders...");
+        // This lambda captures nothing from the enclosing scope — 'o' is its own parameter —
+        // so despite appearances, THIS particular line is actually fine on its own.
+        return orders.Where(o =&gt; !o.IsCancelled).ToList();
+    }
+
+    // ✅ A version that DOES need per-call state genuinely has no choice but to capture it —
+    //    the point isn't "never capture," it's "know when you unavoidably must."
+    public List&lt;Order&gt; GetOrdersAbove(List&lt;Order&gt; orders, decimal minimumTotal)
+    {
+        // 'minimumTotal' varies per call, so this lambda legitimately captures it —
+        // a fresh display class here is the necessary cost of parameterized filtering.
+        return orders.Where(o =&gt; o.Total &gt;= minimumTotal).ToList();
+    }
+
+    // ✅ Genuinely capture-free — reuses one cached delegate across every call, forever.
+    public List&lt;Order&gt; GetCancelledOrders(List&lt;Order&gt; orders)
+    {
+        return orders.Where(o =&gt; o.IsCancelled).ToList();
+    }
+}</code></pre>
+    <p><code>GetOrdersAbove</code>'s allocation is unavoidable and entirely reasonable — <code>minimumTotal</code> genuinely differs per call, so a fresh closure is the correct price for that flexibility. <code>GetCancelledOrders</code>, by contrast, costs nothing beyond its very first invocation across the whole application's lifetime, precisely because its lambda needs no per-call state at all. Recognizing which of your own lambdas fall into which category — not eliminating captures altogether — is the actual skill this lesson is building.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🎒</span> A Laminated Sign vs. a Custom Backpack</div>
+        <p>A capture-free lambda is like a laminated instruction sign bolted to a wall: it was made once, it never needs to change, and everyone who walks past reads the exact same physical sign — nobody needs to print a new one. That's the cached, reused delegate.</p>
+        <p>A capturing lambda is like packing a custom backpack for a specific trip: the trip's details (the captured variables) are different every time, so you can't reuse yesterday's already-packed bag — you genuinely need a new backpack, packed with today's specific contents, every single time you set out. That's the fresh display class, allocated per activation, holding exactly the captured values that call needs.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">CONNECTING BACK TO ADVANCED PART I</div>
+        <div class="flow-step">
+            <div class="step-label">1. A DISPLAY CLASS IS AN ORDINARY HEAP OBJECT, NOTHING MORE</div>
+            <ul>
+                <li>It has no special runtime privileges. It's allocated in Gen0 exactly like every other short-lived object — the bump-pointer allocation from lesson 174 applies to it unchanged.</li>
+                <li>If the delegate wrapping it doesn't escape the enclosing method's scope (isn't stored anywhere longer-lived, isn't returned), it typically becomes garbage almost immediately and gets reclaimed cheaply on the next Gen0 collection, just like any other short-lived temporary object from lesson 173's generational model.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. WHEN A CAPTURED VARIABLE OUTLIVES ITS ORIGINAL STACK FRAME</div>
+            <ul>
+                <li>Ordinarily, a local variable inside a value-type-only method could live on the stack (lesson 175). But a captured local has to survive after the enclosing method returns, since the returned delegate might still be called later — so the compiler can't leave it on the stack at all.</li>
+                <li>Moving it into a display class field is exactly how the compiler solves this: the display class is a heap object, and heap objects aren't tied to any particular stack frame's lifetime — this is precisely why capturing forces a heap allocation even for what would otherwise be a simple value-type local.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. WHY this-ONLY CAPTURE IS CHEAPER THAN LOCAL CAPTURE</div>
+            <ul>
+                <li>When a lambda only reads instance fields/properties through <code>this</code>, the compiler doesn't need to invent any new storage at all — <code>this</code> already exists as a heap object with a stable lifetime tied to the enclosing instance. The lambda can simply become another private instance method on that same type, invoked via a delegate whose target is the existing <code>this</code> — no additional display-class object needed.</li>
+                <li>This is why "a lambda inside an instance method that only touches the object's own fields" is meaningfully cheaper than "a lambda that captures a local variable," even though both feel like they're "capturing something" from a beginner's point of view.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. THE ANSWERABLE QUESTION, IN PRACTICE</div>
+            <ul>
+                <li>"Does this lambda allocate?" reduces to: "does it reference anything other than its own parameters and, at most, the enclosing instance's own members?" If yes to any local/outer variable, expect a per-activation allocation. If no, expect it to cost nothing beyond the very first time it's built.</li>
+                <li>This is a mechanical, decompiler-verifiable fact about your code — not a rule of thumb, and not something that requires guessing or profiling to determine ahead of time.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "A lambda's own parameter counts as a capture" — it doesn't</h3>
+    <p>In <code>x =&gt; x * 2</code>, <code>x</code> is the lambda's <em>own</em> parameter, supplied fresh on every invocation — it is never "captured" from anywhere. Only variables that exist <em>outside</em> the lambda, in its enclosing scope, count as captures. This distinction is exactly what separates the two cases in the Simple Example above.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Static caching means the lambda's logic can't change" — the logic never changes anyway, for a capture-free lambda</h3>
+    <p>Caching is only possible, and only correct, because a capture-free lambda produces the exact same result for the exact same input, every single time it's built — there's no per-call state that could make two "instances" of it behave differently. If you find yourself wanting a lambda's behavior to vary between calls, that need for variation is itself what would force it to capture something, which in turn is what would disqualify it from caching.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "Every lambda inside a loop reallocates every iteration" — only true if it captures a per-iteration variable</h3>
+    <p>A capture-free lambda written inside a loop body still only gets built (and cached) once, the first time that code path runs — the loop iterating doesn't force repeated allocation on its own. It's specifically capturing something that changes per iteration (like a loop variable used inside the lambda) that forces a fresh display class on every pass.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Capturing a variable the lambda doesn't actually need</h4>
+    <p>❌ Writing a lambda inside a method with several local variables in scope, and accidentally referencing one of them (say, for a debug <code>Console.WriteLine</code> left in during development) that isn't otherwise needed — turning what could have been a cheap, cacheable lambda into a display-class-allocating one.</p>
+    <p>✅ Keep lambdas referencing only what they genuinely need. If a lambda that looks like it should be capture-free is unexpectedly allocating on every call, check exactly what it's referencing from the enclosing scope — often it's an easy trim.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming the caching optimization applies to lambdas that must, by their nature, capture something</h4>
+    <p>❌ Expecting <code>GetOrdersAbove(orders, 50m)</code> and <code>GetOrdersAbove(orders, 200m)</code> from the real-world example above to somehow share one cached delegate — they logically can't, since each needs its own <code>minimumTotal</code>.</p>
+    <p>✅ Accept that allocation as the legitimate, necessary cost of parameterized behavior — the goal from this lesson is recognizing which lambdas are avoidably capturing, not eliminating every capture unconditionally.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Over-optimizing low-frequency code for lambda allocation</h4>
+    <p>❌ Restructuring a rarely-called method (a one-time startup configuration step, a button-click handler) purely to avoid a capturing lambda's allocation, at the cost of readability.</p>
+    <p>✅ This distinction matters most in hot paths — tight loops, per-request code in high-throughput services, LINQ over large in-memory sequences called frequently. For code that runs occasionally, a display-class allocation is genuinely negligible; prioritize clarity there, exactly as lesson 174 already established for allocation in general.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Reach for this knowledge specifically when profiling shows unexpected allocation pressure from delegate-heavy code (LINQ chains, callback-heavy APIs) in a hot path — knowing the two compilation strategies tells you exactly where to look.</li>
+        <li style="margin-bottom:0.4rem;">Prefer capture-free lambdas (or plain method groups) over capturing ones in genuinely hot loops, when the logic doesn't actually need per-call state — a small, free win once you know to look for it.</li>
+        <li style="margin-bottom:0.4rem;">Use this to explain, precisely, why a decompiled build shows classes named things like <code>&lt;&gt;c__DisplayClass0</code> — a question every developer eventually asks the first time they inspect generated IL.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Don't</strong> restructure ordinary, low-frequency code purely to dodge closure allocation — as with all allocation concerns from Advanced Part I, correctness and readability come first outside of measured hot paths.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        Captures nothing → private static method + one cached delegate, forever.<br />
+        Captures locals → hidden display class + fresh delegate, every activation.<br />
+        Captures only <code>this</code> → private instance method, no extra class needed.<br /><br />
+        "Does this lambda allocate?" = "does it reference anything beyond its own parameters?"
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A lambda with no captured state compiles to a private static method, and the compiler caches a single delegate instance for it — built once, reused on every future evaluation, with no allocation after the first.</li>
+            <li style="margin-bottom:0.4rem;">A lambda that captures local variables compiles to an instance method on a compiler-generated "display class," which is allocated fresh each time the enclosing method runs and needs it.</li>
+            <li style="margin-bottom:0.4rem;">A lambda that captures only <code>this</code> (instance members, no locals) can become a plain private instance method on the enclosing type — no extra class required, since <code>this</code> already has a suitable lifetime.</li>
+            <li style="margin-bottom:0.4rem;">This is ordinary, documented Roslyn compiler behavior, directly connected to Gen0 bump-pointer allocation (lesson 174) and generational collection (lesson 173) — a display class is just an ordinary short-lived heap object, nothing more exotic.</li>
+            <li style="margin-bottom:0.4rem;">"Does this lambda allocate?" is answerable by inspection: does it reference anything beyond its own parameters (and, at most, the enclosing instance)? If not, it's free after the first build; if so, expect a per-activation allocation.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen exactly what the compiler generates for a lambda in each of the three cases. Let's confirm you can tell them apart on sight.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> <code>Func&lt;int, int&gt; square = x =&gt; x * x;</code> is created inside a method called a million times. How many delegate instances does this line allocate in total, across all million calls?</p>
+        <ul class="options">
+            <li>A) One million — a new delegate every single call</li>
+            <li>B) One — the lambda captures nothing, so the compiler caches a single delegate instance and reuses it on every call</li>
+            <li>C) Zero — lambdas never allocate delegates under any circumstances</li>
+            <li>D) It depends on how many times <code>square</code> itself is subsequently invoked</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>x =&gt; x * x</code> references only its own parameter <code>x</code> — no captures. The compiler generates a private static method and a single cached delegate field, reusing that one instance on every evaluation of this line.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That would be true if the lambda captured a variable that differed per call — this one captures nothing, so caching applies.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> At least one delegate object is always created — the first time this line executes — even for a capture-free lambda; it's just not recreated on every subsequent evaluation.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Delegate creation happens when the lambda expression is evaluated (this line), not when the resulting delegate is later invoked — invoking <code>square(n)</code> doesn't create new delegates at all.</p>
+                <p><strong>Reinforcement:</strong> "Created" (the lambda expression evaluating) and "invoked" (calling the resulting delegate) are two separate events — only the former can trigger allocation.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> <code>Func&lt;int, bool&gt; MakeCheck(int limit) =&gt; x =&gt; x &gt; limit;</code> is called 100 times with different values of <code>limit</code>. What does the compiler generate for the lambda inside it?</p>
+        <ul class="options">
+            <li>A) A private static method with one cached delegate, reused across all 100 calls</li>
+            <li>B) An instance method on a compiler-generated display class holding <code>limit</code> as a field — a new display class and delegate instance for each of the 100 calls</li>
+            <li>C) A compile-time error, since lambdas cannot reference a method's own parameters</li>
+            <li>D) A static field directly holding the value of <code>limit</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>limit</code> is a parameter of the enclosing method <code>MakeCheck</code>, referenced from inside the lambda — that's a capture. Because each of the 100 calls has its own distinct value of <code>limit</code>, each call needs its own display class instance to hold it, and therefore its own delegate.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Caching only applies when there's nothing call-specific to preserve — here, each call's <code>limit</code> is genuinely different and must be kept separate.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Lambdas referencing an enclosing method's parameters is one of the most common and entirely valid forms of capturing — this compiles correctly.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A single static field could only hold one value at a time, which would be wrong the moment two calls with different <code>limit</code> values were in play simultaneously — each call needs its own separately-held value, which is exactly what a per-call display class instance provides.</p>
+                <p><strong>Reinforcement:</strong> Capturing a parameter or local that legitimately varies per call is precisely the case where per-activation allocation is both expected and necessary.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Inside an instance method, a lambda reads only <code>this._threshold</code> (an instance field) and its own parameter — no local variables from the enclosing method. What does the compiler typically generate?</p>
+        <ul class="options">
+            <li>A) A brand-new display class every time, exactly as with any other capture</li>
+            <li>B) A private static method, since instance fields don't count as captures</li>
+            <li>C) A private instance method directly on the enclosing type — no separate display class is needed, since the existing <code>this</code> reference already has a suitable lifetime</li>
+            <li>D) An expression tree, since instance field access can't be compiled to a delegate</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> Reading only instance members through <code>this</code> — with no local-variable captures — lets the compiler turn the lambda into another private instance method on the same type, using the already-existing <code>this</code> as the delegate's target. No new class needs to be generated to hold anything.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A separate display class is specifically needed to hold captured <em>locals</em>, which don't otherwise have a long enough lifetime — <code>this</code> doesn't have that problem, since the object it refers to already persists independently.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Accessing <code>this._threshold</code> does depend on the specific instance, so it can't become a <em>static</em> method — it must be an instance method so it has a <code>this</code> to read the field from.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing about referencing instance state forces expression-tree compilation — that only happens when the lambda's target type is explicitly <code>Expression&lt;TDelegate&gt;</code>, as covered in the previous lesson.</p>
+                <p><strong>Reinforcement:</strong> Capturing <code>this</code> alone is the cheapest form of capture — it reuses the existing object instead of allocating a new one.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why does capturing a local variable force the compiler to move it into a heap-allocated display class, instead of leaving it on the stack where an ordinary local would normally live?</p>
+        <ul class="options">
+            <li>A) Stack-allocated values are always slower to access than heap-allocated ones</li>
+            <li>B) The captured value must remain accessible after the enclosing method returns and its stack frame is gone — something only a heap object, not stack storage, can provide</li>
+            <li>C) The C# compiler cannot generate IL that reads stack variables from inside a lambda under any circumstances</li>
+            <li>D) Display classes are required by the CLR for all delegate creation, regardless of captures</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The delegate wrapping the lambda can outlive the method call that created it — it might be stored, returned, or invoked much later. A stack frame is gone the moment its method returns, so anything the lambda still needs to read has to live somewhere with a longer lifetime: a heap-allocated object.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Relative access speed isn't the reason at all — the real constraint is lifetime, not performance of the access itself.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The actual limitation isn't about generating IL to read a value — it's that the original stack storage simply won't exist anymore by the time a later invocation happens.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> As shown in Case 1's example, a capture-free lambda needs no display class at all — they're generated specifically to solve the captured-variable-lifetime problem, not as a universal requirement.</p>
+                <p><strong>Reinforcement:</strong> Heap allocation for a captured variable exists to solve a lifetime problem, not a performance or syntax one.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly what your compiler does with every lambda you write, and can answer "does this allocate?" by inspection alone — closing the loop between the GC/allocation lessons from Advanced Part I and everyday delegate code.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

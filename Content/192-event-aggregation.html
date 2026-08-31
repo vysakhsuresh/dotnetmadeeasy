@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>192 - Event Aggregation · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Lesson 107 decoupled a publisher from its subscribers. It still needed a direct reference to raise its own event. This lesson removes even that.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Lesson 107's <code>OrderService</code> was a genuine win: it raised <code>OrderPlaced</code> and had zero references to <code>InventoryUpdater</code> or <code>OrderConfirmationEmailer</code>. But look closely at what was still required for that to work — a composition root that held a direct reference to <code>orderService</code> itself, in order to write <code>orderService.OrderPlaced += inventoryUpdater.HandleOrderPlaced;</code>. Every subscriber, and the code doing the wiring, still needed to know <code>OrderService</code> specifically exists, by type, in order to reach its event.</p>
+    <p>Now picture a larger application: an analytics module fifteen files away from <code>OrderService</code>, in a completely different part of the codebase, owned by a different team, that also wants to react to orders being placed. Does it take a constructor dependency on <code>OrderService</code> just to reach one event? Does every module that ever wants to react to <em>anything</em> end up needing a reference to every publisher in the system? At small scale this is fine. At the scale of a real application with dozens of publishers and dozens of subscribers scattered across unrelated features, direct event subscription — even lesson 107's decoupled version — still doesn't scale. This lesson introduces the tool that fixes it: an <strong>event aggregator</strong>.</p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>An <strong>event aggregator</strong> is a single, shared, injectable object that sits in the middle of a publish/subscribe relationship. Instead of Component A holding a reference to Component B in order to subscribe to B's event, both A and B hold a reference to the <em>same third object</em> — the aggregator. A publishes to the aggregator; B subscribes through the aggregator. Neither one ever needs to know the other's type, or that the other exists at all.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>An event aggregator (sometimes called an in-process <strong>message bus</strong> — a name worth being careful with, covered under Common Confusion) is a service exposing two generic operations: <code>Publish&lt;TEvent&gt;(TEvent evt)</code>, which broadcasts an event-data object of a given type to everyone currently subscribed to that type, and <code>Subscribe&lt;TEvent&gt;(Action&lt;TEvent&gt; handler)</code>, which registers a handler to be called whenever an event of that type is published. Internally, the aggregator maintains its own mapping from event type to a list of subscribed handlers — it is, in effect, a general-purpose, reusable version of the single <code>OrderPlaced</code> event lesson 107 built by hand, generalized to handle any number of event types without a dedicated <code>event</code> declaration for each one.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>⚠️ Lesson 107 — One Publisher's Own Event</h4>
+            <ul>
+                <li>Subscribers need a reference to that specific publisher's type</li>
+                <li>A new publisher means a new dedicated <code>event</code> declaration</li>
+                <li>Works well for one publisher, one event, many subscribers</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Event Aggregator — Shared Hub</h4>
+            <ul>
+                <li>Publishers and subscribers only need a reference to the shared aggregator</li>
+                <li>A new event type is just a new class — no aggregator code changes</li>
+                <li>Works for many-to-many communication across unrelated modules</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Direct Subscription Doesn't Scale to Many-to-Many</h3>
+    <p>Lesson 107 decoupled <em>what happens after</em> an event fires from the publisher raising it. But it left one coupling in place: to subscribe to <code>OrderService.OrderPlaced</code> at all, you need a compile-time reference to the <code>OrderService</code> type — an assembly reference, a <code>using</code>, a constructor parameter somewhere. In a small application with a handful of publishers, that's a non-issue. In a real application with dozens of independent features — orders, inventory, analytics, notifications, loyalty, fraud detection, audit logging — each one potentially caring about events raised by several of the others, this breaks down in three concrete ways:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Every subscriber needs a reference to every publisher it cares about.</strong> An analytics module that wants to react to order placement, inventory changes, and login events ends up depending on <code>OrderService</code>, <code>InventoryService</code>, and <code>AuthService</code> directly — exactly the kind of tangled, many-to-many dependency graph event-driven design was supposed to prevent in the first place.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Adding a new publisher-to-subscriber connection means both sides — or at minimum the composition root — must know both types.</strong> A brand-new, unrelated module can't simply announce "I care about orders" without someone wiring it directly to <code>OrderService</code>.</li>
+        <li style="margin-bottom:0.4rem;"><strong>The composition root becomes a single, enormous file of wiring</strong> — every publisher-subscriber pair in the entire application, hand-connected, one line at a time, growing without bound as the application grows.</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — One Shared Hub, Known to Everyone, Coupling No One to Anyone</h3>
+    <p>An event aggregator breaks the direct A-knows-about-B relationship entirely. Every publisher and every subscriber depends on exactly one thing: the aggregator's interface. A brand-new analytics module can subscribe to <code>OrderShipped</code> the moment it's written, with no changes anywhere else in the codebase — not to <code>OrderService</code>, not to the composition root, not to any other subscriber. The aggregator is the only shared dependency, and it's a genuinely generic, reusable piece of infrastructure — write it once, and it serves every publish/subscribe relationship in the application, for any event type.</p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight</div>
+        <p>This is the same underlying goal as lesson 107 — decouple publishers from subscribers — taken one step further. Lesson 107 decoupled subscribers from <em>each other</em>; an event aggregator additionally decouples subscribers from the <em>publisher's specific type</em>. The publisher doesn't even need its own <code>event</code> declaration anymore — <code>Publish&lt;TEvent&gt;</code> replaces it for every event type, uniformly.</p>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            DIRECT EVENTS vs AN EVENT AGGREGATOR
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">⚠️ LESSON 107 — DIRECT EVENT</div>
+                <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.7rem;border-radius:4px;margin:0.5rem 0 0 0;font-size:0.85rem;border:none;overflow-x:auto;color:var(--text-main,#E2E8F0);"><code style="background:transparent;padding:0;font-size:inherit;color:inherit;">Analytics module
+  needs: reference to OrderService
+  needs: reference to InventoryService
+  needs: reference to AuthService
+  (couples to every publisher it cares about)</code></pre>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">✅ EVENT AGGREGATOR</div>
+                <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.7rem;border-radius:4px;margin:0.5rem 0 0 0;font-size:0.85rem;border:none;overflow-x:auto;color:var(--text-main,#E2E8F0);"><code style="background:transparent;padding:0;font-size:inherit;color:inherit;">Analytics module
+  needs: IEventAggregator (only)
+  subscribes to: OrderShipped, StockLow, UserLoggedIn
+  (couples to ONE shared abstraction, not to any publisher)</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">BUILDING A SIMPLE EVENT AGGREGATOR, STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">1. DEFINE THE ABSTRACTION</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IEventAggregator
+{
+    void Publish&lt;TEvent&gt;(TEvent evt);
+    void Subscribe&lt;TEvent&gt;(Action&lt;TEvent&gt; handler);
+}</code></pre>
+            <ul><li>Both operations are generic over the event's own type — one interface handles every possible event, forever, with no changes needed for a new event type.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. STORE HANDLERS KEYED BY EVENT TYPE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">private readonly Dictionary&lt;Type, List&lt;Delegate&gt;&gt; _subscribers = new();</code></pre>
+            <ul><li><code>typeof(TEvent)</code> is the key; every handler subscribed for that exact event type is stored in its list.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. Subscribe ADDS A HANDLER TO THAT TYPE'S LIST</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public void Subscribe&lt;TEvent&gt;(Action&lt;TEvent&gt; handler)
+{
+    var key = typeof(TEvent);
+    if (!_subscribers.TryGetValue(key, out var list))
+        _subscribers[key] = list = new List&lt;Delegate&gt;();
+    list.Add(handler);
+}</code></pre>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. Publish CALLS EVERY HANDLER SUBSCRIBED TO THAT TYPE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public void Publish&lt;TEvent&gt;(TEvent evt)
+{
+    if (!_subscribers.TryGetValue(typeof(TEvent), out var list)) return;
+    foreach (var handler in list.ToArray()) // copy — see Under the Hood
+        ((Action&lt;TEvent&gt;)handler).Invoke(evt);
+}</code></pre>
+            <ul><li>Neither <code>Publish</code> nor <code>Subscribe</code> mentions <code>OrderService</code>, <code>Analytics</code>, or any specific publisher/subscriber type — the aggregator itself never knows what event types exist in advance.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+using System.Collections.Generic;
+
+public interface IEventAggregator
+{
+    void Publish&lt;TEvent&gt;(TEvent evt);
+    void Subscribe&lt;TEvent&gt;(Action&lt;TEvent&gt; handler);
+}
+
+public class EventAggregator : IEventAggregator
+{
+    private readonly Dictionary&lt;Type, List&lt;Delegate&gt;&gt; _subscribers = new();
+
+    public void Subscribe&lt;TEvent&gt;(Action&lt;TEvent&gt; handler)
+    {
+        var key = typeof(TEvent);
+        if (!_subscribers.TryGetValue(key, out var list))
+            _subscribers[key] = list = new List&lt;Delegate&gt;();
+        list.Add(handler);
+    }
+
+    public void Publish&lt;TEvent&gt;(TEvent evt)
+    {
+        if (!_subscribers.TryGetValue(typeof(TEvent), out var list)) return;
+        foreach (var handler in list.ToArray())
+            ((Action&lt;TEvent&gt;)handler).Invoke(evt);
+    }
+}
+
+public record UserSignedUp(string Email);
+
+class Program
+{
+    static void Main()
+    {
+        IEventAggregator bus = new EventAggregator();
+
+        // Two unrelated subscribers, neither knowing the other exists
+        bus.Subscribe&lt;UserSignedUp&gt;(e =&gt; Console.WriteLine($"[Welcome Email] Sending to {e.Email}"));
+        bus.Subscribe&lt;UserSignedUp&gt;(e =&gt; Console.WriteLine($"[Analytics] Recorded signup for {e.Email}"));
+
+        bus.Publish(new UserSignedUp("sam@example.com"));
+        // [Welcome Email] Sending to sam@example.com
+        // [Analytics] Recorded signup for sam@example.com
+    }
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> Whatever code calls <code>bus.Publish(new UserSignedUp(...))</code> has no idea a welcome-email handler or an analytics handler exists. Both subscribers found out about <code>UserSignedUp</code> purely by subscribing to the <em>type</em>, through the shared <code>bus</code> — no direct reference to whoever eventually publishes it.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Order Fulfillment, Fully Decoupled</h2>
+    <p>Here is lesson 107's order-placement scenario, rebuilt with an aggregator. <code>OrderFulfillmentService</code>, <code>AnalyticsModule</code>, and <code>NotificationModule</code> are three completely independent classes, in three imagined completely independent parts of a codebase — none of them reference each other, or even know the other two exist.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+// ─── Event, shared only as a plain data type ───
+public record OrderShipped(int OrderId, string TrackingNumber, decimal OrderTotal);
+
+// ─── Publisher — order-fulfillment module. Knows only IEventAggregator. ───
+public class OrderFulfillmentService
+{
+    private readonly IEventAggregator _bus;
+    public OrderFulfillmentService(IEventAggregator bus) =&gt; _bus = bus;
+
+    public void ShipOrder(int orderId, decimal orderTotal)
+    {
+        var trackingNumber = $"TRK-{orderId:D6}";
+        // ... actual shipping logic here ...
+        _bus.Publish(new OrderShipped(orderId, trackingNumber, orderTotal));
+    }
+}
+
+// ─── Subscriber 1 — analytics module. Never heard of OrderFulfillmentService. ───
+public class AnalyticsModule
+{
+    public AnalyticsModule(IEventAggregator bus)
+        =&gt; bus.Subscribe&lt;OrderShipped&gt;(e =&gt;
+            Console.WriteLine($"  [Analytics] Recorded ${e.OrderTotal:N2} shipment for order #{e.OrderId}"));
+}
+
+// ─── Subscriber 2 — notification module. Never heard of AnalyticsModule either. ───
+public class NotificationModule
+{
+    public NotificationModule(IEventAggregator bus)
+        =&gt; bus.Subscribe&lt;OrderShipped&gt;(e =&gt;
+            Console.WriteLine($"  [Notify] Order #{e.OrderId} shipped — tracking {e.TrackingNumber}"));
+}
+
+// ─── Composition root — the only place that wires anything together ───
+class Program
+{
+    static void Main()
+    {
+        IEventAggregator bus = new EventAggregator();
+
+        _ = new AnalyticsModule(bus);
+        _ = new NotificationModule(bus);
+        var fulfillment = new OrderFulfillmentService(bus);
+
+        fulfillment.ShipOrder(orderId: 2002, orderTotal: 89.99m);
+
+        //   [Analytics] Recorded $89.99 shipment for order #2002
+        //   [Notify] Order #2002 shipped — tracking TRK-002002
+    }
+}</code></pre>
+    <p>Compare this to lesson 107's composition root, which had to write <code>orderService.OrderPlaced += inventoryUpdater.HandleOrderPlaced;</code> — a line that named both types explicitly. Here, the composition root constructs each module with the same shared <code>bus</code> and nothing more; no line of wiring code names both a publisher and a subscriber together. A brand-new <code>FraudDetectionModule</code> could be added tomorrow with a constructor that does <code>bus.Subscribe&lt;OrderShipped&gt;(...)</code>, and neither <code>OrderFulfillmentService</code> nor any existing subscriber would need a single line changed.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📻</span> A Radio Station, Not a Phone Call</div>
+        <p>Lesson 107's notice board analogy already moved you past a phone tree. An event aggregator is a further step: not one notice board per publisher, but <strong>one radio station</strong> for the whole building, broadcasting on many different channels (event types). A department that wants order updates doesn't need to know which office originally announced them — it just tunes its radio to the "OrderShipped" channel. The station itself doesn't know or care who's listening on any channel, and a brand-new department can start tuning in tomorrow without the station's engineers touching a single wire. Every publisher and every subscriber only ever needs to know about the station — never about each other.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>An event aggregator is not new machinery at the CLR level — it's ordinary generics, an ordinary dictionary, and ordinary delegate invocation, arranged as a piece of shared infrastructure. A few implementation details are worth being deliberate about:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Type identity is the routing key.</strong> <code>typeof(TEvent)</code> is what connects a <code>Publish&lt;OrderShipped&gt;</code> call to every <code>Subscribe&lt;OrderShipped&gt;</code> handler — there's no string matching, no reflection over method names, just a dictionary lookup keyed by the CLR <code>Type</code> object.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Copy the handler list before iterating.</strong> The <code>.ToArray()</code> call in <code>Publish</code> matters for the same reason lesson 106 emphasized raising events via a local copy: if a handler subscribes or unsubscribes <em>from within</em> another handler that's currently running, mutating the live list mid-iteration would throw or produce inconsistent behavior. Iterating a snapshot avoids that.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Same synchronous, in-process reality as lesson 107.</strong> Just like a plain <code>event</code>, <code>Publish</code> as shown here calls every handler synchronously, on the calling thread, in subscription order, before returning. An event aggregator is a routing mechanism, not a threading or queueing mechanism — it doesn't make anything asynchronous by itself. A production-grade aggregator built for a multi-threaded application would additionally need locking around the subscriber dictionary itself, exactly as lesson 191 covered for custom event accessors.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Lifetime matters, exactly as it did for events.</strong> An aggregator that lives for the whole application (typically registered as a singleton in a dependency injection container) holds a reference to every handler ever subscribed to it. A subscriber that's shorter-lived than the aggregator and never unsubscribes reproduces the exact lapsed listener leak from lesson 191 — the aggregator doesn't remove this concern, it just moves the strong-reference chain one hop further, from publisher-holds-subscriber to aggregator-holds-subscriber.</li>
+    </ul>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Message bus" sounds like a message queue — inside one process, it isn't</h3>
+    <p>The term "message bus" is used for this in-process pattern, but it is a completely different thing from the message brokers (RabbitMQ, Kafka, Azure Service Bus) that lesson 107 explicitly set aside for a later, distributed-systems topic. The <code>EventAggregator</code> in this lesson lives entirely inside one process's memory, has no durability (a published event that nobody happened to be subscribed to at that instant is simply gone — there's no "replay it later"), and involves no network hop whatsoever. If you hear "event aggregator" or "in-process message bus" in a job posting or a codebase, assume this lesson's pattern unless the context specifically says otherwise; if you hear "message queue," "broker," or a specific product name (Kafka, RabbitMQ, SQS), that's the different, later topic.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "An event aggregator replaces the <code>event</code> keyword everywhere" — no, it's a different tool for a different scale</h3>
+    <p>A class that has exactly one well-known set of subscribers — a UI control's <code>Click</code> event, a domain object's own <code>StatusChanged</code> event — is still perfectly well served by a plain <code>event</code>, exactly as lessons 105–106 taught. An aggregator earns its complexity specifically when the number of independent, unrelated subscriber modules grows large enough that direct references between them become the actual maintenance burden. Reaching for an aggregator for a single, simple, two-party notification is unnecessary indirection.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Treating the aggregator as durable or asynchronous by default</h4>
+    <p>❌ Publishing an event and assuming a subscriber that registers itself moments later will still somehow receive it, or assuming <code>Publish</code> returns immediately while handlers run "in the background."</p>
+    <p>✅ Remember it's synchronous and has zero memory of past events by default — a subscriber must be registered <em>before</em> <code>Publish</code> is called for that specific event to receive it, exactly like a plain <code>event</code> from lesson 105.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forgetting to unsubscribe from a singleton-scoped aggregator</h4>
+    <p>❌ A short-lived object subscribes in its constructor and is never seen again — exactly the lapsed listener leak from lesson 191, just via the aggregator's internal dictionary instead of a class's own event field.</p>
+    <p>✅ Design subscriptions with the same lifetime discipline as any event subscription: unsubscribe explicitly when the subscriber's own lifetime ends, or design the aggregator's subscription API to return an <code>IDisposable</code> "subscription token" that unsubscribes on <code>Dispose()</code> — a common refinement of the simple version shown here.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Routing every single call in an application through the aggregator "for consistency"</h4>
+    <p>❌ Using <code>Publish</code>/<code>Subscribe</code> even for a simple, direct, two-party interaction that a plain method call or a lesson-107-style dedicated event would express far more clearly.</p>
+    <p>✅ Reach for an aggregator specifically for genuinely decoupled, many-to-many, cross-module notifications. A direct call remains simpler to read, simpler to debug (a normal call stack, not a type-keyed dictionary lookup), and appropriate whenever the relationship really is just two specific parties talking to each other.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">When multiple, unrelated modules across a growing application need to react to the same facts, and you don't want every one of them to depend directly on whichever module happens to raise them.</li>
+        <li style="margin-bottom:0.4rem;">When you expect new publishers and new subscribers to be added independently over time, by different people or teams, without coordinating changes to a shared composition root.</li>
+        <li style="margin-bottom:0.4rem;">Skip it for a simple, stable, two-party relationship — a plain <code>event</code> (lessons 105–106) is simpler, more discoverable (an IDE can find every subscriber of a specific event with "Find References"; a type-keyed aggregator generally cannot), and appropriate when there's exactly one well-known publisher and a small, known set of subscribers.</li>
+        <li style="margin-bottom:0.4rem;">Skip it, too, for cross-service or cross-process communication — that remains the message-broker territory lesson 107 deliberately left for later; an in-process aggregator has no answer for a subscriber that's temporarily offline or a message that must survive a crash.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        Lesson 107: publisher decoupled from subscribers, but subscribers still need the publisher's type.<br />
+        This lesson: publishers and subscribers both depend only on <code>IEventAggregator</code> — never on each other.<br />
+        <code>Publish&lt;TEvent&gt;</code> / <code>Subscribe&lt;TEvent&gt;</code> = a generic, type-routed, reusable version of a single hand-written <code>event</code>.<br />
+        Still synchronous, still in-process, still not a message queue — same lifetime discipline as any event subscription applies.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">An event aggregator is a shared, injectable service with <code>Publish&lt;TEvent&gt;</code> and <code>Subscribe&lt;TEvent&gt;</code>, letting publishers and subscribers communicate without either one holding a direct reference to the other.</li>
+            <li style="margin-bottom:0.4rem;">It routes by event <em>type</em>, using a dictionary keyed by <code>Type</code> internally — genuinely reusable across every event type in an application, unlike a dedicated <code>event</code> field per publisher.</li>
+            <li style="margin-bottom:0.4rem;">It solves the many-to-many coupling problem that lesson 107's decoupled-but-still-directly-referenced events left in place, at the cost of losing some IDE discoverability (no single "Find References" for all subscribers of a type).</li>
+            <li style="margin-bottom:0.4rem;">It's still synchronous, in-process, and has no built-in durability — not to be confused with a distributed message queue/broker, which is a different, later topic with entirely different guarantees.</li>
+            <li style="margin-bottom:0.4rem;">The same subscription-lifetime discipline from lesson 191 still applies: a subscriber shorter-lived than the aggregator must unsubscribe, or it leaks exactly like any other lapsed event listener.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how an event aggregator removes the last direct coupling that lesson 107's event-driven design still had. Let's confirm the details.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> In lesson 107's design, what direct coupling still existed between a subscriber and the event it subscribed to, that an event aggregator removes?</p>
+        <ul class="options">
+            <li>A) The subscriber had to inherit from the publisher's class</li>
+            <li>B) The subscriber (or the composition root wiring it up) needed a compile-time reference to the publisher's specific type in order to reach its event</li>
+            <li>C) The subscriber had to be in the same C# file as the publisher</li>
+            <li>D) There was no remaining coupling — lesson 107's design was already fully decoupled</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Even though the publisher didn't reference its subscribers, subscribing to <code>OrderService.OrderPlaced</code> still required knowing about <code>OrderService</code> as a specific type — that's exactly the coupling an event aggregator's shared, type-routed <code>Publish</code>/<code>Subscribe</code> removes.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Lesson 107's subscribers were plain, independent classes with no inheritance relationship to the publisher at all.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> C# has no such file-colocation requirement for subscribing to an event; this was never a real constraint.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This lesson's entire motivation is that a real remaining coupling existed — knowledge of the publisher's specific type — even in lesson 107's decoupled design.</p>
+                <p><strong>Reinforcement:</strong> Event aggregation removes the "subscriber must know the publisher's type" coupling that a direct event, even a well-designed one, still has.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> How does a simple <code>EventAggregator</code> implementation route a published event to the correct subscribers?</p>
+        <ul class="options">
+            <li>A) By comparing the event object's property values against each subscriber's expected values</li>
+            <li>B) By looking up the event's runtime <code>Type</code> in an internal dictionary, and calling every handler registered under that same type via <code>Subscribe&lt;TEvent&gt;</code></li>
+            <li>C) By broadcasting to every subscriber registered for any event type, and letting each handler ignore events it doesn't care about</li>
+            <li>D) By requiring every event class to implement a special marker interface with a routing method</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>typeof(TEvent)</code> is the routing key in both <code>Publish</code> and <code>Subscribe</code> — a dictionary keyed by <code>Type</code> maps directly from an event's type to the list of handlers registered for exactly that type.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Routing is based on the event's type, not its property values — two different <code>OrderShipped</code> instances with different data route identically, to the same subscribers.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This would be wasteful and error-prone; the type-keyed dictionary lookup means only handlers for the exact published type are invoked, not every subscriber in the system.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The example implementation requires no marker interface — any plain class or record works as an event type, since generics and <code>typeof(TEvent)</code> handle the routing without any special contract on the event type itself.</p>
+                <p><strong>Reinforcement:</strong> Type identity, via <code>typeof(TEvent)</code>, is the entire routing mechanism — no reflection over names or property inspection needed.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A team wants order fulfillment to durably notify a separate microservice running on a different machine, even if that service is temporarily offline when the order ships. Is the in-process <code>EventAggregator</code> from this lesson the right tool?</p>
+        <ul class="options">
+            <li>A) Yes — <code>Publish</code> and <code>Subscribe</code> work identically whether the subscriber is in the same process or a separate machine</li>
+            <li>B) No — this aggregator is synchronous, in-process, and has no durability; a published event with no currently-registered subscriber is simply lost, which is exactly wrong for a temporarily-offline remote service</li>
+            <li>C) Yes, as long as the aggregator is registered as a singleton in the DI container</li>
+            <li>D) No — event aggregators can never be used for order-related events under any circumstances</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This matches the Common Confusion section directly — this lesson's aggregator lives entirely in one process's memory with no durability or cross-process delivery. A durable, cross-machine, "deliver even if offline" requirement is exactly the distributed message-broker territory this lesson (and lesson 107) explicitly set aside for later.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no network transport, serialization, or cross-process delivery in this implementation at all — it only works within a single running process's memory.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Singleton scope affects the aggregator's lifetime within one process — it has no bearing on whether events can reach a genuinely separate machine or service.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The problem isn't the topic (orders) — it's the requirement (durability, cross-process delivery). This aggregator is fine for in-process order-related notifications; it's simply the wrong tool for the specific durable, cross-machine scenario described.</p>
+                <p><strong>Reinforcement:</strong> Recognize "durable" and "cross-process" as the signal that you need a message broker, not an in-process event aggregator.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You've now taken event-driven design as far as it goes in-process — from a raw multicast delegate, through the standard pattern, through decoupled publishers, to a fully shared aggregator where no two modules need to know each other exist. Next: a completely different kind of code reuse — extension methods, the mechanism behind every LINQ call you've ever written.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

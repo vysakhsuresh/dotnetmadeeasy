@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>186 - Advanced Delegates · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        You already know how to use a delegate. This lesson opens it up — the class hierarchy underneath, the exact object it wraps, and the two gotchas (exceptions mid-chain, races on <code>+=</code>) that only show up under production load.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Back in lessons 096 and 097 you learned that a delegate is a type-safe reference to a method, that every delegate is secretly a <em>multicast</em> delegate capable of holding a chain of subscribers, and that <code>+=</code>/<code>-=</code> add and remove entries from that chain. That's everything you need to <em>use</em> delegates correctly.</p>
+    <p>This lesson is about what happens when that knowledge isn't enough — when a production incident report says "one of our five event handlers threw, and the other four silently never ran," or a code review flags <code>_handlers += SomeHandler;</code> as a possible race condition, or a teammate asks why <code>Func&lt;Dog&gt;</code> can be assigned to a <code>Func&lt;Animal&gt;</code> variable without a cast. All three of those are answerable once you know exactly what a delegate <em>is</em>, as a real .NET type, not just how to write one.</p>
+    <p><strong>You'll come out of this lesson able to reason precisely about multicast failure modes, thread-safety, and delegate variance — the kind of detail that separates "I can use delegates" from "I can debug delegates in production."</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>Every delegate type you've ever declared or used — <code>MathOperation</code> from lesson 096, <code>Action&lt;string&gt;</code>, <code>Func&lt;int, bool&gt;</code>, even your own custom event delegate types — is, underneath the <code>delegate</code> keyword's friendly syntax, an honest-to-goodness class in a real inheritance chain rooted in <code>System.Object</code>. Nothing about a delegate is compiler magic that stops at the IL boundary; it's a first-class .NET type you can inspect, reflect over, and reason about exactly like any other object.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Every delegate type declared with the <code>delegate</code> keyword — including the compiler-generated ones behind <code>Action</code> and <code>Func</code> — compiles to a <strong>sealed class deriving from <code>System.MulticastDelegate</code></strong>, which itself derives from <code>System.Delegate</code>, which derives from <code>System.Object</code>:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">System.Object
+    └── System.Delegate            (abstract)
+            └── System.MulticastDelegate   (abstract)
+                    └── YourDelegateType   (sealed, compiler-generated)</code></pre>
+    <p>Every delegate type in C# — <em>every single one</em> — derives from <code>MulticastDelegate</code>, not directly from <code>Delegate</code>. There is no such thing, in current C#, as a "single-cast-only" delegate; the multicast capability (an internal invocation list, <code>+=</code>/<code>-=</code>, sequential invocation of every subscriber) is baked into the base class every delegate type inherits from, whether you ever actually add more than one subscriber or not.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🧱 What You Already Knew</h4>
+            <ul>
+                <li>Delegates are type-safe method references</li>
+                <li><code>+=</code>/<code>-=</code> add/remove subscribers</li>
+                <li>Invocation runs every subscriber in order</li>
+                <li>A throwing subscriber stops the chain</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🔬 What's New Here</h4>
+            <ul>
+                <li>Exact class hierarchy: <code>Object → Delegate → MulticastDelegate → your type</code></li>
+                <li>What fields a delegate instance really holds</li>
+                <li>Why <code>+=</code>/<code>-=</code> aren't automatically thread-safe</li>
+                <li>Delegate return-type covariance / parameter contravariance</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Surface-Level Knowledge Breaks Under Real Conditions</h3>
+    <p>"Delegates call the methods you assign to them" is true, and it's enough to write correct code in the happy path. It stops being enough the moment you hit any of these, all of which are ordinary production scenarios rather than edge cases:</p>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">A background job publishes an internal notification to five subscribers. Subscriber #3 throws because of a transient database timeout — and subscribers #4 and #5, which had nothing to do with the database, silently never run. Was that a bug in your code, or expected delegate behavior?</li>
+        <li style="margin-bottom:0.4rem;">A hot path adds and removes handlers from a shared delegate field from multiple threads under load. Occasionally, a handler that was clearly added seems to be missing later. Is <code>+=</code> broken, or is something else going on?</li>
+        <li style="margin-bottom:0.4rem;">A factory method returns <code>Func&lt;Dog&gt;</code>, but the caller's variable is typed <code>Func&lt;Animal&gt;</code> — and it compiles, with no cast. Is that a hole in the type system, or something principled?</li>
+    </ul>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Know the Real Object, Not Just the Syntax</h3>
+    <p>Every one of those questions has a precise, correct answer — but only if you know what a delegate instance actually contains, how <code>MulticastDelegate</code> invokes its list, and how C#'s generic variance rules (which you already studied in depth in lesson 181) apply to delegate types specifically. That's the gap this lesson closes.</p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight</div>
+        <p>None of what follows is a new feature bolted onto delegates. It's the same mechanism from 096/097, examined closely enough to explain <em>why</em> it behaves the way it does — which is exactly what lets you predict its behavior under conditions you haven't personally tested yet.</p>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            A DELEGATE INSTANCE, CONCEPTUALLY
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1rem;">🎯 Target</div>
+                <div style="margin:0.5rem 0;font-size:0.85rem;">The instance a method runs on (<code>null</code> for a static method)</div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1rem;">📍 Method pointer</div>
+                <div style="margin:0.5rem 0;font-size:0.85rem;">Which method to actually jump to</div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1rem;">📋 Invocation list</div>
+                <div style="margin:0.5rem 0;font-size:0.85rem;">The array of (target, method) pairs to call, in order — even a single-subscriber delegate has one</div>
+            </div>
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-muted,#94A3B8);text-align:center;margin-top:0.5rem;">This is the shape every delegate has, regardless of whether it's a custom type, <code>Action&lt;T&gt;</code>, or <code>Func&lt;T, TResult&gt;</code>.</p>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">MULTICAST INVOCATION, PRECISELY</div>
+        <div class="flow-step">
+            <div class="step-label">1. INVOKING A DELEGATE RUNS ITS INVOCATION LIST, ONE ENTRY AT A TIME</div>
+            <ul>
+                <li>Even a delegate assigned only once (<code>op = Add;</code>) has an invocation list — it just has exactly one entry.</li>
+                <li><code>GetInvocationList()</code> returns that list as a <code>Delegate[]</code>, letting you inspect or manually drive it.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE LOOP IS A PLAIN, SYNCHRONOUS, SEQUENTIAL LOOP</div>
+            <ul>
+                <li>Each entry is called on the <strong>calling thread</strong>, one after another — nothing runs in parallel.</li>
+                <li>There is no built-in try/catch around each entry. None. The runtime does not protect entry N+1 from entry N's exception.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. AN UNCAUGHT EXCEPTION IN ENTRY N ABORTS THE WHOLE INVOCATION</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">notify += LogToFile;     // entry 1 — runs fine
+notify += SendEmail;     // entry 2 — throws
+notify += UpdateMetrics; // entry 3 — NEVER RUNS
+
+notify(); // LogToFile runs, SendEmail throws,
+          // the exception propagates out of notify() immediately,
+          // UpdateMetrics is skipped entirely</code></pre>
+            <ul><li>This is real, correct, and one of the most common production surprises around multicast delegates and events — not a bug, a direct consequence of "sequential loop, no protection."</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. IF YOU NEED "RUN EVERYONE REGARDLESS," YOU DRIVE THE LOOP YOURSELF</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">foreach (Action handler in notify.GetInvocationList().Cast&lt;Action&gt;())
+{
+    try { handler(); }
+    catch (Exception ex) { LogFailure(handler, ex); }
+}</code></pre>
+            <ul><li>Nothing about the language does this for you automatically — it's a deliberate opt-in pattern you write when "every subscriber gets a turn" genuinely matters.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+
+class Program
+{
+    static void Main()
+    {
+        Action pipeline = Step1;
+        pipeline += Step2; // throws
+        pipeline += Step3;
+
+        Console.WriteLine($"Invocation list has {pipeline.GetInvocationList().Length} entries.");
+        // 3 — every subscriber is registered, regardless of what happens later
+
+        try
+        {
+            pipeline(); // Step1 runs, Step2 throws, Step3 NEVER RUNS
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Pipeline aborted: {ex.Message}");
+        }
+
+        Console.WriteLine("--- Running defensively instead ---");
+        foreach (Action step in pipeline.GetInvocationList().Cast&lt;Action&gt;())
+        {
+            try { step(); }
+            catch (InvalidOperationException ex) { Console.WriteLine($"Step failed, continuing: {ex.Message}"); }
+        }
+        // Step1, then Step2 fails but is caught, then Step3 DOES run this time
+    }
+
+    static void Step1() => Console.WriteLine("Step1 ran.");
+    static void Step2() => throw new InvalidOperationException("Step2 failed.");
+    static void Step3() => Console.WriteLine("Step3 ran.");
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>GetInvocationList().Length</code> proves all three subscribers were registered — the failure isn't in registration, it's in invocation. Calling <code>pipeline()</code> directly stops dead after <code>Step2</code>. Only the manual <code>foreach</code>-with-<code>try</code>/<code>catch</code> loop gives every subscriber a turn, because that loop — not the delegate itself — is what supplies the fault isolation.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>An order-processing service raises an internal "order placed" notification that three independent, unrelated subsystems subscribe to: inventory reservation, email confirmation, and analytics. If the email provider has an outage, inventory reservation and analytics should still run — one subsystem's failure shouldn't silently disable the other two.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">using System;
+using System.Linq;
+
+public record Order(int Id, decimal Total);
+
+public class OrderPublisher
+{
+    private Action&lt;Order&gt;? _onOrderPlaced;
+
+    public void Subscribe(Action&lt;Order&gt; handler) => _onOrderPlaced += handler;
+
+    public void PublishOrderPlaced(Order order)
+    {
+        if (_onOrderPlaced is null) return;
+
+        // Drive the invocation list manually so one failing subscriber
+        // never prevents the others from running.
+        foreach (Action&lt;Order&gt; handler in _onOrderPlaced.GetInvocationList().Cast&lt;Action&lt;Order&gt;&gt;())
+        {
+            try
+            {
+                handler(order);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Subscriber failed for order {order.Id}: {ex.Message} — continuing with remaining subscribers.");
+            }
+        }
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var publisher = new OrderPublisher();
+        publisher.Subscribe(o => Console.WriteLine($"Inventory reserved for order {o.Id}."));
+        publisher.Subscribe(o => throw new InvalidOperationException("Email provider timeout."));
+        publisher.Subscribe(o => Console.WriteLine($"Analytics recorded for order {o.Id}, total {o.Total:C}."));
+
+        publisher.PublishOrderPlaced(new Order(1042, 89.99m));
+        // Inventory reserved for order 1042.
+        // Subscriber failed for order 1042: Email provider timeout. — continuing with remaining subscribers.
+        // Analytics recorded for order 1042, total $89.99.
+    }
+}</code></pre>
+    <p>This is exactly the gap between "how delegates behave by default" and "how a resilient pub/sub mechanism needs to behave" — and it's why real event-raising code in production systems often loops over <code>GetInvocationList()</code> rather than invoking the delegate directly, whenever independent subscribers genuinely shouldn't be able to break each other.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🎽</span> A Relay Race With No Backup Runner</div>
+        <p>A multicast delegate's default invocation is a relay race: the baton (control flow) passes from runner to runner (subscriber to subscriber) in a fixed order, on one track (one thread). If runner #2 trips and doesn't get up, runner #3 never gets the baton — the race simply stops there. Nobody radios ahead to say "skip #2, go straight to #3."</p>
+        <p>Driving <code>GetInvocationList()</code> yourself with a <code>try</code>/<code>catch</code> per entry is like giving every runner their <em>own</em> independent track: if one falls, the others still finish their own leg, because nothing about their run depended on the failed one physically handing anything off.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">THREE THINGS THAT ONLY MATTER AT PRODUCTION SCALE</div>
+
+        <div class="flow-step">
+            <div class="step-label">1. DELEGATE INSTANCES ARE IMMUTABLE — BUT THE FIELD HOLDING ONE ISN'T</div>
+            <ul>
+                <li>Every individual delegate object, once created, never changes. <code>Delegate.Combine</code> (what <code>+=</code> compiles to) and <code>Delegate.Remove</code> (<code>-=</code>) don't mutate anything — each call produces a <strong>brand-new</strong> delegate instance with a new invocation list, leaving the old instance untouched.</li>
+                <li>Those combine/remove operations, on their own, are safe — two threads calling <code>Delegate.Combine</code> on the same two delegate objects at the same instant don't corrupt either input.</li>
+                <li>The danger isn't in <code>Combine</code>/<code>Remove</code> themselves — it's in the <strong>read-modify-write sequence</strong> that <code>field += handler;</code> expands to: read the current value of <code>field</code>, combine it with <code>handler</code>, then write the result back into <code>field</code>. That's three separate steps, not one atomic operation.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">2. WHY UNSYNCHRONIZED += CAN LOSE SUBSCRIBERS UNDER CONCURRENCY</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// Two threads run this concurrently on the SAME field, with no lock:
+_handlers += HandlerA;   // Thread 1
+_handlers += HandlerB;   // Thread 2</code></pre>
+            <ul>
+                <li>Both threads can read the <em>same</em> original value of <code>_handlers</code> before either writes back. Thread 1 computes "original + A" and writes it. Thread 2, still holding the stale original it read earlier, computes "original + B" and writes <em>that</em> — silently overwriting Thread 1's update. <code>HandlerA</code> is gone, with no exception, no warning.</li>
+                <li>This is a textbook data race — a classic "lost update" — not a defect in the delegate mechanism. It's the same category of bug as two threads incrementing a plain <code>int</code> field without <code>Interlocked</code> or a <code>lock</code>.</li>
+                <li>The fix is ordinary concurrency hygiene: guard the field with a <code>lock</code>, or use <code>Interlocked.CompareExchange</code> in a retry loop — the same tools you'd reach for around any other shared mutable field.</li>
+            </ul>
+        </div>
+
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+
+        <div class="flow-step">
+            <div class="step-label">3. DELEGATE VARIANCE — RETURN TYPES ARE COVARIANT, PARAMETERS ARE CONTRAVARIANT</div>
+            <p style="color:var(--text-main,#E2E8F0);font-size:0.9rem;margin:0.3rem 0;">Lesson 181 showed that <code>IEnumerable&lt;out T&gt;</code> is covariant because <code>T</code> only ever appears in output positions, and <code>IComparer&lt;in T&gt;</code> is contravariant because <code>T</code> only ever appears in input positions. Delegate types support the exact same generic variance mechanism — because a delegate, structurally, is also just a pure contract (a signature) with no storage of its own, the same proof from 181 applies unchanged:</p>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public delegate TResult Producer&lt;out TResult&gt;(); // TResult is output-only → covariant
+public delegate void Consumer&lt;in T&gt;(T item);      // T is input-only → contravariant
+
+class Animal { }
+class Dog : Animal { }
+
+Producer&lt;Dog&gt; dogFactory = () =&gt; new Dog();
+Producer&lt;Animal&gt; animalFactory = dogFactory;      // ✅ covariant — a Dog producer IS a valid Animal producer
+
+Consumer&lt;Animal&gt; animalHandler = a =&gt; Console.WriteLine("handled");
+Consumer&lt;Dog&gt; dogHandler = animalHandler;         // ✅ contravariant — anything that can handle any Animal can handle a Dog</code></pre>
+            <p style="color:var(--text-main,#E2E8F0);font-size:0.9rem;margin:0.3rem 0;">This isn't a special case invented for delegates — it's literally why <code>System.Func&lt;out TResult&gt;</code> (single type parameter) is declared covariant in the BCL, and it's exactly why <code>Func&lt;Dog&gt; dogFactory = ...; Func&lt;Animal&gt; animalFactory = dogFactory;</code> compiles with no cast. The next lesson looks at <code>Func</code> and <code>Action</code>'s actual BCL variance annotations directly.</p>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Multicast delegates catch exceptions from subscribers automatically" — they don't, ever</h3>
+    <p>There is no hidden try/catch anywhere in <code>MulticastDelegate</code>'s invocation loop. If you want fault isolation between subscribers, you write it — via <code>GetInvocationList()</code> and your own loop, as shown above. Nothing about declaring a delegate, an <code>Action</code>, or even a C# <code>event</code> changes this default.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Delegates are immutable, so += must be thread-safe" — the object is immutable, the field's update sequence is not</h3>
+    <p>This is a genuinely easy conflation. Immutability of the delegate <em>object</em> only guarantees you never corrupt an in-flight invocation by adding a subscriber elsewhere — it says nothing about whether reading, combining, and writing back a <em>field</em> concurrently is safe. Those are two different claims, and only the first one is automatically true.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. Delegate variance is not the same thing as implicit type conversion of the underlying types</h3>
+    <p><code>Producer&lt;Animal&gt; x = dogFactory;</code> works because the <em>delegate type itself</em> is generically variant — not because <code>Dog</code> silently converts to <code>Animal</code> in some new way. The underlying reference conversion (<code>Dog</code> → <code>Animal</code>) has always been legal; what 181 and this lesson establish is that the compiler can <em>prove</em> it's safe to apply that same conversion one level up, to the generic type argument of an interface or delegate, precisely because of where the type parameter appears in the signature.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Assuming every subscriber ran just because the delegate call didn't throw</h4>
+    <p>❌ Wrapping the entire <code>notify()</code> call in one outer <code>try</code>/<code>catch</code> and assuming "no exception reached here" means every subscriber executed successfully.</p>
+    <p>✅ If a later subscriber's failure to run is itself a problem worth knowing about (not just "swallow and move on"), drive <code>GetInvocationList()</code> yourself so you can observe and log each subscriber's outcome individually.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Mutating a shared delegate field from multiple threads with no synchronization</h4>
+    <p>❌ <code>publicField += handler;</code> called concurrently from several threads, with no <code>lock</code> and no <code>Interlocked</code>, then being surprised when a subscriber silently goes missing under load.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ Unsafe under concurrent access
+public Action? OnComplete;
+
+// ✅ Safe — guard the read-modify-write with a lock
+private readonly object _lock = new();
+private Action? _onComplete;
+public void Subscribe(Action handler)
+{
+    lock (_lock) { _onComplete += handler; }
+}</code></pre>
+    <p>✅ Treat a delegate field shared across threads exactly like any other shared mutable field — guard reads and writes with a <code>lock</code> (or <code>Interlocked.CompareExchange</code> in a retry loop) rather than trusting <code>+=</code>/<code>-=</code> alone.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Trying to make a custom delegate covariant/contravariant on a type parameter used both ways</h4>
+    <p>❌ <code>public delegate T Transformer&lt;in T&gt;(T input);</code> — this won't compile, because <code>T</code> appears in both an input position (the parameter) and an output position (the return type), which violates the "used exclusively one direction" rule from 181 that applies identically to delegates.</p>
+    <p>✅ Only mark a type parameter <code>out</code> if it's used exclusively as output across the whole delegate signature, and <code>in</code> only if it's used exclusively as input — exactly the same rule you already learned for interfaces.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Reach for <code>GetInvocationList()</code> and manual per-subscriber invocation whenever independent subscribers genuinely must not be able to break each other — notification fan-out, plugin hooks, audit/logging chains.</li>
+        <li style="margin-bottom:0.4rem;">Guard a delegate field with a <code>lock</code> (or use it via a proper C# <code>event</code>, whose compiler-generated add/remove accessors handle this for you — covered in a later lesson) any time subscription can happen from more than one thread.</li>
+        <li style="margin-bottom:0.4rem;">Declare your own variant delegate type (<code>out</code>/<code>in</code>) when you're designing a reusable factory- or handler-shaped delegate and want callers to substitute more/less derived type arguments without casting — the same judgment call as designing a variant interface.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Skip</strong> the manual invocation-list loop for simple, single-subscriber, fire-and-forget delegate calls — it's overhead you don't need until multiple independent subscribers are actually in play.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        Every delegate = <code>Object → Delegate → MulticastDelegate → your type</code>.<br />
+        Invocation = a plain, unprotected, sequential loop — one throw stops everyone after it.<br />
+        <code>+=</code>/<code>-=</code> = safe delegate objects, but an <strong>unsafe field update</strong> without a lock.<br />
+        Delegate variance = the same output-only-is-covariant, input-only-is-contravariant proof from lesson 181, applied to a signature instead of an interface.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Every delegate type derives from <code>System.MulticastDelegate → System.Delegate → System.Object</code>. A delegate instance holds a target reference (or <code>null</code>), a method pointer, and an invocation list — even with one subscriber.</li>
+            <li style="margin-bottom:0.4rem;">If one subscriber in the invocation list throws, the exception propagates immediately, and any subscriber registered after it in the list never runs — the default invocation loop has no built-in fault isolation.</li>
+            <li style="margin-bottom:0.4rem;">Use <code>GetInvocationList()</code> plus your own <code>try</code>/<code>catch</code> per entry when independent subscribers must not be able to block each other.</li>
+            <li style="margin-bottom:0.4rem;">Delegate objects are immutable and <code>Delegate.Combine</code>/<code>Remove</code> are safe in isolation, but <code>field += handler;</code> is a read-modify-write on the field — unsynchronized concurrent access can silently lose a subscriber.</li>
+            <li style="margin-bottom:0.4rem;">Delegates support the same generic variance as interfaces (lesson 181): a delegate's return type is covariant (<code>out</code>), and its parameter types are contravariant (<code>in</code>) — which is exactly why <code>Func&lt;Dog&gt;</code> assigns to <code>Func&lt;Animal&gt;</code> with no cast.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've gone from "delegates hold methods" to precise reasoning about invocation, thread-safety, and variance. Let's confirm it landed.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A delegate field has three subscribers, A, B, and C, added in that order. Invoking the delegate directly (<code>myDelegate();</code>) causes B to throw an uncaught exception. What happens to C?</p>
+        <ul class="options">
+            <li>A) C still runs, because delegates automatically isolate subscriber failures</li>
+            <li>B) C never runs — the exception from B propagates out of the call immediately, and the sequential loop never reaches C</li>
+            <li>C) C runs first, before B's exception is processed, due to reordering</li>
+            <li>D) The runtime retries B once before moving on to C</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>MulticastDelegate</code> invocation is an unprotected sequential loop. When B throws, the exception propagates out of the direct call immediately — the loop never reaches C. This is documented, correct .NET behavior, not a bug.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There is no automatic fault isolation anywhere in default multicast invocation — you must build it yourself with <code>GetInvocationList()</code> and a per-entry <code>try</code>/<code>catch</code>.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Invocation order is strictly the order subscribers were added; nothing reorders around an exception.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There is no built-in retry mechanism in delegate invocation.</p>
+                <p><strong>Reinforcement:</strong> "One throw stops everyone after it" is the single most important production gotcha about multicast delegates.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Two threads concurrently execute <code>_handlers += SomeHandler;</code> on the same field, with no lock and no <code>Interlocked</code> usage. What is the realistic risk?</p>
+        <ul class="options">
+            <li>A) None — <code>Delegate.Combine</code> is thread-safe, so both handlers are always added correctly</li>
+            <li>B) The application crashes immediately with a corrupted-object exception</li>
+            <li>C) One thread's update can be silently overwritten by the other's stale read, causing a subscriber to be lost with no error</li>
+            <li>D) The field becomes permanently <code>null</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> <code>+=</code> expands to read-current-value, combine, write-back — three separate steps. Two threads can both read the same original value before either writes, so the second write silently discards the first thread's update. This is a classic lost-update race condition.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>Delegate.Combine</code> itself doesn't corrupt anything, but that safety doesn't extend to the field's read-modify-write sequence around it — that's the actual source of the race.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Nothing about this race throws or crashes — it fails silently, which is precisely what makes it dangerous and hard to diagnose.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The field ends up holding a valid delegate — just possibly missing one of the two handlers that should have been added.</p>
+                <p><strong>Reinforcement:</strong> Delegate object immutability protects the objects, not the field holding a reference to one — synchronize the field yourself under concurrent access.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Given <code>public delegate TResult Producer&lt;out TResult&gt;();</code>, why does <code>Producer&lt;Animal&gt; p = someDogProducer;</code> (where <code>someDogProducer</code> is a <code>Producer&lt;Dog&gt;</code>) compile without a cast?</p>
+        <ul class="options">
+            <li>A) Because all delegate types are implicitly convertible to each other</li>
+            <li>B) Because <code>TResult</code> appears only in an output (return) position, so the compiler can prove substituting a more-derived type argument is safe — the same reasoning as covariant interfaces in lesson 181</li>
+            <li>C) Because the C# compiler silently inserts a runtime cast that could throw later</li>
+            <li>D) Because <code>Dog</code> and <code>Animal</code> share a common base class, which always makes delegates interchangeable</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Marking <code>TResult</code> as <code>out</code> is only legal because it's used exclusively in output position across the delegate's signature — exactly the structural proof from lesson 181 that makes <code>IEnumerable&lt;out T&gt;</code> sound. A <code>Producer&lt;Dog&gt;</code> can never produce anything a caller expecting an <code>Animal</code> couldn't accept.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Unrelated delegate types (like <code>Predicate&lt;T&gt;</code> and <code>Func&lt;T, bool&gt;</code>) are not implicitly convertible to each other — only generically variant type arguments of the <em>same</em> delegate type are.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This conversion is checked entirely at compile time with zero runtime cast — that's precisely what makes it provably safe rather than merely hopeful.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A shared base class alone means nothing without the <code>out</code>/<code>in</code> variance annotation — an invariant generic delegate with the same type hierarchy would not support this assignment.</p>
+                <p><strong>Reinforcement:</strong> Delegate variance is the identical output-only/input-only proof from interface variance, just applied to a delegate's parameter and return positions.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> You need every independent subscriber on a notification delegate to run, even if one throws. Which approach correctly achieves this?</p>
+        <ul class="options">
+            <li>A) Call the delegate directly and wrap the whole call in one outer <code>try</code>/<code>catch</code></li>
+            <li>B) Mark the delegate field <code>volatile</code></li>
+            <li>C) Iterate <code>GetInvocationList()</code> and invoke each entry inside its own <code>try</code>/<code>catch</code></li>
+            <li>D) Declare the delegate as a C# <code>event</code> instead of a plain delegate field — that alone changes invocation behavior</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> Only driving the invocation list yourself gives you a chance to catch each subscriber's exception individually and continue to the next one — that's the one place fault isolation can actually be introduced.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> One outer <code>try</code>/<code>catch</code> stops the exception from crashing the caller, but it doesn't let any subscriber after the failing one run — the loop already aborted before the <code>catch</code> is reached.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> <code>volatile</code> affects memory visibility across threads, not exception propagation during invocation — it's unrelated to this problem.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The <code>event</code> keyword restricts who can invoke and subscribe from outside the declaring type — it does not change the underlying invocation loop's exception behavior at all.</p>
+                <p><strong>Reinforcement:</strong> Fault isolation between subscribers is something you build explicitly with <code>GetInvocationList()</code> — it is never automatic, regardless of delegate vs. event.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You can now reason precisely about multicast invocation failure, delegate field thread-safety, and delegate variance. Next: a close look at <code>Action</code> and <code>Func</code>'s actual BCL declarations — including the variance annotations you just saw in action here.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
