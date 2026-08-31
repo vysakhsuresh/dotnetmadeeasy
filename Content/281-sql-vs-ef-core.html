@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>281 - SQL vs EF Core · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        "EF Core is always right" and "raw SQL is always faster" are both wrong for the exact same reason — they're answers to a question that only ever has an honest answer once you know the specific query.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Somewhere on the internet right now, two developers are arguing past each other. One says "just use raw SQL, ORMs are slow." The other says "just use EF Core, hand-writing SQL is a maintenance nightmare." Both of them are describing something real — and both of them are wrong to state it as a universal rule, because the honest answer was never "always X." It's "it depends on which specific query, and here's exactly what it depends on."</p>
+    <p>You've now spent this entire Part learning EF Core deeply — query optimization, compiled queries, transactions, concurrency, connection management, stored procedures, bulk operations, caching. You've also learned, back in 138, that raw SQL done carelessly is a genuine security liability, and, in 233, that "this feels slow" is never a substitute for actually measuring where time goes. This lesson pulls all of that together into one honest, judgment-based answer to the question its title asks.</p>
+    <p><strong>In this lesson, you'll learn the specific, legitimate cases where raw SQL or ADO.NET genuinely outperforms or better fits a given problem than EF Core, the — more common — cases where EF Core is simply the better tool, and how to make the actual decision without falling into either camp's absolutism.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>This isn't a lesson about a new tool — you already have both tools. EF Core translates your C# LINQ into SQL, tracks entities, and manages the plumbing of connections, transactions, and change detection for you. Raw SQL — through ADO.NET directly, or through EF Core's own <span class="icode">FromSqlRaw</span>/<span class="icode">FromSqlInterpolated</span> from 278 — hands you full, direct control over exactly what SQL text runs, with none of EF Core's translation or tracking layered on top. The question this lesson answers is: given a specific piece of data access, which one is actually the right choice?</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>EF Core is an object-relational mapper: it translates LINQ expression trees into parameterized SQL at query time, manages an in-memory identity map and change-tracking graph (280), and generates <span class="icode">INSERT</span>/<span class="icode">UPDATE</span>/<span class="icode">DELETE</span> statements from tracked entity state on <span class="icode">SaveChangesAsync()</span>. Raw SQL/ADO.NET is the direct database-driver layer underneath all of that — no translation step, no tracking, no automatic statement generation; you write the exact SQL text (safely parameterized, per 138 and 278) and read results back yourself. EF Core is built on top of ADO.NET, not a replacement for it — which is exactly why dropping down to raw SQL for one specific query, inside an otherwise EF Core-driven application, is a supported, first-class capability rather than an escape from the framework.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist? — Why This Is a Real Question, Not a Solved One</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Both Absolutist Positions Are Actually Describing Real, Narrow Truths</h3>
+    <p>"ORMs are slow" is describing something real: EF Core's translation layer, change tracking, and general-purpose SQL generation carry genuine overhead compared to a driver sending exactly the SQL text you wrote, and for a handful of genuinely exotic, hand-tuned queries, EF Core's LINQ translation may not produce the exact execution plan a DBA could write by hand. "Hand-written SQL is a maintenance nightmare" is also describing something real: a codebase full of string-built SQL scattered across methods loses compile-time checking on every query shape, becomes fragile the moment a column is renamed, and reintroduces the injection risk from 138/278 anywhere a developer gets careless. Both statements are true — for a specific slice of situations each one is talking about, and false as a blanket rule for everything else.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Neither Side Wins Outright; EF Core Was Designed to Let You Use Both</h3>
+    <p>EF Core doesn't force an all-or-nothing choice. Because it's built on ADO.NET and exposes <span class="icode">FromSqlRaw</span>/<span class="icode">FromSqlInterpolated</span>/<span class="icode">ExecuteSqlRaw</span>/<span class="icode">ExecuteSqlInterpolated</span> as first-class, fully supported escape hatches, you get to default to LINQ for the vast majority of your application — where its productivity, safety, and maintainability wins are largest — and drop to raw SQL selectively, for the specific query that genuinely needs it, without rewriting or abandoning the rest of your data access layer.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">THE DECISION, AS A SEQUENCE — NOT A COIN FLIP</div>
+        <div class="flow-step">
+            <div class="step-label">Default: write it in LINQ</div>
+            <ul><li>This covers the overwhelming majority of real application code — CRUD, filtered lists, projections, navigation-property loading.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Is this specific query complex, set-based reporting, or does it need exact control over the generated SQL?</div>
+            <ul><li>If yes — consider raw SQL or a stored procedure (278) for this one query, specifically.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Is a hot path measurably slow, per real profiling (233) — not a guess?</div>
+            <ul><li>If yes, and the profile specifically points at EF Core's generated SQL as the actual bottleneck — not the network, not application code, not a missing index — only then does hand-tuning that one query with raw SQL become worth the maintainability cost.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Otherwise: stay in LINQ</div>
+            <ul><li>No profiled evidence, no genuine set-based/reporting complexity, no exact-control requirement — the default remains correct, and it usually is.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS — THE HONEST CASE FOR RAW SQL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Raw SQL Genuinely Wins</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. Complex reporting queries</h3>
+    <p>Multi-table pivots, window functions, recursive CTEs, and database-specific aggregation features often express far more clearly, and sometimes execute more efficiently, as hand-written SQL than as a deeply nested LINQ expression straining to represent the same logic. Forcing a genuinely SQL-shaped report through LINQ can produce both a harder-to-read C# expression and a less efficient generated query than a human would write directly.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Bulk, set-based operations</h3>
+    <p>279's <span class="icode">ExecuteUpdate</span>/<span class="icode">ExecuteDelete</span> already close most of this gap directly in LINQ — but for the genuine remaining edge, like a large one-time bulk insert, a dedicated bulk-insert library or hand-written batch SQL still commonly outperforms row-by-row tracked entity operations, exactly as 279 covered.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. Needing exact control over the generated SQL</h3>
+    <p>Occasionally a query needs a specific index hint, a particular join strategy, or a query shape EF Core's translator simply doesn't produce from the equivalent LINQ. When the exact SQL text matters — not just the result — raw SQL is the only way to guarantee it.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">4. A hot path, after profiling — never before</h3>
+    <p>This is the case most often invoked and least often earned honestly. "I think this query would be faster in raw SQL" is a guess. 233 already taught you why guesses about performance are, in practice, wrong more often than they're right. The legitimate version of this case looks like: <span class="icode">dotnet-counters</span> or a profiler flagged this specific endpoint as slow → <span class="icode">.ToQueryString()</span> or query logging showed EF Core's generated SQL for the suspect query → comparing that generated SQL against a hand-tuned equivalent showed a real, measured difference → <em>then</em> raw SQL for that one query is justified. Skipping straight to "raw SQL will be faster" without that chain is exactly the premature-optimization trap 233 warned about, wearing a data-access hat.</p>
+
+    <!-- ====== SIMPLE EXAMPLE — THE HONEST CASE FOR EF CORE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When EF Core Is Simply the Better Tool — the More Common Case</h2>
+    <p>This section gets more space deliberately — for the overwhelming majority of real application code, this is the honest, common answer, not the exception.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Everyday CRUD</h4>
+            <ul>
+                <li>Load an entity, change a property, save — LINQ and change tracking make this a few clean, obvious lines instead of hand-written SELECT/UPDATE pairs</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Maintainability &amp; refactorability</h4>
+            <ul>
+                <li>Rename a column in your model, and every LINQ query referencing that property is automatically consistent — a raw SQL string with the old column name silently keeps compiling and silently breaks at runtime</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Compile-time type safety</h4>
+            <ul>
+                <li>A typo in a LINQ property access is a compiler error, caught before you ever run the app; a typo in a hand-written SQL string is a runtime failure, caught by a test at best and a user at worst</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Automatic SQL-injection protection</h4>
+            <ul>
+                <li>LINQ-generated SQL is parameterized automatically, every time, by construction — no developer has to remember 138's lesson on every single query, because there's no string-building step where the mistake could happen in the first place</li>
+            </ul>
+        </div>
+    </div>
+    <p>And beyond any single technical point: EF Core is simply faster to write correct code in, for the large majority of an application's data access. That developer-productivity win compounds — fewer places for bugs to hide, faster onboarding for new team members, less code to review per feature — in a way that's easy to undervalue against a narrow, query-by-query performance comparison.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — One Application, Both Tools, Deliberately</h2>
+    <p>A retail application's order-management module, built almost entirely on EF Core:</p>
+    <div class="code-block"><code>// Ordinary CRUD — LINQ, no question about it
+public async Task&lt;Order?&gt; GetOrderAsync(int orderId) =&gt;
+    await context.Orders
+        .Include(o =&gt; o.LineItems)
+        .AsNoTracking()
+        .FirstOrDefaultAsync(o =&gt; o.Id == orderId);
+
+public async Task UpdateShippingStatusAsync(int orderId, ShippingStatus status)
+{
+    Order order = await context.Orders.FindAsync(orderId)
+        ?? throw new InvalidOperationException("Order not found");
+    order.ShippingStatus = status;
+    await context.SaveChangesAsync();
+}</code></div>
+    <p>And, sitting right alongside it, one quarterly finance report — genuinely reporting-shaped, genuinely needing database-specific windowing functions no reasonable LINQ expression would produce cleanly — dropped deliberately into raw SQL:</p>
+    <div class="code-block"><code>public async Task&lt;List&lt;MonthlyRevenueRow&gt;&gt; GetMonthlyRevenueTrendAsync(int year)
+{
+    return await context.Database
+        .SqlQuery&lt;MonthlyRevenueRow&gt;($"""
+            SELECT
+                Month,
+                Revenue,
+                Revenue - LAG(Revenue) OVER (ORDER BY Month) AS MonthOverMonthChange
+            FROM MonthlyRevenueView
+            WHERE Year = {year}
+            """)
+        .ToListAsync();
+}</code></div>
+    <p>Nothing about writing this one report in raw SQL required abandoning EF Core anywhere else in the application. That's the whole point this lesson is making: the two tools coexist, deliberately, in the same codebase, chosen query by query rather than framework by framework.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔧</span> A Full Toolbox, Not a Single Tool You've Sworn Loyalty To</div>
+        <p>EF Core is the cordless drill you reach for by default — fast, safe, right for the overwhelming majority of jobs, and the one you'd hand a new team member without a second thought. Raw SQL is the precision hand tool in the same toolbox — a specific screwdriver bit for a specific stripped screw, a chisel for a corner the drill genuinely can't reach cleanly. A good carpenter doesn't swear allegiance to the drill and refuse the chisel, and doesn't reach for the chisel on every screw just because it's more "precise." They pick per task, based on what the task actually needs.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Why "Measure First" Isn't Optional Advice Here</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHY GUESSING ABOUT EF CORE'S SQL IS ESPECIALLY UNRELIABLE</div>
+        <div class="flow-step">
+            <div class="step-label">1. EF Core's query translator is not naive — it's genuinely optimizing, most of the time</div>
+            <ul><li>Modern EF Core's LINQ-to-SQL translation is a mature, actively developed pipeline — for the vast majority of ordinary query shapes, the SQL it generates is close to what an experienced developer would hand-write, not meaningfully worse.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. "This feels like it should be slow" is exactly the intuition 233 already told you not to trust</div>
+            <ul><li>The specific query someone assumes is EF Core's fault is very often not the actual bottleneck at all — the real cost, when profiled, frequently turns out to be a missing index, an N+1 pattern (205), network latency, or application code entirely unrelated to how the SQL was generated.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. The only reliable way to know is to look — .ToQueryString() and query logging, covered fully in the next, capstone lesson</div>
+            <ul><li>Before rewriting anything in raw SQL, see the actual generated SQL EF Core produced for the query in question. Often, the honest fix turns out to be a missing <span class="icode">.Include()</span>, an <span class="icode">.AsNoTracking()</span>, or a narrower projection — not a rewrite into raw SQL at all.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Choosing raw SQL for one query means abandoning EF Core for that whole feature"</h3>
+    <p>No — as the real-world example above shows, a single method can use raw SQL (via <span class="icode">FromSqlInterpolated</span>/<span class="icode">SqlQuery</span>) for one specific report while every other method in the same class, and the same <span class="icode">DbContext</span>, stays on ordinary LINQ. The decision is per-query, not per-feature or per-application.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "If EF Core generates slightly more SQL text than I'd hand-write, that proves it's slower"</h3>
+    <p>Generated SQL that looks unfamiliar or more verbose than what you'd write by hand is not, by itself, evidence of a real performance problem — database query planners frequently produce identical or near-identical execution plans for superficially different-looking but logically equivalent SQL. Judge by measured execution time and query plan (282), not by how the SQL text reads to a human.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Reaching for raw SQL as a default "just in case it's faster" habit</h4>
+    <p>❌ Writing new, ordinary CRUD queries in raw SQL from the start of a project, out of a general belief that it'll be faster, without any profiling evidence that EF Core's generated SQL for that shape of query would have been a problem. ✅ Default to LINQ; earn the switch to raw SQL with genuine complexity or measured evidence, per query.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Treating "EF Core is an abstraction, so it must be slower" as self-evidently true</h4>
+    <p>❌ Assuming any layer of abstraction necessarily costs meaningful, user-visible performance, without checking whether that cost is actually large enough to matter for the specific workload. ✅ Abstraction has a real, non-zero cost — but "non-zero" and "the actual bottleneck in this application" are very different claims; 233's profiling discipline is what tells them apart.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Forgetting 138/278's parameterization discipline once "just writing raw SQL for this report"</h4>
+    <p>❌ Treating a raw-SQL escape hatch as a context switch where the injection-prevention habits from 138 and 278 somehow don't apply anymore. ✅ Every raw SQL call, no matter how deliberately or rarely used, follows the exact same rule: values are parameters, never concatenated or interpolated directly into the SQL text handed to a raw-string method.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Situation</th><th>Choose</th></tr></thead>
+            <tbody>
+                <tr><td>Ordinary CRUD, filtered lists, projections, the vast majority of application data access</td><td>EF Core / LINQ</td></tr>
+                <tr><td>Complex, multi-table set-based reporting with window functions or recursive logic</td><td>Raw SQL (or a stored procedure, 278)</td></tr>
+                <tr><td>A very large one-time bulk insert beyond what 279's tools cover</td><td>A dedicated bulk-insert library or hand-written batch SQL</td></tr>
+                <tr><td>A specific query needing an exact index hint or join strategy EF Core's translator won't produce</td><td>Raw SQL for that one query</td></tr>
+                <tr><td>"This feels slow," with no profiling done yet</td><td>Profile first (233) — not raw SQL, not yet</td></tr>
+                <tr><td>A profiled, measured hot path where EF Core's generated SQL is confirmed to be the actual bottleneck</td><td>Raw SQL for that one confirmed hot path, verified with a before/after benchmark</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Neither "EF Core always" nor "raw SQL always" survives contact with a real, specific query. Default to LINQ everywhere it's not actively getting in your way; drop to raw SQL, selectively, exactly where genuine complexity or measured evidence earns it — and keep using EF Core everywhere else in the same application without a second thought.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>EF Core</strong> = the default tool, right for the overwhelming majority of real application code.<br />
+        <strong>Raw SQL</strong> = the precision tool, earned by genuine complexity or measured evidence — not by intuition.<br />
+        <strong>The decision</strong> = made per query, not per application — both tools coexist deliberately in the same codebase.<br /><br />
+        <strong>Remember:</strong> "always EF Core" and "always raw SQL" are both wrong for the same reason — the honest answer only ever exists at the level of one specific query.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Raw SQL genuinely wins for complex set-based reporting, exact control over generated SQL, very large bulk operations beyond 279's tools, and hot paths <strong>confirmed by profiling</strong> (233) to be EF Core's SQL specifically — never on intuition alone.</li>
+            <li style="margin-bottom:0.4rem;">EF Core is simply the better tool — more often — for everyday CRUD, maintainability and refactorability, compile-time type safety, and automatic, by-construction SQL-injection protection.</li>
+            <li style="margin-bottom:0.4rem;">Both "EF Core always" and "raw SQL always" are false as blanket rules — the honest decision is made per query, on real evidence.</li>
+            <li style="margin-bottom:0.4rem;">EF Core is built on ADO.NET, not opposed to it — <span class="icode">FromSqlInterpolated</span> (278) and friends let you drop to raw SQL selectively without abandoning EF Core anywhere else in the same application.</li>
+            <li style="margin-bottom:0.4rem;">"Measure first, then decide" — the next, capstone lesson shows you exactly how to see what EF Core is actually generating before you decide anything.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen the honest case for both tools, and how to make the actual decision. Let's confirm the judgment landed, not just the vocabulary.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A developer says an endpoint "feels slow" and immediately rewrites its EF Core query as raw SQL, without measuring anything first. What does this lesson say about that approach?</p>
+        <ul class="options">
+            <li>A) It's correct — raw SQL is always faster than EF Core-generated SQL, so rewriting is always a safe first move</li>
+            <li>B) It skips the required step of profiling to confirm EF Core's SQL is the actual bottleneck — the real cause is often something else entirely, like a missing index or an N+1 pattern</li>
+            <li>C) It's fine as long as the raw SQL uses parameters correctly</li>
+            <li>D) EF Core queries cannot be measured, so guessing is the only option available</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The lesson is explicit that "feels slow" without profiling is exactly the guessing 233 already warned against — the real bottleneck is frequently a missing index, an N+1 pattern, or something unrelated to how EF Core generated its SQL at all.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the false blanket claim the lesson rejects — raw SQL is not universally faster; it depends entirely on the specific query and what's actually causing the slowness.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Correct parameterization avoids the security problem, but it doesn't address whether the rewrite was justified or effective in the first place — those are separate questions.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> EF Core queries absolutely can be measured and observed — that's exactly what the next, capstone lesson covers in depth.</p>
+                <p><strong>Reinforcement:</strong> "Feels slow" is never sufficient justification on its own — profiling first is what turns a guess into a legitimate decision.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Which of these is the strongest, most honestly-earned case for raw SQL over LINQ, according to this lesson?</p>
+        <ul class="options">
+            <li>A) A simple query filtering one table by a single property, because raw SQL is always cleaner</li>
+            <li>B) A complex, multi-table reporting query using database-specific window functions that would be awkward and unclear to express in LINQ</li>
+            <li>C) Any query at all, applied as a blanket policy across the whole application from day one</li>
+            <li>D) A single-row insert into one table</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the reporting/complexity case the lesson names directly — genuinely SQL-shaped logic like window functions is where raw SQL's clarity and control legitimately outweigh LINQ's convenience.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A simple single-table filter is exactly the shape of query LINQ already expresses clearly — raw SQL adds no real benefit here.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The lesson explicitly rejects applying either tool as a blanket, application-wide policy — the decision is made per query.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Ordinary single-row inserts are exactly the everyday CRUD case where EF Core's productivity and safety wins are largest.</p>
+                <p><strong>Reinforcement:</strong> Genuine complexity — not a general preference — is what earns raw SQL its place for a specific query.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why does EF Core's automatic SQL-injection protection matter as a real argument in EF Core's favor, given that 278 showed raw SQL can also be made safe with proper parameterization?</p>
+        <ul class="options">
+            <li>A) It doesn't matter — raw SQL and EF Core are equally safe by default, with no real difference</li>
+            <li>B) EF Core-generated SQL from LINQ is parameterized automatically, every time, with no step where a developer could forget — raw SQL's safety instead depends on every developer remembering and applying correct parameterization on every call</li>
+            <li>C) EF Core makes SQL injection physically impossible in every configuration, including raw SQL calls made through it</li>
+            <li>D) Raw SQL is inherently unsafe and cannot be made secure under any circumstances</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The real advantage isn't that raw SQL can't be made safe — 278 showed it can. It's that LINQ-generated SQL is safe by construction, with no discipline required from any individual developer, while raw SQL's safety is only as reliable as everyone consistently following 138/278's parameterization rules every single time.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There is a real difference in how the safety is achieved — automatic-by-construction versus dependent-on-developer-discipline — even though both can end up equally safe when done correctly.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> EF Core's own FromSqlRaw, used incorrectly, can still be unsafe, as 278 demonstrated directly — EF Core doesn't make injection impossible in every case, only in its own LINQ-generated SQL.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This directly contradicts 278, which showed multiple genuinely safe ways to use raw SQL correctly.</p>
+                <p><strong>Reinforcement:</strong> "Automatic by construction" versus "correct only with discipline" is the real distinction — not "safe" versus "inherently unsafe."</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team decides to write one specific quarterly finance report using raw SQL with window functions, while every other data-access method in the same application continues using EF Core LINQ. Is this a reasonable approach according to this lesson?</p>
+        <ul class="options">
+            <li>A) No — mixing raw SQL and EF Core in the same application is never supported or advisable</li>
+            <li>B) Yes — the decision is made per query based on genuine need, and EF Core is designed to support raw SQL alongside LINQ in the same codebase</li>
+            <li>C) No — once any raw SQL is introduced, the entire application should be rewritten to use raw SQL exclusively for consistency</li>
+            <li>D) Yes, but only if EF Core is completely removed from the project first</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the real-world example the lesson walks through — a genuinely reporting-shaped query in raw SQL, sitting alongside ordinary LINQ CRUD in the same application, is the intended, supported way to use both tools together.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> EF Core is explicitly built on ADO.NET and provides FromSqlRaw/FromSqlInterpolated specifically to support this mixed approach as a first-class capability.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> "Consistency for its own sake" is exactly the kind of blanket, non-judgment-based reasoning the lesson argues against — one query's needs don't dictate the whole application's approach.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing requires removing EF Core to use raw SQL for one query — the two coexist naturally in the same DbContext-driven codebase.</p>
+                <p><strong>Reinforcement:</strong> The decision genuinely is per query, not per application — this is the core, practical takeaway of the whole lesson.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have real judgment, not a slogan, for the SQL-vs-EF Core question. Next up — the capstone that ties this entire Part together: actually seeing what EF Core generates, and diagnosing a genuinely slow application step by step.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

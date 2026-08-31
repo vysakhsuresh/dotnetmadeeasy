@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>276 - Concurrency · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Catching DbUpdateConcurrencyException is the easy part. Deciding what your application actually does next is where real conflict-resolution design lives.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Intermediate's "Transactions and Concurrency" lesson left you at exactly this point: two support agents edit the same account, EF Core detects the conflict via a <span class="icode">RowVersion</span> token, and throws <span class="icode">DbUpdateConcurrencyException</span> instead of silently letting one overwrite the other. That's the detection half of the problem, solved. But detection was never the hard part — <em>catch (DbUpdateConcurrencyException)</em> is three lines of ceremony. The genuinely hard question, the one that lesson deliberately left for later, is: once you've detected the conflict, what does your application actually <em>do</em>? Reject Agent B outright? Let Agent A's change simply win because it saved first? Try to merge both agents' edits field by field? Each answer is a real design decision with real trade-offs — and this lesson is about making that decision deliberately, with actual code, instead of by accident.</p>
+    <p><strong>In this lesson, you'll implement three real optimistic-concurrency conflict-resolution strategies — database wins, client wins, and field-by-field merge — using the <span class="icode">DbUpdateConcurrencyException.Entries</span> and <span class="icode">PropertyValues</span> APIs, and then look honestly at pessimistic concurrency as the alternative approach EF Core doesn't give you first-class support for.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Conflict resolution</strong> is the specific logic your application runs once <span class="icode">DbUpdateConcurrencyException</span> tells you two operations touched the same row. It's not one universal answer — it's a choice, made deliberately per entity or even per operation, about whose version of the truth wins, or whether the two versions can be combined into something that respects both.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>When a concurrency conflict is detected, EF Core's <span class="icode">DbUpdateConcurrencyException</span> exposes an <span class="icode">Entries</span> collection — one <span class="icode">EntityEntry</span> per conflicted entity. Each entry gives you three distinct sets of property values to reason about:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Property Values</th><th>What it represents</th></tr></thead>
+            <tbody>
+                <tr><td><span class="icode">entry.OriginalValues</span></td><td>What your code believed the row looked like when it was first read — the version the failed update's <span class="icode">WHERE</span> clause was checking against.</td></tr>
+                <tr><td><span class="icode">entry.CurrentValues</span></td><td>What your in-memory entity looks like right now, including whatever changes your code made before the failed save.</td></tr>
+                <tr><td><span class="icode">await entry.GetDatabaseValuesAsync()</span></td><td>What the row actually looks like in the database right now — the version that "won" and caused the conflict in the first place.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Every conflict-resolution strategy in this lesson is really just a different, deliberate way of combining these three sets of values into what actually gets saved.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Detecting a Conflict and Resolving It Are Two Separate Jobs</h3>
+    <p>EF Core's <span class="icode">RowVersion</span> mechanism does exactly one job, and does it well: it tells you, reliably, that a conflict happened. It has no opinion at all about what should happen next — and it shouldn't, because the right answer genuinely depends on the domain. An admin overwriting a customer's shipping address probably should simply win outright. Two warehouse staff both adjusting the same inventory count probably need their adjustments <em>combined</em>, not one silently discarded. A financial ledger entry probably should never allow either side to "just win" — the conflict itself needs to be surfaced to a human. Leaving this decision unmade — catching the exception and doing nothing meaningful with it — just turns a silent data-loss bug into a slightly-less-silent, still-unhandled crash.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Choose a Strategy Deliberately, Per Entity</h3>
+    <p>Three well-established strategies cover the overwhelming majority of real scenarios: <strong>database wins</strong> (discard the in-memory change, reload, tell the user to reapply their edit against current data), <strong>client wins</strong> (force the in-memory change through regardless of what changed underneath it), and <strong>merge</strong> (apply the in-memory change only to the specific fields it actually touched, leaving every other field's concurrent update from the database intact). None of these is a default that fits every entity — the right one depends entirely on what the conflicting data actually means.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">THREE STRATEGIES, ONE SHARED STARTING POINT</div>
+        <div class="flow-step">
+            <div class="step-label">SaveChangesAsync() throws DbUpdateConcurrencyException</div>
+            <ul><li>Another transaction already committed a change to a row your entity's <span class="icode">RowVersion</span> no longer matches.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Strategy 1: Database Wins</div>
+            <ul><li>Discard your in-memory change entirely. Reload current values. Tell the user/caller to look at the current state and decide whether to reapply their edit.</li></ul>
+        </div>
+        <div class="flow-step">
+            <div class="step-label">Strategy 2: Client Wins</div>
+            <ul><li>Force your in-memory values through as-is, overwriting whatever the other transaction just committed — by updating the token EF Core is checking against, then retrying the save.</li></ul>
+        </div>
+        <div class="flow-step">
+            <div class="step-label">Strategy 3: Merge (field-by-field)</div>
+            <ul><li>For each property, keep your change only where <em>you</em> actually modified it; take the database's current value for everything you didn't touch. Save the combined result.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — All Three Strategies, With Code</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Strategy 1 — Database Wins</h3>
+    <div class="code-block"><code>try
+{
+    await context.SaveChangesAsync();
+}
+catch (DbUpdateConcurrencyException ex)
+{
+    foreach (EntityEntry entry in ex.Entries)
+    {
+        // Discard the in-memory change; refresh with what's actually in the database now.
+        await entry.ReloadAsync();
+    }
+    // The caller sees the current, real state — and must decide whether to try again.
+    throw new InvalidOperationException(
+        "This record was changed by someone else. Please review the current data and try again.");
+}</code></div>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Strategy 2 — Client Wins</h3>
+    <div class="code-block"><code>try
+{
+    await context.SaveChangesAsync();
+}
+catch (DbUpdateConcurrencyException ex)
+{
+    foreach (EntityEntry entry in ex.Entries)
+    {
+        // Fetch the row's CURRENT database values, purely to read its current RowVersion...
+        PropertyValues databaseValues = await entry.GetDatabaseValuesAsync()
+            ?? throw new InvalidOperationException("The record was deleted by another user.");
+
+        // ...then overwrite the token EF Core checks, forcing OUR values through on retry.
+        entry.OriginalValues.SetValues(databaseValues);
+    }
+    // Retry — this time the WHERE clause matches, and OUR in-memory values win.
+    await context.SaveChangesAsync();
+}</code></div>
+    <p><span class="icode">entry.OriginalValues.SetValues(databaseValues)</span> is the key move: it updates what EF Core believes the row's <em>original</em> state was — including the <span class="icode">RowVersion</span> — to match what's actually in the database right now, without touching <span class="icode">entry.CurrentValues</span> at all. The retried save's <span class="icode">WHERE</span> clause now matches, and your in-memory (client) values are what actually get written.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Strategy 3 — Field-by-Field Merge</h3>
+    <div class="code-block"><code>try
+{
+    await context.SaveChangesAsync();
+}
+catch (DbUpdateConcurrencyException ex)
+{
+    foreach (EntityEntry entry in ex.Entries)
+    {
+        PropertyValues databaseValues = await entry.GetDatabaseValuesAsync()
+            ?? throw new InvalidOperationException("The record was deleted by another user.");
+        PropertyValues currentValues = entry.CurrentValues;
+        PropertyValues originalValues = entry.OriginalValues;
+
+        foreach (IProperty property in currentValues.Properties)
+        {
+            object? proposedValue = currentValues[property];
+            object? originalValue = originalValues[property];
+            object? databaseValue = databaseValues[property];
+
+            // Only keep OUR change for a field we actually modified.
+            // For every field we DIDN'T touch, defer to whatever's in the database now.
+            if (!Equals(proposedValue, originalValue))
+                currentValues[property] = proposedValue;   // we changed it — keep our value
+            else
+                currentValues[property] = databaseValue;   // we didn't — take theirs
+        }
+
+        // Move the token forward so the retry's WHERE clause matches the current row.
+        entry.OriginalValues.SetValues(databaseValues);
+    }
+    await context.SaveChangesAsync();
+}</code></div>
+    <p>The logic hinges on comparing <span class="icode">currentValues</span> against <span class="icode">originalValues</span> per property: if they differ, your code actually changed that field, so your change is preserved; if they're identical, you never touched that field, so the concurrent update from the database is allowed to stand. This is the strategy that best respects <em>both</em> transactions' intent, at the cost of noticeably more code and a real assumption — that field-level merging is actually meaningful for this entity, which isn't true for every entity (a financial balance, for instance, usually shouldn't be "merged" this way at all).</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — Why Merge Actually Helps Here</h2>
+    <p>A <span class="icode">Product</span> row with <span class="icode">Name</span>, <span class="icode">Price</span>, and <span class="icode">StockCount</span>. Agent A updates only <span class="icode">Price</span>. Agent B, concurrently, updates only <span class="icode">StockCount</span>. Neither agent touched the field the other one changed:</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🔴 Database Wins or Client Wins</h4>
+            <ul>
+                <li>Whichever agent's save is retried second either loses their entire change, or silently discards the other agent's — even though the two changes never actually conflicted at the field level</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🟢 Field-by-Field Merge</h4>
+            <ul>
+                <li>Agent B's retry keeps their own StockCount change, and picks up Agent A's already-committed Price change for the field they never touched</li>
+                <li>Both agents' real intent survives</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Choosing the Right Strategy Per Entity</h2>
+    <p>A real application rarely uses just one strategy everywhere — the right choice is a per-entity, sometimes per-field, design decision:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Entity / Scenario</th><th>Best strategy</th><th>Why</th></tr></thead>
+            <tbody>
+                <tr><td>A CMS article's body text, edited by one author at a time</td><td>Database wins</td><td>Silently merging prose is nonsensical — a human needs to see the conflict and decide.</td></tr>
+                <tr><td>An admin correcting a customer's address after a support call</td><td>Client wins</td><td>The admin's action is authoritative and intentional — it should take effect regardless of a stale background job's concurrent touch.</td></tr>
+                <tr><td>A product's price and stock count, updated independently by pricing and warehouse systems</td><td>Field-by-field merge</td><td>The two systems genuinely never conflict at the field level — merging preserves both without loss.</td></tr>
+                <tr><td>A bank account balance</td><td>Neither blind strategy — reject and require an explicit, audited retry</td><td>Silently merging or overwriting a monetary balance risks real financial correctness; the conflict itself needs a human-visible resolution path.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📄</span> Two Editors, One Shared Document</div>
+        <p>Two people edit the same paragraph of a shared document while both were offline, then both try to sync. <strong>Database wins</strong> is the sync tool discarding your edit entirely and showing you the current version — you have to look and manually redo your change. <strong>Client wins</strong> is the sync tool forcing your version through, silently erasing whatever the other person wrote. <strong>Merge</strong> is what a good version-control diff tool actually does: if you edited paragraph 3 and they edited paragraph 7, both edits survive intact, because neither person touched the other's paragraph — it's only when you both edited the <em>same</em> line that a real, human-visible conflict remains.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Optimistic vs. Pessimistic, Honestly</h2>
+    <div class="flow-container">
+        <div class="flow-title">TWO FUNDAMENTALLY DIFFERENT STRATEGIES FOR THE SAME PROBLEM</div>
+        <div class="flow-step">
+            <div class="step-label">1. Optimistic concurrency (what EF Core gives you first-class support for) — check late, don't block</div>
+            <ul><li>No lock is held between reading a row and saving it. The engine assumes conflicts are the exception, not the rule, and only pays a real cost — a version check — at the moment of the actual write. Everything in this lesson so far is optimistic: the conflict is detected, not prevented, and resolved after the fact.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. Pessimistic concurrency — lock up front, prevent the conflict from ever happening</div>
+            <ul><li>Instead of detecting a conflict after the fact, a pessimistic approach locks the row the instant it's read (via database-level constructs like <span class="icode">SELECT ... FOR UPDATE</span> in some engines, or explicit locking hints in SQL Server), and every other reader/writer of that same row simply <em>waits</em> until the lock is released. There is no conflict to resolve, because a second writer literally cannot proceed until the first one finishes.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. Honestly: EF Core does not give pessimistic concurrency the same first-class support it gives optimistic tokens</div>
+            <ul><li>There's no <span class="icode">[Pessimistic]</span> attribute, no built-in "lock this row for the duration of my read" API comparable to <span class="icode">[Timestamp]</span>. Achieving it with EF Core means dropping to raw SQL locking hints or explicit transaction-and-lock management yourself — genuinely more manual, and genuinely more coupled to your specific database engine's locking syntax than the portable, EF-native <span class="icode">RowVersion</span> approach.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. The real trade-off is throughput vs. blocking, not "which one is safer"</div>
+            <ul><li>Optimistic concurrency scales beautifully under low contention (few real conflicts, so the check almost always just passes) but degrades under high contention into repeated failed saves and retries — a "retry storm." Pessimistic concurrency avoids that storm by making late writers simply wait their turn, at the cost of real blocking and reduced overall throughput even when conflicts would have been rare anyway.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "A higher isolation level (from the previous lesson) is a substitute for concurrency conflict resolution"</h3>
+    <p>Isolation levels govern what one transaction can <em>see</em> while it's running; they don't prevent two separate, sequential transactions from both successfully writing to the same row on their own turns. Even at Serializable, two transactions that run one after another (not concurrently overlapping) can each successfully update the same row — and if the second one's <span class="icode">RowVersion</span> is now stale, it still gets a <span class="icode">DbUpdateConcurrencyException</span>. Isolation and optimistic concurrency solve genuinely different problems and are frequently used together.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Client wins is just a bug that happens to have a nice name"</h3>
+    <p>It looks alarming the first time you see it — "deliberately overwrite what the other transaction just committed?" — but it's a legitimate, deliberate strategy for the right scenario: cases where one actor's write is genuinely meant to be authoritative regardless of concurrent, lower-priority changes (an admin override, a corrective action). The difference between "client wins as a deliberate design decision" and "silently overwriting data as a bug" is entirely whether you chose it on purpose, for a reason that fits the domain.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Applying "client wins" as a blanket default because it's the easiest retry to write</h4>
+    <p>❌ Wrapping every <span class="icode">DbUpdateConcurrencyException</span> handler in a generic "overwrite and retry" without ever asking whether that entity's data can safely be blindly overwritten. ✅ Choose the strategy per entity, based on what silently discarding a concurrent change would actually mean for that specific data — financial and audit-sensitive data almost never belongs to "client wins."</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Retrying without checking whether the row was deleted entirely</h4>
+    <p>❌ Calling <span class="icode">GetDatabaseValuesAsync()</span> and assuming it always returns a value — if the other transaction <em>deleted</em> the row instead of updating it, this returns <span class="icode">null</span>, and code that doesn't check for that throws a confusing <span class="icode">NullReferenceException</span> instead of a meaningful error. ✅ Always check for <span class="icode">null</span> and handle "the row no longer exists" as its own distinct case.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for pessimistic locking as a first instinct because "it prevents conflicts entirely"</h4>
+    <p>❌ Adding explicit row-level locking hints to avoid ever having to handle <span class="icode">DbUpdateConcurrencyException</span>, without weighing the real throughput cost against how rare actual conflicts genuinely are for that entity. ✅ Default to optimistic concurrency — it fits the vast majority of web applications well — and only reach for pessimistic locking where measured, high-contention scenarios show that retry storms are a worse problem than the blocking pessimistic locking would introduce.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Situation</th><th>Reach for</th></tr></thead>
+            <tbody>
+                <tr><td>Human-authored content where a silent auto-merge would be nonsensical (prose, configuration)</td><td>Database wins — surface the conflict to a person</td></tr>
+                <tr><td>An authoritative, intentional override action (admin correction)</td><td>Client wins</td></tr>
+                <tr><td>Independent systems that legitimately touch different fields on the same row</td><td>Field-by-field merge</td></tr>
+                <tr><td>Financial, audit, or otherwise correctness-critical data</td><td>Neither blind strategy — reject and require explicit, visible resolution</td></tr>
+                <tr><td>Most ordinary web application data, low measured contention</td><td>Optimistic concurrency (RowVersion) — the right default</td></tr>
+                <tr><td>Very high, measured contention on a specific row/table where retry storms are demonstrably worse than blocking</td><td>Consider pessimistic locking — a deliberate, measured exception, not a default</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Optimistic concurrency is the right default for the vast majority of web applications. Choose a conflict-resolution strategy deliberately per entity based on what the data actually means — never apply one strategy uniformly everywhere out of convenience.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Database wins</strong> = discard my change, show the current truth, let a human decide.<br />
+        <strong>Client wins</strong> = my change is authoritative — force it through.<br />
+        <strong>Merge</strong> = keep what I actually changed, defer to the database for everything I didn't.<br />
+        <strong>Optimistic</strong> = detect conflicts late, cheaply, at save time — the right default.<br />
+        <strong>Pessimistic</strong> = prevent conflicts up front by locking — a deliberate exception under real contention, with weaker EF Core support.<br /><br />
+        <strong>Remember:</strong> <span class="icode">RowVersion</span> only detects a conflict — your code decides what happens next, and that decision belongs to the entity's meaning, not a one-size-fits-all default.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><span class="icode">DbUpdateConcurrencyException.Entries</span> exposes each conflicted entity's <span class="icode">OriginalValues</span>, <span class="icode">CurrentValues</span>, and (via <span class="icode">GetDatabaseValuesAsync()</span>) the real current database values.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Database wins</strong> discards the in-memory change; <strong>client wins</strong> forces it through by updating the version token before retrying; <strong>field-by-field merge</strong> keeps only the fields actually changed, deferring to the database for everything else.</li>
+            <li style="margin-bottom:0.4rem;">The right strategy is chosen <strong>per entity</strong>, based on what the data means — never applied blindly, uniformly, everywhere.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Pessimistic concurrency</strong> — locking a row up front to prevent conflicts entirely — is the honest alternative approach, but EF Core doesn't give it the same first-class support optimistic tokens get; it requires more manual, engine-specific work.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Optimistic concurrency is the right default</strong> for most web applications; pessimistic locking is a deliberate, measured exception for high-contention scenarios where retry storms would genuinely be worse than blocking.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've written real conflict-resolution code, not just caught the exception. Let's confirm it clicked.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Two systems update the same Product row concurrently — one changes only Price, the other changes only StockCount. Which strategy best preserves both systems' intent, and why?</p>
+        <ul class="options">
+            <li>A) Database wins — because discarding both changes is always the safest option</li>
+            <li>B) Client wins — because whichever save retries second should always take priority</li>
+            <li>C) Field-by-field merge — because it keeps each system's actual change (comparing CurrentValues against OriginalValues per field) while deferring to the database for fields neither system touched</li>
+            <li>D) None of these — EF Core cannot detect this kind of conflict at all</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> Since the two systems modified different fields, a field-by-field merge preserves both changes intact — Price from one system, StockCount from the other — by keeping a field's proposed value only where it actually differs from the original, and taking the database's current value everywhere else.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Database wins would discard whichever change retries second entirely, even though it never actually conflicted at the field level with what's already saved.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Client wins would force the second save's values through, silently overwriting the first system's already-committed, non-conflicting change to a different field.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is exactly the scenario RowVersion-based optimistic concurrency detects — the second save's WHERE clause fails to match because the RowVersion already changed, triggering DbUpdateConcurrencyException.</p>
+                <p><strong>Reinforcement:</strong> Merge is the right tool specifically when concurrent changes touch different fields — it's not a universal answer, but it's the best fit for this exact shape of conflict.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In the "client wins" strategy, what does calling <code>entry.OriginalValues.SetValues(databaseValues)</code> actually accomplish before the retried SaveChangesAsync() call?</p>
+        <ul class="options">
+            <li>A) It permanently overwrites the entity's CurrentValues with the database's current values, discarding the in-memory change</li>
+            <li>B) It updates what EF Core believes the row's original state (including its RowVersion) to be, so the retried UPDATE's WHERE clause matches the current row — while leaving CurrentValues, and therefore the client's actual change, untouched</li>
+            <li>C) It deletes the conflicting row from the database entirely</li>
+            <li>D) It disables the RowVersion check for all future saves on this entity</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> OriginalValues represents what EF Core will check the row against in the retried UPDATE's WHERE clause. Setting it to the current database values (including the current RowVersion) makes that check pass, while CurrentValues — the client's actual in-memory change — is left completely untouched, so it's what actually gets written.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is backwards — CurrentValues is deliberately left alone specifically so the client's change survives; only OriginalValues is updated.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This has nothing to do with deletion — it only updates in-memory tracking metadata used for the next save attempt.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The RowVersion check still runs on every future save — this call only resolves the current conflict by aligning the tracked original value with what's now in the database.</p>
+                <p><strong>Reinforcement:</strong> Client wins works by updating what EF Core checks against, not by bypassing the check — the mechanism stays intact, it's just satisfied.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why doesn't EF Core give pessimistic concurrency the same first-class support it gives optimistic RowVersion tokens?</p>
+        <ul class="options">
+            <li>A) Pessimistic concurrency is impossible to achieve with any relational database</li>
+            <li>B) Pessimistic locking relies on database-engine-specific locking mechanisms, and EF Core's optimistic, RowVersion-based approach fits the vast majority of real applications better, so it's the one given a built-in, portable, first-class API</li>
+            <li>C) EF Core does provide identical first-class support for both — there is no meaningful difference</li>
+            <li>D) Pessimistic concurrency is only relevant to NoSQL databases, not relational ones</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Achieving pessimistic locking means dropping to engine-specific locking hints or explicit lock management, which is inherently less portable than the EF-native, database-agnostic RowVersion/[Timestamp] mechanism — and since optimistic concurrency fits most real applications well, that's what EF Core builds first-class, portable support around.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Pessimistic locking is entirely achievable in relational databases (via constructs like row-level locking hints) — it's just not wrapped in an EF-native, portable API the way optimistic tokens are.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The lesson is explicit that this support is asymmetric — optimistic tokens get a dedicated, portable attribute-based mechanism; pessimistic locking does not have an equivalent.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Pessimistic concurrency is a relational-database concept just as much as optimistic concurrency is — both apply squarely to the relational databases this curriculum covers.</p>
+                <p><strong>Reinforcement:</strong> Recognize this as an honest, real gap in EF Core's feature set, not an oversight to work around by pretending equivalent support exists.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have real, working conflict-resolution strategies, and an honest picture of optimistic versus pessimistic concurrency. Next up: connection management — what a DbContext's lifetime actually does, and doesn't, control.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

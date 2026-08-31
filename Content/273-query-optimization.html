@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>273 - Query Optimization · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        A correct EF Core query and a fast one are not automatically the same query — the gap between them is almost always the shape of what you asked for, not a missing index.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Picture a screen that lists blog posts, and for each post shows its comments and its tags. The obvious LINQ query is one line:</p>
+    <div class="code-block"><code>List&lt;Post&gt; posts = await context.Posts
+    .Include(p =&gt; p.Comments)
+    .Include(p =&gt; p.Tags)
+    .ToListAsync();</code></div>
+    <p>No N+1 here — you already know from Advanced Part V's LINQ performance lesson that <span class="icode">Include</span> is exactly how you avoid a query-per-row disaster. And yet, on a post with 40 comments and 6 tags, this single "optimized" query can come back <em>slower</em> and <em>heavier</em> than you'd expect — sometimes dramatically so. Not because <span class="icode">Include</span> is wrong. Because two <span class="icode">Include</span> calls on two different collections, translated into one SQL query, don't just add rows together — they <strong>multiply</strong> them.</p>
+    <p><strong>This lesson is about making EF Core queries genuinely fast: a quick recap of N+1 avoidance (already covered — this isn't a re-teach), a deep look at <span class="icode">AsSplitQuery()</span> and the cartesian-product problem it exists to solve, <span class="icode">.Select()</span> projection as a first-class performance technique, and a look at what EF Core already caches for you automatically — which sets up the next lesson's narrower tool, compiled queries.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Query optimization</strong>, in the EF Core sense, is choosing the query <em>shape</em> that gets you the data you need in the fewest round trips and the smallest transferred payload — without accidentally asking the database to do far more work than the question actually requires. It's rarely about clever SQL tricks; it's almost always about recognizing which of a small number of well-known shapes (N+1, cartesian-product joins, over-fetching) your query has accidentally taken, and reshaping it.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Three concrete tools sit at the center of this lesson: <strong><span class="icode">AsSplitQuery()</span></strong>, which tells EF Core to translate a query with multiple <span class="icode">Include</span>d collection navigations into <em>several</em> separate SQL queries instead of one joined query; <strong><span class="icode">.Select()</span> projection</strong>, which tells EF Core to fetch only the specific columns your code actually reads, instead of every mapped column on every entity in the query; and EF Core's own <strong>internal query-shape cache</strong>, an automatic mechanism (already referenced in the LINQ-to-EF-Core lesson) that avoids re-translating the same LINQ expression tree into SQL on every single call.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Quick Recap — N+1 Is Already Solved, Not Re-Taught Here</h3>
+    <p>Advanced Part V's "Avoiding LINQ Performance Traps" already covered N+1 in full depth — the failure mode where a loop that reads a navigation property per row turns one query into N+1 queries, and the fix: eager-load with <span class="icode">Include(...)</span>, or fetch exactly what you need with a <span class="icode">.Select()</span> projection across the navigation, so everything comes back in one round trip. If any of that feels unfamiliar, go back to that lesson first — this one assumes you have it solid, and moves straight to the next layer of the problem: what happens once you're already eager-loading correctly, but eager-loading <em>more than one</em> collection at once.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — a JOIN of Two Collections Multiplies, It Doesn't Add</h3>
+    <p>Here's the part N+1 avoidance doesn't warn you about. <span class="icode">Include(p =&gt; p.Comments)</span> alone is fine — EF Core generates one query with a <span class="icode">JOIN</span> against <span class="icode">Comments</span>, and you get back one row per comment (with the post's columns repeated on each). <span class="icode">Include(p =&gt; p.Tags)</span> alone is equally fine. But <span class="icode">Include(p =&gt; p.Comments).Include(p =&gt; p.Tags)</span> <em>together</em>, translated as one SQL query, means the database joins <span class="icode">Posts</span> to <span class="icode">Comments</span> <em>and</em> to <span class="icode">Tags</span> in the same query — and a join across two independent one-to-many collections produces a <strong>cartesian product</strong> between them: a post with 40 comments and 6 tags doesn't come back as 40 + 6 = 46 rows, it comes back as 40 × 6 = <strong>240</strong> rows, each one repeating all of that post's own columns yet again. Add a third collection and the multiplication compounds further. The result set EF Core has to transfer and then de-duplicate back into your object graph gets wastefully larger the more collections you include together in one query — not because your data grew, but purely because of how a single joined query has to represent multiple independent one-to-many relationships at once.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Split the Collections Into Separate Queries</h3>
+    <p><span class="icode">AsSplitQuery()</span> tells EF Core: instead of one query joining everything together, issue one query for the main entity plus <em>one additional query per included collection navigation</em>, and stitch the results back together into the same object graph in memory. No cartesian multiplication — each collection is fetched in its own right-sized query. The trade-off is exactly what you'd expect from trading one query for several: it's no longer a single atomic round trip, so a row could theoretically be added to <span class="icode">Comments</span> between the first and second query executing. For the vast majority of read scenarios that's a non-issue; where it genuinely matters, that's a signal you may need a transaction around the read, not a reason to avoid split queries altogether.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🔴 Single Query, Two Collections Included</h4>
+            <ul>
+                <li>One SQL query, two JOINs (Comments, Tags)</li>
+                <li>1 post × 40 comments × 6 tags = 240 rows over the wire</li>
+                <li>Post's own columns repeated 240 times</li>
+                <li>One round trip — but a bloated one</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🟢 AsSplitQuery()</h4>
+            <ul>
+                <li>Three SQL queries: Posts, then Comments, then Tags</li>
+                <li>1 + 40 + 6 = 47 rows total, across all three</li>
+                <li>No repeated post columns at all</li>
+                <li>Three round trips — but each one right-sized</li>
+            </ul>
+        </div>
+    </div>
+    <p>Same data, same final object graph in your code either way — <span class="icode">post.Comments</span> and <span class="icode">post.Tags</span> are populated identically at the end of both. The difference is entirely in how much data physically crossed the network to get there, and how much duplicate work the database and EF Core did assembling it.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">DECIDING HOW TO SHAPE A QUERY, STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">Step 1 — Do you need related data at all, or only a few of its fields?</div>
+            <ul><li>If you only ever read two or three fields off the related entity, don't <span class="icode">Include</span> it at all — project with <span class="icode">.Select()</span> instead. Skip straight to Step 3.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 2 — Including exactly one collection navigation?</div>
+            <ul><li>A single <span class="icode">Include</span> on one collection is fine as one joined query — there's no second collection to multiply against, so there's no cartesian problem to solve.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 3 — Including two or more collection navigations together?</div>
+            <ul><li>Add <span class="icode">.AsSplitQuery()</span> to the end of the query. EF Core issues one query per collection instead of one joined query for all of them.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">Step 4 — Only reading a handful of fields, never the whole entity?</div>
+            <ul><li>Reach for <span class="icode">.Select()</span> to project exactly those fields — narrower than <span class="icode">Include</span>, and it sidesteps the split-vs-single decision entirely because there's no collection navigation being materialized as tracked entities at all.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — AsSplitQuery() in Practice</h2>
+    <div class="code-block"><code>// Single query — two Includes joined together, cartesian-product-shaped
+List&lt;Post&gt; posts = await context.Posts
+    .Include(p =&gt; p.Comments)
+    .Include(p =&gt; p.Tags)
+    .ToListAsync();
+
+// Split query — one query for Posts, one for Comments, one for Tags
+List&lt;Post&gt; postsSplit = await context.Posts
+    .Include(p =&gt; p.Comments)
+    .Include(p =&gt; p.Tags)
+    .AsSplitQuery()
+    .ToListAsync();</code></div>
+    <p>The two calls populate <span class="icode">post.Comments</span> and <span class="icode">post.Tags</span> identically — <span class="icode">AsSplitQuery()</span> changes how the data is fetched, not what your object graph looks like afterward. You can also set it as the default for every query on a <span class="icode">DbContext</span>, and override per-query where needed:</p>
+    <div class="code-block"><code>protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+{
+    optionsBuilder.UseSqlServer(connectionString,
+        o =&gt; o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+}
+
+// Opt a specific query back into a single query, if you deliberately want that:
+var single = await context.Posts.Include(p =&gt; p.Comments).AsSingleQuery().ToListAsync();</code></div>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — an Order Detail Screen</h2>
+    <p>An e-commerce order-detail page needs an order's line items, its shipment tracking events, and its payment attempts — three independent one-to-many collections hanging off <span class="icode">Order</span>. Joined together in one query, a busy order with 8 line items, 5 tracking events, and 3 payment attempts returns 8 × 5 × 3 = <strong>120</strong> rows, every one of them repeating the order's own columns. Split, it's three separate, right-sized queries returning 8 + 5 + 3 = 16 rows total, plus one row for the order itself.</p>
+    <div class="code-block"><code>Order? order = await context.Orders
+    .Include(o =&gt; o.LineItems)
+    .Include(o =&gt; o.TrackingEvents)
+    .Include(o =&gt; o.PaymentAttempts)
+    .AsSplitQuery()
+    .FirstOrDefaultAsync(o =&gt; o.Id == orderId);</code></div>
+    <p>And for the order <em>list</em> screen — where each row in the list only ever shows the customer's name and the item count, never the full line items — reshaping the query with <span class="icode">.Select()</span> is a better fix than either single- or split-<span class="icode">Include</span> ever could be, because it avoids fetching the collections at all:</p>
+    <div class="code-block"><code>var summaries = await context.Orders
+    .Select(o =&gt; new
+    {
+        o.Id,
+        CustomerName = o.Customer!.Name,
+        ItemCount = o.LineItems.Count
+    })
+    .ToListAsync();
+// One query. No Include. No tracked Order or LineItem entities materialized at all.</code></div>
+    <p>This is the exact same projection technique Intermediate's <span class="icode">.Select()</span> lesson taught, and the same idea behind <span class="icode">AsNoTracking()</span> from the tracking-vs-no-tracking lesson: fetch only the shape the screen actually needs, and skip change-tracking overhead for data you'll never save back. Projection composes with both — a read-only, narrowly-shaped, untracked query is usually the single fastest thing EF Core can do for you.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧾</span> One Combined Invoice vs. Three Separate Receipts</div>
+        <p>Imagine a store that sold you a jacket in 3 sizes tried on and 2 colors considered, and insists on printing <em>one combined receipt</em> listing every size-color combination as its own line — 3 × 2 = 6 lines — even though you only actually bought one jacket. That's a single joined query across two collections: technically one piece of paper, but bloated with combinations nobody asked for.</p>
+        <p><span class="icode">AsSplitQuery()</span> is the store instead handing you three separate, short receipts — one for the jacket, one for the sizes you tried, one for the colors you considered — each listing only what's actually relevant to it, no combinations. Three pieces of paper instead of one, but a fraction of the total ink and paper. <span class="icode">.Select()</span> projection, by contrast, is asking the register to print <em>only the total</em> — you never even see the sizes or colors, because you never needed them in the first place.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">HOW EF CORE TRANSLATES AND CACHES QUERY SHAPES</div>
+        <div class="flow-step">
+            <div class="step-label">1. Multiple Includes translate to LEFT JOINs against the same driving row</div>
+            <ul><li>A single, non-split query with two <span class="icode">Include</span>d collections generates SQL with two <span class="icode">LEFT JOIN</span>s off the root table. Relational join semantics mean every matching row on one join is paired with every matching row on the other — that pairing <em>is</em> the cartesian product, and it's a property of how joins work, not an EF Core inefficiency to "fix" in the general sense.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. AsSplitQuery() replaces the JOINs with independent queries sharing a filter</div>
+            <ul><li>Each split query re-applies the same root filter (e.g. the same <span class="icode">WHERE</span> or the same set of matched primary keys) independently, then EF Core's materialization layer — not the database — stitches each collection's rows onto the correct parent entity in memory using the primary/foreign key relationships it already knows from the model.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. EF Core already caches the translated query "shape" — you get this for free, on every query</div>
+            <ul><li>As the LINQ-to-EF-Core lesson forward-referenced, EF Core doesn't re-walk and re-translate an identical LINQ expression tree into SQL from scratch on every single call. The first time a given query shape runs, EF Core compiles it into an internal representation and caches that compiled shape, keyed by the structure of the expression tree; subsequent calls with the same shape (even with different parameter <em>values</em> — a different <span class="icode">orderId</span>, say) reuse the cached compiled shape and skip straight to execution. This happens automatically, for ordinary LINQ queries, with zero code from you.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. That automatic caching still leaves a small, real cost on every call — which the next lesson addresses</div>
+            <ul><li>Even with the shape cached, every call still pays a small lookup cost to find that cached shape, plus the normal cost of building the LINQ expression tree itself before the cache can even be consulted. For the overwhelming majority of queries this cost is genuinely negligible. For a narrow category of extremely hot, extremely simple, frequently-repeated queries, EF Core offers one further, explicit tool to shave off even that — <span class="icode">EF.CompileQuery</span> — which is exactly where the next lesson picks up.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "AsSplitQuery() is just another way to fix N+1"</h3>
+    <p>They solve different shapes of the same broader "too many round trips or too much data" family, but they aren't interchangeable. N+1 is the failure to eager-load at all — a loop silently issuing one query per row. <span class="icode">AsSplitQuery()</span> assumes you've <em>already</em> eager-loaded correctly with <span class="icode">Include</span> — its problem is specifically what happens when you eager-load <em>more than one</em> collection navigation in a single joined query. Fixing N+1 means adding <span class="icode">Include</span> in the first place; reaching for <span class="icode">AsSplitQuery()</span> only makes sense once you're already past that point.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "More round trips is always worse than one big query"</h3>
+    <p>That's the intuition <span class="icode">AsSplitQuery()</span> deliberately overturns for this specific shape. One round trip sounds strictly better in the abstract, but when that "one" round trip is carrying a cartesian-multiplied payload, three small, targeted round trips can genuinely transfer less total data and finish faster than the single bloated one. Round-trip count and total work done are two different costs — this lesson's whole point is that the second one can dominate.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Including several collections together and never noticing the row-count explosion</h4>
+    <p>❌ Chaining three or four <span class="icode">Include</span> calls on independent collections in one query because it "reads cleanly," without ever looking at how many rows the database actually returns for a busy parent entity. ✅ Whenever a query includes two or more collection navigations together, default to <span class="icode">AsSplitQuery()</span> — and when in doubt, check the actual row count with query logging (from the LINQ-to-EF-Core lesson's diagnostic tools) before and after.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Reaching for AsSplitQuery() on a single-collection Include</h4>
+    <p>❌ Adding <span class="icode">.AsSplitQuery()</span> to a query with only one <span class="icode">Include</span>d collection — there's no second collection for it to multiply against, so there's no cartesian problem, and splitting only adds an unnecessary extra round trip for nothing. ✅ Reserve <span class="icode">AsSplitQuery()</span> for queries including two or more collection navigations together — a single <span class="icode">Include</span> is already fine as one query.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Using Include when a projection would do</h4>
+    <p>❌ <span class="icode">Include</span>-ing a whole related entity graph just to read two of its fields on a read-only display screen, paying for tracked entities, full column sets, and change-tracker snapshots you'll never use. ✅ If you're not going to modify and save the related data, project with <span class="icode">.Select()</span> instead — it's narrower than any <span class="icode">Include</span> shape, single or split, because it never materializes the related entity as a tracked object at all.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Situation</th><th>Reach for</th></tr></thead>
+            <tbody>
+                <tr><td>A loop reading a navigation property per row, no eager loading at all</td><td>Fix the N+1 first — <span class="icode">Include(...)</span> or a projection (see 205)</td></tr>
+                <tr><td>One collection navigation eager-loaded</td><td>A plain <span class="icode">Include</span> — no split needed</td></tr>
+                <tr><td>Two or more collection navigations eager-loaded together</td><td><span class="icode">.AsSplitQuery()</span></td></tr>
+                <tr><td>Only a handful of fields ever read, related data never modified</td><td>A <span class="icode">.Select()</span> projection — skip <span class="icode">Include</span> entirely</td></tr>
+                <tr><td>A specific, simple, parameterized query called extremely often on a measured hot path</td><td>The narrower tool covered next: explicit compiled queries</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> One collection, one query. Two or more collections together, split them. Only a few fields, project them. Reach for each tool because you have that specific shape of query, not as a blanket default on every query in the codebase.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>N+1</strong> = forgetting to eager-load at all.<br />
+        <strong>Cartesian explosion</strong> = eager-loading correctly, but joining too many collections into one query.<br />
+        <strong><span class="icode">AsSplitQuery()</span></strong> = one query per collection instead of one join across all of them.<br />
+        <strong><span class="icode">.Select()</span> projection</strong> = fetch only the fields you actually read, skip materializing whole entities.<br /><br />
+        <strong>Remember:</strong> EF Core already caches translated query shapes automatically — compiled queries, next, are a narrower tool on top of that, not a replacement for it.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">N+1 avoidance (205) and query optimization are related but distinct — this lesson assumes N+1 is already solved via <span class="icode">Include</span> or projection.</li>
+            <li style="margin-bottom:0.4rem;">Including <strong>multiple collection navigations</strong> in one query produces a JOIN whose result set is <strong>cartesian-product-shaped</strong> — it multiplies, not adds.</li>
+            <li style="margin-bottom:0.4rem;"><strong><span class="icode">AsSplitQuery()</span></strong> issues one query per included collection instead, avoiding the multiplication, at the cost of no longer being one atomic round trip.</li>
+            <li style="margin-bottom:0.4rem;"><strong><span class="icode">.Select()</span> projection</strong> is a genuine performance technique — fetch only the columns your code reads, and skip tracked-entity materialization for related data you never modify.</li>
+            <li style="margin-bottom:0.4rem;">EF Core already <strong>caches translated query shapes automatically</strong> — the next lesson's <span class="icode">EF.CompileQuery</span> is a narrower, explicit optimization on top of that, not a fix for a gap that's otherwise unaddressed.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen why joining multiple collections multiplies rows, and the tools that fix it. Let's confirm it clicked.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A query does <code>context.Posts.Include(p =&gt; p.Comments).Include(p =&gt; p.Tags).ToListAsync()</code> as one single (non-split) query. A post has 40 comments and 6 tags. Roughly how many rows does the database return for that one post?</p>
+        <ul class="options">
+            <li>A) 46 rows — 40 comments plus 6 tags</li>
+            <li>B) 240 rows — 40 × 6, the cartesian product of the two joined collections</li>
+            <li>C) 1 row — EF Core automatically deduplicates before returning results</li>
+            <li>D) 2 rows — one per Include call</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Joining a parent to two independent one-to-many collections in one SQL query produces a cartesian product between them — every comment row is paired with every tag row for that post, giving 40 × 6 = 240 rows, all repeating the post's own columns.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> That's what you'd get if the two collections were added rather than joined together — which is exactly the mistaken intuition this lesson corrects.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Deduplication happens in EF Core's in-memory materialization when reconstructing the object graph from the raw rows — but the database still has to generate and transfer all 240 raw rows first.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The number of <code>Include</code> calls doesn't map directly to row count — it's the product of each included collection's size that determines the row count in a single joined query.</p>
+                <p><strong>Reinforcement:</strong> A join across multiple one-to-many collections multiplies, not adds — this is exactly the shape <code>AsSplitQuery()</code> exists to avoid.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> What trade-off does <code>AsSplitQuery()</code> introduce in exchange for avoiding the cartesian-product row explosion?</p>
+        <ul class="options">
+            <li>A) It disables change tracking for all entities returned by the query</li>
+            <li>B) The query is no longer executed as one atomic round trip — it becomes several separate queries that could, in theory, see data change between them</li>
+            <li>C) It silently converts the query to no-tracking mode</li>
+            <li>D) It requires the entity to have a RowVersion concurrency token</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Splitting one joined query into several separate queries means they no longer execute as a single atomic unit — a row could theoretically be inserted, updated, or deleted between the separate queries. For most read scenarios this is a non-issue; it's the real, honest cost of avoiding the multiplication.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>AsSplitQuery()</code> has nothing to do with tracking behavior — tracked queries stay tracked, no-tracking queries stay no-tracking, independent of split vs. single.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Same reasoning as A — splitting and tracking are unrelated, orthogonal query options.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>AsSplitQuery()</code> has no relationship to concurrency tokens — that's an unrelated EF Core feature covered in a later lesson.</p>
+                <p><strong>Reinforcement:</strong> Trading one atomic round trip for several right-sized ones is the honest cost of <code>AsSplitQuery()</code> — know the trade-off, not just the benefit.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A query only ever reads a customer's name and an order's total on a list screen — it never modifies either. What is the best query shape?</p>
+        <ul class="options">
+            <li>A) <code>Include(o =&gt; o.Customer).AsSplitQuery()</code></li>
+            <li>B) A <code>.Select()</code> projection pulling only <code>CustomerName</code> and <code>Total</code>, with no <code>Include</code> at all</li>
+            <li>C) <code>Include(o =&gt; o.Customer)</code> with no split, since only one navigation is involved</li>
+            <li>D) Loading all orders, then all customers separately, and joining them in C# after both come back</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Since the related data is only ever read, never modified, a projection is narrower than any form of <code>Include</code> — it fetches only the two fields actually needed and never materializes a tracked <code>Customer</code> entity at all.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Splitting only matters when multiple collection navigations are joined together — here there's only a single reference navigation, and more importantly, a full <code>Include</code> is unnecessary when only one field off the related entity is ever read.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> While technically correct that a single navigation doesn't need splitting, this still over-fetches — it pulls every column of both <code>Order</code> and <code>Customer</code> when only two specific fields are needed.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Loading two full sets separately and joining them in C# is strictly worse than either option — more data transferred, more memory used, and manual join logic that the database already does far better.</p>
+                <p><strong>Reinforcement:</strong> When you only read a few fields and never save the related data back, projection beats every form of <code>Include</code>, split or otherwise.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> What does EF Core's automatic internal query-shape caching already do for you, without any explicit compiled-query code?</p>
+        <ul class="options">
+            <li>A) It caches the actual query <em>results</em>, so a second call with a different parameter value returns stale data from the first call</li>
+            <li>B) It avoids re-translating an identical LINQ expression tree shape into SQL from scratch on every call, reusing the cached compiled shape across calls with different parameter values</li>
+            <li>C) It eliminates the need for parameterized SQL entirely</li>
+            <li>D) It automatically converts every query to use AsSplitQuery()</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> EF Core automatically caches the translated shape of a query, keyed by the structure of its expression tree, so subsequent calls with the same shape — even with different parameter values — skip re-translation and reuse the cached compiled shape. This happens for ordinary LINQ queries with zero opt-in code.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This caches the translated query <em>shape</em>, not the returned data — every call still executes against the database and gets current results; nothing about it risks stale data.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Generated SQL is still parameterized regardless of this caching — the two are related (parameterization is part of why the same shape can be reused across different values) but shape caching doesn't replace parameterization.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Query-shape caching and split-query behavior are unrelated features — caching happens automatically for every query; split-query behavior must be explicitly opted into.</p>
+                <p><strong>Reinforcement:</strong> This automatic caching is exactly what the next lesson builds on — <code>EF.CompileQuery</code> is a further, narrower, explicitly opted-into optimization on top of what already happens for free.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know how to reshape a query that's technically correct into one that's actually fast. Next up: the narrow, explicit tool that sits on top of EF Core's automatic caching for the hottest of hot paths — compiled queries.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
