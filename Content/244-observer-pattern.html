@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>244 - Observer Pattern · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-base {
+            background: rgba(251, 191, 36, 0.2);
+            color: #FBBF24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .tag-derived {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .memory-diagram {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        You've been implementing this pattern since lesson 105. This lesson just gives it its name.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Lesson 105 taught you the <code>event</code> keyword — a controlled way for a class to announce "something happened" to whoever's interested. Lesson 106 built the full standard event pattern: custom <code>EventArgs</code>, a <code>protected virtual OnXxx</code> raiser, multiple subscribers reacting to one <code>PriceChanged</code> or <code>OrderShipped</code> event. Lesson 192 took that further with an <code>EventAggregator</code>, decoupling publishers and subscribers so neither knows the other exists.</p>
+    <p>Every single one of those lessons was teaching you a concrete C# implementation of a pattern with a formal name: the <strong>Observer Pattern</strong> — a Behavioral pattern from the design patterns lesson earlier in this Part. You already know how to use it. This lesson connects the dots: the classic GoF shape behind what you've been writing, and where else in .NET the exact same idea shows up.</p>
+    <p><strong>By the end, you'll know the textbook Subject/Observer terminology, see precisely how C#'s <code>event</code> keyword implements it, and recognize <code>IObservable&lt;T&gt;</code>/<code>IObserver&lt;T&gt;</code> — the interfaces behind Rx.NET — as yet another concrete implementation of the same idea.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>The <strong>Observer Pattern</strong> defines a one-to-many relationship between objects: when one object's state changes, all its registered dependents are notified automatically. The object being watched doesn't need to know anything specific about who's watching — just that a list of watchers exists and should be told when something happens.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition — the Classic GoF Shape</h3>
+    <p>The original GoF formulation names two roles:</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>📢 Subject (a.k.a. Observable)</h4>
+            <ul>
+                <li>Maintains a list of registered Observers</li>
+                <li>Exposes a way to <code>Attach</code>/<code>Subscribe</code> and <code>Detach</code>/<code>Unsubscribe</code></li>
+                <li>Calls <code>Notify()</code> on every registered Observer when its own state changes</li>
+                <li>Doesn't know the concrete type of any Observer — only that it satisfies the Observer contract</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>👀 Observer</h4>
+            <ul>
+                <li>Implements an <code>Update()</code>-style method the Subject can call</li>
+                <li>Registers itself with a Subject it wants to watch</li>
+                <li>Reacts however it likes when notified — the Subject doesn't care what happens next</li>
+            </ul>
+        </div>
+    </div>
+    <div class="concept-box">
+        <div class="concept-title">🔑 You already know a C#-native implementation of this</div>
+        <p>C#'s <code>event</code> keyword IS the Observer pattern, built into the language. The class declaring <code>public event EventHandler&lt;PriceChangedEventArgs&gt;? PriceChanged;</code> is the Subject. Every method that does <code>someObject.PriceChanged += HandlePriceChanged;</code> is registering an Observer. The multicast delegate's invocation list (lesson 097) IS the Subject's list of registered Observers. You've been building Subject/Observer relationships since lesson 105 — just using C#'s own vocabulary (<code>event</code>, <code>+=</code>, <code>EventHandler</code>) instead of the GoF vocabulary (Subject, Attach, Notify).</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist? — The Problem It Solves</h2>
+    <p>Without Observer, a class that needs to react to something happening elsewhere has two bad options: poll repeatedly to check "has it happened yet?", or the source object has to directly call every interested class by name — coupling it to every consumer it happens to know about today:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ WITHOUT Observer — the order-shipping class directly calls
+// every interested class by name, hard-coded, one by one
+public sealed class OrderShippingService
+{
+    private readonly EmailNotifier _emailNotifier;
+    private readonly AnalyticsLogger _analyticsLogger;
+    private readonly InventorySync _inventorySync;
+
+    public void MarkShipped(Order order)
+    {
+        // Every new "interested party" means editing THIS method directly —
+        // OrderShippingService is now coupled to every consumer it knows about.
+        _emailNotifier.SendShippedEmail(order);
+        _analyticsLogger.LogShipment(order);
+        _inventorySync.ReleaseReservedStock(order);
+    }
+}</code></pre>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>The object whose state changes has to know, by name, every single class that cares — tight coupling that grows every time a new consumer appears</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>A way for the source object to announce "this happened" generically, letting interested parties register themselves — without the source ever needing to know their concrete types</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>Observer — the Subject maintains a list of registered Observers and notifies all of them, without knowing their concrete types</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Textbook Shape vs. C#'s event Keyword</h2>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>📜 Classic GoF Subject/Observer</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IObserver
+{
+    void Update(Order order);
+}
+
+public class OrderSubject
+{
+    private readonly List&lt;IObserver&gt; _observers = [];
+    public void Attach(IObserver o) => _observers.Add(o);
+    public void Notify(Order order)
+    {
+        foreach (var o in _observers)
+            o.Update(order);
+    }
+}</code></pre>
+        </div>
+        <div class="comparison-card">
+            <h4>⚡ C#'s built-in shortcut — event</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class OrderShippingService
+{
+    public event EventHandler&lt;OrderShippedEventArgs&gt;? OrderShipped;
+
+    protected virtual void OnOrderShipped(OrderShippedEventArgs e) =>
+        OrderShipped?.Invoke(this, e);
+
+    public void MarkShipped(Order order) =>
+        OnOrderShipped(new OrderShippedEventArgs(order.TrackingNumber));
+}</code></pre>
+        </div>
+    </div>
+    <p>These are the same pattern. <code>_observers.Add(o)</code> and <code>OrderShipped += handler</code> both register a watcher. <code>foreach (var o in _observers) o.Update(order)</code> and <code>OrderShipped?.Invoke(this, e)</code> both notify every registered watcher. C# just gives you the entire Subject bookkeeping — the list, the add/remove, the null-safe iteration — for free, via the compiler-generated multicast delegate behind every <code>event</code> field (lesson 097).</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Mapping event Onto Subject/Observer</h2>
+    <div class="flow-container">
+        <div class="flow-title">THE GoF VOCABULARY, MAPPED ONTO WHAT YOU ALREADY KNOW</div>
+        <div class="flow-step">
+            <div class="step-label">1. SUBJECT = THE CLASS DECLARING THE event</div>
+            <ul><li><code>OrderShippingService</code> — owns the <code>OrderShipped</code> event field, decides when to raise it</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. ATTACH/SUBSCRIBE = THE += OPERATOR</div>
+            <ul><li><code>shippingService.OrderShipped += HandleShipped;</code> — registers an Observer, exactly like <code>_observers.Add(o)</code></li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE OBSERVER'S "Update" METHOD = THE EVENT HANDLER METHOD</div>
+            <ul><li><code>void HandleShipped(object? sender, OrderShippedEventArgs e)</code> — this is your Observer's <code>Update()</code></li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. NOTIFY = THE RAISER CALLING ?.Invoke(this, e)</div>
+            <ul><li><code>OnOrderShipped</code> calling <code>OrderShipped?.Invoke(this, e)</code> walks the invocation list and calls every registered handler — this IS the Subject's <code>Notify()</code> loop, generated by the compiler</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. DETACH/UNSUBSCRIBE = THE -= OPERATOR</div>
+            <ul><li><code>shippingService.OrderShipped -= HandleShipped;</code> — removes the Observer, preventing the memory leak covered in lesson 106</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — Multiple Observers, One Subject</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public sealed class OrderShippedEventArgs(string trackingNumber) : EventArgs
+{
+    public string TrackingNumber { get; } = trackingNumber;
+}
+
+public sealed class OrderShippingService   // ← the Subject
+{
+    public event EventHandler&lt;OrderShippedEventArgs&gt;? OrderShipped;
+
+    private void OnOrderShipped(OrderShippedEventArgs e) => OrderShipped?.Invoke(this, e);
+
+    public void MarkShipped(string trackingNumber) =>
+        OnOrderShipped(new OrderShippedEventArgs(trackingNumber));
+}
+
+// ── Three independent Observers, none aware the others exist ──
+var shipping = new OrderShippingService();
+
+shipping.OrderShipped += (_, e) => Console.WriteLine($"[Email] Shipped: {e.TrackingNumber}");
+shipping.OrderShipped += (_, e) => Console.WriteLine($"[Analytics] Logged: {e.TrackingNumber}");
+shipping.OrderShipped += (_, e) => Console.WriteLine($"[Inventory] Released stock for: {e.TrackingNumber}");
+
+shipping.MarkShipped("1Z999AA10123456784");
+// All three handlers run — OrderShippingService never mentions Email, Analytics,
+// or Inventory by name. That decoupling IS the Observer pattern working.</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> Three completely unrelated Observers subscribe to one Subject. <code>OrderShippingService</code> knows nothing about email, analytics, or inventory — it only knows it has a list of delegates to invoke. Add a fourth Observer tomorrow, and <code>OrderShippingService</code> doesn't change at all.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — 192's Event Aggregator, Reframed</h2>
+    <p>Lesson 192's <code>EventAggregator</code> is Observer taken one step further: instead of subscribing directly to one specific Subject instance, publishers and subscribers both depend only on <code>IEventAggregator</code> — a shared, decoupled "message bus" that plays Subject for the whole application:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// From 192 — the SAME Subject/Observer roles, generalized across the whole app:
+public interface IEventAggregator
+{
+    void Publish&lt;TEvent&gt;(TEvent evt);              // Notify() — announce to all Observers
+    void Subscribe&lt;TEvent&gt;(Action&lt;TEvent&gt; handler);  // Attach() — register an Observer
+}
+// AnalyticsModule and NotificationModule both Subscribe to the SAME event type,
+// without ever referencing OrderFulfillmentService (the publisher) directly —
+// and OrderFulfillmentService never references either subscriber directly.
+// This is Observer, decoupled even further: publisher and subscriber depend
+// only on the shared bus, not on each other.</code></pre>
+    <p>Where a plain C# <code>event</code> field ties Observers directly to one specific Subject instance, an event aggregator generalizes the Subject role into a shared bus — but the underlying relationship (state change → notify a list of interested parties) is identical.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy — A YouTube Channel</h2>
+    <div class="concept-box">
+        <div class="concept-title">🔔 Subscribe, and get notified when something happens</div>
+        <p>A YouTube channel (the Subject) doesn't know your name, your email, or anything about you specifically — it just maintains a list of subscribers. When it uploads a new video (a state change), every subscriber (Observer) gets notified, automatically, without the channel ever calling each subscriber by name. You can subscribe or unsubscribe at any time, and the channel's behavior — uploading videos — never changes because of who happens to be watching.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — IObservable&lt;T&gt; and IObserver&lt;T&gt;</h2>
+    <p>The .NET base class library also defines Observer directly as a pair of generic interfaces — <code>IObservable&lt;T&gt;</code> and <code>IObserver&lt;T&gt;</code> — which are the foundation Reactive Extensions (Rx.NET) is built on:</p>
+    <div class="flow-container">
+        <div class="flow-title">THE BCL'S OWN OBSERVER INTERFACES — VOCABULARY LEVEL ONLY</div>
+        <div class="flow-step">
+            <div class="step-label">IObservable&lt;T&gt; — the Subject role, formalized</div>
+            <ul><li>One method: <code>IDisposable Subscribe(IObserver&lt;T&gt; observer)</code> — registering an Observer returns a handle you can dispose to unsubscribe</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">IObserver&lt;T&gt; — the Observer role, formalized</div>
+            <ul><li>Three methods: <code>OnNext(T value)</code> (a new item arrived), <code>OnError(Exception e)</code>, <code>OnCompleted()</code> — richer than a plain <code>event</code>, because it can represent an entire stream ending, not just one notification</li></ul>
+        </div>
+    </div>
+    <p>This lesson won't teach Rx.NET's operators or reactive programming techniques — that's a large, separate topic outside this lesson's scope. The point here is purely vocabulary: recognize <code>IObservable&lt;T&gt;</code>/<code>IObserver&lt;T&gt;</code> as a third concrete .NET implementation of the exact same Subject/Observer relationship you already know from <code>event</code>, just with a richer, stream-oriented contract instead of a single notification.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"If I use <code>event</code>, am I not really using the Observer pattern?"</h3>
+    <p>You are — this is the single most important point of this lesson. GoF's Subject/Observer terminology predates C#'s <code>event</code> keyword by years; C# effectively baked the pattern directly into the language, with compiler-generated multicast delegate bookkeeping standing in for the hand-written <code>List&lt;IObserver&gt;</code>. Using <code>event</code> isn't "instead of" Observer — it IS Observer, expressed with first-class language support instead of a hand-rolled interface.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Observer vs. Strategy — don't mix these up</h3>
+    <p>Both involve one class holding a reference to something interchangeable, but the shape is different. Strategy (241) is one-to-<em>one</em>: a context holds exactly one algorithm and calls it to get a result. Observer is one-to-<em>many</em>: a Subject holds a list of Observers and notifies all of them, expecting no return value back — it's a broadcast, not a request for an answer.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Forgetting to unsubscribe, and leaking memory (covered fully in 106)</h4>
+    <p>❌ A short-lived Observer subscribes to a long-lived Subject's event and never unsubscribes — the Subject's invocation list keeps a live reference to the Observer forever, preventing garbage collection. ✅ Always pair <code>+=</code> with a corresponding <code>-=</code> when the Observer's lifetime is shorter than the Subject's — lesson 106 covers this in full depth.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Reaching for a hand-written Subject/IObserver interface pair when plain <code>event</code> already does the job</h4>
+    <p>❌ Writing a custom <code>IObserver</code> interface and a hand-rolled <code>List&lt;IObserver&gt;</code> Subject class in modern C#, duplicating exactly what <code>event</code> already gives you for free. ✅ Reach for C#'s built-in <code>event</code> keyword for ordinary in-process notifications — it's the idiomatic, battle-tested implementation of this pattern in C#, and reinventing it rarely earns its cost.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming Observer guarantees ordering or error isolation between handlers</h4>
+    <p>❌ Relying on multiple subscribers to a single <code>event</code> running in a specific order, or assuming one handler throwing an exception won't stop the others from running — a plain multicast delegate invokes handlers sequentially in subscription order, and an unhandled exception in one handler will, by default, prevent later handlers in the same invocation from running. ✅ If handler independence or error isolation matters, that needs to be built deliberately (e.g., wrapping each handler call in its own try/catch, or using a dedicated event aggregator that isolates failures) — it isn't automatic just because you're "using Observer."</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Whenever one or more parts of your application need to react to something happening in another part, without that other part needing to know who's reacting — UI updates, logging, analytics, cache invalidation, and notification fan-out are classic cases.</li>
+        <li style="margin-bottom:0.4rem;">Use plain C# <code>event</code> for straightforward, in-process, one-Subject notifications — it's the right default almost every time.</li>
+        <li style="margin-bottom:0.4rem;">Use an event aggregator (192) when publishers and subscribers shouldn't hold direct references to each other at all — often across module or feature boundaries.</li>
+        <li style="margin-bottom:0.4rem;">Reach for <code>IObservable&lt;T&gt;</code>/Rx.NET specifically when you need to compose, filter, or combine <em>streams</em> of notifications over time — genuinely out of scope for this introductory-level lesson, but worth knowing it exists for that purpose.</li>
+    </ul>
+    <p>And when it's overkill: a direct method call is simpler and clearer than an event when there's exactly one fixed, always-present consumer that will never change — Observer's value comes specifically from not knowing (or needing to care) who's listening.</p>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Subject</strong> = the class that owns an <code>event</code> field and decides when to raise it.<br />
+        <strong>Observer</strong> = anything subscribed with <code>+=</code>, waiting to be notified.<br />
+        <strong>Attach / Notify / Detach</strong> = <code>+=</code> / <code>?.Invoke(this, e)</code> / <code>-=</code>.<br /><br />
+        <strong>Remember:</strong><br />
+        · You've been implementing Observer since lesson 105 — <code>event</code> IS the pattern, not a substitute for it.<br />
+        · <code>IObservable&lt;T&gt;</code>/<code>IObserver&lt;T&gt;</code> (the base of Rx.NET) is a second, richer, stream-oriented BCL implementation of the same idea.<br />
+        · Observer is one-to-many and broadcasts with no return value; Strategy (241) is one-to-one and returns a result.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Observer defines a one-to-many relationship: a Subject maintains a list of Observers and notifies all of them when its state changes, without knowing their concrete types.</li>
+            <li style="margin-bottom:0.4rem;">C#'s <code>event</code> keyword and multicast delegates ARE a built-in implementation of Observer — <code>+=</code> is Attach, <code>?.Invoke(this, e)</code> is Notify, <code>-=</code> is Detach.</li>
+            <li style="margin-bottom:0.4rem;">Lesson 192's <code>EventAggregator</code> generalizes the Subject role into a shared bus, decoupling publishers and subscribers even further.</li>
+            <li style="margin-bottom:0.4rem;"><code>IObservable&lt;T&gt;</code>/<code>IObserver&lt;T&gt;</code> — the base of Rx.NET — is a second, richer BCL implementation of the same relationship, for streams of values over time.</li>
+            <li style="margin-bottom:0.4rem;"><strong>The payoff of this lesson:</strong> you already know how to use this pattern — now you know its name, its classic textbook shape, and where else in the .NET ecosystem the same idea shows up.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've connected C#'s <code>event</code> keyword to its formal GoF name. Let's confirm you can map the vocabulary both ways.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> In classic GoF terms, what role does a class play when it declares <code>public event EventHandler&lt;OrderShippedEventArgs&gt;? OrderShipped;</code>?</p>
+        <ul class="options">
+            <li>A) Observer</li>
+            <li>B) Subject</li>
+            <li>C) Strategy</li>
+            <li>D) Adapter</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The class declaring and raising the event maintains the (compiler-generated) list of registered handlers and notifies them on state change — exactly the Subject's role.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The Observer role belongs to whatever subscribes with <code>+=</code>, not to the class declaring the event.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Strategy is a one-to-one, return-a-result pattern (lesson 241) — unrelated to the one-to-many broadcast shape of an event declaration.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Adapter converts between interface shapes (243) — declaring an event doesn't translate any interface.</p>
+                <p><strong>Reinforcement:</strong> The class that owns the event field and decides when to raise it is always the Subject.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Which C# operation corresponds to the classic GoF Subject's "Attach" operation?</p>
+        <ul class="options">
+            <li>A) <code>new Order()</code></li>
+            <li>B) <code>someObject.SomeEvent += myHandler;</code></li>
+            <li>C) <code>someObject.SomeEvent?.Invoke(this, e);</code></li>
+            <li>D) <code>await Task.Delay(100);</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Using <code>+=</code> to subscribe a handler registers an Observer with the Subject — precisely what "Attach" means in the classic GoF Subject/Observer shape.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Constructing an object has nothing to do with registering as an Observer.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is the Subject's "Notify" step — invoking the invocation list, not registering into it.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is an unrelated async delay, with no connection to Observer registration.</p>
+                <p><strong>Reinforcement:</strong> <code>+=</code> is Attach, <code>?.Invoke(...)</code> is Notify, <code>-=</code> is Detach — the full mapping between C# syntax and GoF vocabulary.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A developer says: "Since I'm just using C#'s <code>event</code> keyword, I'm not really using a design pattern — Observer is something you'd only get by hand-writing a Subject class and an IObserver interface." Is this correct?</p>
+        <ul class="options">
+            <li>A) Yes — only a hand-written Subject/IObserver pair counts as "real" Observer</li>
+            <li>B) No — C#'s event keyword and multicast delegates ARE a built-in implementation of Observer; the intent and shape are identical, just with language-level support instead of hand-written bookkeeping</li>
+            <li>C) Yes, because event is a keyword, not a pattern, and keywords can never implement patterns</li>
+            <li>D) No, because event actually implements the Strategy pattern instead</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the lesson's central point in Common Confusion — GoF's terminology predates C#'s <code>event</code> keyword, which bakes the exact same Subject/Observer relationship directly into the language.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This treats a specific historical implementation technique as the definition of the pattern, rather than the underlying relationship (one-to-many notification) the pattern actually describes.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A language keyword or built-in feature can absolutely implement a design pattern's shape — that's exactly what <code>event</code> does.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Strategy is a different, one-to-one pattern (241) — <code>event</code> implements the one-to-many broadcast shape of Observer, not Strategy.</p>
+                <p><strong>Reinforcement:</strong> A pattern is defined by its structural intent, not by which specific syntax happens to express it.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> What distinguishes <code>IObservable&lt;T&gt;</code>/<code>IObserver&lt;T&gt;</code> from a plain C# <code>event</code>, while both still being implementations of the same underlying pattern?</p>
+        <ul class="options">
+            <li>A) IObservable&lt;T&gt; is a completely different, unrelated pattern with no connection to Subject/Observer</li>
+            <li>B) IObservable&lt;T&gt;/IObserver&lt;T&gt; offer a richer, stream-oriented contract (OnNext/OnError/OnCompleted) suited to representing a whole sequence of values over time, not just a single notification</li>
+            <li>C) IObservable&lt;T&gt; cannot be unsubscribed from, unlike event</li>
+            <li>D) event can only have one subscriber at a time, while IObservable&lt;T&gt; supports many</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The "Under the Hood" section describes exactly this — <code>IObserver&lt;T&gt;</code>'s three methods can represent an entire stream, including completion and errors, which a single-notification <code>event</code> doesn't natively express.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson explicitly frames <code>IObservable&lt;T&gt;</code>/<code>IObserver&lt;T&gt;</code> as a third concrete .NET implementation of the same Subject/Observer relationship, not an unrelated pattern.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>IObservable&lt;T&gt;.Subscribe</code> returns an <code>IDisposable</code> specifically so callers CAN unsubscribe, by disposing it.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A plain <code>event</code>'s multicast delegate already supports many subscribers, exactly as this lesson's three-Observer example demonstrated.</p>
+                <p><strong>Reinforcement:</strong> Both are genuine Observer implementations — they differ in the richness of what a single "notification" can represent, not in the underlying one-to-many relationship.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You already know how to use this pattern — now you know its name, its classic textbook shape, and where else in the .NET ecosystem the same idea shows up.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

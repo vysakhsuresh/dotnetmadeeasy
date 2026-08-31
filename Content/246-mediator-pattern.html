@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>246 - Mediator Pattern · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        You built a version of this pattern back in Advanced Part II, before it had a name. This lesson gives it one — and closes out the behavioral half of the GoF catalog.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Picture a checkout screen with five moving parts: a product list, a cart summary, a coupon box, a shipping selector, and a "place order" button. Select a product and the cart summary needs to update. Apply a coupon and the cart total needs to recompute, and the shipping selector might need to re-check free-shipping eligibility. Change the shipping method and the total changes again, which might invalidate the coupon.</p>
+    <p>The tempting, "obvious" way to wire this is for each component to hold direct references to every other component it needs to talk to — the product list holds a reference to the cart summary, the coupon box holds references to both the cart summary and the shipping selector, the shipping selector holds a reference back to the cart summary, and so on. Five components, and already a dozen crisscrossing wires between them. Add a sixth component — a loyalty-points panel — and you're not adding one relationship, you're potentially adding four or five, one to every existing component that now needs to know about it, and vice versa. This is <strong>many-to-many coupling</strong>, and it gets worse, not better, as the system grows.</p>
+    <p><strong>In this lesson, you'll learn the Mediator pattern — a behavioral design pattern that replaces that tangled web of direct references with a single, central coordinator, so every component only ever needs to know about the mediator, never about each other.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>The <strong>Mediator pattern</strong> introduces one object — the mediator — that all the other objects talk <em>through</em>, instead of talking to each other <em>directly</em>. When something happens in one component, it doesn't reach out to the other components itself; it tells the mediator, and the mediator decides what needs to happen next and talks to whichever other components are affected. No component holds a reference to any other component — only to the mediator.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Mediator is one of the Gang of Four's <strong>behavioral</strong> design patterns — the same category as Strategy and Observer from earlier in this Part. The GoF definition: <em>"Define an object that encapsulates how a set of objects interact. Mediator promotes loose coupling by keeping objects from referring to each other explicitly, and it lets you vary their interaction independently."</em> The key phrase is "encapsulates how a set of objects interact" — the coordination logic that used to be smeared across every participant, each one calling into a few others, is pulled out and centralized into one place.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🕸️ Without a Mediator</h4>
+            <ul>
+                <li>Every component holds direct references to the others it needs</li>
+                <li>Adding one component means wiring it to several existing ones</li>
+                <li>Coordination logic is scattered across every participant</li>
+                <li>Coupling grows roughly with the <em>square</em> of the number of components</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🎯 With a Mediator</h4>
+            <ul>
+                <li>Every component holds one reference: the mediator</li>
+                <li>Adding one component means wiring it to the mediator only</li>
+                <li>Coordination logic lives in exactly one place</li>
+                <li>Coupling grows <em>linearly</em> with the number of components</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <p>The problem Mediator solves is exactly the checkout-screen scenario from the hook, generalized: any time a group of objects needs to coordinate — react to each other's changes, trigger follow-up behavior in one another, stay in sync — the naive solution is for each object to hold direct references to the others. That works for two or three objects. It stops working once the group grows, for reasons that compound:</p>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>N objects that need to coordinate end up with up to N×(N-1) potential direct relationships between them — a tangled, many-to-many web that's hard to trace, hard to test in isolation, and hard to extend without touching several existing classes</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>A way for each object to participate in the coordination without needing to know which other specific objects exist, or how many there are, or what they each do in response</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>Route every interaction through one shared mediator object — participants depend only on the mediator, reducing many-to-many coupling to many-to-one, and giving the coordination logic itself a single, findable home</li></ul>
+        </div>
+    </div>
+    <p>Two concrete costs of the many-to-many web are worth naming directly. First, <strong>reuse</strong>: a component wired with direct references to four specific siblings can't easily be dropped into a different screen that doesn't have those exact four siblings — its behavior is entangled with its neighbors' identities. Second, <strong>change</strong>: adding a sixth component to a five-component web isn't a one-line change, it's a review of every existing component to see which of them now also need a reference to the new one. A mediator turns both of these into non-problems: a component only needs the mediator to function, and a new component only needs to know the mediator too.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            TANGLED WEB vs HUB-AND-SPOKE
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">🕸️ WITHOUT MEDIATOR</div>
+                <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.7rem;border-radius:4px;margin:0.5rem 0 0 0;font-size:0.82rem;border:none;overflow-x:auto;color:var(--text-main,#E2E8F0);"><code style="background:transparent;padding:0;font-size:inherit;color:inherit;">ProductList ↔ CartSummary
+ProductList ↔ ShippingBox
+CouponBox   ↔ CartSummary
+CouponBox   ↔ ShippingBox
+ShippingBox ↔ CartSummary
+(every pair wired directly —
+ grows fast as parts are added)</code></pre>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">🎯 WITH MEDIATOR</div>
+                <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.7rem;border-radius:4px;margin:0.5rem 0 0 0;font-size:0.82rem;border:none;overflow-x:auto;color:var(--text-main,#E2E8F0);"><code style="background:transparent;padding:0;font-size:inherit;color:inherit;">ProductList  → CheckoutMediator
+CartSummary  → CheckoutMediator
+CouponBox    → CheckoutMediator
+ShippingBox  → CheckoutMediator
+(every part knows only the hub —
+ a new part adds one spoke)</code></pre>
+            </div>
+        </div>
+    </div>
+    <p>Notice what didn't change: the same coordination still happens — selecting a product still updates the cart, applying a coupon still recomputes the total. What changed is <em>where that coordination logic lives</em> and <em>how many relationships exist</em>. It moved out of every individual component and into one dedicated place, and the number of wires dropped from roughly one per pair to exactly one per component.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">APPLYING THE MEDIATOR PATTERN, STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">1. DEFINE A MEDIATOR ABSTRACTION</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface ICheckoutMediator
+{
+    void Notify(object sender, string eventName);
+}</code></pre>
+            <ul><li>One narrow contract every participant depends on — nothing about any specific component's type appears here.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. EACH COMPONENT HOLDS A REFERENCE TO THE MEDIATOR — NEVER TO EACH OTHER</div>
+            <ul><li>A component's constructor takes <span class="icode">ICheckoutMediator</span>, exactly as any other class takes an injected dependency — no component's constructor ever takes another component's type.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. A COMPONENT REPORTS WHAT HAPPENED — IT DOES NOT DECIDE WHAT HAPPENS NEXT</div>
+            <ul><li>When a coupon is applied, <span class="icode">CouponBox</span> calls <span class="icode">mediator.Notify(this, "CouponApplied")</span> — and stops. It has no idea, and no need to know, which other components care.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. THE MEDIATOR HOLDS REFERENCES TO EVERY PARTICIPANT AND CONTAINS THE COORDINATION LOGIC</div>
+            <ul><li>The mediator's <span class="icode">Notify</span> implementation is the one place that knows "when a coupon is applied, recompute the cart total and re-check shipping eligibility" — a decision no individual component makes on its own anymore.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. THE MEDIATOR CALLS BACK INTO WHICHEVER COMPONENTS ARE AFFECTED</div>
+            <ul><li>It calls <span class="icode">cartSummary.Recalculate()</span> and <span class="icode">shippingBox.RecheckEligibility()</span> directly — the mediator is allowed to know every component's concrete type; that knowledge is exactly what it exists to hold, so nothing else has to.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — a Checkout Dialog</h2>
+    <p>Three UI-style components that need to coordinate, with zero references between any two of them:</p>
+    <div class="code-block"><code>// ── Mediator abstraction ──
+public interface ICheckoutMediator
+{
+    void Notify(object sender, string eventName);
+}
+
+// ── Components — each knows ONLY the mediator ──
+public class CouponBox(ICheckoutMediator mediator)
+{
+    public void ApplyCoupon(string code)
+    {
+        Console.WriteLine($"Coupon '{code}' applied.");
+        mediator.Notify(this, "CouponApplied");
+    }
+}
+
+public class ShippingSelector(ICheckoutMediator mediator)
+{
+    public bool QualifiesForFreeShipping { get; private set; }
+
+    public void RecheckEligibility(decimal cartTotal)
+    {
+        QualifiesForFreeShipping = cartTotal >= 50m;
+        Console.WriteLine($"Free shipping: {QualifiesForFreeShipping}");
+    }
+
+    public void ChangeMethod(string method)
+    {
+        Console.WriteLine($"Shipping method changed to {method}.");
+        mediator.Notify(this, "ShippingMethodChanged");
+    }
+}
+
+public class CartSummary(ICheckoutMediator mediator)
+{
+    public decimal Total { get; private set; } = 62.00m;
+
+    public void Recalculate()
+    {
+        Console.WriteLine($"Cart total recalculated: {Total:C}");
+        mediator.Notify(this, "TotalRecalculated");
+    }
+}
+
+// ── The mediator — the ONLY place that knows every component's concrete type ──
+public class CheckoutMediator : ICheckoutMediator
+{
+    private CouponBox _coupon = null!;
+    private ShippingSelector _shipping = null!;
+    private CartSummary _cart = null!;
+
+    public void Register(CouponBox coupon, ShippingSelector shipping, CartSummary cart)
+    {
+        _coupon = coupon;
+        _shipping = shipping;
+        _cart = cart;
+    }
+
+    public void Notify(object sender, string eventName)
+    {
+        switch (eventName)
+        {
+            case "CouponApplied":
+                _cart.Recalculate();
+                _shipping.RecheckEligibility(_cart.Total);
+                break;
+
+            case "TotalRecalculated":
+                _shipping.RecheckEligibility(_cart.Total);
+                break;
+
+            case "ShippingMethodChanged":
+                _cart.Recalculate();
+                break;
+        }
+    }
+}
+
+// ── Usage ──
+var mediator = new CheckoutMediator();
+var coupon = new CouponBox(mediator);
+var shipping = new ShippingSelector(mediator);
+var cart = new CartSummary(mediator);
+mediator.Register(coupon, shipping, cart);
+
+coupon.ApplyCoupon("SAVE10");
+// Coupon 'SAVE10' applied.
+// Cart total recalculated: $62.00
+// Free shipping: True</code></div>
+    <p><strong>Code → Meaning → Result:</strong> <span class="icode">CouponBox</span> never references <span class="icode">CartSummary</span> or <span class="icode">ShippingSelector</span> — it only calls <span class="icode">mediator.Notify(...)</span>. The mediator is the single place deciding that applying a coupon should trigger a recalculation, and that a recalculation should trigger a shipping re-check. Swap in a fourth component tomorrow, and only the mediator's <span class="icode">Notify</span> method needs to learn about it — none of the three existing components change.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Request/Handler Dispatch, MediatR-Style</h2>
+    <p>The Mediator pattern shows up in a different, very common shape in real ASP.NET Core codebases today: an <strong>in-process request/handler dispatcher</strong>. Instead of a controller or service directly calling a specific handler class, it sends a plain request object to a mediator, and the mediator finds and invokes whichever handler is registered for that request type — the sender never holds a direct reference to the handler. This is precisely the same structural idea as the checkout dialog above (route through a hub instead of a direct reference), applied to command/query dispatch instead of UI coordination.</p>
+    <div class="code-block"><code>// ── The request — a plain data object describing intent ──
+public record PlaceOrderCommand(int CustomerId, IReadOnlyList&lt;OrderItem&gt; Items) : IRequest&lt;OrderResult&gt;;
+
+// ── The handler — contains the actual logic, but is never called directly by name ──
+public class PlaceOrderHandler(IInventoryRepository inventory, IPaymentGateway payments)
+    : IRequestHandler&lt;PlaceOrderCommand, OrderResult&gt;
+{
+    public async Task&lt;OrderResult&gt; Handle(PlaceOrderCommand command, CancellationToken ct)
+    {
+        if (!await inventory.HasStockAsync(command.Items, ct))
+            return OrderResult.OutOfStock();
+
+        var payment = await payments.ChargeAsync(command, ct);
+        return payment.Success ? OrderResult.Success() : OrderResult.PaymentFailed(payment.Reason);
+    }
+}
+
+// ── The controller — depends ONLY on the mediator, never on PlaceOrderHandler ──
+[ApiController]
+[Route("orders")]
+public class OrdersController(IMediator mediator) : ControllerBase
+{
+    [HttpPost]
+    public async Task&lt;IActionResult&gt; PlaceOrder(PlaceOrderCommand command)
+    {
+        var result = await mediator.Send(command);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+}</code></div>
+    <p>The controller has no compiled reference to <span class="icode">PlaceOrderHandler</span> at all — it depends only on <span class="icode">IMediator</span>. This is exactly what the popular <strong>MediatR</strong> NuGet library provides: you define a request type, a handler for it, and call <span class="icode">mediator.Send(request)</span> from wherever the request originates; MediatR's internal dispatcher finds the registered handler and invokes it. This lesson isn't a tutorial on MediatR's specific API — the point is recognizing the shape: a sender, a request object, a mediator that dispatches, and a handler that never has to be referenced directly by its caller. If you see this "send a request, a handler processes it" shape in a real ASP.NET Core codebase, you're looking at the Mediator pattern.</p>
+
+    <div class="callout">
+        <strong>💡 You've already built a Mediator-shaped solution.</strong> Go back to Advanced Part II's Event Aggregator (lesson 192). An <span class="icode">IEventAggregator</span> with <span class="icode">Publish&lt;TEvent&gt;</span>/<span class="icode">Subscribe&lt;TEvent&gt;</span> is a shared hub that publishers and subscribers depend on instead of depending on each other directly — exactly the structural shape this lesson has been describing. The event aggregator is a well-known, concrete, real-world application of the Mediator pattern's core idea, specialized for a publish/subscribe style of coordination rather than the direct request/response style shown here.
+    </div>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🗼</span> An Air Traffic Control Tower</div>
+        <p>Pilots approaching a busy airport do not radio each other directly to negotiate who lands first, who holds at what altitude, or who taxis where. Every pilot talks to exactly one party: the control tower. The tower knows the position of every aircraft and decides the coordination — "Flight 12, hold at 3,000 feet," "Flight 47, cleared to land." No pilot needs to know how many other flights are in the sky, or track their positions personally; they only need a radio tuned to the tower.</p>
+        <p>Now imagine the alternative: fifty aircraft, each broadcasting to and listening for every other aircraft directly, each pilot personally negotiating right-of-way with dozens of strangers in real time. It's not just more complicated — past a certain number of aircraft, it becomes genuinely unmanageable and unsafe. The tower doesn't reduce the amount of coordination happening; it concentrates the coordination logic in one place built for exactly that job, and gives every other participant one simple relationship to maintain instead of many.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — the Design Reasoning</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHY CENTRALIZING COORDINATION ACTUALLY REDUCES COUPLING</div>
+        <div class="flow-step">
+            <div class="step-label">1. Coupling didn't disappear — it moved</div>
+            <ul><li>The mediator itself is tightly coupled to every participant it coordinates; that coupling is real and doesn't vanish. What changed is that it's now concentrated in one class built to hold it, instead of smeared thinly across every participant.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. Participants become independently testable and reusable</div>
+            <ul><li>A component depending only on <span class="icode">ICheckoutMediator</span> can be unit tested with a fake mediator, and dropped into a different screen with a different set of siblings, without carrying any assumptions about who else exists.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. The interaction logic gets a name and an address</div>
+            <ul><li>"What happens when a coupon is applied" used to be implicit, reconstructed by reading several classes' code together. With a mediator, it's an explicit, readable method — a single place to change the rule, and a single place to find it.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. This is the same structural move as every other Mediator-shaped tool in this course</div>
+            <ul><li>A request/handler dispatcher, an event aggregator, and a UI dialog mediator are the same underlying idea — a shared hub that participants depend on instead of each other — wearing three different outfits for three different kinds of coordination.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Isn't this the same as Observer?" — related, but not identical</h3>
+    <p>Both patterns decouple objects from holding direct references to each other, and both are behavioral GoF patterns — that's genuinely why they're easy to confuse. The distinction: <strong>Observer</strong> is fundamentally one-directional and anonymous — a subject broadcasts a notification, and any number of observers may or may not be listening, with the subject never knowing or caring who they are or what they'll do. <strong>Mediator</strong> is typically richer and more explicitly coordinating — the mediator usually knows exactly which participants exist, and actively decides <em>what should happen next</em> among them, not just "notify whoever's listening." An event aggregator (192) sits close to Observer's shape (many anonymous publishers and subscribers through a hub) while still being a recognizable Mediator application; a UI dialog mediator or a request/handler dispatcher sits closer to Mediator's classic, more deliberate coordination role. The overlap is real — don't lose sleep over drawing a perfectly sharp line between them.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "MediatR" is a library name, not the pattern's name</h3>
+    <p>MediatR is one specific, popular NuGet package that implements a request/handler flavor of the Mediator pattern for .NET. The Mediator pattern itself predates MediatR by decades — it's a general GoF pattern, and MediatR is just one well-known, real-world tool built on top of it. You can (and this lesson did) hand-write a small mediator with no library at all; MediatR simply provides a polished, batteries-included version of the same idea, with conventions for registering handlers, pipeline behaviors, and more.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Letting the mediator grow into a God object</h4>
+    <p>❌ Routing <em>every</em> interaction in an entire application through one single mediator class, until it accumulates coordination logic for dozens of unrelated features and becomes a sprawling, impossible-to-navigate class of its own.</p>
+    <p>✅ Scope a mediator to a genuinely cohesive group of collaborating objects — one screen, one workflow, one bounded piece of coordination. Large applications often have several small, focused mediators (or, in the request/handler style, one dispatcher with many small, focused handlers) rather than a single mediator for everything.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Reaching for a mediator when two objects genuinely only ever need to talk to each other</h4>
+    <p>❌ Introducing an <span class="icode">ICheckoutMediator</span> and a <span class="icode">Notify</span> dispatch mechanism for a relationship that's just two specific classes calling one specific method on each other, with no third party ever involved and no plausible growth beyond two.</p>
+    <p>✅ A direct method call or a plain constructor dependency is simpler, easier to trace with "Find References," and entirely appropriate when the relationship really is just two parties. Mediator earns its cost once there are three or more participants whose interactions would otherwise cross-wire.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming a mediator makes coordination logic disappear rather than relocate</h4>
+    <p>❌ Believing that introducing a mediator has somehow eliminated coupling from the system entirely, rather than concentrated it in one place — and then being surprised the mediator class itself is complex.</p>
+    <p>✅ Expect the mediator to be the one class that legitimately knows about every participant — that's its job. The win isn't "zero coupling anywhere," it's "coupling that used to be scattered across N classes is now readable in one place, and every individual participant is simpler and more reusable than before."</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Signal</th><th>Leans toward</th></tr></thead>
+            <tbody>
+                <tr><td>Three or more objects that need to coordinate, with interactions that would otherwise cross-wire many-to-many</td><td>A mediator — this is the pattern's core use case</td></tr>
+                <tr><td>Controllers/handlers that would otherwise need direct references to many different service classes for many different operations</td><td>A request/handler dispatcher (MediatR or hand-rolled) as the mediator</td></tr>
+                <tr><td>Independent, unrelated modules across a large application reacting to shared facts</td><td>An event aggregator (192) — a Mediator-shaped, pub/sub-flavored solution</td></tr>
+                <tr><td>Exactly two objects, with a stable, simple, direct relationship and no plausible third party</td><td>Skip it — a direct reference or constructor dependency is simpler and just as testable</td></tr>
+                <tr><td>A single class already accumulating coordination logic for many unrelated features</td><td>Split it into several smaller, focused mediators rather than growing one further</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> reach for a mediator when the number of participants that need to coordinate is three or more, and direct references between them would create a tangled, many-to-many web. For two parties with a stable relationship, a direct dependency remains the simpler, more honest design.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Without Mediator</strong> = every object knows every other object it needs — many-to-many.<br />
+        <strong>With Mediator</strong> = every object knows only the mediator — many-to-one.<br />
+        <strong>The mediator</strong> = the one place allowed to know everyone, and the one place the coordination logic lives.<br /><br />
+        <strong>Remember:</strong> you've seen this shape before — an event aggregator (192) is a Mediator-flavored publish/subscribe hub, and a MediatR-style dispatcher is a Mediator-flavored request/handler hub. Same idea, different outfit.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><strong>Mediator</strong> is a behavioral GoF pattern — the same category as Strategy and Observer — that routes communication between a group of objects through one central mediator, instead of the objects referencing each other directly.</li>
+            <li style="margin-bottom:0.4rem;">It reduces <strong>many-to-many</strong> coupling to <strong>many-to-one</strong>, and gives the coordination logic itself a single, explicit, findable home instead of scattering it across every participant.</li>
+            <li style="margin-bottom:0.4rem;">Coupling doesn't disappear — it concentrates in the mediator, which is expected to know about every participant. That's the trade being made, and it's a good one once there are three or more coordinating objects.</li>
+            <li style="margin-bottom:0.4rem;">The Event Aggregator (192) is a Mediator-shaped solution you've already built; <strong>MediatR</strong> is a popular real-world library implementing the request/handler flavor of this same pattern in ASP.NET Core.</li>
+            <li style="margin-bottom:0.4rem;">Skip it for a simple, stable, two-party relationship — a direct dependency is simpler and equally testable when there's no genuine web of interactions to untangle.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen the Mediator pattern in a UI-coordination shape and a request/handler shape, and connected it back to the event aggregator. Let's confirm the reasoning sticks.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What specific coupling problem does the Mediator pattern solve?</p>
+        <ul class="options">
+            <li>A) It removes the need for interfaces anywhere in the codebase</li>
+            <li>B) It reduces many-to-many coupling between a group of collaborating objects to many-to-one, by routing all communication through a single, shared mediator</li>
+            <li>C) It makes every class in the application inherit from a common base class</li>
+            <li>D) It eliminates the need for any coordination logic to exist at all</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the pattern's defining structural change — participants that would otherwise hold direct references to several other participants instead hold a reference only to the mediator, and the mediator holds references to all of them.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Mediator doesn't eliminate interfaces — the mediator itself is commonly defined behind an interface (as <span class="icode">ICheckoutMediator</span> was), and participants may still implement contracts of their own.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Mediator is about object composition and message routing, not inheritance — no common base class is required or implied.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The coordination logic still exists — it's relocated into the mediator, not removed. The lesson was explicit that coupling moves rather than vanishes.</p>
+                <p><strong>Reinforcement:</strong> Mediator's value is structural — fewer, more manageable relationships — not the removal of coordination logic itself.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In the checkout dialog example, why does <code>CouponBox</code> call <code>mediator.Notify(this, "CouponApplied")</code> instead of calling <code>cartSummary.Recalculate()</code> directly?</p>
+        <ul class="options">
+            <li>A) Because C# does not allow one class to call a public method on another class directly</li>
+            <li>B) Because <code>CouponBox</code> should not need a direct reference to <code>CartSummary</code> at all — it only needs to report what happened, and let the mediator decide which other components are affected</li>
+            <li>C) Because <code>Recalculate()</code> is a private method and cannot be called from outside <code>CartSummary</code></li>
+            <li>D) Because calling methods through a mediator is always faster at runtime</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The entire point of the pattern is that <code>CouponBox</code> doesn't need to know <code>CartSummary</code> exists. It reports its own event; the mediator — the one class allowed to know every participant — decides what should happen as a result.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> C# has no such restriction; direct method calls between classes are entirely normal and were exactly what the "without a mediator" design used.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The example's <code>Recalculate()</code> is a public method; the issue isn't accessibility, it's that <code>CouponBox</code> should not be coupled to <code>CartSummary</code>'s type at all.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The lesson makes no performance claim about the mediator — the motivation is coupling and maintainability, not runtime speed.</p>
+                <p><strong>Reinforcement:</strong> Participants report facts to the mediator; only the mediator decides what those facts mean for everyone else.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> How does the Event Aggregator from lesson 192 relate to the Mediator pattern covered here?</p>
+        <ul class="options">
+            <li>A) They are unrelated — the event aggregator is a threading tool, not a design pattern</li>
+            <li>B) The event aggregator is a well-known, real-world application of the same underlying idea — a shared hub that publishers and subscribers depend on instead of depending on each other directly</li>
+            <li>C) The event aggregator replaces the need for a mediator in every scenario</li>
+            <li>D) The event aggregator is a structural pattern, while Mediator is a creational pattern, so they solve entirely different problems</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The lesson connects them directly — an event aggregator's <code>Publish</code>/<code>Subscribe</code> hub is a Mediator-shaped solution specialized for publish/subscribe coordination, built on the same idea of routing through a shared object instead of direct references.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The event aggregator is a design pattern application for decoupling publishers from subscribers, not a threading primitive — it was covered as such in lesson 192.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The event aggregator is one flavor of Mediator-shaped solution (pub/sub), not a universal replacement — a UI dialog mediator or a request/handler dispatcher are other valid shapes for different coordination needs.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Mediator is a behavioral pattern, not creational, and the event aggregator shares that same behavioral concern — coordinating interaction between objects, not object creation.</p>
+                <p><strong>Reinforcement:</strong> Recognizing the same underlying shape across different-looking tools — an event aggregator, a UI mediator, a request dispatcher — is the real skill this lesson is building.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team routes every interaction across an entire large application — from unrelated features spanning dozens of screens — through one single mediator class, which has grown to thousands of lines. What does this lesson identify as the problem here?</p>
+        <ul class="options">
+            <li>A) There is no problem — a mediator should always be as large as possible to maximize decoupling</li>
+            <li>B) The mediator has become a God object — Mediator should be scoped to a genuinely cohesive group of collaborating objects, not applied application-wide as a single class</li>
+            <li>C) Mediator can only be used with exactly three participants, never more</li>
+            <li>D) The mediator pattern requires a NuGet package like MediatR to be used correctly, and this team is missing it</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is Common Mistake 1 directly — a single mediator absorbing coordination logic for unrelated features across an entire application becomes an unmanageable God object. The fix is scoping mediators (or handlers, in the dispatch style) to cohesive groups.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A growing, unfocused mediator is exactly the failure mode the lesson warns against — bigger is not automatically better.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Mediator has no fixed participant count — the guidance is "three or more" as a general signal, not an exact ceiling.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> MediatR is one popular way to implement a request/handler style mediator, but the pattern itself requires no specific library — the hand-rolled checkout example used none.</p>
+                <p><strong>Reinforcement:</strong> Scope matters — many small, focused mediators (or handlers) generally beat one sprawling mediator for an entire application.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You've now completed the GoF pattern catalog for this Part — Factory, Strategy, Decorator, Adapter, Observer, Builder, and now Mediator. Next, the focus shifts from individual reusable patterns to the larger structural questions of how a whole application's data access and architecture should be organized, starting with the Repository pattern.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

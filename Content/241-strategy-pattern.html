@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>241 - Strategy Pattern · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-base {
+            background: rgba(251, 191, 36, 0.2);
+            color: #FBBF24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .tag-derived {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .memory-diagram {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        You've been doing this since Foundations 028. Today it gets a name.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Foundations lesson 028 taught you to favor composition over inheritance by injecting an <code>ILogger</code> instead of inheriting from a logger base class. Intermediate 081 taught you Dependency Inversion by injecting an <code>IPaymentGateway</code> instead of hard-coding Stripe. Intermediate's higher-order function lessons showed you passing a <code>Func&lt;T, TResult&gt;</code> as a parameter so a method's behavior could vary without rewriting the method. All three of those were, in a very real sense, the same idea wearing different clothes.</p>
+    <p>That idea has a name: the <strong>Strategy Pattern</strong>. It's the Behavioral pattern — one of the three GoF categories from the design patterns lesson earlier in this Part — for making an <em>algorithm</em> swappable behind a common interface, so the code that uses the algorithm never has to know or care which specific version it's running.</p>
+    <p><strong>In this lesson, you'll learn the formal GoF shape of Strategy, see it side by side with the lightweight <code>Func&lt;T&gt;</code>-parameter version you already know, and get honest guidance on which one to reach for.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>The <strong>Strategy Pattern</strong> encapsulates a family of interchangeable algorithms behind a common interface, and lets the algorithm actually used be chosen — and swapped — independently of the code that uses it. The class doing the work (the "context") holds a reference to a strategy and calls it, without knowing which concrete strategy it's holding.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Define a family of algorithms, encapsulate each one behind a shared interface, and make them interchangeable. Strategy lets the algorithm vary independently from the clients that use it — a direct application of depending on an abstraction rather than a concrete implementation, applied specifically to <em>behavior</em> rather than to infrastructure like a database or payment provider.</p>
+    <div class="concept-box">
+        <div class="concept-title">🔑 You already know this pattern</div>
+        <p>Composition over inheritance (028): inject the behavior instead of subclassing to get it. Dependency Inversion (081): the context depends on an abstraction, not a concrete class. Passing a <code>Func&lt;Order, decimal&gt;</code> as a parameter (099, 104): a single-method strategy, expressed as a delegate instead of an interface. All three ARE Strategy — this lesson just gives the shape a name and shows its classic textbook form.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist? — The Problem It Solves</h2>
+    <p>Without Strategy, varying behavior tends to end up as a growing conditional buried inside one method:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ WITHOUT Strategy — every new discount rule means editing this method
+public decimal CalculateDiscount(Order order, string customerTier)
+{
+    if (customerTier == "gold") return order.Total * 0.20m;
+    if (customerTier == "silver") return order.Total * 0.10m;
+    if (customerTier == "new-customer" && order.Total > 100) return 15m;
+    // ...growing forever, mixing unrelated discount rules into one method,
+    // violating Open/Closed — you can't add a rule without editing existing code
+    return 0m;
+}</code></pre>
+    <p>This couples every discount rule's logic into one method, makes each rule impossible to test in isolation, and means adding a new discount type requires editing code that already works — risking regressions in rules that had nothing to do with the change.</p>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>A growing conditional mixes multiple unrelated algorithms into one method — hard to test, hard to extend without risking existing behavior</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>A way to isolate each algorithm into its own testable unit, and let the caller supply whichever one applies, without editing shared code</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>Strategy — a common interface (or delegate signature) that each algorithm implements, injected into the context that needs it</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== BIG PICTURE — SIDE BY SIDE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Two Forms, Same Idea</h2>
+    <p>Strategy has a classic, heavyweight GoF form, and a lightweight, idiomatic modern-C# form. Both solve exactly the same problem — they differ only in ceremony.</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>📜 Classic GoF form — an interface</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IDiscountStrategy
+{
+    decimal Calculate(Order order);
+}
+
+public sealed class GoldTierDiscount : IDiscountStrategy
+{
+    public decimal Calculate(Order order) =&gt;
+        order.Total * 0.20m;
+}
+
+public sealed class OrderProcessor(IDiscountStrategy discount)
+{
+    public decimal GetFinalTotal(Order order) =&gt;
+        order.Total - discount.Calculate(order);
+}</code></pre>
+        </div>
+        <div class="comparison-card">
+            <h4>⚡ Modern lightweight form — a delegate</h4>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public sealed class OrderProcessor(
+    Func&lt;Order, decimal&gt; calculateDiscount)
+{
+    public decimal GetFinalTotal(Order order) =&gt;
+        order.Total - calculateDiscount(order);
+}
+
+// No interface, no class per strategy — just a function:
+var processor = new OrderProcessor(
+    order =&gt; order.Total * 0.20m);</code></pre>
+        </div>
+    </div>
+    <p>Notice: both versions let <code>OrderProcessor</code> vary its discount logic without changing <code>OrderProcessor</code> itself. The interface version needs a whole class per strategy; the delegate version needs only a lambda. Mechanically, they're the same pattern — <code>IDiscountStrategy.Calculate</code> and <code>Func&lt;Order, decimal&gt;</code> are both, structurally, "a single swappable operation with one input and one output."</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">APPLYING STRATEGY — STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">1. IDENTIFY THE VARYING BEHAVIOR</div>
+            <ul><li>Spot the part of a method that changes based on a condition, config, or input — here, "how much discount to apply"</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. EXTRACT A COMMON SIGNATURE</div>
+            <ul><li>Every variant takes an <code>Order</code>, returns a <code>decimal</code> — that shared shape becomes either an interface method or a delegate type</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. MOVE EACH VARIANT INTO ITS OWN UNIT</div>
+            <ul><li>One class (or one lambda) per algorithm — each independently readable, independently testable</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. INJECT THE CHOSEN STRATEGY INTO THE CONTEXT</div>
+            <ul><li><code>OrderProcessor</code> receives whichever strategy applies — via constructor, exactly like injecting <code>IPaymentGateway</code> in lesson 081</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IDiscountStrategy
+{
+    decimal Calculate(Order order);
+}
+
+public sealed class GoldTierDiscount : IDiscountStrategy
+{
+    public decimal Calculate(Order order) => order.Total * 0.20m;
+}
+
+public sealed class SilverTierDiscount : IDiscountStrategy
+{
+    public decimal Calculate(Order order) => order.Total * 0.10m;
+}
+
+public sealed class NoDiscount : IDiscountStrategy
+{
+    public decimal Calculate(Order order) => 0m;
+}
+
+public sealed class OrderProcessor(IDiscountStrategy discount)
+{
+    public decimal GetFinalTotal(Order order) => order.Total - discount.Calculate(order);
+}
+
+// ── Usage ──
+var goldProcessor = new OrderProcessor(new GoldTierDiscount());
+var total = goldProcessor.GetFinalTotal(order);   // order.Total minus 20%</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>OrderProcessor</code> never mentions gold, silver, or "no discount" — it only knows <code>IDiscountStrategy</code>. Swap the strategy instance passed to the constructor, and the discount calculation changes completely, with zero changes to <code>OrderProcessor</code> itself.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Shipping Cost Calculation, Both Ways</h2>
+    <p>A shipping cost calculator needs different pricing algorithms per carrier. Here's the same real scenario, once as a full interface hierarchy, once as a delegate — so you can compare the tradeoffs directly:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ── Full interface form — earns its cost because carriers have REAL configuration/state ──
+public interface IShippingStrategy
+{
+    decimal CalculateCost(Shipment shipment);
+    string CarrierName { get; }
+}
+
+public sealed class FedExStrategy(FedExRateTable rates) : IShippingStrategy
+{
+    public string CarrierName => "FedEx";
+    public decimal CalculateCost(Shipment shipment) =>
+        rates.LookupRate(shipment.Weight, shipment.Destination);
+}
+
+public sealed class UpsStrategy(UpsAccountSettings account) : IShippingStrategy
+{
+    public string CarrierName => "UPS";
+    public decimal CalculateCost(Shipment shipment) =>
+        account.NegotiatedRate * shipment.Weight;
+}
+
+public sealed class ShippingCalculator(IShippingStrategy strategy)
+{
+    public ShippingQuote Quote(Shipment shipment) =>
+        new(strategy.CarrierName, strategy.CalculateCost(shipment));
+}
+// Registered per-carrier in DI, resolved by name — a natural fit for a
+// container-friendly, stateful, multi-method strategy.
+services.AddKeyedScoped&lt;IShippingStrategy, FedExStrategy&gt;("fedex");
+services.AddKeyedScoped&lt;IShippingStrategy, UpsStrategy&gt;("ups");
+
+// ── Lightweight delegate form — fine for a simple, stateless, one-off rule ──
+public sealed class FlatRateCalculator(Func&lt;Shipment, decimal&gt; costFormula)
+{
+    public decimal Quote(Shipment shipment) => costFormula(shipment);
+}
+
+var domesticFlatRate = new FlatRateCalculator(s => s.Weight <= 5 ? 4.99m : 9.99m);</code></pre>
+    <p>The interface version earns its extra ceremony here because each carrier strategy has real constructor dependencies (a rate table, account settings), a second member (<code>CarrierName</code>), and needs to be discoverable and swappable through the DI container by a key. The delegate version is genuinely simpler for the flat-rate case — no state, one operation, no reason to force it into a class.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy — Choosing a Route</h2>
+    <div class="concept-box">
+        <div class="concept-title">🗺️ The GPS and the driving algorithm</div>
+        <p>A GPS app doesn't hard-code "always take the highway." It lets you pick a strategy — "fastest route," "avoid tolls," "shortest distance" — and plugs whichever one you chose into the same trip-planning logic. The trip-planning code (the context) doesn't know or care <em>how</em> the route is calculated; it just calls "calculate route" and trusts whichever strategy is currently selected. Swap strategies mid-trip, and the planning logic never changes — only which algorithm answers the question does.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — What a Func&lt;T&gt; Strategy Actually Is</h2>
+    <div class="flow-container">
+        <div class="flow-title">A DELEGATE IS AN INTERFACE WITH ONE METHOD, GENERATED FOR YOU</div>
+        <div class="flow-step">
+            <div class="step-label">1. Func&lt;Order, decimal&gt; IS STRUCTURALLY EQUIVALENT TO IDiscountStrategy</div>
+            <ul><li>Both describe "something callable that takes an <code>Order</code> and returns a <code>decimal</code>" — a delegate type is, under the hood, a compiler-generated class with an <code>Invoke</code> method matching that signature (lesson 096)</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. A LAMBDA CAPTURING VARIABLES IS A STRATEGY OBJECT WITH STATE</div>
+            <ul><li><code>order =&gt; order.Total * discountRate</code> — if <code>discountRate</code> is a captured local, the compiler generates a small closure class holding it, no different in spirit from a strategy class holding a constructor-injected field</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE REAL DIFFERENCE IS DISCOVERABILITY, NOT CAPABILITY</div>
+            <ul><li>An interface implementation has a name, shows up in "Find Usages," can be registered in DI by type or key, and can expose more than one member — a <code>Func&lt;T&gt;</code> is anonymous, ad hoc, and limited to exactly one operation</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"If I'm not writing an IStrategy interface, am I not really using the pattern?"</h3>
+    <p>You are. The GoF book was written before C# had first-class delegates and lambdas as convenient as they are today — in 1994 Smalltalk/C++ terms, "encapsulate an algorithm behind a common interface" necessarily meant a class hierarchy, because that was the only tool available. The <em>intent</em> — swappable algorithm, decoupled from the code using it — is what makes something Strategy, not the specific mechanism (interface vs. delegate) used to express it. A <code>Func&lt;Order, decimal&gt;</code> parameter is a legitimate, idiomatic Strategy implementation in modern C#.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Strategy vs. Factory — don't mix these up</h3>
+    <p>Factory (lesson 240) decides <em>which object to construct</em>. Strategy decides <em>which algorithm to run</em>, once you already have the object. They often appear together — a factory might construct the right strategy — but they answer different questions: "what do I build?" vs. "what do I do?"</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Building a full interface hierarchy for a single, stateless, one-line rule</h4>
+    <p>❌ Writing <code>IDiscountStrategy</code>, three implementing classes, and a factory to select between them, for a rule that's genuinely just <code>order.Total * 0.1m</code> with no state and no plausible reuse elsewhere. ✅ A <code>Func&lt;Order, decimal&gt;</code> parameter says the same thing in one line, with no extra files.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forcing a stateful, multi-method strategy into a delegate</h4>
+    <p>❌ Passing three separate <code>Func&lt;T&gt;</code> parameters into a constructor because the "strategy" really needs to expose <code>CalculateCost</code>, <code>CarrierName</code>, and <code>EstimateDeliveryDate</code> together, consistently. ✅ When a strategy genuinely has more than one related operation, or holds real state (a rate table, an API client), an interface keeps those pieces cohesive — as the shipping example showed.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reintroducing the conditional the pattern was meant to remove, just to pick a strategy</h4>
+    <p>❌ <code>IDiscountStrategy strategy = tier switch { "gold" =&gt; new GoldTierDiscount(), ... };</code> scattered at every call site — this is the exact same coupling problem Strategy was meant to solve, just one level removed. ✅ Centralize that selection logic in one place — a factory (lesson 240) or a DI registration — not repeated at every point a strategy is needed.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Use the full interface version when</h4>
+            <ul>
+                <li>The strategy holds real state or dependencies (a rate table, an API client)</li>
+                <li>It exposes more than one related method or property</li>
+                <li>It needs to be registered, resolved by key, or discovered through DI</li>
+                <li>Multiple unrelated contexts will reuse the same strategy implementations</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>✅ Use a plain Func&lt;T&gt; delegate when</h4>
+            <ul>
+                <li>The behavior is one small, stateless operation</li>
+                <li>It's defined once, near where it's used — no reuse across the app</li>
+                <li>Registering it in DI or naming it doesn't add real value</li>
+                <li>A lambda reads more clearly than a whole extra class and file</li>
+            </ul>
+        </div>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> start with <code>Func&lt;T&gt;</code>. Promote it to a full interface the moment the strategy grows a second method, needs constructor dependencies, or needs to be resolved by the DI container rather than passed directly.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Strategy</strong> = a swappable algorithm behind a common shape, injected into whatever needs to run it.<br />
+        <strong>Interface form</strong> = for strategies with state, multiple methods, or DI registration.<br />
+        <strong>Func&lt;T&gt; form</strong> = for one small, stateless operation — same idea, no ceremony.<br /><br />
+        <strong>Remember:</strong><br />
+        · You've been using this since 028 (composition), 081 (DIP), and 099/104 (Func&lt;T&gt;) — Strategy is the formal name for what those lessons were already teaching.<br />
+        · A delegate is, mechanically, a one-method interface generated for you.<br />
+        · Don't reintroduce the conditional Strategy was meant to eliminate at the point where you pick which strategy to use.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Strategy encapsulates interchangeable algorithms behind a common shape, letting the algorithm vary independently of the code that uses it.</li>
+            <li style="margin-bottom:0.4rem;">Composition over inheritance (028), Dependency Inversion (081), and passing <code>Func&lt;T&gt;</code> parameters (099/104) are all real, lightweight — or literal — implementations of Strategy you've already used.</li>
+            <li style="margin-bottom:0.4rem;">The classic GoF form uses an interface and one class per algorithm; the modern shortcut uses a delegate parameter directly.</li>
+            <li style="margin-bottom:0.4rem;">Promote a delegate to a full interface when the strategy gains state, multiple methods, or needs DI-container registration — otherwise, the delegate is simpler and just as correct.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen Strategy in its classic and modern forms, and where you've already been using it. Let's check your understanding.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Which earlier lesson's core idea is most directly the same pattern as Strategy?</p>
+        <ul class="options">
+            <li>A) 028 — Composition over Inheritance, injecting behavior instead of subclassing to get it</li>
+            <li>B) 057 — required Members, enforcing that a property must be set</li>
+            <li>C) 130 — HTTP Client connection pooling</li>
+            <li>D) 233 — Profiling .NET applications</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> Composition over inheritance — injecting a behavior object rather than baking it into a subclass — is structurally the same move Strategy makes: the behavior is supplied from outside as an interchangeable, swappable component.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> <code>required</code> is about enforcing that a value is set at construction time — unrelated to swapping algorithms.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Connection pooling is a performance/infrastructure concern, not an interchangeable-algorithm concern.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Profiling is a diagnostic technique, unrelated to Strategy's shape.</p>
+                <p><strong>Reinforcement:</strong> Strategy is the formal name for "inject the behavior instead of hard-coding it" — exactly what composition over inheritance already taught.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A <code>ShippingCalculator</code> needs a carrier strategy that holds a rate table, an API client, and exposes both <code>CalculateCost</code> and <code>EstimateDeliveryDate</code>. Which form fits best?</p>
+        <ul class="options">
+            <li>A) A single <code>Func&lt;Shipment, decimal&gt;</code> parameter</li>
+            <li>B) A full <code>IShippingStrategy</code> interface with a class per carrier</li>
+            <li>C) A static method with a giant switch statement</li>
+            <li>D) An abstract base class with no interface at all, using multiple inheritance</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Real state (rate table, API client) and multiple related methods are exactly the conditions the lesson names for when the full interface form earns its complexity over a plain delegate.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A single <code>Func&lt;T&gt;</code> can only represent one operation — it can't hold a rate table as state or expose a second method like <code>EstimateDeliveryDate</code>.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A switch statement reintroduces the exact coupling and Open/Closed violation Strategy exists to remove.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> C# doesn't support multiple inheritance of classes, and an interface-based Strategy is the idiomatic, testable choice here, not an inheritance hierarchy.</p>
+                <p><strong>Reinforcement:</strong> Promote to the full interface form once a strategy needs state or more than one method.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why is a <code>Func&lt;Order, decimal&gt;</code> parameter considered a legitimate implementation of the Strategy pattern, not just "a shortcut that skips the real pattern"?</p>
+        <ul class="options">
+            <li>A) Because delegates are faster than interfaces at runtime</li>
+            <li>B) Because a delegate type is, mechanically, a compiler-generated one-method interface — the intent (a swappable algorithm behind a common shape) is what defines Strategy, not whether it's spelled as an interface or a delegate</li>
+            <li>C) Because the GoF book explicitly lists <code>Func&lt;T&gt;</code> as one of its 23 patterns</li>
+            <li>D) It isn't legitimate — only the interface form counts as real Strategy</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The "Under the Hood" section showed that a delegate is structurally equivalent to a one-method interface. GoF's 1994 book predates convenient C# lambdas — the pattern's intent (swappable algorithm, decoupled from its caller) is satisfied either way.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Performance isn't the basis for this distinction; both compile to similar underlying mechanics.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The GoF catalog predates C# entirely and describes the pattern in Smalltalk/C++ terms, using interfaces — it doesn't mention <code>Func&lt;T&gt;</code> at all.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This directly contradicts the lesson's point — the delegate form is a legitimate, idiomatic modern implementation, not a lesser substitute.</p>
+                <p><strong>Reinforcement:</strong> A pattern is defined by its intent and shape, not by the specific C# syntax used to express it.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> What's the key difference between the Factory pattern (lesson 240) and the Strategy pattern?</p>
+        <ul class="options">
+            <li>A) Factory decides which object to construct; Strategy decides which algorithm to run once you already have an object</li>
+            <li>B) They are the same pattern with two different names</li>
+            <li>C) Factory is Structural and Strategy is Creational</li>
+            <li>D) Strategy can only be implemented with static methods; Factory cannot</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> This is exactly the distinction drawn in Common Confusion — Factory answers "what do I build?" while Strategy answers "what do I do?" — different questions, though they can be combined.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> They solve different problems and belong to different GoF categories entirely.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is backwards — Factory is Creational, Strategy is Behavioral.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Neither pattern is restricted to static methods; both are commonly implemented with instance classes or delegates.</p>
+                <p><strong>Reinforcement:</strong> Keep "what to build" (Factory) and "what to do" (Strategy) as separate questions, even though a factory can be used to construct a strategy.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have a name for something you've been doing since Foundations — and know exactly when to reach for a full interface versus a plain delegate.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

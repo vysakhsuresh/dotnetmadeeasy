@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>238 - Dependency Injection at Scale · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Constructor injection in a five-class demo is easy. Here's what actually changes once your app has five hundred classes.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Lessons 124 and 125 taught you how to register a service, resolve it from the container, and choose the right lifetime — Transient, Scoped, or Singleton. That's the mechanics, and in a small app, mechanics are basically the whole story: one <code>Program.cs</code>, a dozen <code>builder.Services.AddScoped&lt;...&gt;()</code> lines, done.</p>
+    <p>Now picture a real production application: two hundred registered services, forty feature areas, a dozen developers who've never met each other touching the same <code>Program.cs</code>. Two things tend to go wrong at that scale, and neither is a lifetime bug:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// Problem 1 — Program.cs, 800 lines deep, nobody dares touch it
+builder.Services.AddScoped&lt;IOrderRepository, SqlOrderRepository&gt;();
+builder.Services.AddScoped&lt;IPaymentGateway, StripeGateway&gt;();
+builder.Services.AddScoped&lt;IEmailSender, SendGridEmailSender&gt;();
+// ... 200 more lines, no structure, no way to tell what belongs to what feature
+
+// Problem 2 — a class that LOOKS like DI, but isn't
+public class ReportController(IServiceProvider serviceProvider) // ⚠️ injecting the container itself
+{
+    public IActionResult Generate(string reportType)
+    {
+        var generator = serviceProvider.GetService(GetGeneratorType(reportType)); // resolved on-demand, hidden from the constructor
+        return Ok(generator);
+    }
+}</code></pre>
+    <p>Neither of these is a beginner mistake — they're exactly the kind of thing that creeps in gradually, one "just add it here" decision at a time, in a codebase that started out clean. This lesson is about recognizing both, and fixing both, before they define your architecture.</p>
+    <p><strong>In this lesson, you'll learn the composition root — the one place your object graph should actually get wired together — the Service Locator anti-pattern and exactly why it defeats the purpose of DI even though it looks like DI, how to organize registration code for a large app using grouped extension methods, and how honest, visible constructor dependencies make testing large systems tractable.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>"DI at scale" isn't a different technology from what Lessons 124–125 taught — it's the same constructor injection and the same container, disciplined by a few extra rules that only start to matter once the number of services and the number of developers both grow large: <strong>where</strong> wiring is allowed to happen, <strong>how</strong> registration code stays organized, and <strong>what</strong> counts as genuinely receiving a dependency versus just pretending to.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>The <strong>composition root</strong> is the single, specific location in an application — typically near startup, in ASP.NET Core that's <code>Program.cs</code> and the extension methods it calls — where the object graph is actually assembled: every <code>services.Add...()</code> call, every lifetime decision, all in one traceable place. Everywhere else in the application should receive already-constructed dependencies through its constructor and never talk to the container directly.</p>
+    <p>The <strong>Service Locator anti-pattern</strong> is what happens when a class is given the container itself (<code>IServiceProvider</code>, or a hand-rolled wrapper around it) as a dependency, and then calls something like <code>GetService&lt;T&gt;()</code> on it from inside a method, on demand, whenever it needs something. It resembles DI — there's a container, there's an interface — but it is functionally the opposite: the class's real dependencies are hidden inside its method bodies instead of declared honestly in its constructor.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Small-App Habits Don't Scale</h3>
+    <p>In a five-class app, it genuinely doesn't matter much where you call <code>services.AddScoped&lt;T&gt;()</code>, or whether one class happens to reach into the container directly instead of taking a constructor parameter — the whole graph fits in your head at once. At two hundred services and a dozen contributors, neither assumption holds. Registration code sprawls with no organizing structure, so nobody can find where a given service is wired or confirm it's even registered without running the app. And once one class starts resolving dependencies on demand from an injected container instead of declaring them, that habit spreads — it's the path of least resistance for "I just need one more thing in here real quick" — until constructor signatures across the codebase stop telling the truth about what a class actually needs.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — A Disciplined Composition Root, and a Hard Line Against Service Locator</h3>
+    <p>Concentrating all wiring into one composition root (organized into feature-grouped extension methods, so it stays navigable at any scale) and refusing to let any class reach into the container directly keeps the two properties from Lesson 237 intact even as the app grows: high cohesion (each registration group is organized by feature) and low coupling (every class's real dependencies stay visible and abstract, declared honestly at its constructor boundary).</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            WHO IS ALLOWED TO TOUCH THE CONTAINER
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.1rem;">🌱 Composition Root</div>
+                <div style="margin:0.5rem 0;font-size:0.9rem;">
+                    <code>Program.cs</code> + <code>AddPaymentServices()</code> etc.
+                </div>
+                <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);">
+                    The ONE place that calls <code>services.Add...()</code>
+                </div>
+                <div style="margin-top:0.5rem;font-size:0.8rem;border-top:1px solid var(--border-color,#1E293B);padding-top:0.5rem;">
+                    <span class="badge">Container access: allowed</span>
+                </div>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;text-align:center;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.1rem;">🏢 Everywhere Else</div>
+                <div style="margin:0.5rem 0;font-size:0.9rem;">
+                    <code>OrderService</code>, <code>ReportController</code>, all of it
+                </div>
+                <div style="font-size:0.85rem;color:var(--text-muted,#94A3B8);">
+                    Receives dependencies via <strong>constructor only</strong>
+                </div>
+                <div style="margin-top:0.5rem;font-size:0.8rem;border-top:1px solid var(--border-color,#1E293B);padding-top:0.5rem;">
+                    <span class="badge">Container access: never</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Service Locator Anti-Pattern — Side by Side</h3>
+    <p><strong>❌ Anti-pattern — the container itself is injected, dependencies hide inside methods:</strong></p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class OrderService(IServiceProvider serviceProvider)
+{
+    public async Task PlaceOrderAsync(Order order)
+    {
+        // Nothing in the constructor signature reveals ANY of this:
+        var repository = serviceProvider.GetRequiredService&lt;IOrderRepository&gt;();
+        var gateway = serviceProvider.GetRequiredService&lt;IPaymentGateway&gt;();
+
+        await gateway.ChargeAsync(order.Total, order.CustomerId);
+        await repository.SaveAsync(order);
+
+        if (order.Total > 1000)
+        {
+            // A THIRD dependency, resolved conditionally, deep inside a method —
+            // invisible unless you read every line of every branch.
+            var fraudChecker = serviceProvider.GetRequiredService&lt;IFraudChecker&gt;();
+            await fraudChecker.FlagForReviewAsync(order);
+        }
+    }
+}</code></pre>
+    <p><strong>Why this looks like DI but isn't:</strong> <code>OrderService</code> technically receives something through its constructor — but that something is the entire container, not a real, honest dependency. Its real dependencies (<code>IOrderRepository</code>, <code>IPaymentGateway</code>, and conditionally <code>IFraudChecker</code>) are invisible from the outside; you'd have to read every line of <code>PlaceOrderAsync</code>, including every conditional branch, to know what this class actually needs to function.</p>
+
+    <p><strong>✅ Fix — real dependencies, declared honestly in the constructor:</strong></p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class OrderService(
+    IOrderRepository repository,
+    IPaymentGateway gateway,
+    IFraudChecker fraudChecker) // every real dependency is right here — nothing hidden
+{
+    public async Task PlaceOrderAsync(Order order)
+    {
+        await gateway.ChargeAsync(order.Total, order.CustomerId);
+        await repository.SaveAsync(order);
+
+        if (order.Total > 1000)
+            await fraudChecker.FlagForReviewAsync(order);
+    }
+}</code></pre>
+    <p>Now the constructor signature <em>is</em> the honest, complete list of what <code>OrderService</code> needs to do its job — no reading method bodies required. That's the entire point of DI, and it's exactly what Service Locator throws away while superficially looking the same.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Composition Root — Concretely</h3>
+    <p>In an ASP.NET Core app, the composition root is <code>Program.cs</code> (plus whatever extension methods it calls) — the one place, close to <code>Main</code>, where the object graph actually gets assembled:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// Program.cs — the composition root
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services
+    .AddPaymentServices(builder.Configuration)
+    .AddNotificationServices(builder.Configuration)
+    .AddOrderingServices()
+    .AddPersistenceServices(builder.Configuration);
+
+var app = builder.Build();
+app.Run();</code></pre>
+    <p>Nothing outside this file — no controller, no service, no background job — should ever call <code>services.AddScoped&lt;...&gt;()</code> or reach into a container to resolve something on demand. Everything downstream just receives what it needs, already built, through its constructor.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — Grouped Registration Extension Methods</h2>
+    <p>Instead of one giant <code>Program.cs</code>, each feature area owns its own registration method:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// PaymentServiceCollectionExtensions.cs — lives next to the payment feature's code
+public static class PaymentServiceCollectionExtensions
+{
+    public static IServiceCollection AddPaymentServices(this IServiceCollection services, IConfiguration config)
+    {
+        services.AddScoped&lt;IPaymentGateway, StripeGateway&gt;();
+        services.AddScoped&lt;IFraudChecker, DefaultFraudChecker&gt;();
+        services.Configure&lt;StripeOptions&gt;(config.GetSection("Stripe"));
+        return services;
+    }
+}
+
+// NotificationServiceCollectionExtensions.cs — lives next to the notification feature's code
+public static class NotificationServiceCollectionExtensions
+{
+    public static IServiceCollection AddNotificationServices(this IServiceCollection services, IConfiguration config)
+    {
+        services.AddScoped&lt;IEmailSender, SendGridEmailSender&gt;();
+        services.AddScoped&lt;ISmsSender, TwilioSmsSender&gt;();
+        return services;
+    }
+}</code></pre>
+    <p>Each method lives physically near the code it registers — a developer working on payments finds <code>AddPaymentServices()</code> right next to <code>StripeGateway</code>, not eight hundred lines into an unrelated <code>Program.cs</code>. <code>Program.cs</code> itself shrinks to a short, readable table of contents.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Why This Makes Testing Tractable</h2>
+    <p>Picture testing the Service Locator version of <code>OrderService</code> from earlier. A unit test has to build a real (or heavily mocked) <code>IServiceProvider</code> capable of resolving <em>every</em> type <code>OrderService</code> might ask for at runtime — including the conditional <code>IFraudChecker</code> that only shows up for orders over $1000, which the test writer may not even know about without reading the whole method body first.</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ Testing the Service Locator version — fragile, and hides what's actually needed
+var services = new ServiceCollection();
+services.AddSingleton(mockRepository.Object);
+services.AddSingleton(mockGateway.Object);
+services.AddSingleton(mockFraudChecker.Object); // only known by reading every branch of PlaceOrderAsync
+var provider = services.BuildServiceProvider();
+var sut = new OrderService(provider);</code></pre>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ✅ Testing the honest constructor-injected version — the signature IS the test setup checklist
+var sut = new OrderService(mockRepository.Object, mockGateway.Object, mockFraudChecker.Object);
+// No container needed at all. Missing a dependency is a compiler error, not a runtime surprise.</code></pre>
+    <p>With honest constructor injection, the compiler itself enforces that a test supplies every real dependency — miss one and the code doesn't compile. With Service Locator, a missing registration is a <em>runtime</em> failure, possibly one that only shows up for a conditional path a test never happened to exercise. At the scale of hundreds of services and thousands of tests, that difference between "compiler catches it" and "hope you wrote a test for that exact branch" is the difference between a maintainable test suite and a fragile one.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🍽️</span> A Kitchen's Pantry vs. a Grocery Store Membership Card</div>
+        <p><strong>Honest constructor injection</strong> is a chef given exactly the ingredients a recipe calls for, laid out on the counter before cooking starts — flour, eggs, butter, listed on the recipe card itself. Anyone reading the card knows precisely what's needed.</p>
+        <p><strong>Service Locator</strong> is handing that same chef a membership card to the grocery store instead, and telling them to "just go grab whatever you need, whenever you need it, mid-recipe." Technically they can still make the dish. But now nobody reading the recipe card can tell what ingredients it actually requires — you'd have to watch the chef cook the entire meal, live, to find out. And if the store happens to be out of butter that day, you don't find out until the chef is already halfway through baking.</p>
+        <p>The composition root is the one place — the grocery run itself, done once, in advance — where all the ingredients for the whole kitchen get gathered and organized into labeled bins by category (produce, dairy, spices — exactly like grouped registration extension methods). Every recipe after that just reads its labeled ingredients off the counter. Nobody with a recipe card ever needs the store membership card again.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — The Design Reasoning</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">WHY CONFINING THE CONTAINER TO ONE PLACE ACTUALLY MATTERS</div>
+        <div class="flow-step">
+            <div class="step-label">1. VISIBILITY OF DEPENDENCIES</div>
+            <ul><li>Constructor injection makes a class's dependency graph <strong>statically visible</strong> — readable from the signature, checkable by the compiler, discoverable by tooling (Find Usages, dependency graphs). Service Locator makes the same information exist only at runtime, buried in method bodies.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. FAILURE TIMING</div>
+            <ul><li>A missing constructor dependency fails to compile, or fails immediately at container validation on startup. A missing Service-Locator resolution fails only when that exact code path actually executes — potentially in production, on a rarely-hit branch, months after deployment.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. WHY ONE COMPOSITION ROOT, NOT MANY</div>
+            <ul><li>If wiring logic is scattered across the app instead of confined to one root, there's no single place to answer "what does the full object graph actually look like?" A single root — even one broken into grouped extension methods for organization — keeps that question answerable in one traceable path, no matter how large the app grows.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "The container is injected, so this must be DI" — the mechanism looks similar, the effect is opposite</h3>
+    <p>DI's whole value proposition is that a class's dependencies are declared, visible, and provided from outside. Injecting the container and calling <code>GetService&lt;T&gt;()</code> inside a method keeps the dependencies hidden and resolved on demand — it uses a DI container, but it isn't practicing dependency injection in any meaningful sense.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "One composition root" doesn't mean "one giant file"</h3>
+    <p>The composition root is a <em>concept</em> — the one logical place responsibility for wiring lives — not a mandate that all wiring code be physically crammed into a single <code>Program.cs</code> file. Grouped extension methods, called from that one file, keep both properties: one logical root, organized into readable, feature-scoped pieces.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. Factories and Options aren't Service Locator</h3>
+    <p>Injecting a well-typed factory (<code>Func&lt;PaymentProvider, IPaymentGateway&gt;</code>) or a bound <code>IOptions&lt;T&gt;</code> is not the anti-pattern — those are still specific, declared, honest dependencies. The anti-pattern is specifically injecting the generic, untyped container itself and pulling arbitrary services out of it by type at will.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — "Just inject IServiceProvider, it's simpler" as a shortcut under deadline pressure</h4>
+    <p>❌ It genuinely is faster to type in the moment — one parameter instead of three or four. That short-term convenience is exactly how the anti-pattern spreads through a codebase, one rushed feature at a time.</p>
+    <p>✅ Take the extra thirty seconds to list the real dependencies in the constructor. The cost is paid once, at write time; the Service Locator alternative charges that same cost back, with interest, at every future debugging session and every future test.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Registration code scattered across multiple unrelated files with no organizing principle</h4>
+    <p>❌ Some services registered directly in <code>Program.cs</code>, others in a <code>Startup2.cs</code> ("just to keep the file shorter"), others in a static constructor somewhere in the domain layer — three different places to check before you can be sure a service is even registered.</p>
+    <p>✅ Group by feature area with clearly named extension methods (<code>AddPaymentServices</code>, <code>AddNotificationServices</code>), all called from the single composition root — organized without being scattered.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — A "helper" static class that wraps the container and gets called from everywhere</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public static class ServiceLocatorHelper
+{
+    public static IServiceProvider? Provider { get; set; } // ❌ global, mutable, and invites resolving anything from anywhere
+    public static T Resolve&lt;T&gt;() where T : notnull => Provider!.GetRequiredService&lt;T&gt;();
+}
+
+// Called from deep inside unrelated code, anywhere, at any time:
+var logger = ServiceLocatorHelper.Resolve&lt;ILogger&gt;(); // ❌ this is Service Locator wearing a static-class disguise
+</code></pre>
+    <p>❌ Wrapping the container in a static helper doesn't fix the anti-pattern — it makes it worse, because now <em>any</em> code, anywhere in the codebase, with no constructor dependency at all, can silently reach into the container.</p>
+    <p>✅ There is no fix here except removing it — replace every call site with an honest constructor-injected dependency.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Enforce the composition root and grouped registration from day one</strong>, even in a small app — it costs almost nothing early and prevents the exact sprawl that becomes expensive to unwind later.</li>
+        <li style="margin-bottom:0.4rem;"><strong>There are a small number of legitimate, narrow exceptions</strong> to "never resolve from the container directly" — framework-level plumbing like middleware factories, or specific extensibility points the framework itself designs around resolving types dynamically. These are deliberate, documented exceptions in framework code, not a license for application code to do the same.</li>
+        <li style="margin-bottom:0.4rem;"><strong>For a genuinely tiny console tool or script</strong> with a handful of classes and one developer, the full discipline of grouped extension methods may be more ceremony than the app needs — a few direct registrations in <code>Program.cs</code> are fine. The anti-pattern to avoid regardless of app size is Service Locator inside application classes.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Composition root</strong> = the ONE place the object graph gets built.<br />
+        <strong>Everywhere else</strong> = receive, don't reach.<br />
+        <strong>Service Locator</strong> = a dependency hidden inside a method, instead of declared in the constructor.<br /><br />
+        <strong>The one-question test:</strong> can you list everything this class needs just by reading its constructor signature — no method bodies required? If not, something is hiding.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">The <strong>composition root</strong> is the one place — near startup — where the object graph is actually wired; everywhere else receives already-built dependencies through the constructor.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Service Locator</strong> — injecting the container and resolving on demand — looks like DI but defeats its purpose: it hides real dependencies, delays failures to runtime, and makes testing harder.</li>
+            <li style="margin-bottom:0.4rem;">Organize large-app registration with <strong>grouped extension methods</strong> (<code>AddPaymentServices()</code>, <code>AddNotificationServices()</code>) rather than one sprawling <code>Program.cs</code>.</li>
+            <li style="margin-bottom:0.4rem;">Honest, visible constructor dependencies are what make testing a large system <strong>tractable</strong> — the compiler enforces completeness that Service Locator can only fail at runtime.</li>
+            <li style="margin-bottom:0.4rem;">This builds directly on Lessons 124–125 (mechanics) and Lesson 237 (coupling/cohesion) — DI at scale is those ideas, disciplined for hundreds of services and many contributors.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how DI discipline changes once an app grows past a handful of classes. Let's check the distinctions hold.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A class's constructor takes <code>IServiceProvider</code>, and a method inside it calls <code>serviceProvider.GetRequiredService&lt;IEmailSender&gt;()</code>. What is the core problem with this design?</p>
+        <ul class="options">
+            <li>A) There is no problem — the class is receiving a dependency through its constructor, which is exactly what DI requires</li>
+            <li>B) It hides the class's real dependency (<code>IEmailSender</code>) from its constructor signature, delays a missing-registration failure to runtime, and makes writing an isolated unit test harder — even though a container is technically involved</li>
+            <li>C) <code>IServiceProvider</code> cannot be injected into a constructor in ASP.NET Core</li>
+            <li>D) This is a Singleton lifetime violation</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the Service Locator anti-pattern — the container is injected, but the real dependency (<code>IEmailSender</code>) is resolved on demand inside a method, invisible from the constructor, and only discoverable by reading the method body.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Receiving the container itself is not the same as receiving a real dependency — DI's value comes from declaring actual dependencies, not from technically having "something" injected.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>IServiceProvider</code> can be injected — the problem isn't that it's disallowed, it's what doing so and then calling <code>GetRequiredService</code> inside a method represents architecturally.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing here describes a lifetime mismatch (covered in Lesson 125) — the issue is about dependency visibility and resolution timing, not lifetime configuration.</p>
+                <p><strong>Reinforcement:</strong> The test for genuine DI is whether a class's real dependencies are visible in its constructor — not whether a container object happens to be involved somewhere.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In a large ASP.NET Core application, where should the composition root be?</p>
+        <ul class="options">
+            <li>A) Spread evenly across every class, so each class registers its own dependencies as it needs them</li>
+            <li>B) In the individual repository classes, since they know their own database configuration best</li>
+            <li>C) In one logical place — <code>Program.cs</code>, calling out to feature-grouped extension methods like <code>AddPaymentServices()</code> — so the full object graph stays traceable from a single starting point</li>
+            <li>D) Inside a base controller class that all controllers inherit from</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> The composition root is a single logical location — near application startup — even when its implementation is organized into multiple grouped extension methods for readability. This keeps "what does the object graph look like" answerable from one traceable path.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Spreading registration across every class removes any single place to audit the full object graph, and typically means classes registering dependencies for themselves — a sign of Service Locator creeping in, not a composition root.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> A repository class is a consumer of dependencies (like a database connection), not the place responsible for wiring the object graph — mixing the two defeats the separation the composition root exists to provide.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Base controllers are part of the application's runtime behavior, not the startup wiring phase — putting registration logic there conflates two very different concerns.</p>
+                <p><strong>Reinforcement:</strong> "One composition root" describes a single logical responsibility, not a literal single file — grouped extension methods keep it both centralized and organized.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why does honest constructor injection make unit testing large systems more tractable than the Service Locator pattern, according to this lesson?</p>
+        <ul class="options">
+            <li>A) Because constructor injection is always faster at runtime than resolving from a container</li>
+            <li>B) Because a test can construct the class directly with mocked dependencies, and a missing dependency is caught by the compiler — while Service Locator's dependencies are only discoverable, and only fail, at runtime, potentially on a branch a test never exercises</li>
+            <li>C) Because Service Locator cannot be used with any mocking framework</li>
+            <li>D) Because constructor injection automatically generates unit tests</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the direct payoff shown in the lesson's <code>OrderService</code> testing example — with honest constructor injection, the compiler enforces that every real dependency is supplied; with Service Locator, a missing or wrongly-mocked dependency only surfaces when that specific runtime code path executes.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This lesson is about design-time and test-time tractability, not runtime performance — the container resolution overhead is not the point being made.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Service Locator can technically be tested by building a real or mocked <code>IServiceProvider</code> — it's not impossible, just significantly more fragile and less discoverable than direct constructor injection.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Neither approach generates tests automatically — this is about how much friction and hidden risk exists when writing tests by hand.</p>
+                <p><strong>Reinforcement:</strong> Visible, compiler-checked dependencies turn "did I remember every dependency?" from a runtime gamble into a compile-time certainty.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A developer argues: "Injecting <code>IServiceProvider</code> is fine because it's still technically dependency injection — something is still being injected into the constructor." What is the strongest counterargument from this lesson?</p>
+        <ul class="options">
+            <li>A) <code>IServiceProvider</code> is an internal framework type and cannot legally be injected</li>
+            <li>B) DI's value isn't just "something is injected" — it's that a class's real, specific dependencies are visible and honest at its boundary; injecting the container hides those real dependencies inside method bodies, which is the opposite of what DI is meant to achieve, even though a container object is technically present in the constructor</li>
+            <li>C) This is correct — there is no meaningful difference between the two approaches</li>
+            <li>D) Constructor injection of any interface, including <code>IServiceProvider</code>, is always a compiler error</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the lesson's central distinction — DI's benefit comes from the constructor being an honest, complete declaration of what a class needs. Injecting the generic container satisfies the letter of "something is injected" while completely defeating that actual purpose, since the real dependencies remain hidden until you read the method bodies.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>IServiceProvider</code> is a perfectly legal, commonly available public interface — it's not restricted from injection; the concern raised is architectural, not a technical restriction.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There is a very meaningful difference, demonstrated throughout the lesson — visibility of real dependencies, timing of failures, and testability all diverge sharply between the two approaches.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This isn't a compile-time restriction at all — the code compiles fine either way; the problem is a design and maintainability one, not a syntax error.</p>
+                <p><strong>Reinforcement:</strong> The key question is never "is something in the constructor?" — it's "are the class's real dependencies honest and visible there?"</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know what changes about dependency injection once a real application grows past a handful of classes — and can spot Service Locator hiding in plain sight.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

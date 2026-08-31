@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>248 - Unit of Work · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The second half of the same story lesson 247 started — and the moment where an honest lesson has to tell you that the thing you're about to build might already exist in your codebase.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Picture a funds-transfer operation: debit $200 from Account A, credit $200 to Account B. If each side is handled by its own repository, each saving its own changes independently, look at what can go wrong: the debit repository saves successfully, the process crashes or an exception is thrown, and the credit repository's save never happens. $200 has vanished — not transferred, just gone, because two operations that needed to succeed or fail <em>together</em> were allowed to succeed or fail <em>independently</em>.</p>
+    <p>This is the exact problem lesson 247 left dangling at the end: "a single business operation often needs to touch several repositories together, atomically." <strong>Unit of Work</strong> is the pattern that closes that gap — and, as you're about to see, it's also the pattern with the most genuinely surprising twist in this whole Part: for most EF Core applications, you may have been using an implementation of it since Intermediate Part VI, without a separate interface in sight.</p>
+    <p><strong>In this lesson, you'll learn what Unit of Work solves, how <code>DbContext</code> already gives you one, and the specific, narrower situations where hand-rolling a separate <code>IUnitOfWork</code> abstraction on top of it genuinely earns its cost.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>Unit of Work</strong> tracks every change made across a business operation — additions, updates, deletions, possibly spanning several different repositories — and commits all of them together, in one atomic step, at the end. Either every change succeeds, or none of them are permanently applied. It's the mechanism that makes "debit Account A, credit Account B" behave as one indivisible operation instead of two separately-saved ones.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Martin Fowler's original definition: a Unit of Work "maintains a list of objects affected by a business transaction and coordinates the writing out of changes." Two responsibilities are bundled into that one sentence — <strong>tracking</strong> (remembering what changed, across however many objects and repositories were touched) and <strong>committing</strong> (writing all of it out together, as one atomic operation). Both of those responsibilities should sound immediately familiar if you've worked with EF Core at all — because they are, precisely, what <span class="icode">DbContext</span> already does.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>An operation spans multiple repositories, each saving independently — a partial failure midway through can leave the data permanently inconsistent, with some changes committed and others silently lost</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>A way to gather every change made during one logical business operation — regardless of how many repositories or entity types it touched — and commit them as a single, all-or-nothing unit</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>A Unit of Work that tracks changes across the whole operation and exposes one final <span class="icode">SaveChanges()</span>-style call — and, as this lesson will show, EF Core's <span class="icode">DbContext</span> already provides exactly this for anything built on top of it</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — the Honest Headline of This Lesson</h2>
+    <p>Go back to Intermediate's DbContext lesson (141): a <span class="icode">DbContext</span> was described as a connection factory, a <strong>change tracker</strong>, and a query gateway — and lesson 148 traced that change tracker directly back to the textbook definition of Unit of Work. That wasn't a passing comparison; it's the load-bearing fact this entire lesson is built on.</p>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            TEXTBOOK UNIT OF WORK vs WHAT DBCONTEXT ALREADY DOES
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">📚 THE PATTERN</div>
+                <ul style="font-size:0.9rem;margin:0.5rem 0 0 1.1rem;">
+                    <li>Tracks every object added, modified, or removed during a business transaction</li>
+                    <li>Coordinates writing all of it out together, atomically</li>
+                    <li>Works regardless of how many "repositories" of objects are involved</li>
+                </ul>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">🔧 DBCONTEXT</div>
+                <ul style="font-size:0.9rem;margin:0.5rem 0 0 1.1rem;">
+                    <li>The change tracker remembers every entity added, modified, or removed across every <span class="icode">DbSet&lt;T&gt;</span> you touch</li>
+                    <li><span class="icode">SaveChanges()</span> writes every tracked change out together, in one database transaction</li>
+                    <li>Works across every entity type registered on that <span class="icode">DbContext</span> — <span class="icode">Order</span>, <span class="icode">Account</span>, <span class="icode">Customer</span>, all at once</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <p>This is the most important, and most honest, point of this lesson: <strong>a single <span class="icode">DbContext</span> instance, used across several repositories within one scope, already behaves as their shared Unit of Work.</strong> If <span class="icode">AccountRepository</span> and <span class="icode">TransferLogRepository</span> both receive the same <span class="icode">DbContext</span> instance (which is exactly what scoped DI lifetime, from the Dependency Injection lessons, gives you by default in ASP.NET Core), then modifying an <span class="icode">Account</span> through one repository and adding a <span class="icode">TransferLog</span> through the other are both being tracked by that one shared change tracker — and one call to <span class="icode">context.SaveChanges()</span> commits both, together, in one transaction. You do not need to build anything new to get that.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">A TRANSFER, TRACKED AND COMMITTED AS ONE UNIT — NO SEPARATE ABSTRACTION NEEDED</div>
+        <div class="flow-step">
+            <div class="step-label">1. TWO REPOSITORIES, ONE SHARED DBCONTEXT INSTANCE</div>
+            <ul><li>Both <span class="icode">AccountRepository</span> and <span class="icode">TransferLogRepository</span> are constructed with the <em>same</em> <span class="icode">BankDbContext</span> instance — the default outcome of registering repositories and <span class="icode">DbContext</span> as scoped services in one HTTP request.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. EACH REPOSITORY MODIFIES ITS ENTITIES THROUGH THE SHARED CONTEXT</div>
+            <ul><li><span class="icode">accountRepository.Debit(accountA, 200m)</span> and <span class="icode">accountRepository.Credit(accountB, 200m)</span> both just mutate tracked entity properties — no save happens yet.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE CHANGE TRACKER HAS BEEN SILENTLY ACCUMULATING ALL OF IT</div>
+            <ul><li>Both account modifications and the new <span class="icode">TransferLog</span> entity are sitting in the same <span class="icode">DbContext</span>'s change tracker, regardless of which repository touched them.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. ONE SAVECHANGES() CALL COMMITS EVERYTHING, ATOMICALLY</div>
+            <ul><li><span class="icode">await context.SaveChangesAsync()</span> wraps every pending change — from both repositories — in a single database transaction. If anything fails, EF Core rolls the whole batch back; nothing is left half-applied.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — the Transfer, With No Extra Abstraction</h2>
+    <div class="code-block"><code>public interface IAccountRepository
+{
+    Task&lt;Account?&gt; GetByIdAsync(int id);
+}
+
+public class AccountRepository(BankDbContext context) : IAccountRepository
+{
+    public Task&lt;Account?&gt; GetByIdAsync(int id) =&gt; context.Accounts.FindAsync(id).AsTask();
+}
+
+public interface ITransferLogRepository
+{
+    Task AddAsync(TransferLog log);
+}
+
+public class TransferLogRepository(BankDbContext context) : ITransferLogRepository
+{
+    public Task AddAsync(TransferLog log) =&gt; context.TransferLogs.AddAsync(log).AsTask();
+}
+
+// ── Application service — orchestrates BOTH repositories AND commits once ──
+public class TransferService(
+    IAccountRepository accounts,
+    ITransferLogRepository logs,
+    BankDbContext context)   // the same DbContext the repositories above were built with
+{
+    public async Task TransferAsync(int fromId, int toId, decimal amount)
+    {
+        var from = await accounts.GetByIdAsync(fromId) ?? throw new InvalidOperationException("Account not found.");
+        var to = await accounts.GetByIdAsync(toId) ?? throw new InvalidOperationException("Account not found.");
+
+        from.Balance -= amount;
+        to.Balance += amount;
+        await logs.AddAsync(new TransferLog(fromId, toId, amount, DateTime.UtcNow));
+
+        // ONE call commits the balance change on BOTH accounts AND the new log — together
+        await context.SaveChangesAsync();
+    }
+}</code></div>
+    <p><strong>Code → Meaning → Result:</strong> <span class="icode">TransferService</span> touches two repositories and modifies three things (two account balances, one new log entry) — and calls <span class="icode">SaveChanges()</span> exactly once, because <span class="icode">context</span> is the same instance both repositories were given. If the database rejects the save for any reason, EF Core rolls back every one of those changes together — nothing is left half-applied. No <span class="icode">IUnitOfWork</span> interface was written, and none was needed: <span class="icode">DbContext</span> was already doing this job.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Where a Hand-Rolled Unit of Work Actually Earns Its Cost</h2>
+    <p>Now change the scenario, the same way lesson 148 did: this order-fulfillment system must coordinate a change in its EF Core-backed order database <em>and</em> a change in a separate legacy inventory system reached through a different data-access technology entirely — a Dapper-based repository with no shared change tracker, no shared <span class="icode">DbContext</span>, and no built-in way to participate in the same atomic commit. Here, EF Core's free Unit of Work simply doesn't reach — it only ever coordinated changes made through <em>its own</em> tracked entities.</p>
+    <div class="code-block"><code>// ── A genuine hand-rolled Unit of Work — because two DIFFERENT data technologies are involved ──
+public interface IUnitOfWork : IAsyncDisposable
+{
+    IOrderRepository Orders { get; }
+    IInventoryRepository Inventory { get; }   // Dapper-backed, NOT EF Core
+    Task CommitAsync();
+}
+
+public class SqlUnitOfWork : IUnitOfWork
+{
+    private readonly BankDbContext _context;
+    private readonly IDbTransaction _sharedTransaction;   // shared across BOTH technologies
+
+    public SqlUnitOfWork(BankDbContext context, IDbConnection connection)
+    {
+        _context = context;
+        _sharedTransaction = connection.BeginTransaction();
+        _context.Database.UseTransaction((System.Data.Common.DbTransaction)_sharedTransaction);
+        Orders = new EfOrderRepository(context);
+        Inventory = new DapperInventoryRepository(connection, _sharedTransaction);
+    }
+
+    public IOrderRepository Orders { get; }
+    public IInventoryRepository Inventory { get; }
+
+    public async Task CommitAsync()
+    {
+        await _context.SaveChangesAsync();     // EF Core's changes
+        _sharedTransaction.Commit();            // Dapper's changes, same underlying transaction
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _sharedTransaction.Dispose();
+        return _context.DisposeAsync();
+    }
+}</code></div>
+    <p>This is a legitimate, hand-rolled Unit of Work — and notice why it exists: not "because Unit of Work is a pattern you should always implement," but because two genuinely different persistence technologies needed to be coordinated under one shared database transaction, something EF Core's own change tracker has no way to do on its own. The other legitimate reason, mentioned but not shown in code here: a team that specifically wants its application layer to depend on <span class="icode">IUnitOfWork</span> rather than on <span class="icode">DbContext</span> directly, as a deliberate technology-independence boundary — the same kind of reasoning lesson 148 covered for repositories generally.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧾</span> One Receipt, Not Five</div>
+        <p>Imagine buying five items at a store, and the cashier rings each one up as a completely separate transaction — five separate charges to your card, five separate receipts. If your card gets declined on item four, you've already paid for three items and gotten nothing for the fourth or fifth — an inconsistent, half-finished purchase. A Unit of Work is the cashier ringing up all five items as <em>one</em> transaction: one card swipe, one receipt, one point where everything either goes through together or the whole sale is cancelled and nothing is charged.</p>
+        <p>Now here's the twist this lesson is built around: if you've ever checked out at a modern store with everything scanned into one basket before a single payment, you already had this — you didn't need to ask for it specially. <span class="icode">DbContext</span> is that basket. It's only when you're paying with two completely different payment systems at once — a card <em>and</em> a separate loyalty-points ledger that doesn't know about the card system — that you'd need someone to specifically coordinate both of them into a single, all-or-nothing checkout.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Why DbContext's Scope Is What Makes This Work</h2>
+    <div class="flow-container">
+        <div class="flow-title">THE MECHANICS THAT MAKE "SHARED DBCONTEXT = FREE UNIT OF WORK" TRUE</div>
+        <div class="flow-step">
+            <div class="step-label">1. Scoped lifetime is what makes the sharing happen automatically</div>
+            <ul><li>ASP.NET Core's DI container, by default, registers <span class="icode">DbContext</span> as <em>scoped</em> — one instance per HTTP request. Every repository constructed within that request that asks for <span class="icode">BankDbContext</span> receives the exact same instance, and therefore the exact same change tracker, without any extra wiring.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. If that sharing breaks, so does the "free" Unit of Work</div>
+            <ul><li>A repository that constructs its own, separate <span class="icode">new BankDbContext()</span> instance — instead of receiving the shared one via DI — has its own, independent change tracker. Changes made through it will not be included in another repository's <span class="icode">SaveChanges()</span> call. This is a real, common bug, and it's precisely why "one <span class="icode">DbContext</span> instance per unit of work" is the rule to keep, not an incidental detail.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. SaveChanges() itself runs inside a database transaction automatically</div>
+            <ul><li>EF Core wraps a single <span class="icode">SaveChanges()</span> call's set of INSERT/UPDATE/DELETE statements in an implicit database transaction by default — you don't even need to call <span class="icode">BeginTransaction()</span> yourself for the common case of "everything in this one call succeeds or fails together."</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. A hand-rolled IUnitOfWork earns its cost specifically when this mechanism doesn't reach far enough</div>
+            <ul><li>Coordinating across a technology EF Core doesn't know about (Dapper, a different database, an external API with its own commit step) requires an explicit shared transaction and an explicit commit step spanning both — exactly the gap the real-world example's <span class="icode">SqlUnitOfWork</span> filled.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "I need an IUnitOfWork interface to use the Unit of Work pattern" — no, you need the behavior, not the interface</h3>
+    <p>The Unit of Work <em>pattern</em> is the behavior: track changes across an operation, commit them together. An <span class="icode">IUnitOfWork</span> C# interface is one possible <em>implementation vehicle</em> for that behavior — and, as this lesson has shown, EF Core's <span class="icode">DbContext</span> is another, already built and already in your project. Confusing "the pattern" with "a dedicated interface named after the pattern" is exactly why teams sometimes build a redundant <span class="icode">IUnitOfWork</span> wrapper around a <span class="icode">DbContext</span> that was already fulfilling the role.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Repository + Unit of Work" as a combined phrase usually means "repositories sharing one DbContext," not two separate layers of abstraction</h3>
+    <p>You will see "Repository and Unit of Work pattern" used together constantly in .NET articles and tutorials — often followed by two full custom abstractions. Given everything in this lesson, read that phrase more precisely: it usually just means "repositories that share one <span class="icode">DbContext</span> instance, given to them via DI, with the application service calling <span class="icode">SaveChanges()</span> once at the end." That's Repository plus Unit of Work — the second half just doesn't need its own interface most of the time.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Building a full IUnitOfWork wrapper around DbContext for no reason beyond "the pattern says to"</h4>
+    <p>❌ Writing <span class="icode">IUnitOfWork</span> with an <span class="icode">IAccountRepository Accounts { get; }</span>, an <span class="icode">ITransferLogRepository TransferLogs { get; }</span>, and a <span class="icode">CommitAsync()</span> that just calls <span class="icode">_context.SaveChangesAsync()</span> — an entire extra interface and class whose only job is to forward to the <span class="icode">DbContext</span> it wraps, with no second technology, no independence-from-EF-Core requirement, nothing.</p>
+    <p>✅ Inject the shared <span class="icode">DbContext</span> directly into the application service and call <span class="icode">SaveChangesAsync()</span> on it, exactly as the Simple Example did. The wrapper adds a file and an indirection without adding a genuine new capability.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Letting each repository construct or receive its own separate DbContext instance</h4>
+    <p>❌ A repository registered with a transient lifetime, or one that constructs <span class="icode">new BankDbContext(options)</span> itself instead of receiving the DI-provided instance — silently breaking the "shared change tracker" mechanism that made atomic commits free in the first place.</p>
+    <p>✅ Register <span class="icode">DbContext</span> as scoped (ASP.NET Core's EF Core template does this by default) and let every repository receive it via constructor injection. This one lifetime decision is what makes the whole "DbContext is already a Unit of Work" story true in practice.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Calling SaveChanges() inside every repository method instead of once, at the end of the business operation</h4>
+    <p>❌ <span class="icode">AccountRepository.Debit()</span> calling <span class="icode">context.SaveChangesAsync()</span> itself, and <span class="icode">TransferLogRepository.AddAsync()</span> also calling it — reintroducing the exact "each piece commits independently" problem this lesson opened with, even though both repositories share one <span class="icode">DbContext</span>.</p>
+    <p>✅ Repository methods should modify the tracked entities and stop; the application service orchestrating the whole operation calls <span class="icode">SaveChangesAsync()</span> exactly once, after every repository involved has made its changes — this is what actually makes the commit atomic.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Situation</th><th>Leans toward</th></tr></thead>
+            <tbody>
+                <tr><td>All repositories involved are EF Core-backed, sharing one scoped <span class="icode">DbContext</span></td><td>Nothing extra to build — call <span class="icode">SaveChangesAsync()</span> once, in the application service</td></tr>
+                <tr><td>An operation must coordinate EF Core <em>and</em> a different data-access technology (Dapper, a different database, a queue) under one atomic commit</td><td>A genuine, hand-rolled Unit of Work coordinating a shared transaction across both</td></tr>
+                <tr><td>A deliberate architectural rule that the application layer must not depend on <span class="icode">DbContext</span> as a concrete type</td><td>An <span class="icode">IUnitOfWork</span> interface as the technology-independence boundary — same reasoning as lesson 148's architectural-boundary case for repositories</td></tr>
+                <tr><td>"Repository and Unit of Work always go together, so I should build both" as the only justification</td><td>Skip the separate Unit of Work — a shared <span class="icode">DbContext</span> is already doing that job</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> before writing an <span class="icode">IUnitOfWork</span> interface, ask "what would this give me that a shared, scoped <span class="icode">DbContext</span> doesn't already provide?" If the honest answer is "nothing," you've just saved yourself a file. If the answer is "coordinating a second, non-EF-Core data source" or "a real independence-from-EF-Core requirement," build it — you now have a genuine reason.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Unit of Work</strong> = track every change across an operation, commit them all together.<br />
+        <strong>DbContext, shared and scoped</strong> = already does exactly that, for anything built on EF Core.<br />
+        <strong>A hand-rolled IUnitOfWork</strong> = earns its cost only when you're coordinating outside EF Core's reach, or deliberately hiding EF Core as a technology choice.<br /><br />
+        <strong>Remember:</strong> the question is never "do I need a Unit of Work" — you already have one. It's "does this operation need more coordination than the one I already have?"
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Unit of Work tracks changes across a business operation and commits them together, atomically — solving the "partial failure leaves data inconsistent" problem that independent repository saves create.</li>
+            <li style="margin-bottom:0.4rem;"><span class="icode">DbContext</span>'s change tracker plus <span class="icode">SaveChanges()</span> already <strong>is</strong> a Unit of Work — repositories sharing one scoped <span class="icode">DbContext</span> instance get atomic, multi-repository commits for free, with no separate abstraction required.</li>
+            <li style="margin-bottom:0.4rem;">A hand-rolled <span class="icode">IUnitOfWork</span> on top of EF Core is very often genuinely redundant — it earns its keep specifically when coordinating multiple, different data sources that don't share a built-in transaction/tracking mechanism, or when deliberately decoupling the application layer from EF Core as a concrete technology.</li>
+            <li style="margin-bottom:0.4rem;">The mechanism only works if <span class="icode">DbContext</span> is genuinely shared — scoped DI lifetime, one instance per business operation — and if <span class="icode">SaveChangesAsync()</span> is called once, at the end, not scattered inside individual repository methods.</li>
+            <li style="margin-bottom:0.4rem;">This lesson closes the two-part story with 247: Repository answers "how do I fetch and persist one kind of thing," Unit of Work answers "how do several of those persistence operations commit together as one atomic step."</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen why an operation touching multiple repositories needs to commit atomically, and the honest fact that DbContext usually already provides that. Let's confirm the reasoning holds up under new scenarios.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A team has <code>AccountRepository</code> and <code>TransferLogRepository</code>, both registered as scoped services that receive the same scoped <code>BankDbContext</code> via constructor injection. An application service calls methods on both, then calls <code>context.SaveChangesAsync()</code> once. Does this application already have a working Unit of Work?</p>
+        <ul class="options">
+            <li>A) No — Unit of Work requires a dedicated <code>IUnitOfWork</code> interface to exist in the codebase</li>
+            <li>B) Yes — the shared <code>DbContext</code>'s change tracker is accumulating changes from both repositories, and the single <code>SaveChangesAsync()</code> call commits all of them together, atomically — exactly the Unit of Work pattern's behavior</li>
+            <li>C) No — Unit of Work only applies to database technologies other than EF Core</li>
+            <li>D) Yes, but only if each repository also calls <code>SaveChangesAsync()</code> itself before the application service does</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the lesson's central point — the Unit of Work pattern is defined by its behavior (track changes, commit together), and a shared, scoped <code>DbContext</code> plus one final <code>SaveChangesAsync()</code> call delivers exactly that behavior, with no separate interface required.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A dedicated interface is one possible implementation vehicle, not a requirement — the pattern is about the behavior, which this scenario already has.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> EF Core's <code>DbContext</code> is explicitly identified as a Unit of Work implementation in this lesson — the pattern applies to it directly, not only to non-EF-Core technologies.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This describes the exact anti-pattern from Common Mistake 3 — repositories calling <code>SaveChangesAsync()</code> individually reintroduces the "partial commit" problem the pattern exists to prevent.</p>
+                <p><strong>Reinforcement:</strong> Judge whether Unit of Work exists by its behavior — shared tracking, single atomic commit — not by whether a specifically-named interface is present.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A repository is accidentally registered with a transient DI lifetime and constructs its own <code>new BankDbContext(options)</code> instead of receiving the request-scoped instance other repositories share. What breaks?</p>
+        <ul class="options">
+            <li>A) Nothing — EF Core automatically merges change trackers from every DbContext instance touching the same database</li>
+            <li>B) That repository's changes are tracked by its own, separate change tracker — a <code>SaveChangesAsync()</code> call on the shared context will not include or commit them together with the other repositories' changes</li>
+            <li>C) The application will fail to compile</li>
+            <li>D) The repository will automatically be promoted to use a hand-rolled IUnitOfWork instead</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is Common Mistake 2 — the "free Unit of Work" only works because repositories share one <code>DbContext</code> instance and therefore one change tracker. A separately-constructed <code>DbContext</code> has its own independent tracker; its changes are invisible to a <code>SaveChangesAsync()</code> call made on a different instance.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> EF Core performs no such automatic merging — each <code>DbContext</code> instance's change tracker is entirely independent of any other instance's, even against the same physical database.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is a runtime behavioral bug, not a compile-time error — the code compiles and runs, it just silently fails to commit atomically as intended.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing in EF Core or ASP.NET Core performs such automatic promotion — this is a real bug the developer would need to notice and fix by correcting the DI lifetime.</p>
+                <p><strong>Reinforcement:</strong> The "shared DbContext = free Unit of Work" mechanism depends entirely on genuinely sharing one instance — scoped lifetime and DI-provided construction are load-bearing, not incidental.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Which of these is the scenario this lesson identifies as a genuine, well-justified reason to hand-roll a separate <code>IUnitOfWork</code> abstraction on top of EF Core?</p>
+        <ul class="options">
+            <li>A) The application has more than three repositories total</li>
+            <li>B) A single business operation must coordinate changes across EF Core AND a separate data-access technology (like Dapper against a legacy system) that doesn't share EF Core's change tracker or transaction</li>
+            <li>C) The team wants their code to look more like the tutorials they've read online</li>
+            <li>D) The application uses <code>record</code> types for its entity classes</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the real-world example's scenario — EF Core's built-in Unit of Work behavior only reaches entities it tracks itself; coordinating an atomic commit across EF Core and a genuinely different technology requires an explicit, shared transaction that a hand-rolled Unit of Work can provide.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Repository count alone isn't a deciding factor in this lesson's reasoning — many repositories sharing one <code>DbContext</code> are still covered by that one context's built-in Unit of Work behavior.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is explicitly the weak, rejected justification from Common Mistake 1 — building an abstraction "because the pattern says to," with no genuine capability gained.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The choice of <code>record</code> vs. a plain class for entity types has no bearing on Unit of Work or transaction coordination at all.</p>
+                <p><strong>Reinforcement:</strong> The genuine justification is a real technical gap — a second data-access technology or a real, independent decoupling requirement — not habit or convention alone.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 Repository and Unit of Work, together, give you the full, honest picture of data-access architecture: how to fetch and persist well, and how to make multi-step operations atomic — most of which EF Core already hands you, if you recognize it. Next: Clean Architecture, where these same ideas scale up to an entire application's structure.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

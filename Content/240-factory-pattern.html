@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>240 - Factory Pattern · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-base {
+            background: rgba(251, 191, 36, 0.2);
+            color: #FBBF24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .tag-derived {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .memory-diagram {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Creational patterns answer one question: who decides which concrete class gets built? Factory says: not the caller.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Imagine a checkout flow that needs to charge a customer. Somewhere, code has to write <code>new StripeGateway()</code> or <code>new PayPalGateway()</code> or <code>new WireTransferGateway()</code>. The question is: <em>where</em>? If the answer is "scattered across every controller, every service, every place a payment happens to occur," you have a problem — the moment you add a fourth payment provider, or the business rule for choosing one changes, you're hunting through the entire codebase for every <code>new SomeGateway()</code> call.</p>
+    <p>The <strong>Factory Pattern</strong> family exists to answer a deceptively simple question: <em>who decides which concrete class gets constructed, and where does that decision live?</em> Instead of every caller making that decision independently, one place makes it — a factory — and everyone else just asks for "the right thing" without knowing or caring how it's built.</p>
+    <p><strong>In this lesson, you'll learn the three recognized flavors of the Factory pattern — Simple Factory, Factory Method, and Abstract Factory — how they differ, when each one earns its complexity, and how they relate to something you already use every day: the DI container.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>factory</strong> is code whose entire job is deciding <em>which concrete class to instantiate</em> and handing back the result — usually through a common interface or base type — so that the calling code never has to write <code>new ConcreteClassName()</code> itself, or even know that class name exists.</p>
+    <p>This is a <strong>Creational</strong> pattern — one of the three GoF categories covered in the design patterns lesson earlier in this Part. Creational patterns are all about controlling and centralizing <em>how objects get created</em>, as opposed to Structural patterns (how objects are composed) or Behavioral patterns (how objects communicate).</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition — Three Related, Distinct Patterns</h3>
+    <p>"Factory" isn't one single pattern — it's a family of three, each solving a slightly different shaped problem. Getting them straight matters, because mixing up their names is one of the most common mistakes developers make when discussing design patterns:</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🏭 Simple Factory</h4>
+            <ul>
+                <li>Not technically one of the 23 original GoF patterns — but the idiom everyone reaches for first</li>
+                <li>One method (often static) that takes an input and decides which concrete type to return</li>
+                <li>No inheritance or virtual dispatch involved — it's just a decision, centralized</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🏗️ Factory Method</h4>
+            <ul>
+                <li>A real GoF pattern — creation is delegated to a <code>virtual</code>/<code>abstract</code> method</li>
+                <li>A base class's algorithm stays fixed; subclasses override the method to change <em>what</em> gets created</li>
+                <li>Uses inheritance and polymorphism, not just a conditional</li>
+            </ul>
+        </div>
+    </div>
+    <div class="concept-box">
+        <div class="concept-title">🏛️ Abstract Factory</div>
+        <p>A factory that creates a whole <strong>family of related objects together</strong>, guaranteeing they're compatible with each other. Where Simple Factory and Factory Method each produce <em>one</em> kind of thing, Abstract Factory produces a matched <em>set</em> — e.g. a UI theme factory that hands back a <code>Button</code>, a <code>Checkbox</code>, and a <code>ScrollBar</code> that are all guaranteed to be the "Dark theme" versions, never an accidental mix of Dark and Light widgets.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist? — The Problem It Solves</h2>
+    <p>Without a factory, object creation logic — often full of conditionals — leaks into every place that needs an object:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ WITHOUT a factory — this conditional is copy-pasted everywhere a gateway is needed
+public async Task&lt;PaymentResult&gt; CheckoutAsync(Order order, string paymentMethod)
+{
+    IPaymentGateway gateway = paymentMethod switch
+    {
+        "stripe" =&gt; new StripeGateway(_stripeApiKey),
+        "paypal" =&gt; new PayPalGateway(_payPalClientId, _payPalSecret),
+        "wire" =&gt; new WireTransferGateway(_bankRoutingInfo),
+        _ =&gt; throw new NotSupportedException($"Unknown payment method: {paymentMethod}")
+    };
+    return await gateway.ChargeAsync(order.Total);
+}
+// Every controller, every background job, every place a payment happens
+// now needs to know EVERY concrete gateway class, its constructor arguments,
+// and the full up-to-date list of valid paymentMethod strings.</code></pre>
+    <p>This has three concrete costs: the construction logic is <strong>duplicated</strong> everywhere a gateway is needed; every caller is <strong>coupled</strong> to every concrete gateway class and its constructor signature, even callers that only ever use one of them; and adding a new payment method means <strong>hunting down and editing every duplicate</strong> of that switch statement.</p>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>Object creation logic is complex, conditional, or scattered — callers know too much about concrete classes they merely want to <em>use</em></li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>One centralized place that owns the "which concrete type" decision, so callers can just ask for a capability and receive something that provides it</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>A factory — a method, class, or virtual method — takes on the responsibility of deciding and constructing, returning the result through a common abstraction</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <p>All three flavors share the same shape: the caller depends on an <strong>abstraction</strong> and asks a factory for an instance of it — the caller never writes the concrete class name.</p>
+    <div class="flow-container">
+        <div class="flow-title">WITHOUT vs WITH A FACTORY</div>
+        <div class="flow-step">
+            <div class="step-label">WITHOUT — caller knows every concrete class</div>
+            <ul><li>CheckoutController → <code>new StripeGateway()</code> / <code>new PayPalGateway()</code> / <code>new WireTransferGateway()</code> — decision + construction logic baked directly into the caller</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">WITH — caller knows only IPaymentGateway</div>
+            <ul><li>CheckoutController → <code>PaymentGatewayFactory.Create(paymentMethod)</code> → returns <code>IPaymentGateway</code> — the factory alone knows about Stripe, PayPal, and WireTransfer classes</li></ul>
+        </div>
+    </div>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>📊 Comparison at a glance</h4>
+            <table class="comparison-table" style="margin-top:0.5rem;">
+                <tr><th>Pattern</th><th>Produces</th><th>Mechanism</th></tr>
+                <tr><td>Simple Factory</td><td>One object</td><td>A method with a conditional</td></tr>
+                <tr><td>Factory Method</td><td>One object</td><td>A virtual method, overridden by subclasses</td></tr>
+                <tr><td>Abstract Factory</td><td>A family of related objects</td><td>An interface with multiple "create" methods, multiple implementations</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">SIMPLE FACTORY — STEP BY STEP (the one we'll build in depth)</div>
+        <div class="flow-step">
+            <div class="step-label">1. DEFINE THE ABSTRACTION CALLERS WILL DEPEND ON</div>
+            <ul><li><code>IPaymentGateway</code> — the only type the rest of the application needs to know about</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. WRITE THE CONCRETE IMPLEMENTATIONS</div>
+            <ul><li><code>StripeGateway</code>, <code>PayPalGateway</code>, <code>WireTransferGateway</code> — each implements <code>IPaymentGateway</code></li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. WRITE ONE FACTORY THAT OWNS THE "WHICH ONE" DECISION</div>
+            <ul><li><code>PaymentGatewayFactory.Create(paymentMethod)</code> — the <em>only</em> place in the codebase that mentions all three concrete class names</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. CALLERS ASK THE FACTORY, NEVER new UP A CONCRETE CLASS THEMSELVES</div>
+            <ul><li><code>IPaymentGateway gateway = _factory.Create(order.PaymentMethod);</code></li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IPaymentGateway
+{
+    Task&lt;PaymentResult&gt; ChargeAsync(decimal amount);
+}
+
+public sealed class StripeGateway(string apiKey) : IPaymentGateway
+{
+    public Task&lt;PaymentResult&gt; ChargeAsync(decimal amount) =&gt;
+        Task.FromResult(PaymentResult.Success("stripe-txn-id"));
+}
+
+public sealed class PayPalGateway(string clientId, string secret) : IPaymentGateway
+{
+    public Task&lt;PaymentResult&gt; ChargeAsync(decimal amount) =&gt;
+        Task.FromResult(PaymentResult.Success("paypal-txn-id"));
+}
+
+// ── The Simple Factory: one method, one decision, centralized ──
+public static class PaymentGatewayFactory
+{
+    public static IPaymentGateway Create(string paymentMethod) => paymentMethod switch
+    {
+        "stripe" =&gt; new StripeGateway(Config.StripeApiKey),
+        "paypal" =&gt; new PayPalGateway(Config.PayPalClientId, Config.PayPalSecret),
+        _ =&gt; throw new NotSupportedException($"Unknown payment method: {paymentMethod}")
+    };
+}
+
+// ── Usage — the caller never writes a concrete class name ──
+IPaymentGateway gateway = PaymentGatewayFactory.Create(order.PaymentMethod);
+var result = await gateway.ChargeAsync(order.Total);</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>PaymentGatewayFactory.Create</code> is the single place that knows both concrete class names <em>and</em> their constructor requirements. The calling code above only ever mentions <code>IPaymentGateway</code>. Add a fourth payment method tomorrow, and exactly one file changes — the factory. Every caller keeps working, unmodified.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Notification Sender Selection</h2>
+    <p>The same shape shows up constantly for notification systems, where the "right" sender depends on user preference or channel configuration read at runtime:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface INotificationSender
+{
+    Task SendAsync(string recipient, string message);
+}
+
+public sealed class EmailSender : INotificationSender { /* SMTP details */ }
+public sealed class SmsSender : INotificationSender { /* SMS gateway details */ }
+public sealed class PushSender : INotificationSender { /* push provider details */ }
+
+// A factory that's itself a small injectable class — not just static methods —
+// so it can depend on configuration and be unit tested like anything else.
+public sealed class NotificationSenderFactory(IOptions&lt;NotificationSettings&gt; settings)
+{
+    public INotificationSender CreateFor(NotificationChannel channel) => channel switch
+    {
+        NotificationChannel.Email =&gt; new EmailSender(),
+        NotificationChannel.Sms   =&gt; new SmsSender(),
+        NotificationChannel.Push  =&gt; new PushSender(),
+        _ =&gt; throw new NotSupportedException($"Unsupported channel: {channel}")
+    };
+}
+
+// ── Usage in an OrderShippedHandler ──
+public sealed class OrderShippedHandler(NotificationSenderFactory senderFactory)
+{
+    public async Task HandleAsync(Order order, NotificationChannel preferredChannel)
+    {
+        var sender = senderFactory.CreateFor(preferredChannel);
+        await sender.SendAsync(order.CustomerContact, $"Order {order.Id} has shipped!");
+    }
+}</code></pre>
+    <p>Notice the factory here is itself a small, DI-friendly class rather than a bag of static methods — that's a deliberate, common variation: the factory can take dependencies of its own (like configuration), and the factory itself can be registered and injected, without changing the pattern's fundamental shape.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Factory Method — The Same Idea, Through Inheritance</h3>
+    <p>Factory Method solves a related but distinct problem: a base class defines an algorithm's <em>overall shape</em>, but wants subclasses to control <em>which concrete type</em> one step of that algorithm produces:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public abstract class ReportGenerator
+{
+    // The algorithm — fixed, lives in the base class, never overridden
+    public string Generate(ReportData data)
+    {
+        var exporter = CreateExporter();          // ← the "factory method"
+        var body = exporter.Export(data);
+        return $"--- Report: {DateTime.UtcNow:d} ---\n{body}";
+    }
+
+    protected abstract IReportExporter CreateExporter();  // subclasses decide WHAT gets created
+}
+
+public sealed class PdfReportGenerator : ReportGenerator
+{
+    protected override IReportExporter CreateExporter() => new PdfExporter();
+}
+
+public sealed class CsvReportGenerator : ReportGenerator
+{
+    protected override IReportExporter CreateExporter() => new CsvExporter();
+}
+
+// ReportGenerator.Generate never changes; only WHICH exporter gets built varies by subclass.
+ReportGenerator generator = new PdfReportGenerator();
+string report = generator.Generate(data);</code></pre>
+    <p>The difference from Simple Factory is mechanical but important: there's no <code>switch</code> statement anywhere — the "decision" is made by <em>which subclass you instantiated</em>, and enforced by the compiler through <code>abstract</code>/<code>override</code>. This is genuinely the Template Method pattern (a fixed algorithm skeleton with pluggable steps) applied specifically to object creation.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy — Ordering at a Restaurant</h2>
+    <div class="concept-box">
+        <div class="concept-title">🍽️ The kitchen, not the recipe book</div>
+        <p>You order "the pasta" from the menu — you don't walk into the kitchen, gather the ingredients, and cook it yourself. The kitchen (the factory) decides exactly how to combine flour, eggs, and sauce into a finished dish, and hands you a plate (an object satisfying an interface: "edible food"). You never need to know the recipe.</p>
+        <p><strong>Abstract Factory</strong> is like ordering a "themed meal" — a starter, main, and dessert that are all guaranteed to be from the same cuisine. You don't get an Italian starter with a Japanese dessert; the factory ensures the whole family is compatible.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Abstract Factory's Mechanics, and the DI Container as Factory</h2>
+    <p>An Abstract Factory looks like this — one interface exposing several "create" methods, with a concrete implementation per compatible family:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IUiThemeFactory
+{
+    IButton CreateButton();
+    ICheckbox CreateCheckbox();
+}
+
+public sealed class DarkThemeFactory : IUiThemeFactory
+{
+    public IButton CreateButton() => new DarkButton();
+    public ICheckbox CreateCheckbox() => new DarkCheckbox();
+}
+
+public sealed class LightThemeFactory : IUiThemeFactory
+{
+    public IButton CreateButton() => new LightButton();
+    public ICheckbox CreateCheckbox() => new LightCheckbox();
+}
+// Whichever IUiThemeFactory you're handed, CreateButton() and CreateCheckbox()
+// are GUARANTEED to return matching-theme widgets — no accidental Dark button
+// next to a Light checkbox.</code></pre>
+    <div class="callout">
+        <strong>💡 The DI container is a generalized factory.</strong> When ASP.NET Core's container resolves <code>OrderService</code>'s constructor and hands it a concrete <code>SqlInventoryRepository</code> for its <code>IInventoryRepository</code> parameter (Intermediate 124, and Advanced 238's container-at-scale coverage), it is doing exactly what <code>PaymentGatewayFactory.Create</code> does — deciding which concrete type satisfies an abstraction and constructing it — just generalized across your <em>entire</em> object graph instead of one interface. Every <code>services.AddScoped&lt;IFoo, Foo&gt;()</code> registration is teaching the container's built-in factory logic one more "which concrete type" decision.</p>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Isn't a DI container just a giant Factory Method?"</h3>
+    <p>Close, but not quite — a DI container is closer to a generalized <strong>Simple Factory</strong> operating over your whole application, resolved by type rather than a hand-written <code>switch</code>. Factory Method specifically requires inheritance — a base class calling an <code>abstract</code>/<code>virtual</code> creation step that a subclass overrides. A DI container doesn't use inheritance to decide what to construct; it uses a registration lookup. Both are still "Factory family" ideas — object creation is centralized and abstracted away from the consumer — but they're mechanically different patterns.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Simple Factory isn't a 'real' GoF pattern — does that matter?"</h3>
+    <p>Not for practical purposes. The original 1994 GoF catalog lists Factory Method and Abstract Factory, but not "Simple Factory" by that exact name — it's usually described as an idiom, or a simplified stepping stone toward Factory Method. In everyday conversation and in code reviews, "factory" almost always means this simple, centralized-conditional shape, and that's fine — just know that if someone asks you to name the 23 GoF patterns, "Simple Factory" isn't one of the official ones.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Building a factory when a DI container registration already does the job</h4>
+    <p>❌ Writing <code>GatewayFactory.Create(gatewayType)</code> when there's really only ever going to be one <code>IPaymentGateway</code> implementation active per environment, chosen once at startup — that's not a runtime decision that needs a factory, it's just a registration: <code>services.AddScoped&lt;IPaymentGateway, StripeGateway&gt;()</code>. ✅ Reach for a hand-written factory specifically when the decision genuinely happens per-call, based on data only available at that moment (like <code>order.PaymentMethod</code>) — not when it's a fixed, environment-wide choice the container already handles for free.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Letting the factory's switch statement grow without bound and violating Open/Closed</h4>
+    <p>❌ Every new payment method means editing the <code>switch</code> inside <code>PaymentGatewayFactory.Create</code> directly — which is fine at 3 or 4 cases, but at 20 becomes a genuine maintenance hotspot everyone touches. ✅ For a large or frequently-growing family, consider registering gateways in the DI container keyed by a discriminator and resolving via <code>IEnumerable&lt;IPaymentGateway&gt;</code> plus a matching property on each implementation — trading a hand-written switch for container-driven lookup.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for Abstract Factory when there's no real "family" to keep consistent</h4>
+    <p>❌ Building a full <code>IUiThemeFactory</code>-style abstraction with multiple <code>Create...()</code> methods when you only ever need to create <em>one</em> kind of object — that's Simple Factory or Factory Method wearing unnecessary Abstract Factory ceremony. ✅ Abstract Factory earns its complexity specifically when multiple related objects must be created together and must stay <em>compatible</em> with each other — if there's no compatibility constraint between the objects, you don't need the family concept at all.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Simple Factory</strong> — when the concrete type to create depends on data available only at the call site (a string, an enum, a request field), and that decision would otherwise be duplicated across many callers.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Factory Method</strong> — when you have a fixed algorithm in a base class, and only the "what gets created" part should vary by subclass; it fits naturally when you're already using inheritance for the rest of the class's behavior.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Abstract Factory</strong> — when you must create several related objects together and guarantee they're mutually compatible — cross-platform UI toolkits and multi-provider infrastructure (e.g., "all Azure resources" vs. "all AWS resources" for a given deployment) are the classic cases.</li>
+    </ul>
+    <p>And when it's overkill: if there's genuinely only one implementation of an interface that will ever exist in a given environment, a plain DI container registration already <em>is</em> your factory — writing a dedicated factory class on top adds a layer with nothing left to decide. Don't build a factory "just in case" a second implementation shows up someday; add it when the second implementation actually exists.</p>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> if the "which concrete type" decision happens once, at startup, based on configuration — that's just a DI registration. If it happens repeatedly, at runtime, based on data flowing through a call — that's when a factory earns its place.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Simple Factory</strong> = one method, one conditional, one decision, centralized.<br />
+        <strong>Factory Method</strong> = a fixed algorithm, with an <code>abstract</code> step that subclasses fill in with a concrete type.<br />
+        <strong>Abstract Factory</strong> = a factory that creates a matched <em>set</em> of related objects, guaranteed compatible.<br /><br />
+        <strong>Remember:</strong><br />
+        · The caller only ever sees the abstraction — never the concrete class name.<br />
+        · A DI container is a generalized factory for your whole object graph.<br />
+        · Don't build a factory for a decision that's really just a startup-time DI registration.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">The Factory family exists to centralize the decision of "which concrete class to construct," so callers depend only on an abstraction.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Simple Factory</strong>: one method, a conditional, returns an abstraction. <strong>Factory Method</strong>: a fixed base-class algorithm with a virtual/abstract creation step overridden by subclasses. <strong>Abstract Factory</strong>: creates a whole compatible family of related objects.</li>
+            <li style="margin-bottom:0.4rem;">A DI container is itself a generalized factory, resolving abstractions to concrete types across an entire application's object graph.</li>
+            <li style="margin-bottom:0.4rem;">Reach for a hand-written factory when the "which concrete type" decision genuinely happens per-call, based on runtime data — not when a single DI registration would do.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen all three flavors of Factory and how the DI container relates. Let's check you can tell them apart and know when each earns its keep.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A base class <code>ReportGenerator</code> defines a fixed <code>Generate()</code> algorithm, but calls an <code>abstract</code> method that subclasses override to determine which exporter type gets used. Which Factory variant is this?</p>
+        <ul class="options">
+            <li>A) Simple Factory</li>
+            <li>B) Factory Method</li>
+            <li>C) Abstract Factory</li>
+            <li>D) This isn't a Factory pattern at all — it's just polymorphism</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Factory Method is precisely a fixed algorithm in a base class that delegates one creation step to a virtual/abstract method overridden by subclasses — exactly the <code>ReportGenerator</code>/<code>CreateExporter()</code> shape shown in this lesson.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Simple Factory uses a conditional in a standalone method, not inheritance and overriding.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Abstract Factory creates a family of multiple related objects together — this example creates only one object (the exporter).</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> It does use polymorphism as its mechanism, but the specific, named pattern for "fixed algorithm delegates a creation step to an overridden method" is Factory Method.</p>
+                <p><strong>Reinforcement:</strong> Factory Method is identified by inheritance and an overridden creation step, not by a conditional.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Which scenario is the best fit for Abstract Factory specifically, rather than Simple Factory?</p>
+        <ul class="options">
+            <li>A) Picking one <code>ILogger</code> implementation based on a config value read once at startup</li>
+            <li>B) Selecting one <code>IPaymentGateway</code> based on a string field on each incoming order</li>
+            <li>C) Creating a <code>Button</code>, <code>Checkbox</code>, and <code>ScrollBar</code> that must all belong to the same UI theme, never mixed</li>
+            <li>D) Choosing which exception type to throw based on an HTTP status code</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> Abstract Factory's defining trait is producing a <em>family</em> of related objects that must remain mutually compatible — exactly the UI theme scenario, where mixing a Dark button with a Light checkbox would be a bug.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A single implementation chosen once at startup is simply a DI registration — no factory of any kind is needed here.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> This selects exactly one object per call, based on runtime data — a textbook Simple Factory case, not a family of compatible objects.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is also a single-object decision (which exception to construct), not a family requiring mutual compatibility.</p>
+                <p><strong>Reinforcement:</strong> Reach for Abstract Factory only when multiple objects must be created together and stay compatible — not merely when multiple types exist.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why is a DI container described in this lesson as "a generalized factory"?</p>
+        <ul class="options">
+            <li>A) Because DI containers literally contain the word "factory" in their source code</li>
+            <li>B) Because, like a factory, it decides which concrete type satisfies an abstraction and constructs it — just applied across an entire application's object graph instead of one interface</li>
+            <li>C) Because DI containers are slower than hand-written factories</li>
+            <li>D) Because every DI container internally uses the Abstract Factory pattern</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A DI container resolves an interface-typed constructor parameter to a registered concrete type and constructs it — the exact same "decide which concrete type, then construct it, return the abstraction" responsibility a hand-written factory has, just scaled to the whole application rather than one call site.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The comparison is conceptual, about responsibility and behavior, not about naming conventions in the container's own source code.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Performance isn't the basis for the comparison at all — this is about the shared responsibility of centralizing object-creation decisions.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A DI container's resolution mechanism (registration lookup) doesn't require inheritance or a "family of related objects" — it's closer in shape to Simple Factory, generalized, not specifically Abstract Factory.</p>
+                <p><strong>Reinforcement:</strong> Any mechanism that centralizes "which concrete type satisfies this abstraction" is philosophically part of the Factory family, even when it doesn't look like a hand-written factory class.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team has exactly one <code>IEmailSender</code> implementation, chosen once via <code>services.AddScoped&lt;IEmailSender, SendGridSender&gt;()</code> at startup, with no plan to support a second provider. A developer proposes wrapping this in an <code>EmailSenderFactory</code> class "to follow the Factory pattern." Is this a good idea?</p>
+        <ul class="options">
+            <li>A) Yes — every interface with an implementation should have a corresponding factory, per SOLID</li>
+            <li>B) No — there's no runtime decision left to centralize; the DI registration already is the factory here, and a wrapper class adds indirection without benefit</li>
+            <li>C) Yes, but only if the factory class is marked <code>static</code></li>
+            <li>D) No — factories should never be used with SendGrid specifically</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is precisely Mistake 1 from the lesson — when there's only one implementation, chosen once at startup, the DI container's registration already performs the entire job a factory would do. Wrapping it in a dedicated factory class adds a layer with no decision left to make.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> SOLID doesn't mandate a factory for every interface — this treats a design pattern as a checklist item rather than a tool applied where it solves a real problem.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Whether the factory is static or instance-based has no bearing on whether a factory is needed in the first place.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing about SendGrid specifically is relevant; the issue is the absence of any runtime "which concrete type" decision to centralize.</p>
+                <p><strong>Reinforcement:</strong> A factory earns its place when there's a genuine decision to centralize — not automatically for every interface-implementation pair.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know all three Factory variants, when each earns its complexity, and how your DI container has been quietly acting as a factory for your entire object graph all along.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

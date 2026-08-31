@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>242 - Decorator Pattern · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-base {
+            background: rgba(251, 191, 36, 0.2);
+            color: #FBBF24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .tag-derived {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .memory-diagram {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Same interface, extra behavior, zero changes to the original class — and you can stack more than one.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Suppose <code>EmailNotificationSender</code> works fine, but now you need every send attempt logged, and separately, you need failed sends automatically retried. You could edit <code>EmailNotificationSender</code> directly to add logging and retry logic — but now every other class that also implements <code>INotificationSender</code> needs the same edit repeated, and you've permanently coupled "sending an email" with "logging" and "retrying," even for the one caller that doesn't want retries.</p>
+    <p>The <strong>Decorator Pattern</strong> — a Structural pattern, one of the three GoF categories from the design patterns lesson earlier in this Part — solves this by wrapping an object instead of editing it. A decorator implements the exact same interface as the thing it wraps, holds a reference to it, and adds behavior before, after, or around each delegated call — leaving the original class, and every other instance of it, completely untouched.</p>
+    <p><strong>In this lesson, you'll learn the mechanical shape of Decorator, build a logging-and-retry notification sender by stacking two decorators together, and see the general principle behind it.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>decorator</strong> wraps an object of the same type, adding behavior around it without changing its source code or affecting other instances. From the outside, a decorated object looks and is used exactly like the thing it wraps — because it implements the same interface — but calling it also runs the decorator's extra logic.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Attach additional responsibilities to an object dynamically. Decorators provide a flexible alternative to subclassing for extending functionality — instead of an <code>EmailSenderWithLoggingAndRetry</code> subclass (which locks that specific combination in permanently), you compose small, single-purpose wrapper objects at runtime, in whatever combination a given caller actually needs.</p>
+    <div class="concept-box">
+        <div class="concept-title">🔑 The mechanical shape — memorize this</div>
+        <p>A decorator: (1) implements the <strong>same interface</strong> as the thing it wraps; (2) holds a <strong>reference</strong> to the wrapped instance, typically injected via its constructor; (3) <strong>delegates</strong> the actual work to that wrapped instance; (4) adds its own logic <strong>before, after, or around</strong> the delegated call. Because a decorator satisfies the same interface, it can itself be wrapped by another decorator — that's what makes stacking possible.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist? — The Problem It Solves</h2>
+    <p>Without Decorator, adding a cross-cutting behavior to one class tends to either bloat that class directly, or spawn a combinatorial explosion of subclasses:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ WITHOUT Decorator — logging and retry logic baked directly into the class,
+// mixed in with the class's actual job (sending an email)
+public sealed class EmailNotificationSender : INotificationSender
+{
+    public async Task SendAsync(string recipient, string message)
+    {
+        Console.WriteLine($"Sending to {recipient}...");           // logging concern
+        for (int attempt = 1; attempt <= 3; attempt++)              // retry concern
+        {
+            try
+            {
+                await SmtpClient.SendAsync(recipient, message);
+                Console.WriteLine("Sent successfully.");            // logging concern
+                return;
+            }
+            catch (SmtpException) when (attempt < 3) { }
+        }
+    }
+}
+// Want an SmsNotificationSender with the SAME logging+retry behavior?
+// Copy-paste this whole mess again. Want a sender with logging but NOT retry?
+// You can't — they're welded together inside one method.</code></pre>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>Cross-cutting behaviors (logging, retry, caching) get tangled into a class's core logic, duplicated across every class that needs them, and impossible to apply selectively</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>A way to add a behavior to an object from the outside, reusable across any implementation of the same interface, combinable in whatever mix a caller needs</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>Decorator — a wrapper implementing the same interface, adding one behavior, delegating everything else to the wrapped instance</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Stacking Decorators</h2>
+    <div class="flow-container">
+        <div class="flow-title">A CALL PASSING THROUGH TWO STACKED DECORATORS</div>
+        <div class="flow-step">
+            <div class="step-label">RetryingNotificationSender.SendAsync() called</div>
+            <ul><li>Adds retry logic around whatever it wraps</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">→ delegates to → LoggingNotificationSender.SendAsync()</div>
+            <ul><li>Logs before/after, then delegates further</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">→ delegates to → EmailNotificationSender.SendAsync()</div>
+            <ul><li>The real, unmodified worker — has no idea it's wrapped by anything</li></ul>
+        </div>
+    </div>
+    <p>Each layer only knows about the layer immediately inside it, through the shared <code>INotificationSender</code> interface. <code>EmailNotificationSender</code> was never edited to add logging or retry — both were bolted on entirely from the outside, and can be added, removed, or reordered independently.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">BUILDING A DECORATOR — STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">1. START WITH THE SHARED INTERFACE</div>
+            <ul><li><code>INotificationSender</code> — both the real sender and every decorator implement this</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE DECORATOR ALSO IMPLEMENTS THAT INTERFACE</div>
+            <ul><li><code>LoggingNotificationSender : INotificationSender</code> — from the outside, indistinguishable from a "real" sender</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. IT HOLDS A REFERENCE TO THE WRAPPED INSTANCE</div>
+            <ul><li>Injected through its own constructor — <code>INotificationSender inner</code></li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. IT DELEGATES, ADDING BEHAVIOR AROUND THE CALL</div>
+            <ul><li>Log → call <code>inner.SendAsync(...)</code> → log again — the real work still happens in the wrapped instance</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. COMPOSE AT CONSTRUCTION TIME, IN WHATEVER ORDER YOU NEED</div>
+            <ul><li><code>new RetryingNotificationSender(new LoggingNotificationSender(new EmailNotificationSender()))</code></li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface INotificationSender
+{
+    Task SendAsync(string recipient, string message);
+}
+
+// ── The real worker — never modified, has no idea it's wrapped ──
+public sealed class EmailNotificationSender : INotificationSender
+{
+    public Task SendAsync(string recipient, string message)
+    {
+        Console.WriteLine($"[Email] To {recipient}: {message}");
+        return Task.CompletedTask;
+    }
+}
+
+// ── A decorator — same interface, wraps another INotificationSender, adds behavior ──
+public sealed class LoggingNotificationSender(INotificationSender inner) : INotificationSender
+{
+    public async Task SendAsync(string recipient, string message)
+    {
+        Console.WriteLine($"[Log] Sending to {recipient}...");
+        await inner.SendAsync(recipient, message);       // delegate to the wrapped instance
+        Console.WriteLine("[Log] Send completed.");
+    }
+}
+
+// ── Usage ──
+INotificationSender sender = new LoggingNotificationSender(new EmailNotificationSender());
+await sender.SendAsync("alice@example.com", "Your order shipped!");
+// [Log] Sending to alice@example.com...
+// [Email] To alice@example.com: Your order shipped!
+// [Log] Send completed.</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>sender</code> is typed as <code>INotificationSender</code> — the calling code has no idea it's actually a <code>LoggingNotificationSender</code> wrapping an <code>EmailNotificationSender</code>. <code>EmailNotificationSender</code>'s source code was never touched, and any other <code>INotificationSender</code> implementation could be logged the exact same way, for free.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Stacking Logging AND Retry</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public sealed class RetryingNotificationSender(INotificationSender inner, int maxAttempts = 3)
+    : INotificationSender
+{
+    public async Task SendAsync(string recipient, string message)
+    {
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                await inner.SendAsync(recipient, message);   // delegate — success, done
+                return;
+            }
+            catch (Exception) when (attempt < maxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(attempt));  // simple backoff, then retry
+            }
+        }
+    }
+}
+
+// ── Stack BOTH decorators — order matters! ──
+INotificationSender sender =
+    new RetryingNotificationSender(               // outermost: retries the WHOLE inner pipeline
+        new LoggingNotificationSender(             // middle: logs each attempt, including retries
+            new EmailNotificationSender()));        // innermost: the real work
+
+await sender.SendAsync("bob@example.com", "Payment received");
+// A failed send now gets logged AND retried — neither EmailNotificationSender
+// nor LoggingNotificationSender was ever modified to add retry behavior.
+
+// ── Registering this composition in DI ──
+services.AddSingleton<INotificationSender>(sp =>
+    new RetryingNotificationSender(
+        new LoggingNotificationSender(
+            new EmailNotificationSender())));</code></pre>
+    <p>Notice the order is deliberate: wrapping Retry <em>around</em> Logging means each retry attempt gets its own log entries — swap the order and you'd log only the first attempt, then silently retry inside the logger's delegation. Decorator composition order is a real design decision, not an arbitrary choice.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy — Gift Wrapping</h2>
+    <div class="concept-box">
+        <div class="concept-title">🎁 A wrapped gift is still a gift</div>
+        <p>A wrapped present is still, fundamentally, a present — you can hand it to someone the same way, and it responds to "open me" the same way. The wrapping paper adds something (presentation) without changing what's inside. Add a ribbon on top of the wrapping paper, and you've stacked a second layer — the box itself was never touched by either layer. Unwrap it, and the original gift is exactly as it always was. That's Decorator: each layer adds something, the core object is untouched, and layers can be added or removed independently.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — The Composition Mechanics</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHAT ACTUALLY HAPPENS AT CONSTRUCTION AND CALL TIME</div>
+        <div class="flow-step">
+            <div class="step-label">1. AT CONSTRUCTION — A CHAIN OF REFERENCES IS BUILT</div>
+            <ul><li><code>new RetryingNotificationSender(new LoggingNotificationSender(new EmailNotificationSender()))</code> creates three separate objects, each holding a reference to the next — a linked chain, all typed as <code>INotificationSender</code></li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. AT CALL TIME — EACH DELEGATION IS AN ORDINARY VIRTUAL/INTERFACE CALL</div>
+            <ul><li>Calling <code>sender.SendAsync(...)</code> on the outermost decorator dispatches through the interface, exactly as any interface call does — there's no special runtime machinery, just one object calling a method on another it happens to hold a reference to</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE CALL STACK LITERALLY MIRRORS THE WRAPPING ORDER</div>
+            <ul><li><code>RetryingNotificationSender.SendAsync</code> → <code>LoggingNotificationSender.SendAsync</code> → <code>EmailNotificationSender.SendAsync</code> — the nesting you wrote at construction time becomes the call stack you'd see in a debugger</li></ul>
+        </div>
+    </div>
+    <div class="callout">
+        <strong>🔧 A real, built-in .NET example — <code>DelegatingHandler</code>.</strong> ASP.NET Core's <code>HttpClient</code> pipeline (Intermediate 130) is built around message handlers, and <code>DelegatingHandler</code> is specifically designed to be chained: it holds an <code>InnerHandler</code>, and a custom handler overrides <code>SendAsync</code> to add behavior (auth headers, logging, retry) before calling <code>base.SendAsync</code> to continue down the chain to the next handler. It's the same wrap-and-delegate shape as this lesson's decorators, applied to outgoing HTTP requests instead of notification sends.</p>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Decorator vs. inheritance — why not just subclass?</h3>
+    <p>A subclass like <code>LoggingEmailNotificationSender : EmailNotificationSender</code> locks the combination in at compile time — you get exactly that one fixed pairing, and if you also want retry, you're either writing a third subclass for every combination (a combinatorial explosion: logging, retry, logging+retry, ...) or tangling multiple concerns into one override. Decorator composes the same behaviors at <em>runtime</em>, in any combination, without a new class per combination.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Decorator vs. Adapter — both "wrap" something, but for different reasons</h3>
+    <p>Both patterns hold a reference to another object and delegate to it — but Decorator wraps an object in the <em>same</em> interface to add behavior, while Adapter (lesson 243) wraps an object to <em>convert</em> its interface into a different, incompatible one the caller expects. If the wrapper's interface matches the wrapped thing's interface, it's Decorator; if the interfaces are different shapes, it's Adapter.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Forgetting to delegate, and accidentally reimplementing the wrapped behavior</h4>
+    <p>❌ A decorator that logs, but then does its own SMTP call instead of calling <code>inner.SendAsync(...)</code> — this isn't decorating anymore, it's a second, divergent implementation that happens to also log. ✅ The delegated call to the wrapped instance must always happen; the decorator's entire value is adding behavior <em>around</em> that call, not replacing it.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Not noticing that decorator order changes behavior</h4>
+    <p>❌ Assuming <code>new Retrying(new Logging(x))</code> and <code>new Logging(new Retrying(x))</code> behave identically — they don't, as this lesson's real-world example showed. ✅ Reason explicitly about which layer should be "outermost" (runs first, sees the whole inner pipeline) versus "innermost" (closest to the real work).</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Decorating when the behavior isn't actually optional or combinable</h4>
+    <p>❌ Building a decorator for something that should always happen for every single call, with no scenario where it's skipped — that's just... part of the class's normal behavior, not something worth externalizing. ✅ Decorator earns its cost when the behavior is genuinely optional, needs to be combined in different ways for different callers, or needs to be reused across multiple unrelated implementations of the same interface.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Cross-cutting behaviors — logging, caching, retry, rate-limiting, metrics — that apply to more than one implementation of the same interface, and that some callers need while others don't.</li>
+        <li style="margin-bottom:0.4rem;">When you'd otherwise face a combinatorial explosion of subclasses to cover every combination of "with logging," "with retry," "with both."</li>
+        <li style="margin-bottom:0.4rem;">When the original class genuinely shouldn't be modified — it's stable, well-tested, owned by another team, or reused elsewhere without the extra behavior.</li>
+    </ul>
+    <p>And when it's overkill: for a behavior that's always required, for every caller, with no variation — just put it directly in the class. Wrapping a single always-on behavior in a decorator adds an object, a constructor parameter, and a mental indirection for zero actual flexibility gained.</p>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> if you can imagine a caller legitimately wanting the object <em>without</em> this behavior, or wanting a different combination of behaviors than another caller, that's a decorator. If the behavior is universal and non-negotiable, it belongs inside the class itself.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Decorator</strong> = same interface + a wrapped reference + delegation + added behavior around the call.<br />
+        <strong>Stacking</strong> = wrap a decorator in another decorator — order changes what runs first.<br />
+        <strong>The original class</strong> = never modified, never even aware it's wrapped.<br /><br />
+        <strong>Remember:</strong><br />
+        · If the wrapper's interface matches what it wraps, it's Decorator. If it converts to a different interface, that's Adapter (243).<br />
+        · Always delegate to the wrapped instance — a decorator that skips delegation isn't decorating anymore.<br />
+        · <code>DelegatingHandler</code> in <code>HttpClient</code>'s pipeline is this exact shape, built into .NET.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Decorator wraps an object in the <em>same</em> interface it implements, delegates to it, and adds behavior — without modifying the original class or affecting other instances.</li>
+            <li style="margin-bottom:0.4rem;">Because a decorator satisfies the same interface it wraps, decorators can be stacked — each layer adding one focused behavior, composed at construction time in whatever order you need.</li>
+            <li style="margin-bottom:0.4rem;">Order matters: wrapping A around B behaves differently from wrapping B around A.</li>
+            <li style="margin-bottom:0.4rem;"><code>DelegatingHandler</code> in ASP.NET Core's <code>HttpClient</code> pipeline is a real, built-in example of this exact shape.</li>
+            <li style="margin-bottom:0.4rem;">Use it for optional, combinable, cross-cutting behavior — not for something every caller always needs, which belongs directly in the class.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've built a stacked logging-and-retry decorator pipeline. Let's check you understand the mechanics.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What must be true for a class to correctly be called a "decorator" of another class?</p>
+        <ul class="options">
+            <li>A) It must inherit from the wrapped class</li>
+            <li>B) It must implement the same interface as the wrapped object, hold a reference to it, and delegate to it while adding behavior</li>
+            <li>C) It must be registered in a DI container</li>
+            <li>D) It must convert the wrapped object's interface into a different, incompatible interface</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the mechanical shape defined in "What Is It?" — same interface, held reference, delegation, added behavior. All four elements need to be present.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Decorators use composition (holding a reference), not inheritance from the wrapped class — that's precisely what avoids the combinatorial subclass explosion.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> DI registration is optional convenience, not part of the pattern's definition — decorators can be composed with plain <code>new</code> calls, as this lesson's examples show.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Converting to a different interface is Adapter (243), not Decorator — the interfaces must match for it to be a decorator.</p>
+                <p><strong>Reinforcement:</strong> Same interface + held reference + delegation + added behavior is the full checklist for Decorator.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Given <code>new RetryingNotificationSender(new LoggingNotificationSender(new EmailNotificationSender()))</code>, what happens if a send attempt fails on the first try but succeeds on the second?</p>
+        <ul class="options">
+            <li>A) Nothing is logged at all, since logging only wraps the innermost sender</li>
+            <li>B) The logging decorator's before/after messages appear once for each retry attempt, since retry wraps around the logging layer</li>
+            <li>C) The program throws immediately on the first failure, since retry can't wrap logging</li>
+            <li>D) EmailNotificationSender automatically detects it's being retried and skips logging</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> <code>RetryingNotificationSender</code> is outermost, so each of its retry attempts calls into <code>LoggingNotificationSender.SendAsync</code> again — the logging layer runs, and logs, on every attempt, exactly as the real-world example described.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Logging wraps <code>EmailNotificationSender</code> directly and is invoked on every call that reaches it, including retried ones.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Retry catching an exception and retrying is exactly its designed job — nesting order doesn't prevent that.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>EmailNotificationSender</code> has no awareness of being wrapped at all — that's the entire point of the pattern; wrapped objects are oblivious to their decorators.</p>
+                <p><strong>Reinforcement:</strong> The outermost decorator's behavior wraps everything inside it, including repeated calls into inner layers on retry.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why does ASP.NET Core's <code>DelegatingHandler</code> (used in <code>HttpClient</code> pipelines) count as a real example of the Decorator pattern?</p>
+        <ul class="options">
+            <li>A) It converts HTTP requests into a completely different protocol</li>
+            <li>B) It holds an inner handler and lets a custom handler add behavior before calling into it to continue the chain — the same wrap-and-delegate shape as this lesson's notification decorators</li>
+            <li>C) It's unrelated — it's actually an example of the Factory pattern</li>
+            <li>D) It only works with a single handler and cannot be chained</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A <code>DelegatingHandler</code> holds an inner handler reference and delegates to it after adding its own logic — mechanically identical to <code>LoggingNotificationSender</code> wrapping <code>EmailNotificationSender</code>.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> It doesn't convert protocols — that reframing would describe Adapter, not what <code>DelegatingHandler</code> actually does.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Factory is about deciding which object to construct; <code>DelegatingHandler</code> is about wrapping and delegating an existing call — a Decorator concern.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>DelegatingHandler</code> instances are specifically designed to be chained one after another, exactly like stacked decorators.</p>
+                <p><strong>Reinforcement:</strong> Recognizing this shape in .NET's own libraries reinforces that Decorator isn't just a textbook exercise — it's how real HTTP middleware pipelines are built.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team needs every implementation of <code>INotificationSender</code> to always log, with absolutely no exceptions or configuration — logging should never be optional or skippable for any caller. What's the best approach?</p>
+        <ul class="options">
+            <li>A) Build a <code>LoggingNotificationSender</code> decorator and require every caller to remember to wrap with it</li>
+            <li>B) Put the logging directly inside each implementation's own code, since the behavior is universal and non-negotiable, not optional or combinable</li>
+            <li>C) This is exactly the ideal use case for Decorator, since logging is a cross-cutting concern</li>
+            <li>D) Use inheritance and force every sender to derive from a common logging base class</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The "When Should I Use It?" guidance is explicit: a behavior that's always required for every caller with no variation belongs directly in the class. Decorator's value comes from optionality and combinability — neither applies here.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Relying on every caller to remember to wrap a mandatory behavior is fragile — it's easy to forget, defeating the "no exceptions" requirement.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Being a cross-cutting concern isn't sufficient on its own — Mistake 3 specifically warns against decorating behavior that isn't actually optional or combinable.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A shared base class reintroduces the same combinatorial rigidity Decorator was designed to avoid, and doesn't fit this scenario any better than a decorator would.</p>
+                <p><strong>Reinforcement:</strong> Decorator earns its cost specifically when behavior is optional or needs to combine differently per caller — universal, mandatory behavior is simpler as part of the class itself.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know how to add behavior to any object from the outside — without touching its source, and without a subclass explosion — and can spot the exact same shape in .NET's own HTTP pipeline.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

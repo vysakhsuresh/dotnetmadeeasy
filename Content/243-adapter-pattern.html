@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>243 - Adapter Pattern · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-base {
+            background: rgba(251, 191, 36, 0.2);
+            color: #FBBF24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .tag-derived {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .memory-diagram {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        You can't change a third-party library's API. You CAN change how your own code sees it.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Every third-party SDK has its own opinions about method names, parameter order, and return types — opinions you had no say in. A legacy email library might expose <code>SendMail(string to, string from, string subj, string body, bool isHtml)</code>, with five positional parameters in an order you'll never remember correctly. Your application code doesn't want to know or care about that shape — it just wants to send an email.</p>
+    <p>The <strong>Adapter Pattern</strong> — a Structural pattern from the design patterns lesson earlier in this Part — converts one interface into another interface a client expects, without modifying either side. You can't change the third-party library's source code, and you shouldn't have to change your own application's clean abstraction to match it. An adapter sits between the two, translating.</p>
+    <p><strong>In this lesson, you'll build an adapter around an awkward third-party SDK, and see exactly why this is Dependency Inversion (081) applied specifically to external dependencies you don't own.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>An <strong>adapter</strong> is a class that takes an object with one interface shape and presents it to your code as if it had a different, more convenient interface shape — without changing either the original object's class or the code that uses the adapter.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Convert the interface of a class into another interface clients expect. Adapter lets classes work together that couldn't otherwise, because of incompatible interfaces — most commonly, because one of those interfaces belongs to code you don't own and can't modify.</p>
+    <div class="concept-box">
+        <div class="concept-title">🔑 The classic, most common real-world case</div>
+        <p>You depend on a third-party library or legacy SDK whose method names, parameter shapes, and conventions you have zero control over. Rather than scattering direct references to that library's specific types and awkward method calls throughout your application, you write <strong>one</strong> adapter class implementing your own clean interface, and every other class depends on <em>that</em> — never on the third-party library directly.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist? — The Problem It Solves</h2>
+    <p>Without an adapter, a third-party SDK's awkward shape leaks directly into your application code, everywhere it's used:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ WITHOUT an adapter — a third-party payment SDK's awkward shape,
+// referenced directly, scattered across every checkout-related class
+using LegacyPayCo.Sdk;   // a NuGet package you don't control
+
+public sealed class CheckoutService
+{
+    public async Task&lt;bool&gt; ChargeCustomerAsync(Order order)
+    {
+        var client = new LegacyPayCoClient(Config.MerchantId, Config.SecretKey);
+        // This SDK's method takes cents as an int, a 3-letter currency code,
+        // and returns an awkward result CODE, not a rich result object.
+        int resultCode = await client.ProcessTransaction(
+            (int)(order.Total * 100), "USD", order.CustomerId.ToString());
+        return resultCode == 0;   // 0 means success?! Undocumented, easy to get wrong.
+    }
+}
+// Every class that charges a customer now directly references LegacyPayCoClient,
+// its specific constructor arguments, its cents-as-int convention, and its
+// magic result codes. Switching providers means touching every one of them.</code></pre>
+    <div class="flow-container">
+        <div class="flow-title">PROBLEM → NEED → SOLUTION</div>
+        <div class="flow-step">
+            <div class="step-label">PROBLEM</div>
+            <ul><li>A third-party library's specific, awkward interface shape is referenced directly throughout the application — the app is coupled to a vendor's API design choices, not just its functionality</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">NEED</div>
+            <ul><li>A single, clean interface — shaped around what YOUR application needs — standing between your code and the vendor's SDK</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">SOLUTION</div>
+            <ul><li>An adapter class implements your own interface, and internally translates each call into whatever shape the third-party SDK actually requires</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="flow-container">
+        <div class="flow-title">WITHOUT vs WITH AN ADAPTER</div>
+        <div class="flow-step">
+            <div class="step-label">WITHOUT — application code depends directly on the vendor SDK</div>
+            <ul><li>CheckoutService → <code>LegacyPayCoClient</code> (third-party, awkward shape, referenced everywhere it's needed)</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">WITH — one adapter absorbs the awkwardness</div>
+            <ul><li>CheckoutService → <code>IPaymentGateway</code> (your clean interface) → <code>LegacyPayCoGatewayAdapter</code> → <code>LegacyPayCoClient</code> (only the adapter touches the SDK directly)</li></ul>
+        </div>
+    </div>
+    <p>This is precisely the Dependency Inversion Principle (081), applied at the boundary with an external dependency: your high-level policy (<code>CheckoutService</code>) depends on an abstraction shaped around <em>your</em> needs, not around the low-level detail's (the SDK's) native shape. The adapter is the low-level implementation that conforms to your abstraction — it just happens to be adapting someone else's code instead of writing new code from scratch.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">BUILDING AN ADAPTER — STEP BY STEP</div>
+        <div class="flow-step">
+            <div class="step-label">1. DEFINE YOUR OWN INTERFACE, SHAPED AROUND YOUR APPLICATION'S NEEDS</div>
+            <ul><li><code>IPaymentGateway</code> with a <code>ChargeAsync(decimal amount, string customerId)</code> method — decimal dollars, not cents-as-int; a rich <code>PaymentResult</code>, not a magic number</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. WRITE THE ADAPTER CLASS IMPLEMENTING YOUR INTERFACE</div>
+            <ul><li><code>LegacyPayCoGatewayAdapter : IPaymentGateway</code> — this is the ONLY class allowed to reference <code>LegacyPayCoClient</code> directly</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. INSIDE THE ADAPTER, TRANSLATE EVERY DETAIL</div>
+            <ul><li>Convert dollars to cents, map result codes to a real <code>PaymentResult</code>, hide the SDK's specific constructor arguments behind your own constructor</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. REGISTER THE ADAPTER FOR YOUR INTERFACE, USE THE INTERFACE EVERYWHERE ELSE</div>
+            <ul><li><code>services.AddScoped&lt;IPaymentGateway, LegacyPayCoGatewayAdapter&gt;();</code> — every other class depends only on <code>IPaymentGateway</code></li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ── The third-party SDK — you did NOT write this, and cannot change it ──
+namespace LegacyPayCo.Sdk;
+public sealed class LegacyPayCoClient(string merchantId, string secretKey)
+{
+    public Task&lt;int&gt; ProcessTransaction(int amountInCents, string currencyCode, string customerRef) =>
+        Task.FromResult(0);   // 0 = success, anything else = a specific (undocumented) failure code
+}
+
+// ── YOUR clean interface — shaped around what YOUR application needs ──
+public interface IPaymentGateway
+{
+    Task&lt;PaymentResult&gt; ChargeAsync(decimal amount, string customerId);
+}
+
+public sealed record PaymentResult(bool Success, string? FailureReason = null);
+
+// ── The adapter — the ONLY class that knows LegacyPayCoClient exists ──
+public sealed class LegacyPayCoGatewayAdapter(LegacyPayCoClient client) : IPaymentGateway
+{
+    public async Task&lt;PaymentResult&gt; ChargeAsync(decimal amount, string customerId)
+    {
+        int amountInCents = (int)(amount * 100);         // translate: decimal → cents-as-int
+        int resultCode = await client.ProcessTransaction(amountInCents, "USD", customerId);
+
+        return resultCode switch                          // translate: magic code → rich result
+        {
+            0 => new PaymentResult(Success: true),
+            1 => new PaymentResult(Success: false, FailureReason: "Insufficient funds"),
+            _ => new PaymentResult(Success: false, FailureReason: "Unknown gateway error")
+        };
+    }
+}
+
+// ── Usage — CheckoutService never sees LegacyPayCoClient at all ──
+public sealed class CheckoutService(IPaymentGateway gateway)
+{
+    public async Task&lt;bool&gt; ChargeCustomerAsync(Order order)
+    {
+        var result = await gateway.ChargeAsync(order.Total, order.CustomerId.ToString());
+        return result.Success;
+    }
+}</code></pre>
+    <p><strong>Code → Meaning → Result:</strong> <code>CheckoutService</code> depends only on <code>IPaymentGateway</code> — clean, decimal amounts, a proper result type. <code>LegacyPayCoGatewayAdapter</code> is the single, isolated place absorbing every awkward detail of the third-party SDK: the cents conversion, the currency code, the magic result numbers.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — The Payoff: Swapping Providers</h2>
+    <p>Six months later, the business decides to switch from LegacyPayCo to a different provider entirely — a completely different SDK, with its own different shape:</p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ── A brand-new third-party SDK, with a completely different shape ──
+namespace ModernPay.Sdk;
+public sealed class ModernPayClient(string apiKey)
+{
+    public async Task&lt;ChargeResponse&gt; CreateChargeAsync(decimal amountUsd, string customerToken) =>
+        await Task.FromResult(new ChargeResponse(Succeeded: true, DeclineReason: null));
+}
+public sealed record ChargeResponse(bool Succeeded, string? DeclineReason);
+
+// ── A SECOND adapter, implementing the SAME IPaymentGateway interface ──
+public sealed class ModernPayGatewayAdapter(ModernPayClient client) : IPaymentGateway
+{
+    public async Task&lt;PaymentResult&gt; ChargeAsync(decimal amount, string customerId)
+    {
+        var response = await client.CreateChargeAsync(amount, customerId);
+        return new PaymentResult(response.Succeeded, response.DeclineReason);
+    }
+}
+
+// ── The ONLY change anywhere in the entire application — one line, the composition root ──
+services.AddScoped&lt;IPaymentGateway, ModernPayGatewayAdapter&gt;();
+// (was: services.AddScoped&lt;IPaymentGateway, LegacyPayCoGatewayAdapter&gt;();)
+
+// CheckoutService's source code — unchanged. Every other class that charges a
+// customer — unchanged. Nothing outside the new adapter and this one registration
+// line has any idea the payment provider changed at all.</code></pre>
+    <p>This is the real, practical payoff: swapping a vendor means writing one new adapter class and changing one registration line. Every class coded against <code>IPaymentGateway</code> — potentially dozens, scattered across controllers, background jobs, and admin tools — needs zero changes, because none of them ever depended on <code>LegacyPayCoClient</code> or <code>ModernPayClient</code> in the first place.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy — The Travel Power Adapter</h2>
+    <div class="concept-box">
+        <div class="concept-title">🔌 Same laptop, same wall socket, different plug shape</div>
+        <p>Your laptop charger has a specific plug shape (your application's expected interface). A hotel wall socket in another country has a completely different shape (the third-party SDK's actual interface) — and you certainly can't rewire the hotel's walls. A travel power adapter sits between the two: your laptop charger plugs into one side exactly as it always does, and the adapter's other side is shaped to fit whatever socket happens to be there. Neither your laptop charger nor the hotel's wiring changed — only the adapter, sitting between them, knows about both shapes.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Object Adapter vs. Delegation Mechanics</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHAT THE ADAPTER OBJECT ACTUALLY HOLDS AND DOES</div>
+        <div class="flow-step">
+            <div class="step-label">1. THE ADAPTER HOLDS A REFERENCE TO THE ADAPTEE (COMPOSITION, NOT INHERITANCE)</div>
+            <ul><li><code>LegacyPayCoGatewayAdapter</code> holds a <code>LegacyPayCoClient</code> field — it does not, and typically cannot, inherit from a sealed third-party SDK class</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. EVERY METHOD ON THE ADAPTER TRANSLATES, THEN DELEGATES</div>
+            <ul><li>Convert parameters into the adaptee's expected shape → call the adaptee's actual method → convert the adaptee's return value back into your own type</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THIS IS COMPILE-TIME COUPLING, JUST QUARANTINED TO ONE FILE</div>
+            <ul><li>The adapter class itself still has a hard compile-time reference to the SDK's assembly — Adapter doesn't eliminate that dependency, it <em>isolates</em> it to a single, small, easily-replaced class</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Adapter vs. Decorator — the interface shape is the tell</h3>
+    <p>Both hold a reference to another object and delegate to it — that's where the similarity ends. Decorator (242) implements the <em>same</em> interface as what it wraps, to add behavior while keeping the shape identical. Adapter implements a <em>different</em> interface than the thing it wraps, specifically to change the shape. If you're asking "does calling this method do something extra?" — that's Decorator. If you're asking "does calling this method translate to a completely different method signature underneath?" — that's Adapter.</p>
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">"Isn't this just Dependency Inversion again?"</h3>
+    <p>Yes, applied to a specific, extremely common situation: DIP (081) is the general principle that high-level code should depend on abstractions it owns, not on low-level details. Adapter is what that principle looks like specifically when the "low-level detail" is a third-party library whose source you can't touch at all — you can't add an interface to someone else's SDK class, so you wrap it in your own class that implements your interface instead.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Letting the third-party SDK's types leak past the adapter</h4>
+    <p>❌ An adapter method that returns the SDK's own <code>ChargeResponse</code> type directly, instead of translating it into your own <code>PaymentResult</code> — now <code>CheckoutService</code> still needs a <code>using ModernPay.Sdk;</code> to even compile, defeating the entire purpose. ✅ Every method on the adapter must accept and return only <em>your</em> types — full translation in both directions, every time.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Shaping your own interface around the SDK instead of around your application's needs</h4>
+    <p>❌ Writing <code>IPaymentGateway</code> with a method like <code>ProcessTransaction(int amountInCents, string currencyCode)</code> — just mirroring the vendor's shape under a new name is a fake abstraction; you've renamed the coupling, not removed it. ✅ Design <code>IPaymentGateway</code> around what <em>your</em> checkout logic naturally wants to say (dollars, a customer id, a rich result) — the exact same guidance DIP (081) gives for shaping any abstraction.</p>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Skipping the adapter because "we'll only ever use this one SDK"</h4>
+    <p>❌ Calling <code>LegacyPayCoClient</code> directly everywhere because switching providers "will never happen" — vendor contracts end, pricing changes, SDKs get deprecated, and "never" is rarely true for anything you don't personally control. ✅ Even with no concrete plan to switch, an adapter is still worth it purely for testability — you can fake <code>IPaymentGateway</code> in a unit test without ever touching the real SDK or its network calls.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Any time you integrate a third-party library, external SDK, or legacy code whose interface shape you don't own and can't modify.</li>
+        <li style="margin-bottom:0.4rem;">When you want to unit test code that depends on external infrastructure, without standing up the real, network-calling SDK in your test suite.</li>
+        <li style="margin-bottom:0.4rem;">When integrating two systems that were built independently, with genuinely incompatible interface shapes, and you can modify neither.</li>
+    </ul>
+    <p>And when it's overkill: for a tiny script or a truly one-off integration where you're certain the library will never change and testability genuinely doesn't matter — wrapping a single, trivial, three-line SDK call in a full adapter class and interface can be more ceremony than the situation warrants. For anything living in a real application's core logic, though, the adapter almost always earns its cost.</p>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> if your application's core logic would need a <code>using SomeThirdParty.Sdk;</code> statement anywhere outside of one dedicated adapter class, the third-party library's shape has leaked further than it should have.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Adapter</strong> = your clean interface on one side, the third-party SDK's awkward shape on the other, one class translating between them.<br />
+        <strong>The payoff</strong> = swap the vendor, write one new adapter, change one registration line — nothing else in the app moves.<br /><br />
+        <strong>Remember:</strong><br />
+        · Shape your own interface around what YOUR code needs — never mirror the vendor's shape under a new name.<br />
+        · Adapter is Dependency Inversion (081), specifically at the boundary with code you don't own.<br />
+        · Same interface as what's wrapped = Decorator (242). Different, translated interface = Adapter.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Adapter converts one interface shape into another that your code expects, without modifying either the client or the class being adapted.</li>
+            <li style="margin-bottom:0.4rem;">The classic case: wrapping a third-party library or legacy SDK behind your own clean interface, so its awkward shape never leaks into your application.</li>
+            <li style="margin-bottom:0.4rem;">This is Dependency Inversion (081) applied specifically to external dependencies you don't own and can't modify.</li>
+            <li style="margin-bottom:0.4rem;">The real payoff: swapping vendors later means writing one new adapter and changing one registration — every other class, coded against your interface, stays untouched.</li>
+            <li style="margin-bottom:0.4rem;">Shape your interface around your own needs, not around the vendor's API — mirroring the vendor's shape under a new name is a fake abstraction.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've built an adapter around an awkward third-party SDK, and swapped it for a second provider without touching the rest of the app. Let's check your understanding.</p>
+
+    <!-- Question 1 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What is the primary purpose of the Adapter pattern?</p>
+        <ul class="options">
+            <li>A) To add extra behavior around an existing object's calls without changing its interface</li>
+            <li>B) To convert one interface's shape into a different interface a client expects, without modifying either side</li>
+            <li>C) To decide which concrete class to construct based on runtime input</li>
+            <li>D) To notify multiple subscribers when an object's state changes</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the precise technical definition given in "What Is It?" — Adapter's job is translating between two incompatible interface shapes, touching neither the client nor the adapted class.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Adding behavior around calls while keeping the same interface describes Decorator (242), not Adapter.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Deciding which concrete class to construct describes Factory (240), a Creational pattern, not Adapter.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Notifying subscribers on state change describes Observer, a different Behavioral pattern entirely.</p>
+                <p><strong>Reinforcement:</strong> Adapter's defining trait is interface translation — converting one shape into another the client already expects.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In the worked example, why does <code>LegacyPayCoGatewayAdapter.ChargeAsync</code> return a <code>PaymentResult</code> instead of the SDK's raw integer result code?</p>
+        <ul class="options">
+            <li>A) Because integers cannot be returned from async methods in C#</li>
+            <li>B) Because returning the SDK's raw type would leak the third-party shape past the adapter, forcing CheckoutService to understand the SDK's magic numbers too</li>
+            <li>C) Because <code>PaymentResult</code> is required by the .NET runtime for all payment operations</li>
+            <li>D) It doesn't matter either way — both approaches are equally clean</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly Mistake 1 — if the adapter returns the SDK's own type, the abstraction leaks, and <code>CheckoutService</code> would need to understand the vendor's undocumented result codes, defeating the point of the adapter.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Async methods can return any type, including <code>int</code> — this isn't a language limitation.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>PaymentResult</code> is a type defined in this lesson's example, not a .NET runtime requirement.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The approaches are not equivalent — one keeps the vendor's shape fully contained, the other lets it leak through.</p>
+                <p><strong>Reinforcement:</strong> A correct adapter translates in both directions — parameters going in, and return values coming out.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> How does Adapter differ from Decorator, given that both hold a reference to another object and delegate to it?</p>
+        <ul class="options">
+            <li>A) Decorator implements a different interface than what it wraps; Adapter implements the same interface</li>
+            <li>B) Adapter implements a different interface than what it wraps, translating between shapes; Decorator implements the SAME interface, adding behavior without changing the shape</li>
+            <li>C) There is no real difference — they are two names for the same pattern</li>
+            <li>D) Adapter can only be used with sealed classes, while Decorator cannot</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the exact distinction drawn in Common Confusion — the interface shape is the tell: matching interface plus added behavior is Decorator; different, translated interface is Adapter.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This reverses the actual distinction between the two patterns.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> They solve genuinely different problems — shape conversion versus behavior addition — despite sharing the "hold a reference and delegate" mechanic.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Neither pattern is restricted by whether the wrapped class is sealed; that has no bearing on the distinction between them.</p>
+                <p><strong>Reinforcement:</strong> Same interface = Decorator. Different, translated interface = Adapter. That's the reliable way to tell them apart.</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team switches payment providers from LegacyPayCo to ModernPay. Because the application was built against <code>IPaymentGateway</code> with an adapter per provider, what needs to change?</p>
+        <ul class="options">
+            <li>A) Every class across the application that processes a payment, since they all referenced LegacyPayCoClient directly</li>
+            <li>B) Only a new adapter class implementing IPaymentGateway, plus one DI registration line — CheckoutService and everything else stays untouched</li>
+            <li>C) The IPaymentGateway interface itself must be rewritten to match ModernPay's SDK shape</li>
+            <li>D) Nothing — Adapter automatically detects and swaps providers at runtime with no code changes</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the real-world example's exact payoff — because every consumer depended only on <code>IPaymentGateway</code>, swapping providers required just a new adapter and a one-line registration change.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This describes the WITHOUT-an-adapter scenario, which is precisely the problem the pattern avoids — with the adapter in place, no other class ever referenced <code>LegacyPayCoClient</code> directly.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The whole point of shaping <code>IPaymentGateway</code> around your own application's needs (Mistake 2) is that it should NOT need to change just because the vendor changed.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Adapter is a compile-time design pattern, not an automatic runtime detection mechanism — a human still writes the new adapter and updates the registration.</p>
+                <p><strong>Reinforcement:</strong> The adapter's isolation is what makes a vendor swap cheap — the cost of the third-party dependency is contained to one small, replaceable class.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know how to keep a third-party SDK's awkward shape from ever leaking into your application — and exactly what it costs to swap vendors when that one adapter class is all that stands between you and them.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

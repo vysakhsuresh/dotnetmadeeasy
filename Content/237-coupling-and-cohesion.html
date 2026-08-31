@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>237 - Coupling and Cohesion · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        The vocabulary underneath every design principle you've learned so far: how tightly things stick together, and how well things inside one thing belong together.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You've now learned the Single Responsibility Principle, the Open/Closed Principle, Interface Segregation, and Dependency Inversion. Each one felt like a distinct rule with its own example. Here's the thing nobody told you yet: <strong>all four of them are really techniques for achieving two underlying properties</strong> — properties so fundamental to software design that they predate SOLID, predate design patterns, and show up in essentially every serious discussion of software architecture ever written. Those two properties are <strong>coupling</strong> and <strong>cohesion</strong>.</p>
+    <p>Once you can see code in terms of coupling and cohesion, the SOLID principles stop looking like five arbitrary rules to memorize and start looking like five specific, practical answers to the exact same two questions: <em>how much does this thing know about that thing</em>, and <em>how well do the pieces inside this thing actually belong together</em>?</p>
+    <p><strong>In this lesson, you'll learn precisely what coupling and cohesion mean, why "high cohesion, low coupling" is the single most repeated goal in software design, how SRP is fundamentally a cohesion technique and Dependency Inversion is fundamentally a coupling technique, and you'll see a genuinely tightly-coupled, low-cohesion class refactored into its loosely-coupled, high-cohesion opposite.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Coupling</strong> is how much one piece of code knows about — and depends on — the inner workings of another piece. Two classes are tightly coupled if a change inside one is likely to force a change inside the other. They're loosely coupled if they can change somewhat independently.</p>
+    <p><strong>Cohesion</strong> is how closely related the things <em>inside</em> one class or module actually are. A class has high cohesion if everything in it genuinely serves one clear purpose. It has low cohesion if it's a grab-bag of loosely related behaviors that happen to live in the same file.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p><strong>Coupling</strong> measures the degree of interdependence between modules — specifically, how much one module's design or implementation is bound up with another's. Coupling is inevitable (modules must collaborate to do anything useful) — the goal is never zero coupling, it's coupling to <em>stable, abstract</em> things (interfaces, contracts) rather than <em>volatile, concrete</em> things (another class's internal fields, a specific database library, a third-party SDK's exact shape).</p>
+    <p><strong>Cohesion</strong> measures how strongly the responsibilities within a single module relate to one shared purpose. High cohesion means the fields and methods of a class work together toward one goal, are used together, and change together. Low cohesion means a class contains multiple unrelated clusters of behavior that just happen to share a namespace.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🔗 Tight Coupling</h4>
+            <ul>
+                <li>Class A directly instantiates a concrete Class B</li>
+                <li>Class A reaches into Class B's internal fields or private state</li>
+                <li>A change to B's implementation forces a change to A</li>
+                <li>Hard to test A without a real B</li>
+                <li>Hard to swap B for a different implementation</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🧩 Loose Coupling</h4>
+            <ul>
+                <li>Class A depends on an abstraction (interface) that B implements</li>
+                <li>A never touches B's internals — only its public contract</li>
+                <li>B can change internally without touching A at all</li>
+                <li>Easy to substitute a test double for B</li>
+                <li>Easy to swap B's implementation entirely</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🎯 High Cohesion</h4>
+            <ul>
+                <li>Every member of the class serves one clear purpose</li>
+                <li>Class members are used together, consistently</li>
+                <li>The class has a name you can describe in one honest sentence</li>
+                <li>Changes to the class tend to touch most of it, for one reason</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🧺 Low Cohesion</h4>
+            <ul>
+                <li>Members cluster into unrelated groups with little overlap</li>
+                <li>Some fields are only used by some methods, never others</li>
+                <li>The class name is vague ("Manager", "Helper", "Utils")</li>
+                <li>Different changes touch entirely different, unrelated parts of the same class</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Change Ripples Through Tightly Coupled, Low-Cohesion Systems</h3>
+    <p>Tight coupling means a change to one class ripples outward into every class that depends on its concrete details — you can't touch one thing without touching several others. Low cohesion means a single class becomes a magnet for unrelated changes — every unrelated feature request finds a reason to edit the same file, and every edit risks breaking behavior that had nothing to do with the change. Put those together and you get exactly the "eighteen months in" nightmare from Lesson 235's <code>OrderManager</code>: everything touches everything, and nobody can predict the blast radius of a one-line change.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — "High Cohesion, Low Coupling"</h3>
+    <p>This phrase is arguably the single most repeated goal in all of software design, older than SOLID and referenced by essentially every architectural discipline that followed it. It names the target directly: pull related things together (raise cohesion) and push unrelated things apart, connected only through stable abstractions (lower coupling). Everything else you'll learn in this Part — SOLID, design patterns, Clean Architecture — is, underneath, a specific technique for moving code toward this one target.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">HOW YOUR TOOLS MAP TO THE TWO GOALS</div>
+        <div class="flow-step">
+            <div class="step-label">GOAL: HIGH COHESION — "belongs together, inside one class"</div>
+            <ul>
+                <li><strong>Single Responsibility Principle</strong> (Lesson 235) — one reason to change is, in practice, a direct test for high cohesion. A class with unrelated reasons to change is, by definition, low-cohesion.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">+</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">GOAL: LOW COUPLING — "depends on the least possible, and only on stable things"</div>
+            <ul>
+                <li><strong>Dependency Inversion Principle</strong> (Lesson 081) — depending on an abstraction instead of a concrete class is the direct technique for keeping coupling loose.</li>
+                <li><strong>Interface Segregation Principle</strong> (Lesson 079) — a narrow interface reduces exactly how much of another module you're coupled to.</li>
+                <li><strong>Open/Closed Principle</strong> (Lesson 235) — adding behavior without editing existing code is only possible when that code was loosely coupled to specifics in the first place.</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">RESULT</div>
+            <ul><li>A system where each piece can change on its own schedule, for its own reason, without dragging the rest of the system along with it</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">DIAGNOSING COUPLING</div>
+        <div class="flow-step">
+            <div class="step-label">1. ASK: WHAT DOES THIS CLASS DEPEND ON?</div>
+            <ul><li>Concrete classes (<code>new SqlOrderRepository()</code>) → tight. Interfaces (<code>IOrderRepository</code>) → loose.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. ASK: DOES IT REACH INTO INTERNAL STATE?</div>
+            <ul><li>Touching another class's private/internal fields directly (even via reflection or shared mutable statics) → tight. Only calling its public contract → loose.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. ASK: IF THE DEPENDENCY CHANGES INTERNALLY, DO I CHANGE TOO?</div>
+            <ul><li>If swapping the database library, or refactoring a class's private implementation, forces an edit here → tight coupling, regardless of what the code looks like on the surface.</li></ul>
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <div class="flow-title">DIAGNOSING COHESION</div>
+        <div class="flow-step">
+            <div class="step-label">1. CAN YOU NAME THIS CLASS'S ONE PURPOSE, HONESTLY, IN ONE SENTENCE?</div>
+            <ul><li>If the honest sentence needs "and" to join two unrelated concerns, cohesion is already suspect.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. DO ALL FIELDS GET USED BY MOST METHODS?</div>
+            <ul><li>A field only touched by two of your class's twelve methods is a sign those two methods belong somewhere else.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. DO DIFFERENT FEATURE REQUESTS TOUCH DIFFERENT PARTS OF THE SAME CLASS?</div>
+            <ul><li>If "add a discount rule" and "change the email template" both mean editing the same class, that class is doing two unrelated jobs.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p><strong>Tight coupling in one line:</strong></p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class ReportService
+{
+    private readonly SqlServerConnection _connection = new("Server=prod-db;..."); // ❌ tightly coupled to SQL Server, and even to this connection string
+}</code></pre>
+    <p><strong>Loose coupling, same job:</strong></p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class ReportService(IReportDataSource dataSource) // ✅ depends on an abstraction, not a database vendor
+{
+}</code></pre>
+    <p><strong>Low cohesion in one class:</strong></p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class StoreUtils // ❌ vague name is often the first warning sign
+{
+    public decimal CalculateTax(decimal amount) { /* ... */ return amount * 0.08m; }
+    public void SendWelcomeEmail(string email) { /* ... */ }
+    public bool IsWarehouseOpen(DateTime time) { /* ... */ return true; }
+}</code></pre>
+    <p><strong>High cohesion, same behaviors, correctly separated:</strong></p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class TaxCalculator { public decimal Calculate(decimal amount) => amount * 0.08m; }
+public class WelcomeEmailSender { public void Send(string email) { /* ... */ } }
+public class WarehouseScheduleChecker { public bool IsOpenAt(DateTime time) { /* ... */ return true; } }</code></pre>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Refactoring a Tightly-Coupled, Low-Cohesion Order Class</h2>
+
+    <p><strong>Before — one class, tightly coupled to three concrete infrastructure pieces, with three unrelated clusters of responsibility:</strong></p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class OrderProcessor
+{
+    private readonly SqlConnection _db = new("Server=prod-db;...");        // tightly coupled — concrete SQL client
+    private readonly SmtpClient _smtp = new("smtp.internal.local");        // tightly coupled — concrete SMTP client
+    private readonly StripeClient _stripe = new("sk_live_...");            // tightly coupled — concrete Stripe SDK
+
+    public void Process(Order order)
+    {
+        // Cluster 1 — payment concern
+        var charge = _stripe.Charges.Create(new ChargeCreateOptions { Amount = order.TotalCents });
+
+        // Cluster 2 — persistence concern
+        var cmd = _db.CreateCommand();
+        cmd.CommandText = $"INSERT INTO Orders (...) VALUES (...)";
+        cmd.ExecuteNonQuery();
+
+        // Cluster 3 — notification concern
+        var mail = new MailMessage("noreply@shop.com", order.CustomerEmail, "Order Confirmed", "Thanks!");
+        _smtp.Send(mail);
+    }
+}</code></pre>
+    <p><strong>The coupling problem:</strong> swap Stripe for PayPal, swap SQL Server for Postgres, or swap SMTP for a transactional email API, and every one of those swaps means editing <code>OrderProcessor</code> directly — because it's welded to the concrete SDK of each, not to an abstraction over what each does.</p>
+    <p><strong>The cohesion problem:</strong> this class has three unrelated reasons to change — payment provider changes, database schema changes, email provider changes — bundled into one file. Nothing about "charging a card" is related to "formatting a SQL insert" other than that they both happen to be called from the same method.</p>
+
+    <p><strong>After — loosely coupled to abstractions, each concern pulled into its own high-cohesion class:</strong></p>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IPaymentGateway { Task ChargeAsync(Order order); }
+public interface IOrderRepository { Task SaveAsync(Order order); }
+public interface IOrderNotifier { Task NotifyConfirmedAsync(Order order); }
+
+// Each implementation is high-cohesion — one job, one reason to change.
+public sealed class StripePaymentGateway(StripeClient stripe) : IPaymentGateway
+{
+    public Task ChargeAsync(Order order) => stripe.Charges.CreateAsync(new ChargeCreateOptions { Amount = order.TotalCents });
+}
+
+public sealed class SqlOrderRepository(SqlConnection db) : IOrderRepository
+{
+    public Task SaveAsync(Order order) => /* INSERT ... */ Task.CompletedTask;
+}
+
+public sealed class EmailOrderNotifier(SmtpClient smtp) : IOrderNotifier
+{
+    public Task NotifyConfirmedAsync(Order order) =>
+        Task.FromResult(smtp.Send(new MailMessage("noreply@shop.com", order.CustomerEmail, "Order Confirmed", "Thanks!")));
+}
+
+// OrderProcessor is now loosely coupled — depends on three abstractions, none of their concrete implementations —
+// and high-cohesion — its one job is "orchestrate the checkout sequence," nothing more.
+public sealed class OrderProcessor(IPaymentGateway payments, IOrderRepository orders, IOrderNotifier notifier)
+{
+    public async Task ProcessAsync(Order order)
+    {
+        await payments.ChargeAsync(order);
+        await orders.SaveAsync(order);
+        await notifier.NotifyConfirmedAsync(order);
+    }
+}</code></pre>
+    <p>Swap Stripe for PayPal now, and only <code>StripePaymentGateway</code> changes — <code>OrderProcessor</code> is entirely untouched (that's low coupling in action, the same benefit Lesson 081 showed from the dependency-inversion angle). Add a discount rule, and it belongs nowhere near this class at all (that's high cohesion — <code>OrderProcessor</code>'s one job is orchestration, not pricing).</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🏢</span> An Office Building's Departments</div>
+        <p><strong>High cohesion</strong> is a well-organized office where Accounting sits together, does accounting things, and every desk in that room genuinely does accounting work. You could describe the whole room's purpose in one sentence. <strong>Low cohesion</strong> is a room where three accountants, two customer-support reps, and a warehouse scheduler all happen to share a floor for no functional reason — asking "what does this room do?" doesn't have a clean answer.</p>
+        <p><strong>Loose coupling</strong> is Accounting talking to IT Support through a help-desk ticket system — a stable, well-defined interface — rather than walking directly to a specific IT employee's desk and asking them, by name, to personally fix something in a way only they know how to do. If that one employee quits, the ticket system still works; any qualified IT person can pick up the ticket. <strong>Tight coupling</strong> is Accounting's whole workflow silently depending on one specific person's private notebook of workarounds — if they leave, the department is stuck.</p>
+        <p>A well-run building keeps departments cohesive internally and connects them externally through stable channels (tickets, memos, scheduled meetings) rather than ad hoc personal dependencies. That's exactly "high cohesion, low coupling," out of code.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — The Design Reasoning</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">WHY THESE TWO PROPERTIES, SPECIFICALLY, PREDICT MAINTAINABILITY</div>
+        <div class="flow-step">
+            <div class="step-label">1. COUPLING PREDICTS "HOW FAR DOES A CHANGE SPREAD?"</div>
+            <ul><li>Low coupling means the set of files you must touch (and re-test) for a given change stays small and localized. High coupling means it grows unpredictably — you can't know the full blast radius without tracing every dependency by hand.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. COHESION PREDICTS "HOW SAFE IS IT TO CHANGE THIS ONE FILE?"</div>
+            <ul><li>High cohesion means an edit for reason X only ever touches code related to X — there's no risk of accidentally breaking unrelated behavior Y that happened to live in the same class. Low cohesion means every edit is a small gamble on the other, unrelated things sharing the file.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. TOGETHER, THEY BOUND THE COST OF CHANGE</div>
+            <ul><li>Low coupling bounds how far a change spreads outward. High cohesion bounds how much unrelated risk a change carries inward. A system strong in both has changes that are small, local, and predictable — the same target every SOLID principle, and the whole rest of this Part, is aimed at.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Zero coupling is the goal" — no, zero coupling means zero collaboration</h3>
+    <p>Classes must talk to each other to do anything useful — a system with literally zero coupling can't function. The goal isn't eliminating coupling, it's making it point at <em>stable abstractions</em> instead of <em>volatile concrete details</em>, so the coupling that must exist is cheap to live with.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Fewer classes means higher cohesion" — often the opposite</h3>
+    <p>Cramming unrelated behaviors into fewer, larger classes to "simplify" the file count is exactly how low cohesion happens. More classes, each with one honest purpose, is usually the higher-cohesion outcome — the earlier <code>StoreUtils</code> example split into three small, focused classes.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "Coupling and cohesion are two names for the same idea" — they're deliberately opposite lenses</h3>
+    <p>Coupling looks <em>outward</em> — how much does this class depend on other classes' details? Cohesion looks <em>inward</em> — how well do the pieces inside this one class belong together? A class can be internally cohesive and still tightly coupled to the outside world, or vice versa — they're independent measurements, which is exactly why the goal names both: "high cohesion, <em>low coupling</em>."</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Wrapping every class in an interface, even ones with exactly one implementation that will never change</h4>
+    <p>❌ Creating <code>ITaxCalculator</code>, <code>ITaxCalculatorFactory</code>, and a registration entry for a tax rule that is genuinely fixed by law and has one, and only ever will have one, implementation — pure ceremony bought against a coupling risk that doesn't actually exist.</p>
+    <p>✅ Introduce the abstraction when there's a real reason to expect more than one implementation, or a real testing need to substitute a fake — not reflexively, for every class.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Treating "static class full of unrelated helper methods" as harmless because it's small</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public static class Helpers
+{
+    public static string Slugify(string input) { /* ... */ return input; }
+    public static bool IsBusinessDay(DateTime date) { /* ... */ return true; }
+    public static decimal RoundToCurrency(decimal value) { /* ... */ return value; }
+}</code></pre>
+    <p>❌ It's not the size that's the problem — it's that <code>Helpers</code> grows without bound because there's no cohesive theme to say "no" to the next unrelated method someone adds. This is a classic low-cohesion magnet.</p>
+    <p>✅ Group by genuine purpose: a <code>SlugGenerator</code>, a <code>BusinessCalendar</code>, a <code>CurrencyRounder</code> — each small, each cohesive, each with a name that tells you exactly what belongs inside it and, just as importantly, what doesn't.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming an interface automatically means loose coupling</h4>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IStripeChargeCreator // ❌ named after, and shaped exactly like, one vendor's SDK
+{
+    Charge CreateStripeCharge(ChargeCreateOptions stripeOptions); // still Stripe's own types leaking through
+}</code></pre>
+    <p>❌ An interface whose method signatures are shaped entirely around one vendor's SDK types is coupling in disguise — swapping Stripe for PayPal still means rewriting every consumer, because the "abstraction" never actually abstracted anything.</p>
+    <p>✅ Design the interface around your domain's need ("charge a customer this amount"), not around one vendor's API shape — that's what makes the abstraction genuinely swappable.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Use coupling/cohesion as your default lens for any design review</strong> — before reaching for a named principle or pattern, ask "does this raise or lower coupling? does this raise or lower cohesion?" It's the fastest, most universal check you have.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Invest more in loosening coupling</strong> around anything genuinely likely to change or need substituting for tests — external services, payment providers, storage.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Don't chase zero coupling or perfect cohesion for their own sake</strong> in code that's simple, stable, and unlikely to grow — the underlying goal is manageable change, and a two-line, single-purpose script doesn't need architecture to manage change it will never undergo.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Coupling</strong> = how much this class knows about that class.<br />
+        <strong>Cohesion</strong> = how well the things inside this class belong together.<br /><br />
+        <strong>The goal:</strong> HIGH cohesion (belongs together, stays together) + LOW coupling (depends on the least, and only on the stable).<br /><br />
+        <strong>The tools you already have:</strong> SRP raises cohesion. DIP, ISP, and OCP lower coupling. SOLID isn't five separate ideas — it's five specific techniques aimed at these two properties.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;"><strong>Coupling</strong> is how much one class depends on another's details — tight coupling means changes ripple; loose coupling means they don't.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Cohesion</strong> is how well the contents of one class belong together — high cohesion means one clear purpose; low cohesion means an unrelated grab-bag.</li>
+            <li style="margin-bottom:0.4rem;">The classic engineering goal is <strong>high cohesion, low coupling</strong> — one of the oldest, most repeated targets in software design.</li>
+            <li style="margin-bottom:0.4rem;"><strong>SRP is a cohesion technique</strong>; <strong>Dependency Inversion is a coupling technique</strong> — the SOLID principles you already know are specific, practical implementations of this deeper vocabulary.</li>
+            <li style="margin-bottom:0.4rem;">Neither goal is absolute — the target is manageable, predictable change, not zero coupling or maximal fragmentation for its own sake.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen the vocabulary underneath every design principle so far. Let's check it actually reframes what you already know.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> A class named <code>InventoryManager</code> both adjusts stock counts and formats weekly sales reports as PDFs, using two entirely separate sets of fields that never interact. What does this describe?</p>
+        <ul class="options">
+            <li>A) High cohesion — it's still one class, so everything in it belongs together by definition</li>
+            <li>B) Low cohesion — two unrelated responsibilities (stock adjustment, PDF report formatting) with two unrelated sets of fields, bundled into one class</li>
+            <li>C) Tight coupling — the class depends on too many concrete database classes</li>
+            <li>D) Loose coupling — the two feature sets don't interact with each other</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Cohesion measures whether the things inside a class genuinely belong together and serve one purpose. Two unrelated feature sets with two unrelated field groups, sharing a class only by coincidence, is the textbook definition of low cohesion — this is the same shape of problem as the lesson's <code>StoreUtils</code> and <code>OrderProcessor</code> examples.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Being in the same class doesn't create cohesion — cohesion is about whether the contents genuinely relate, not about file boundaries.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The scenario describes nothing about dependencies on other classes — coupling and cohesion are different axes, and this question is purely about internal relatedness.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> "Not interacting" internally describes low cohesion, not loose coupling — coupling is about a class's relationship to other classes, not to itself.</p>
+                <p><strong>Reinforcement:</strong> Cohesion looks inward at one class's own contents; coupling looks outward at its relationships to others. Keep the two axes separate.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Which SOLID principle from Lesson 235 is, per this lesson, best understood as a direct technique for achieving low coupling?</p>
+        <ul class="options">
+            <li>A) Single Responsibility Principle</li>
+            <li>B) Dependency Inversion Principle — depending on an abstraction instead of a concrete implementation is precisely how coupling is kept loose</li>
+            <li>C) Liskov Substitution Principle</li>
+            <li>D) None of them relate to coupling at all</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This lesson explicitly maps DIP (Lesson 081) as the coupling-focused principle — depending on <code>IPaymentGateway</code> instead of <code>StripeClient</code> is exactly what keeps a change to Stripe's SDK from forcing a change to <code>OrderProcessor</code>.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> SRP is mapped in this lesson to <em>cohesion</em>, not coupling — it's about what belongs together inside one class, not about how that class relates to others.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> LSP concerns behavioral substitutability of subtypes, a different concern from how tightly two classes' implementations are bound together.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Several SOLID principles connect directly to coupling and cohesion — that connection is this lesson's central point.</p>
+                <p><strong>Reinforcement:</strong> When a principle's technique is "depend on an interface, not a concrete class," it's serving low coupling. When its technique is "keep related things together, separate unrelated things," it's serving high cohesion.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A team decides "zero coupling" is the goal and starts having every class communicate only through raw byte arrays passed through a generic message bus, with no shared interfaces or types anywhere in the codebase. What is wrong with this approach?</p>
+        <ul class="options">
+            <li>A) Nothing — this is exactly what low coupling requires</li>
+            <li>B) Coupling can never be reduced below what already exists in any codebase</li>
+            <li>C) The goal was never zero coupling — some coupling is necessary for classes to collaborate at all; the actual goal is coupling to stable abstractions, and raw untyped byte arrays are themselves an unstable, error-prone, and low-clarity form of coupling, not an escape from it</li>
+            <li>D) This approach eliminates the need for cohesion entirely</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> This lesson explicitly warns against treating zero coupling as the goal — classes must collaborate to do anything useful. Replacing typed interfaces with raw byte arrays doesn't remove coupling; it just makes the coupling implicit, untyped, and much easier to break silently, trading a clear contract for a fragile informal one.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This directly contradicts the lesson's explicit correction of the "zero coupling" misconception.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> Coupling absolutely can be reduced — from concrete implementations to abstractions, for example — the lesson's whole "before/after" example demonstrates exactly that reduction.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Cohesion is an entirely separate concern (what belongs together inside one class) and is unaffected by how classes communicate externally.</p>
+                <p><strong>Reinforcement:</strong> The goal is coupling to something stable and clear — an interface with a well-defined contract — not the complete absence of any dependency between classes.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> In the lesson's before/after <code>OrderProcessor</code> example, why does swapping Stripe for PayPal, after the refactor, require touching only one new class?</p>
+        <ul class="options">
+            <li>A) Because PayPal and Stripe happen to have identical SDK method names</li>
+            <li>B) Because <code>OrderProcessor</code> depends on the <code>IPaymentGateway</code> abstraction rather than the concrete <code>StripeClient</code> — a new <code>PayPalPaymentGateway</code> implementing that same interface can be plugged in without touching <code>OrderProcessor</code> at all</li>
+            <li>C) Because <code>OrderProcessor</code> was marked <code>sealed</code></li>
+            <li>D) Because the refactor removed all dependencies from <code>OrderProcessor</code> entirely</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is loose coupling in direct action — because <code>OrderProcessor</code>'s dependency is the interface <code>IPaymentGateway</code>, not the concrete <code>StripeClient</code>, a new implementation can be introduced without any change to the consumer. That's precisely the payoff the "after" version was built to demonstrate.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The example never relies on the two SDKs having matching shapes — the abstraction is what makes the swap possible, regardless of how different the underlying SDKs are.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>sealed</code> prevents further inheritance from <code>OrderProcessor</code> itself; it has nothing to do with how <code>OrderProcessor</code> depends on its collaborators.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>OrderProcessor</code> still has dependencies after the refactor — three interfaces, in fact — just abstracted ones instead of concrete ones. Loose coupling isn't the absence of dependencies; it's depending on stable abstractions.</p>
+                <p><strong>Reinforcement:</strong> The test for loose coupling is exactly this: can a dependency's concrete implementation change (or be swapped entirely) without forcing an edit to its consumer?</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have the vocabulary underneath every design principle in this Part — coupling and cohesion are the lens everything else gets built on.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
