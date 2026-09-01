@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>346 - Final Architecture Review · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Lesson 003 opened with a single line of C# and a diagram explaining what happens when you run it. This lesson closes with a distributed, tested, monitored, horizontally-scaled production system — and the same honest instinct to show you exactly how it fits together before sending you off to build your own.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>This is it — the last lesson of Part XIII, and the last lesson of the entire course. Thirteen lessons ago, Part XIII set out to do something different from every Part before it: not teach a new topic, but build one real system, end to end, reusing everything the course had already taught. Lessons 333 through 339 laid OrderFlow's foundation — Clean Architecture, JWT authentication, an EF Core database behind a Repository Pattern, distributed caching, background processing, and a Kafka messaging pipeline with the Outbox pattern. Lessons 340 through 345 made that foundation production-grade — correlated logging, business-meaningful monitoring, a testing strategy matched to each layer, containerization with real health probes, a profiled and verified performance fix, and a real deployment pipeline.</p>
+    <p><strong>This lesson has three jobs, and it takes all three seriously. First, it assembles everything Part XIII built into one coherent picture of OrderFlow as a whole — not thirteen separate lessons, but one system. Second, it steps back further still, to the whole course: Foundations, Intermediate, and thirteen Advanced Parts, with an honest look back at where you started in lesson 003. Third, and most importantly, it sends you off — not with a false sense that you now know everything about .NET, but with an honest account of what you actually have, and what to do with it next.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A final architecture review is the moment you stop looking at individual pieces and look at the whole machine they build — for OrderFlow specifically, and for everything this course taught you to build, more generally. It's the difference between knowing what a carburetor does and understanding how a carburetor, an engine block, a transmission, and a fuel line all have to work together, correctly, at the same time, for a car to actually drive.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>This lesson synthesizes OrderFlow's thirteen constituent pieces — Clean Architecture layering (333-334), JWT authentication (335), an EF Core/Repository-Pattern database (336), distributed caching (337), background processing (338), Kafka messaging with the Outbox pattern (339), correlated structured logging (340), business-meaningful monitoring (341), a layer-matched testing strategy (342), containerization with composed health probes (343), a profiled and verified performance fix (344), and a real CI/CD deployment pipeline with correct config/secrets handling and stateless horizontal scaling (345) — into one assembled production architecture, and then situates that whole system within the arc of the entire course: from lesson 003's first explanation of what C# and .NET even are, through Foundations, Intermediate, and thirteen Advanced Parts, to here.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Thirteen Correct Pieces Don't Automatically Add Up to One Correct System</h3>
+    <p>Every one of lessons 333 through 345 was correct and complete on its own terms. But a real engineer doesn't experience a production system as thirteen separate lessons — they experience it as one thing, where the readiness probe from lesson 343 has to correctly reflect the Kafka connectivity lesson 339 depends on, where the horizontal scaling from lesson 345 only works because of statelessness decisions made all the way back in lesson 335, and where the whole point of lesson 340's correlated logs and lesson 341's monitoring is watching all of the other pieces work together, in production, at the same time. Never stepping back to see the whole assembled shape leaves a real gap: the ability to reason about a system, not just recall its parts.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — One Last, Deliberate Step Back</h3>
+    <p>This lesson takes that step back twice: once for OrderFlow, assembling thirteen lessons' worth of decisions into one coherent architecture, and once for the whole course, tracing the line from lesson 003's single <span class="icode">Console.WriteLine("Hello, World!")</span> to a distributed system with its own deployment pipeline. Both are the same move at different scales — the same instinct lesson 295 applied to close Part IX and lesson 321 applied to close Part XI, now applied one final time, to everything.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — OrderFlow, Assembled</h2>
+    <p>Here is every piece Part XIII built, laid out as one system rather than thirteen lessons:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Lesson</th><th>Piece</th><th>Its role in the assembled system</th></tr></thead>
+            <tbody>
+                <tr><td>333</td><td>Designing Enterprise Apps</td><td>The upfront design thinking that decided OrderFlow needed real architecture, not just working code</td></tr>
+                <tr><td>334</td><td>Clean Architecture</td><td>The layering — Domain, Application, Infrastructure, API — every other piece slots into</td></tr>
+                <tr><td>335</td><td>Authentication</td><td>Stateless JWT auth on every endpoint — the first decision that made horizontal scaling possible</td></tr>
+                <tr><td>336</td><td>Database</td><td>EF Core + Repository Pattern over <code>Order</code>/<code>OrderItem</code>/<code>Customer</code>/<code>Product</code></td></tr>
+                <tr><td>337</td><td>Caching</td><td><code>IDistributedCache</code> in front of the product catalog — shared, not per-instance</td></tr>
+                <tr><td>338</td><td>Background Processing</td><td>Hosted services running <code>PaymentService</code>, <code>InventoryService</code>, <code>ShippingService</code> asynchronously</td></tr>
+                <tr><td>339</td><td>Messaging</td><td>Kafka + the Outbox pattern, publishing <code>OrderPlaced</code> reliably, exactly once per real change</td></tr>
+                <tr><td>340</td><td>Logging</td><td>A correlated <code>OrderId</code> trail across all five services, safe from ever leaking payment data</td></tr>
+                <tr><td>341</td><td>Monitoring</td><td>Business-meaningful metrics and traces layered on top of OpenTelemetry auto-instrumentation</td></tr>
+                <tr><td>342</td><td>Testing</td><td>Unit, integration, API, performance, and load tests, each matched to the layer it actually verifies</td></tr>
+                <tr><td>343</td><td>Containerization</td><td>A multi-stage Docker image and Kubernetes probes checking every real dependency</td></tr>
+                <tr><td>344</td><td>Performance Optimization</td><td>The profile-fix-verify loop, applied to a real, measured N+1 regression</td></tr>
+                <tr><td>345</td><td>Production Deployment</td><td>A pipeline that makes the safe path the only path — tests gate builds, secrets stay in a vault, scaling is safe because the app is stateless</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Notice the shape of this table: it isn't thirteen independent features bolted together. It's a dependency chain — 345's safe scaling depends on 335's statelessness; 343's readiness probe depends on 336, 337, and 339's dependencies existing to check; 344's fix depends on 341's monitoring flagging it and 342's benchmarking discipline verifying it. That's what "architecture" actually means: not a list of technologies, but how the decisions depend on each other.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — One Checkout, Through the Whole Assembled System</h2>
+    <div class="flow-container">
+        <div class="flow-title">A CUSTOMER PLACES ONE ORDER — EVERY PIECE OF PART XIII, IN ONE TRACE</div>
+        <div class="flow-step">
+            <div class="step-label">1. REQUEST ARRIVES — AUTHENTICATED, ROUTED THROUGH CLEAN ARCHITECTURE'S LAYERS (334-335)</div>
+            <ul><li>The JWT is validated at the API layer; the request crosses into the Application layer as a plain command, with no knowledge of HTTP, EF Core, or Kafka on the other side.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. OrderService VALIDATES AND PERSISTS — DATABASE, CACHE, AND LOGS ALL PARTICIPATE (336, 337, 340)</div>
+            <ul><li>Product prices are read from the distributed cache (337), not re-queried per line item; the <code>Order</code> and its <code>OrderItem</code>s are persisted via the repository (336); a log scope opens carrying <code>OrderId</code> (340) for everything downstream.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE OUTBOX ROW COMMITS IN THE SAME TRANSACTION (339)</div>
+            <ul><li>The order write and the <code>OrderPlaced</code> outbox row succeed or fail together — no window where one exists without the other.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. THE HTTP RESPONSE RETURNS — MONITORED THE WHOLE WAY (341)</div>
+            <ul><li><code>orderflow.checkout.duration</code> records the elapsed time; the customer sees a fast, successful response, well before any of the asynchronous work below has even started.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. BACKGROUND SERVICES TAKE OVER, ASYNCHRONOUSLY (338-339)</div>
+            <ul><li>The outbox publisher ships the event to Kafka; <code>PaymentService</code>, <code>InventoryService</code>, and <code>ShippingService</code> each consume it independently, each re-opening the <code>OrderId</code> log scope (340) and each carrying the propagated trace context (341) forward.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">6. EVERY PIECE OF THIS WAS TESTED BEFORE IT EVER RAN IN PRODUCTION (342)</div>
+            <ul><li><code>OrderService</code>'s logic was unit tested with mocked dependencies; the repository's actual queries were integration tested against a real Testcontainers Postgres; the whole authenticated flow was API tested end to end.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">7. EVERY SERVICE RUNS IN A CONTAINER, HEALTH-CHECKED, HORIZONTALLY SCALED (343, 345)</div>
+            <ul><li>If checkout traffic spikes, more pods join automatically, each one interchangeable, each one gated onto traffic only once its readiness probe genuinely confirms it can reach Postgres, the cache, and Kafka.</li></ul>
+        </div>
+    </div>
+    <p>One customer action. Thirteen lessons' worth of decisions, all participating, all at once. That's what "architecture" looks like from the inside — not a diagram you draw once, but the actual, live cooperation of every decision this Part made.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — the Composition Root, Where It All Actually Ties Together</h2>
+    <p>Every one of Part XIII's pieces is a set of individual decisions. This is the one file where they all become one running application:</p>
+    <div class="code-block"><code>var builder = WebApplication.CreateBuilder(args);
+
+// 335 — stateless JWT authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =&gt; { /* ... */ });
+
+// 336 — EF Core + Repository Pattern
+builder.Services.AddDbContext&lt;OrderFlowDbContext&gt;(options =&gt;
+    options.UseNpgsql(builder.Configuration.GetConnectionString("OrderFlowDb")));
+builder.Services.AddScoped&lt;IOrderRepository, OrderRepository&gt;();
+
+// 337 — distributed cache for the product catalog
+builder.Services.AddStackExchangeRedisCache(options =&gt;
+    options.Configuration = builder.Configuration["Redis:ConnectionString"]);
+
+// 338 — background services for payment, inventory, shipping
+builder.Services.AddHostedService&lt;PaymentProcessingWorker&gt;();
+builder.Services.AddHostedService&lt;InventoryReservationWorker&gt;();
+builder.Services.AddHostedService&lt;ShippingSchedulerWorker&gt;();
+
+// 339 — Kafka + the outbox publisher
+builder.Services.AddHostedService&lt;OutboxPublisherWorker&gt;();
+
+// 341 — OpenTelemetry, auto-instrumentation plus OrderFlow's own metrics/traces
+builder.Services.AddOpenTelemetry()
+    .WithTracing(t =&gt; t.AddAspNetCoreInstrumentation().AddEntityFrameworkCoreInstrumentation())
+    .WithMetrics(m =&gt; m.AddMeter("OrderFlow.Orders"));
+
+// 343 — the two endpoints Kubernetes actually calls
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("OrderFlowDb")!, name: "postgres")
+    .AddCheck&lt;DistributedCacheHealthCheck&gt;("distributed-cache")
+    .AddKafka(o =&gt; o.BootstrapServers = builder.Configuration["Kafka:BootstrapServers"], name: "kafka");
+
+var app = builder.Build();
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ =&gt; false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = _ =&gt; true });
+app.MapControllers();
+app.Run();</code></div>
+    <p><strong>Meaning:</strong> Nothing here is new — every single line is a callback to a specific, already-learned lesson. What's new is seeing them all in the same file, registered together, each one a small, deliberate decision that only makes sense in the context of all the others. This is what "putting it all together" actually looks like in real code, not just in a diagram.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — From Lesson 003 to Here</h2>
+    <p>Lesson 003 opened this entire course with a single idea, delivered through a house-building analogy: you need a language to communicate what you want built (C#), and you need tools, materials, and infrastructure to actually build it (.NET). The whole lesson traced one line — <span class="icode">Console.WriteLine("Hello, World!")</span> — through the C# compiler, into Intermediate Language, through the CLR's JIT compiler, onto the CPU, and back out as text on a screen. It was, honestly, already a lot: a compiler, a runtime, a garbage collector, a base class library, explained carefully enough that a beginner could follow every step.</p>
+    <p>Look at what you just traced through this lesson's "How It Works" section instead. A JWT gets validated before a single line of business logic runs. A price lookup skips the database because a distributed cache — running in a completely separate process, on a completely separate machine — already has the answer. A database write and an event publish succeed or fail together, atomically, specifically so that a message broker running on yet another machine can reliably tell three more independent services what just happened, each of which does its own work, on its own schedule, while the original customer has already moved on with their day. The entire thing runs in containers that Kubernetes restarts, reroutes, and multiplies automatically, based on live health signals your own code produces. None of that was in scope in lesson 003. All of it grew out of the same starting point.</p>
+    <p>That's not a coincidence, and it's not really about OrderFlow specifically. It's the shape of the whole course. Foundations (Parts I-VII) gave you the language itself — syntax, types, OOP, collections, error handling, modern C# idioms, and enough hands-on practice to build small, real, working programs. Intermediate (Parts I-VIII) took that language and made it practical — generics, delegates and functional patterns, LINQ, dependency injection, data access, asynchronous programming, and full small projects, the kind of C# a working developer actually writes daily. Then thirteen Advanced Parts went further than most courses ever go: language and runtime internals, LINQ's actual machinery, real concurrency, memory and performance, architecture and design patterns, production ASP.NET Core, enterprise data access, distributed systems, cloud-native deployment, a genuine testing and production-debugging discipline, and a tour of C# 14's newest ideas — each one a real, deep subject in its own right, not a survey. Part XIII didn't teach you anything new in that list. It just proved, with one real system, that you could actually use all of it together. Lesson 003 asked you to trust that a compiler and a runtime were doing something real underneath one line of code. Lesson 346 is the moment that trust pays off completely — you now understand, in real detail, everything standing between a customer clicking "place order" and that order actually shipping.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🏠</span> The House Lesson 003 Promised, Actually Built</div>
+        <p>Lesson 003 asked you to imagine building a house: C# as the language you use to communicate with the builders, .NET as the tools, materials, and infrastructure that turn your plans into something real. It was a good analogy for a first lesson — simple, concrete, enough to get you started. But it was, necessarily, a sketch of a single small room.</p>
+        <p>OrderFlow is the finished house, and it's worth being honest about how much bigger the finished thing turned out to be than the sketch. There's a foundation poured to code (Clean Architecture, lesson 334) that everything else has to respect. There's a front door with a real lock (JWT authentication, 335), not just a latch. There's plumbing that has to keep working even when one fixture is temporarily shut off for repair (health probes and readiness, 343). There's a whole electrical system distributing power to rooms that don't even know about each other directly (the messaging pipeline, 339). There's insulation and monitoring for temperature swings you'll never personally witness (observability, 340-341), and there's a building inspector's full sign-off — structural, electrical, plumbing, fire safety — before anyone's allowed to move in (the testing and deployment pipeline, 342 and 345). You didn't just learn what a house is anymore. You learned how to actually build one, and — just as importantly — how to know, with real evidence, whether the one you built is safe to live in.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — the Real Throughline of This Whole Course</h2>
+    <p>It's worth naming the pattern underneath everything you just retraced, because it's the same pattern at every scale, from lesson 003 to lesson 346. Every layer of this course taught you to trust a lower layer's abstraction completely enough that you could stop thinking about it and focus on the layer above. You trusted the CLR's JIT compiler so you could stop thinking about machine code and focus on C#. You trusted the garbage collector so you could stop manually freeing memory and focus on logic. You trusted EF Core so you could stop hand-writing SQL for every query and focus on your domain. You trusted <span class="icode">IDistributedCache</span>'s abstraction so <span class="icode">OrderService</span> never had to know or care whether Redis was actually behind it. You trusted the Outbox pattern so you never had to personally reason about the exact millisecond a database commit and a Kafka publish happened relative to each other. You trusted Kubernetes's readiness probe so you never had to personally watch every pod and manually pull a broken one from traffic.</p>
+    <p>That's not laziness — it's the entire discipline of software engineering, and it's the real reason this course could go as deep as it did without collapsing under its own complexity. Nobody holds the entire stack, from transistor to Kubernetes cluster, in their head at once, and nobody needs to. What you actually built across 346 lessons is the ability to correctly choose which layer to trust, which layer to inspect carefully, and which layer to build yourself — a judgment call you'll keep making for the rest of your career, on systems this course never specifically covered.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Finishing this course means I now know everything about .NET" — no, and believing that is genuinely dangerous</h3>
+    <p>346 lessons is a real, substantial body of knowledge — and it is nowhere close to everything. .NET keeps shipping new versions; Part XII's entire tour of C# 14 (extension members, field-backed properties, null-conditional assignment, and the rest, closing with lesson 331's file-based apps) exists specifically because C# 13 wasn't the final version either, and C# 15 won't be the last one after this. New libraries, new architectural patterns, new tooling will exist five years from now that nobody could have put in this course today. The honest measure of what you've gained isn't "I now know all of .NET" — it's "I now have the foundation and the judgment to learn the next thing quickly and evaluate it critically," which is a genuinely different, more durable, and more valuable claim.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "OrderFlow's architecture is THE correct way to build every system" — it's the correct way to build a system with OrderFlow's actual needs</h3>
+    <p>It's tempting, having just finished tracing a fully assembled, real-looking system, to treat its shape as a template to reapply everywhere. Don't. OrderFlow uses Kafka, an Outbox pattern, a distributed cache, and Kubernetes-orchestrated horizontal scaling because it was deliberately built as a realistic e-commerce order-management API — a system with real concurrent load, real cross-service coordination needs, and real availability requirements. A weekend side project, an internal admin tool used by six people, or a small business's single-database CRUD app would be actively harmed by copying this much machinery — exactly the over-engineering lesson 333's own design-thinking already warned against. The judgment this course built is knowing when OrderFlow's shape fits, and — just as importantly — recognizing the many, more common cases where it doesn't.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Treating the course's end as the end of learning</h4>
+    <p>❌ Closing this lesson and considering .NET "done," the same way you might finish a single book and shelve it permanently.</p>
+    <p>✅ Treat this as the point where independent learning becomes the primary mode, not the finish line — release notes, official docs, and real production experience are where the next several years of growth actually happen.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Reaching for every advanced pattern this course covered, on every project, regardless of fit</h4>
+    <p>❌ Adding Kafka, an Outbox pattern, distributed caching, and a Kubernetes deployment to a project that has one database table and three users, because "that's what a real system has."</p>
+    <p>✅ Match the architecture to the actual problem's real scale and real requirements — the same "when should I use it?" discipline every single lesson in this course modeled, applied one more time to the biggest decision of all: how much system to build in the first place.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Trusting a new tool or pattern uncritically just because it's popular</h4>
+    <p>❌ Adopting a new library, framework, or architectural fad because it's trending, without asking what specific problem it solves or what it costs — the exact opposite of the discipline this course modeled in every lesson.</p>
+    <p>✅ State the problem a new tool actually solves, understand what it costs, and only then decide if the trade is worth it — exactly the way lesson 295 taught you to reason about eventual consistency, and lesson 233 taught you to reason about a profiled bottleneck. Popularity is not evidence. Evidence is evidence.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It? — Where This Takes You From Here</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Use OrderFlow's shape — Clean Architecture, distributed messaging, Kubernetes-orchestrated scaling — when a system's actual requirements genuinely call for it: real concurrent load, real cross-service coordination, real availability guarantees a customer is depending on.</li>
+        <li style="margin-bottom:0.4rem;">Use a far smaller slice of this course's toolkit for a far smaller system — a single well-structured project with good tests and honest logging is a completely legitimate, often better, destination for most of what you'll actually build.</li>
+        <li style="margin-bottom:0.4rem;">Use the course's underlying discipline — measure before optimizing, test what a layer actually needs tested, profile before guessing, read the RFC or the release notes before trusting a claim — on every tool this course never covered, for the rest of your career.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 The honest rule of thumb this whole course has been building toward:</strong> mastery isn't having memorized every API this course covered. It's the reflex to ask "what problem does this actually solve, what does it cost, and have I measured instead of guessed" — before reaching for anything, including everything you just spent 346 lessons learning.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Lesson 003</strong> = one line of C#, traced through a compiler and a runtime you were asked to trust<br />
+        <strong>Lesson 346</strong> = a distributed system, traced through thirteen cooperating pieces you now understand well enough to have built yourself<br />
+        <strong>The throughline</strong> = trust the right abstraction, inspect the one that matters right now, and know the difference<br /><br />
+        <strong>Remember, going forward:</strong> the goal was never "know everything." It was building the judgment to keep learning, keep questioning, and keep building — responsibly, on real systems, for the rest of your career.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway — Closing the Course</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">OrderFlow's thirteen pieces — architecture, auth, database, cache, background processing, messaging, logging, monitoring, testing, containerization, performance, and deployment — aren't thirteen separate features. They're a dependency chain, where later decisions only work because earlier ones were made correctly, and this lesson's "How It Works" trace showed all thirteen cooperating on one ordinary checkout.</li>
+            <li style="margin-bottom:0.4rem;">This course started at lesson 003 with a single traced line of C# and a promise that a compiler and a runtime were doing something real underneath it. It ends here, with you understanding — in real, working detail — every layer standing between a customer's click and a shipped order. That's not a different subject than lesson 003. It's the same subject, followed all the way down and all the way back up.</li>
+            <li style="margin-bottom:0.4rem;">Foundations gave you the language. Intermediate made it practical. Thirteen Advanced Parts gave you internals, concurrency, memory, architecture, production ASP.NET Core, enterprise data, distributed systems, cloud-native deployment, a genuine testing and debugging discipline, and this course's newest ideas — and Part XIII proved, with one real system, that you can actually use all of it together, not just recall it in isolation.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Mastery, honestly stated, was never "know everything about .NET forever."</strong> The platform keeps moving — Part XII's own tour of C# 14 is proof the language itself was still changing while you were learning it, and it will keep changing after today. What you actually leave this course with is more durable than a snapshot of current APIs: the foundation to read a new feature's design rationale and understand it quickly, the judgment to ask what a new tool actually costs before adopting it, the discipline to measure before optimizing and test what a layer actually needs tested, and the demonstrated ability — because you just did it, across thirteen lessons, on one real system — to hold a genuinely complex, production-shaped problem in your head and reason about it correctly. That is what carries forward into every system this course never specifically covered. Go build something real with it.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">These last few questions are less about one narrow fact and more about whether the whole shape of OrderFlow — and the whole shape of this course — actually clicked. Take your time with them.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why does this lesson describe OrderFlow's thirteen pieces (333-345) as "a dependency chain" rather than "thirteen independent features"?</p>
+        <ul class="options">
+            <li>A) Because each lesson number in Part XIII must be read in strict numerical order or the HTML files fail to load</li>
+            <li>B) Because later decisions only work correctly due to earlier ones — for example, lesson 345's safe horizontal scaling depends directly on the statelessness established by lesson 335's JWT authentication</li>
+            <li>C) Because the thirteen pieces were all written by the same author and therefore share a coding style</li>
+            <li>D) Because Kubernetes requires services to be deployed in a specific numerical sequence</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the Big Picture and Under the Hood reasoning — the pieces cooperate, with concrete dependencies like scaling requiring statelessness, readiness probes requiring real dependencies to check, and monitoring requiring something worth measuring. That's what makes it an architecture rather than a feature list.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Lesson file loading has nothing to do with the architectural dependency the lesson describes — this confuses file mechanics with system design.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Shared authorship or coding style isn't the reasoning given anywhere — the dependency is a real, functional one between the pieces themselves.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Kubernetes has no such numerical deployment-order requirement — the dependency described is architectural, not an artifact of deployment tooling.</p>
+                <p><strong>Reinforcement:</strong> A real architecture is defined by how its pieces depend on each other, not by how many pieces there are.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> According to this lesson, what is the honest, correct way to think about what "finishing this course" actually means?</p>
+        <ul class="options">
+            <li>A) You now know everything meaningful about .NET, and no further learning about the platform will be necessary</li>
+            <li>B) You now have a durable foundation and the judgment to learn new tools critically and quickly — not a permanent, complete snapshot of .NET, which will keep evolving after this course ends</li>
+            <li>C) The course's content is now frozen and will never need updating, since C# and .NET have stopped changing</li>
+            <li>D) Finishing means you should immediately apply OrderFlow's full architecture to every future project, regardless of its size</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the lesson's explicit closing message, and Common Confusion #1's direct correction — the durable outcome is judgment and foundation, not an exhaustive, final inventory of .NET knowledge, precisely because the platform keeps evolving.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the dangerous belief Common Confusion #1 warns against — Part XII's own C# 14 tour is used as direct evidence that the language kept changing even during this course.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The lesson explicitly states the opposite — .NET keeps shipping new versions, and nothing about the platform's evolution has stopped.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Common Confusion #2 and Mistake 2 explicitly warn against this — OrderFlow's architecture fits OrderFlow's actual requirements, not every future project regardless of scale.</p>
+                <p><strong>Reinforcement:</strong> The goal was building judgment and a foundation for continued learning, not memorizing a permanent, complete map of .NET.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A developer, having just finished this course, adds Kafka, an Outbox pattern, distributed caching, and a full Kubernetes deployment to a small internal tool used by three people with one database table. What does this lesson say about that decision?</p>
+        <ul class="options">
+            <li>A) This is the correct, recommended approach — every system built after this course should use OrderFlow's exact architecture</li>
+            <li>B) This is a mistake — OrderFlow's architecture fits OrderFlow's actual scale and requirements; applying it to a system that doesn't need it is the over-engineering this lesson explicitly warns against</li>
+            <li>C) This is acceptable as long as the developer writes good unit tests for all of it</li>
+            <li>D) This is only a mistake if the tool is deployed to a cloud provider other than the one OrderFlow uses</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is precisely Common Confusion #2 and Mistake 2 — OrderFlow's shape is justified by its own real requirements (concurrent load, cross-service coordination, availability guarantees); a three-user, single-table tool has none of those, and the same machinery there is a genuine liability, not a best practice.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson explicitly rejects treating OrderFlow's architecture as a universal template — this is the exact mistake it warns against.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Good tests don't change whether the underlying architectural complexity was ever justified by the system's actual needs — testing quality and architectural fit are separate concerns.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Cloud provider choice is irrelevant to the reasoning given — the mismatch is between the system's real complexity needs and the architecture applied, regardless of where it's hosted.</p>
+                <p><strong>Reinforcement:</strong> Match architectural complexity to a system's actual, real requirements — the same "when should I use it" judgment applied at the largest possible scale.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> This lesson describes a pattern repeated "at every scale, from lesson 003 to lesson 346" — trusting a lower layer's abstraction so you can focus on the layer above it. Which pair best illustrates this pattern, as used in the lesson?</p>
+        <ul class="options">
+            <li>A) Trusting the CLR's JIT compiler so you can focus on writing C#, and trusting IDistributedCache's abstraction so OrderService never has to know whether Redis is actually behind it</li>
+            <li>B) Trusting a code reviewer's opinion so you never have to test your own code</li>
+            <li>C) Trusting that a production incident will never happen so monitoring becomes unnecessary</li>
+            <li>D) Trusting that every new .NET version will be backward incompatible, so upgrading should always be avoided</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: A</span></p>
+                <p><strong>Why A is correct:</strong> These are two of the exact examples the Under the Hood section gives — trusting the JIT compiler (from lesson 003's own explanation) and trusting the distributed cache abstraction (337) are both instances of the same pattern: relying on a lower layer completely enough to focus attention on the layer above it.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> This isn't a form of the abstraction-trust pattern described — it's a description of skipping testing, which the course's testing lessons (308-314, 342) explicitly argue against.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is the opposite of the lesson's message — lesson 341's whole point is that monitoring matters precisely because incidents do happen.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The lesson doesn't advocate avoiding upgrades — it explicitly frames the platform's continued evolution (C# 14, and versions beyond it) as expected and worth engaging with critically, not avoided out of fear.</p>
+                <p><strong>Reinforcement:</strong> The trust-the-right-layer pattern applies to genuine abstractions with a real, well-defined contract — not to skipping verification or avoiding change out of caution.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 That closes Part XIII — Capstone. And that closes the course. From lesson 003's first traced line of C# to OrderFlow's fully assembled, production-shipped architecture, you've built the foundation and the judgment to keep going on your own. Thank you for seeing it through, start to finish. Now go build something real.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
