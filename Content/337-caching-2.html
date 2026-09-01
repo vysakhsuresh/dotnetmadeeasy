@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>337 - Caching · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        265 taught IMemoryCache, 266 taught why it breaks across instances, 280 taught invalidation discipline. OrderFlow runs as more than one instance — so only one of those three was ever going to be the right call here.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>333 fixed OrderFlow's first constraint as scale — more than one instance behind a load balancer, nothing allowed to assume there's only one copy of the running process. 336 just built the read path that gets hit hardest under that constraint: the product catalog, queried on nearly every page a customer looks at, changing far less often than it's read. 265's <span class="icode">IMemoryCache</span> would be the wrong tool the instant OrderFlow scales past one instance — each instance would build its own separate, invisible-to-each-other copy of "is this product in stock," which is exactly the failure mode 266 exists to solve.</p>
+    <p><strong>This lesson doesn't re-teach <span class="icode">IMemoryCache</span>, <span class="icode">IDistributedCache</span>, or the cache-aside pattern — 265, 266, and 280 already did that in depth. What follows is the actual decision for OrderFlow: what gets cached, what doesn't, and the exact invalidation path that keeps a customer from ever seeing a product's old price after staff updates it.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+    <p>OrderFlow caches exactly one thing with any real intent: the product catalog, behind <span class="icode">IDistributedCache</span> (266), backed by Redis, shared across every running instance. Everything else in OrderFlow's data — a specific customer's order history, an order's current status mid-pipeline — is either too write-heavy or too sensitive to staleness to be worth caching at all, per 280's own trade-off framing.</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Data</th><th>Cached?</th><th>Why</th></tr></thead>
+            <tbody>
+                <tr><td>Product catalog (<span class="icode">GET /api/products</span>)</td><td>✅ Yes — <span class="icode">IDistributedCache</span></td><td>Read constantly, written rarely, by staff only, through one known path</td></tr>
+                <tr><td>A single order's current status</td><td>❌ No</td><td>Changes across every step of 338's pipeline — the write-to-read ratio is far too close to 1:1 for caching to pay off, per 280</td></tr>
+                <tr><td>A customer's own order history</td><td>❌ No</td><td>Small, cheap query already (336), scoped per customer — little to gain, real staleness risk to manage</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+    <p>Without caching, every product listing request hits <span class="icode">OrderFlowDbContext</span> and re-runs the same catalog query, over and over, for data that's identical across thousands of requests in a row. 336 already built that query correctly — projected, untracked — but "correctly" still means a real round-trip to the database on every single read. 266's whole argument is exactly OrderFlow's situation: with more than one instance behind a load balancer, an in-process cache (265) can't be trusted to be consistent, because each instance would independently decide when its own copy is stale. A shared, external cache is the only shape that keeps every instance looking at the same answer.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Where Redis Sits</h2>
+    <div class="flow-container">
+        <div class="flow-title">EVERY ORDERFLOW INSTANCE, ONE SHARED CACHE</div>
+        <div style="text-align:center;color:var(--text-main,#E2E8F0);font-size:0.95rem;line-height:2;">
+            Instance A &nbsp;&nbsp;&nbsp; Instance B &nbsp;&nbsp;&nbsp; Instance C<br />
+            ↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓<br />
+            <strong>Shared Redis cache — one product catalog, one answer, for all three</strong><br />
+            ↓ (cache miss, or after invalidation)<br />
+            <span class="icode">OrderFlowDbContext</span> → <span class="icode">Products</span> table (336)
+        </div>
+    </div>
+    <p>Every instance reads and invalidates the same keys — there's no scenario where Instance A sees an updated price and Instance B doesn't, the exact guarantee 265's per-process <span class="icode">IMemoryCache</span> could never make once OrderFlow runs as more than one process.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Cache-Aside for ProductService</h2>
+    <div class="flow-container">
+        <div class="flow-title">266'S CACHE-ASIDE SHAPE, APPLIED TO ORDERFLOW'S CATALOG</div>
+        <div class="flow-step">
+            <div class="step-label">1. A READ CHECKS THE CACHE FIRST</div>
+            <ul><li><span class="icode">ProductService.GetByIdAsync</span> calls <span class="icode">IDistributedCache.GetAsync</span> with a deterministic key like <span class="icode">product:{id}</span> before ever touching <span class="icode">IProductRepository</span>.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. ON A MISS, FALL THROUGH TO THE DATABASE, THEN POPULATE THE CACHE</div>
+            <ul><li>The repository built in 336 runs the real query; the result is serialized to JSON and written back to Redis with a short expiration, per 266's shape.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. A WRITE (STAFF UPDATING A PRODUCT) INVALIDATES EXPLICITLY, ON THE SAME PATH</div>
+            <ul><li>280's event-based invalidation: the moment <span class="icode">ProductService.UpdateAsync</span> saves a change, it removes that product's cache entry — no customer sees the old price after the update commits.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. A SHORT EXPIRATION IS THE SAFETY NET, NOT THE PRIMARY MECHANISM</div>
+            <ul><li>Per 280: event-based invalidation is the precise mechanism; a short TTL (e.g. 5 minutes) catches anything that reaches the <span class="icode">Products</span> table through a path that forgot to invalidate — a deliberate belt-and-suspenders combination, not a substitute for the explicit invalidation call.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — ProductService, Cache-Aside</h2>
+    <div class="code-block"><code>public class ProductService(IProductRepository repository, IDistributedCache cache)
+{
+    private static string CacheKey(Guid id) =&gt; $"product:{id}";
+
+    public async Task&lt;Product?&gt; GetByIdAsync(Guid id, CancellationToken ct)
+    {
+        var cached = await cache.GetStringAsync(CacheKey(id), ct);
+        if (cached is not null)
+            return JsonSerializer.Deserialize&lt;Product&gt;(cached);
+
+        var product = await repository.GetByIdAsync(id, ct);
+        if (product is not null)
+        {
+            await cache.SetStringAsync(
+                CacheKey(id),
+                JsonSerializer.Serialize(product),
+                new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) },
+                ct);
+        }
+        return product;
+    }
+
+    public async Task UpdateAsync(Product product, CancellationToken ct)
+    {
+        await repository.UpdateAsync(product, ct);          // 336's write path
+        await cache.RemoveAsync(CacheKey(product.Id), ct);   // event-based invalidation — 280
+    }
+}</code></div>
+    <p><strong>Meaning:</strong> The read path checks Redis before the database; the write path invalidates Redis the moment the database change is saved. Every instance running this same code reads and writes the exact same cache keys — there's no per-instance divergence to worry about, unlike 265's <span class="icode">IMemoryCache</span> would have produced.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — a Price Change, Traced End to End</h2>
+    <p>Staff corrects a mispriced product at 2:14pm. <span class="icode">ProductService.UpdateAsync</span> saves the new price to the <span class="icode">Products</span> table and, in the same call, removes <span class="icode">product:{id}</span> from Redis. The very next customer request to <span class="icode">GET /api/products/{id}</span> — regardless of which OrderFlow instance happens to receive it — misses the cache, falls through to the database, and reads the corrected price. Compare that to what 265's <span class="icode">IMemoryCache</span> would have done in the same scenario: only the specific instance that happened to handle the staff member's update request would know to invalidate its own local copy; every other instance would keep serving the old price out of its own separate cache, with no way to be told otherwise, until its own local expiration eventually caught up.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📋</span> One Shared Price Board, Not Three Separate Notepads</div>
+        <p>Three cashiers at three separate registers, each keeping their own personal notepad of "today's prices," is 265's <span class="icode">IMemoryCache</span> under OrderFlow's scale constraint — the moment a price changes, whoever updates their own notepad first leaves the other two quietly wrong until they happen to notice. One shared price board on the wall, that every register reads from and any of them can correct, is 266's <span class="icode">IDistributedCache</span> — the correction is visible to every register the instant it's made, because there was never more than one copy to begin with.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — What Happens the Moment a Bulk Price Update Skips ProductService</h2>
+    <p>280 already flagged this exact risk: any write path that changes the <span class="icode">Products</span> table without going through the code that calls <span class="icode">cache.RemoveAsync</span> leaves a stale cache entry behind with nothing to catch it except the 5-minute TTL. For OrderFlow specifically, that means a bulk import script, a direct database migration, or an admin tool that writes to <span class="icode">Products</span> using raw SQL or <span class="icode">ExecuteUpdateAsync</span> instead of calling <span class="icode">ProductService.UpdateAsync</span> is a genuine invalidation gap — the TTL safety net exists precisely because this kind of gap is realistic, not hypothetical, in a system with more than one way to touch the same table over its lifetime.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Caching more of OrderFlow's data would make it faster overall" — not for data this write-heavy</h3>
+    <p>An order's status changes multiple times as it moves through 338's pipeline — placed, payment confirmed, stock reserved, shipped. Caching it would mean invalidating on nearly every write, which is exactly the 1:1 write-to-read ratio 280 warned pays for all of caching's complexity and returns almost none of its benefit. The product catalog earns caching specifically because it's read far more than it's written — that ratio, not "is this data important," is the deciding factor.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Redis being down means OrderFlow is down" — cache-aside degrades, it doesn't collapse</h3>
+    <p>Because <span class="icode">ProductService</span> falls through to <span class="icode">IProductRepository</span> on any cache miss, a Redis outage doesn't take the catalog offline — every read just becomes a direct database query again, exactly as if caching had never been added. Slower, not broken. This is a direct consequence of cache-aside's shape (266), not something OrderFlow had to add extra code for.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Reaching for IMemoryCache because it's simpler to set up</h4>
+    <p>❌ Choosing <span class="icode">IMemoryCache</span> for the product catalog because it needs no external service and the code is marginally shorter — ignoring that OrderFlow's own scale constraint (333) rules it out the moment a second instance starts. ✅ The scale constraint was fixed before this lesson started — <span class="icode">IDistributedCache</span> isn't a preference here, it's a requirement that follows directly from an earlier decision.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Relying on the 5-minute TTL as the only invalidation mechanism</h4>
+    <p>❌ Skipping the explicit <span class="icode">cache.RemoveAsync</span> call in <span class="icode">UpdateAsync</span>, reasoning "it'll expire in five minutes anyway." ✅ Five minutes of a customer seeing a wrong, already-corrected price is a real, avoidable problem for an e-commerce business — event-based invalidation is the primary mechanism precisely so that gap doesn't have to exist for a known, controllable write path.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Caching an order's live status "since it's read often too"</h4>
+    <p>❌ Applying the same cache-aside pattern to <span class="icode">GetOrderStatusAsync</span> because it's called frequently by a customer checking on their order. ✅ Read frequency alone doesn't justify caching — an order's status changes just as often as (or more often than) it's individually checked, putting it firmly on the wrong side of 280's ratio; it stays a direct, uncached database read.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Reach for <span class="icode">IDistributedCache</span> the moment a system runs as more than one instance and the cached data needs to look the same from every one of them — exactly OrderFlow's situation from lesson 333 onward.</li>
+        <li style="margin-bottom:0.4rem;">Cache data that's read far more often than it's written, and where a few minutes of staleness (bounded by a TTL safety net) is genuinely tolerable — the product catalog fits; an order's live status doesn't.</li>
+        <li style="margin-bottom:0.4rem;">Pair every write path that changes cached data with an explicit invalidation call — a TTL alone is a safety net, never the primary mechanism, per 280.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> If you can't name every write path that touches the data you're about to cache, you don't yet know everywhere invalidation needs to happen — find those paths first, or accept a longer, deliberately-tolerated staleness window instead.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Cached</strong> = the product catalog — read constantly, written rarely, through one known path.<br />
+        <strong>Not cached</strong> = order status, order history — write-heavy or too small to bother.<br />
+        <strong><span class="icode">IDistributedCache</span> + Redis</strong> = one shared answer across every OrderFlow instance, per 266 — not 265's per-process <span class="icode">IMemoryCache</span>.<br />
+        <strong>Invalidation</strong> = explicit, on every write path, with a short TTL as the safety net — never the TTL alone.<br /><br />
+        <strong>Remember:</strong> a Redis outage degrades the catalog to a plain database read — it doesn't take OrderFlow down.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">OrderFlow caches its product catalog — read-heavy, low-frequency-write — behind <span class="icode">IDistributedCache</span> and Redis, per 266, because 333's scale constraint rules out 265's per-process <span class="icode">IMemoryCache</span> the moment a second instance exists.</li>
+            <li style="margin-bottom:0.4rem;">Order status and order history stay uncached — their write-to-read ratio is too close to 1:1 to earn caching's complexity, per 280.</li>
+            <li style="margin-bottom:0.4rem;">Invalidation is event-based first: every write path that changes a cached product invalidates its cache key explicitly, with a short TTL as a safety net for any path that gets missed — never the TTL alone.</li>
+            <li style="margin-bottom:0.4rem;">Cache-aside degrades gracefully — a Redis outage means every read falls through to 336's database query, slower but not broken.</li>
+            <li style="margin-bottom:0.4rem;">This is the last piece of OrderFlow's synchronous, request-time behavior — 338 picks up immediately after this, moving the slow, external-dependency-heavy work (payment, inventory, shipping) off the checkout request entirely.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen exactly what OrderFlow caches, what it doesn't, and how invalidation is kept honest. Let's confirm the reasoning holds.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why does OrderFlow use <span class="icode">IDistributedCache</span> for the product catalog instead of <span class="icode">IMemoryCache</span>?</p>
+        <ul class="options">
+            <li>A) <span class="icode">IMemoryCache</span> cannot store <span class="icode">Product</span> objects</li>
+            <li>B) OrderFlow runs as more than one instance behind a load balancer (333); <span class="icode">IMemoryCache</span> is per-process, so each instance would keep its own separate, out-of-sync copy of the catalog</li>
+            <li>C) <span class="icode">IDistributedCache</span> is always faster than <span class="icode">IMemoryCache</span>, regardless of deployment shape</li>
+            <li>D) <span class="icode">IMemoryCache</span> requires a paid Azure subscription to use</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the exact reasoning from Why Does It Exist? and the Real-World Example — OrderFlow's scale constraint means multiple instances exist, and only a shared, external cache keeps them all looking at the same catalog data.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <span class="icode">IMemoryCache</span> can store any .NET object, <span class="icode">Product</span> included — this isn't a real technical limitation.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> <span class="icode">IMemoryCache</span> is actually faster per-lookup (no network round-trip) — <span class="icode">IDistributedCache</span> is chosen for consistency across instances, not raw speed.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <span class="icode">IMemoryCache</span> is a free, built-in .NET feature with no cloud dependency at all.</p>
+                <p><strong>Reinforcement:</strong> The deciding factor is deployment shape (multiple instances needing a shared view), not raw performance or cost.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why does this lesson decide NOT to cache an order's live status, even though it's read frequently by customers checking on their orders?</p>
+        <ul class="options">
+            <li>A) Because <span class="icode">Order</span> objects are too large to serialize into Redis</li>
+            <li>B) Because its write-to-read ratio is too close to 1:1 — it changes across nearly every step of the background pipeline, so invalidation overhead would cancel out most of the benefit, per 280's trade-off framing</li>
+            <li>C) Because order status is not stored in a database table at all</li>
+            <li>D) Because only staff-facing data is ever eligible for caching in OrderFlow</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Common Confusion #1 states this directly — read frequency alone doesn't justify caching; it's the ratio of reads to writes that matters, and order status changes about as often as it would be read, which is precisely the case 280 warned against caching.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Size isn't the stated reason — the lesson's reasoning is entirely about the write-to-read ratio, not payload size.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Order status is a real column on the <span class="icode">Orders</span> table, established back in 336 — this option contradicts the schema already built.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The product catalog, which customers read, is exactly what OrderFlow does cache — caching eligibility isn't about staff vs. customer data.</p>
+                <p><strong>Reinforcement:</strong> Cache eligibility is a function of the write-to-read ratio, not of how often something is read in isolation.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A bulk price-import script updates the <span class="icode">Products</span> table directly with raw SQL, bypassing <span class="icode">ProductService.UpdateAsync</span> entirely. What does this lesson say happens to the cached prices for those products?</p>
+        <ul class="options">
+            <li>A) Redis automatically detects the database change and invalidates the affected keys</li>
+            <li>B) The cached entries go stale with nothing to catch it immediately — they'll keep serving old prices until the 5-minute TTL safety net eventually expires them, exactly the gap Under the Hood warns is realistic</li>
+            <li>C) The next customer request will throw an unhandled exception</li>
+            <li>D) OrderFlow will refuse to start until every write path goes through ProductService</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Under the Hood states this directly — any write path that bypasses <span class="icode">ProductService.UpdateAsync</span> skips the explicit <span class="icode">cache.RemoveAsync</span> call, leaving the TTL as the only remaining safety net until it naturally expires.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Redis has no built-in awareness of the application's own database — nothing automatically connects a raw SQL update to a cache invalidation without explicit application code doing it.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A stale cache entry causes wrong data to be served, not an exception — the request still succeeds, just with an outdated value.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing in OrderFlow's design enforces this at startup — it's a discipline the team has to maintain, not a technical guarantee the system provides automatically.</p>
+                <p><strong>Reinforcement:</strong> The TTL exists precisely because invalidation gaps like this are realistic — it's the safety net, not proof the gap can't happen.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 The catalog stays fast and correct across every instance. Next: 338 moves payment, inventory, and shipping off the checkout request entirely — applying lesson 165's hosted services to OrderFlow's real async pipeline for the first time.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
