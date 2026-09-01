@@ -406,7 +406,7 @@ public static ParallelLoopResult ForEach&lt;TSource&gt;(
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🔴 foreach — one core, one item at a time</h4>
+            <h4> foreach — one core, one item at a time</h4>
             <ul>
                 <li>Item 1 → Item 2 → Item 3 → ... → Item N, strictly in order</li>
                 <li>Only ever one item's work happening at any instant</li>
@@ -415,7 +415,7 @@ public static ParallelLoopResult ForEach&lt;TSource&gt;(
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>🟢 Parallel.ForEach — many cores, many items at once</h4>
+            <h4> Parallel.ForEach — many cores, many items at once</h4>
             <ul>
                 <li>The collection is split into chunks, distributed to worker tasks</li>
                 <li>Multiple items' work happens at the same instant, on separate cores</li>
@@ -535,7 +535,7 @@ Parallel.ForEach(filePaths, options, path =&gt;
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📬</span> One Sorter vs. a Sorting Room</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> One Sorter vs. a Sorting Room</div>
         <p>A regular <code class="icode">foreach</code> is one person sorting a giant bin of mail, one envelope at a time, start to finish. <code class="icode">Parallel.ForEach</code> is handing stacks of that same mail to several sorters working at separate tables at the same time — each sorter takes a stack (a "chunk"), works through it, and grabs another stack when done.</p>
         <p>If two sorters both need to write into the <em>same shared logbook</em> at the same moment — say, tallying a running total of processed letters — they'll collide unless they coordinate (that's the thread-safety requirement). And if the mail itself is trivially light — postcards that take one second each to glance at — the overhead of organizing sorters and stacks can cost more time than just letting one person handle the whole bin. That's exactly the "small, fast per-item work" pitfall covered below.</p>
     </div>
@@ -546,7 +546,7 @@ Parallel.ForEach(filePaths, options, path =&gt;
     <p>Exactly how large those chunks are, and exactly how many workers get spun up, are runtime decisions — deliberately not something the API surface commits to as a guaranteed number, because the right answer depends on the machine, the collection size, and current system load. What's stable and worth remembering is the shape of the strategy: <strong>batch items into chunks, hand chunks to workers, let workers ask for more as they finish</strong> — not "assign item N to worker N% (core count)."</p>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> Thread safety is your responsibility, not Parallel.ForEach's</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> Thread safety is your responsibility, not Parallel.ForEach's</div>
         <p>Parallel.ForEach guarantees your loop body <em>can</em> run concurrently for different items — it makes <strong>no</strong> guarantee about what happens if that body touches shared, mutable state without protecting it. If two iterations write to the same plain <code class="icode">List&lt;T&gt;</code>, increment the same plain <code class="icode">int</code>, or mutate the same field on a shared object at the same instant, you have a race condition — full stop. Making the loop body thread-safe (through concurrent collections, locks, or atomic operations) is entirely on you. The tools for that — <code>lock</code>, <code>SemaphoreSlim</code>, <code>Interlocked</code>, and the concurrent collections used above — get full, dedicated coverage elsewhere in this Part; this lesson only flags that the requirement exists.</p>
     </div>
 
@@ -563,7 +563,7 @@ Parallel.ForEach(filePaths, options, path =&gt;
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Mutating a plain, shared collection or variable from the loop body</h4>
-    <p>❌ <strong>Wrong</strong> — a plain <code class="icode">List&lt;T&gt;</code> and a plain <code class="icode">int</code> being mutated by many concurrent iterations:</p>
+    <p> <strong>Wrong</strong> — a plain <code class="icode">List&lt;T&gt;</code> and a plain <code class="icode">int</code> being mutated by many concurrent iterations:</p>
     <div class="code-block"><code>var results = new List&lt;int&gt;();
 int total = 0;
 
@@ -573,7 +573,7 @@ Parallel.ForEach(numbers, n =&gt;
     results.Add(squared); // NOT thread-safe — can corrupt List&lt;T&gt;'s internal state
     total += squared;     // NOT thread-safe — lost updates under concurrent access
 });</code></div>
-    <p>✅ <strong>Correct</strong> — use a concurrent collection and an atomic operation instead:</p>
+    <p> <strong>Correct</strong> — use a concurrent collection and an atomic operation instead:</p>
     <div class="code-block"><code>var results = new ConcurrentBag&lt;int&gt;();
 int total = 0;
 
@@ -585,14 +585,14 @@ Parallel.ForEach(numbers, n =&gt;
 });</code></div>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Using Parallel.ForEach over I/O-bound work</h4>
-    <p>❌ Looping over a list of URLs with <code class="icode">Parallel.ForEach</code> and making a blocking HTTP call inside the body.</p>
+    <p> Looping over a list of URLs with <code class="icode">Parallel.ForEach</code> and making a blocking HTTP call inside the body.</p>
     <div class="code-block"><code>// WRONG — blocks a pool thread per URL, waiting on the network
 Parallel.ForEach(urls, url =&gt;
 {
     string content = httpClient.GetStringAsync(url).GetAwaiter().GetResult(); // blocking!
     Process(content);
 });</code></div>
-    <p>✅ This is exactly the thread-pool-starvation problem covered elsewhere in this Part: each iteration parks a pool thread while it waits on the network, instead of freeing it. For I/O-bound work, use <code class="icode">async</code>/<code class="icode">Task.WhenAll</code> (optionally combined with a <code class="icode">SemaphoreSlim</code> to cap concurrency) — not <code class="icode">Parallel.ForEach</code>.</p>
+    <p> This is exactly the thread-pool-starvation problem covered elsewhere in this Part: each iteration parks a pool thread while it waits on the network, instead of freeing it. For I/O-bound work, use <code class="icode">async</code>/<code class="icode">Task.WhenAll</code> (optionally combined with a <code class="icode">SemaphoreSlim</code> to cap concurrency) — not <code class="icode">Parallel.ForEach</code>.</p>
     <div class="code-block"><code>// CORRECT — I/O-bound fan-out belongs to async/Task.WhenAll
 var tasks = urls.Select(async url =&gt;
 {
@@ -602,35 +602,35 @@ var tasks = urls.Select(async url =&gt;
 await Task.WhenAll(tasks);</code></div>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Parallelizing trivially small, fast per-item work</h4>
-    <p>❌ Wrapping a loop that adds two numbers or checks a string's length in <code class="icode">Parallel.ForEach</code>, expecting it to be faster.</p>
-    <p>✅ Partitioning the collection, scheduling chunks onto worker threads, and coordinating completion all cost real time — for work that's already extremely cheap per item, that coordination overhead can easily exceed whatever time was saved, making the parallel version <em>slower</em> than a plain <code class="icode">foreach</code>. Parallel.ForEach earns its keep when each item's work is substantial enough (a rough rule of thumb: at least on the order of microseconds to milliseconds of real CPU work, not nanoseconds) that spreading it across cores meaningfully outweighs the coordination cost.</p>
+    <p> Wrapping a loop that adds two numbers or checks a string's length in <code class="icode">Parallel.ForEach</code>, expecting it to be faster.</p>
+    <p> Partitioning the collection, scheduling chunks onto worker threads, and coordinating completion all cost real time — for work that's already extremely cheap per item, that coordination overhead can easily exceed whatever time was saved, making the parallel version <em>slower</em> than a plain <code class="icode">foreach</code>. Parallel.ForEach earns its keep when each item's work is substantial enough (a rough rule of thumb: at least on the order of microseconds to milliseconds of real CPU work, not nanoseconds) that spreading it across cores meaningfully outweighs the coordination cost.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="feature-grid">
         <div class="feature-card">
-            <span class="emoji">✅</span>
+            <span class="emoji"></span>
             <div class="label">CPU-bound, per-item work with real cost</div>
             <div class="desc">Image resizing, cryptographic hashing, numeric simulation across many independent items.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">🔒</span>
+            <span class="emoji"></span>
             <div class="label">You can make the body thread-safe</div>
             <div class="desc">Via concurrent collections, locks, or atomic operations for any shared state it touches.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">🚫</span>
+            <span class="emoji"></span>
             <div class="label">Not for I/O-bound work</div>
             <div class="desc">Network/disk/database calls belong to async + Task.WhenAll, not Parallel.ForEach.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">⚠️</span>
+            <span class="emoji"></span>
             <div class="label">Not for tiny, ultra-fast per-item work</div>
             <div class="desc">Partitioning and coordination overhead can outweigh the actual work being parallelized.</div>
         </div>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Ask two questions before reaching for <code class="icode">Parallel.ForEach</code>: (1) Is each item's work genuinely CPU-bound, with no network/disk/database waiting inside it? (2) Is each item's work substantial enough that spreading it across cores is worth the coordination overhead? If both are "yes," it's a strong fit. If either is "no," reach for async/<code class="icode">Task.WhenAll</code> (I/O-bound) or a plain <code class="icode">foreach</code> (too small to bother) instead.
+        <strong> Rule of thumb:</strong> Ask two questions before reaching for <code class="icode">Parallel.ForEach</code>: (1) Is each item's work genuinely CPU-bound, with no network/disk/database waiting inside it? (2) Is each item's work substantial enough that spreading it across cores is worth the coordination overhead? If both are "yes," it's a strong fit. If either is "no," reach for async/<code class="icode">Task.WhenAll</code> (I/O-bound) or a plain <code class="icode">foreach</code> (too small to bother) instead.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -658,7 +658,7 @@ await Task.WhenAll(tasks);</code></div>
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen Parallel.ForEach's syntax, its options, and — critically — its rules. Let's check that "thread-safe body, CPU-bound work, no ordering guarantee" has really landed.</p>
 
     <div class="quiz-question">
@@ -672,11 +672,11 @@ await Task.WhenAll(tasks);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> total++ is not an atomic operation — it reads, increments, and writes back in separate steps. When multiple threads do this concurrently on the same shared variable, updates can be lost, producing a final total lower than the correct sum. This is exactly why Interlocked.Increment (or Interlocked.Add) exists for this case.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Parallel.ForEach provides no automatic thread safety for anything the loop body touches — that responsibility is entirely on the code you write.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Being a value type has nothing to do with thread safety of a shared, mutable variable — the field itself is still shared memory that multiple threads can race on.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Capturing a local variable in a Parallel.ForEach lambda compiles and runs fine — the problem is a runtime race condition, not a compile-time error.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Parallel.ForEach provides no automatic thread safety for anything the loop body touches — that responsibility is entirely on the code you write.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Being a value type has nothing to do with thread safety of a shared, mutable variable — the field itself is still shared memory that multiple threads can race on.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Capturing a local variable in a Parallel.ForEach lambda compiles and runs fine — the problem is a runtime race condition, not a compile-time error.</p>
                 <p><strong>Reinforcement:</strong> Parallel.ForEach parallelizes execution; it does nothing to protect shared state your loop body touches.</p>
             </div>
         </details>
@@ -693,11 +693,11 @@ await Task.WhenAll(tasks);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> MaxDegreeOfParallelism exists precisely for this scenario — capping how many iterations run at the same instant so an external resource's own concurrency limit isn't exceeded.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Parallel.ForEach has no awareness of external rate limits — it will happily schedule as many concurrent iterations as the runtime allows unless you explicitly cap it.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Parallel.ForEach can absolutely be limited via ParallelOptions — dropping parallelism entirely isn't necessary.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This describes making a call to an inherently I/O-bound API from inside Parallel.ForEach at all, which is itself the wrong tool (see Mistake 2) — and this option doesn't address the rate-limit problem regardless.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Parallel.ForEach has no awareness of external rate limits — it will happily schedule as many concurrent iterations as the runtime allows unless you explicitly cap it.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Parallel.ForEach can absolutely be limited via ParallelOptions — dropping parallelism entirely isn't necessary.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This describes making a call to an inherently I/O-bound API from inside Parallel.ForEach at all, which is itself the wrong tool (see Mistake 2) — and this option doesn't address the rate-limit problem regardless.</p>
                 <p><strong>Reinforcement:</strong> MaxDegreeOfParallelism is the correct, direct way to respect an external resource's own concurrency ceiling.</p>
             </div>
         </details>
@@ -714,11 +714,11 @@ await Task.WhenAll(tasks);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Each iteration parks a ThreadPool worker thread for the entire duration of a blocking network call. That's precisely the thread-pool-starvation scenario covered elsewhere in this Part — a large number of concurrent blocking waits can exhaust available pool threads. I/O-bound fan-out belongs to async/Task.WhenAll, which frees the thread instead of blocking it.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Parallel.ForEach is built for CPU-bound work — using it to block on I/O defeats the purpose of asynchronous I/O entirely.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The degree-of-parallelism setting doesn't change the fundamental problem — it's still tying up pool threads for I/O waiting, just at whatever concurrency level is configured.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Parallel.ForEach has no such automatic conversion — a blocking call inside its body stays blocking.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Parallel.ForEach is built for CPU-bound work — using it to block on I/O defeats the purpose of asynchronous I/O entirely.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The degree-of-parallelism setting doesn't change the fundamental problem — it's still tying up pool threads for I/O waiting, just at whatever concurrency level is configured.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Parallel.ForEach has no such automatic conversion — a blocking call inside its body stays blocking.</p>
                 <p><strong>Reinforcement:</strong> CPU-bound work → Parallel.ForEach. I/O-bound work → async/Task.WhenAll. Mixing them up causes real problems, not just style issues.</p>
             </div>
         </details>
@@ -735,11 +735,11 @@ await Task.WhenAll(tasks);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Parallel.ForEach's coordination — partitioning the source, scheduling chunks onto workers, tracking completion — has real cost. When each item's actual work is trivially cheap, that coordination overhead can dwarf the time saved by spreading the work across cores, making the parallel version net slower.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Parallel.ForEach is genuinely faster for substantial, CPU-bound per-item work — the earlier checksum and thumbnail examples are real wins. The issue here is specifically that the work is too small.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Parallel.ForEach has no such item-count ceiling; it handles collections of any size.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no restriction on what operations can appear in the loop body — the problem is purely one of cost-versus-overhead, not a technical limitation.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Parallel.ForEach is genuinely faster for substantial, CPU-bound per-item work — the earlier checksum and thumbnail examples are real wins. The issue here is specifically that the work is too small.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Parallel.ForEach has no such item-count ceiling; it handles collections of any size.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no restriction on what operations can appear in the loop body — the problem is purely one of cost-versus-overhead, not a technical limitation.</p>
                 <p><strong>Reinforcement:</strong> Parallelization has real overhead — it pays off only when per-item work is substantial enough to outweigh that cost.</p>
             </div>
         </details>
@@ -756,17 +756,17 @@ await Task.WhenAll(tasks);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Because different chunks run on different workers at different speeds, there's no guarantee about which iteration finishes first — an item near the end of the collection can genuinely complete before one near the beginning.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> That describes a plain foreach's guarantee, which Parallel.ForEach explicitly does not preserve — that's exactly why order-dependent logic shouldn't use it.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no reverse-order default — completion order is effectively unpredictable, not reversed.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> While setting MaxDegreeOfParallelism to 1 would incidentally serialize the work (removing genuine parallelism), it's not the documented guarantee to rely on for ordering — and doing so would defeat the entire purpose of using Parallel.ForEach in the first place.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> That describes a plain foreach's guarantee, which Parallel.ForEach explicitly does not preserve — that's exactly why order-dependent logic shouldn't use it.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no reverse-order default — completion order is effectively unpredictable, not reversed.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> While setting MaxDegreeOfParallelism to 1 would incidentally serialize the work (removing genuine parallelism), it's not the documented guarantee to rely on for ordering — and doing so would defeat the entire purpose of using Parallel.ForEach in the first place.</p>
                 <p><strong>Reinforcement:</strong> If your logic depends on processing order, Parallel.ForEach is the wrong tool — reach for a sequential loop instead.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You can now parallelize real CPU-bound work over a collection safely and deliberately. Next up: Channels — the async-native producer/consumer queue you already used in the Background Processing Service project, now with the full theory behind it.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You can now parallelize real CPU-bound work over a collection safely and deliberately. Next up: Channels — the async-native producer/consumer queue you already used in the Background Processing Service project, now with the full theory behind it.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

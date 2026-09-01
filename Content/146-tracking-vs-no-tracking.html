@@ -393,7 +393,7 @@ List&lt;Product&gt; readOnly = await context.Products.AsNoTracking().ToListAsync
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🔍 Tracked query</h4>
+            <h4> Tracked query</h4>
             <ul>
                 <li>Snapshot of original values kept per entity</li>
                 <li>Entity registered in the change tracker</li>
@@ -404,7 +404,7 @@ List&lt;Product&gt; readOnly = await context.Products.AsNoTracking().ToListAsync
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚡ No-tracking query</h4>
+            <h4> No-tracking query</h4>
             <ul>
                 <li>No snapshot kept — nothing to compare against later</li>
                 <li>Entity not registered anywhere</li>
@@ -444,12 +444,12 @@ List&lt;Product&gt; readOnly = await context.Products.AsNoTracking().ToListAsync
     <div class="code-block"><code>// Tracked — the edit is saved
 Product tracked = await context.Products.FirstAsync(p =&gt; p.Id == 1);
 tracked.Price = 29.99m;
-await context.SaveChangesAsync();               // ✅ UPDATE runs — change tracker saw the difference
+await context.SaveChangesAsync();               //  UPDATE runs — change tracker saw the difference
 
 // No-tracking — the edit is silently lost
 Product readOnly = await context.Products.AsNoTracking().FirstAsync(p =&gt; p.Id == 1);
 readOnly.Price = 29.99m;
-await context.SaveChangesAsync();                // ❌ Nothing happens — this entity isn't tracked at all,
+await context.SaveChangesAsync();                //  Nothing happens — this entity isn't tracked at all,
                                                   //    so SaveChanges() doesn't even know it exists.</code></div>
     <p>This isn't a bug — it's the entire point of <span class="icode">.AsNoTracking()</span>. It tells EF Core, and anyone reading the code, "this data is for reading only." Modifying a no-tracking entity and expecting a save is the single most common mistake developers make when first introduced to this feature — covered in detail below.</p>
 
@@ -481,7 +481,7 @@ public class ProductsController(ShopDbContext context) : ControllerBase
             return NotFound();
 
         product.Price = newPrice;
-        await context.SaveChangesAsync();                          // ✅ works — this entity is tracked
+        await context.SaveChangesAsync();                          //  works — this entity is tracked
 
         return NoContent();
     }
@@ -491,7 +491,7 @@ public class ProductsController(ShopDbContext context) : ControllerBase
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📷</span> A Library Loan vs. A Photocopy</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Library Loan vs. A Photocopy</div>
         <p>A <strong>tracked</strong> entity is like borrowing a book from a library: the library keeps a record of exactly which book you took and its exact condition when you took it, specifically so that when you bring it back, they can tell if anything changed. That bookkeeping is the whole point — it's how the library knows what to update in its own records.</p>
         <p>A <strong>no-tracking</strong> entity is like being handed a photocopy of a page instead. You can read it, scribble on it, even set it on fire — the library keeps no record of it at all, because it was never checked out in the first place. Handing back a marked-up photocopy and expecting the library's records to update is exactly the mistake of editing a no-tracking entity and expecting <span class="icode">SaveChanges()</span> to notice.</p>
     </div>
@@ -529,13 +529,13 @@ public class ProductsController(ShopDbContext context) : ControllerBase
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Editing a no-tracking entity and being confused when SaveChanges() does nothing</h4>
-    <p>❌ Loading with <span class="icode">.AsNoTracking()</span>, modifying a property, calling <span class="icode">SaveChanges()</span>, and expecting an <span class="icode">UPDATE</span> — since the entity was never registered with the change tracker, EF Core has no idea it exists, let alone that it changed. No exception, no error — the save simply does nothing for that entity. ✅ Use tracked queries (the default — just don't call <span class="icode">.AsNoTracking()</span>) for anything you intend to modify and save; if you already have a no-tracking instance you need to update, explicitly re-attach it with <span class="icode">context.Update(entity)</span> or <span class="icode">context.Attach(entity)</span> first.</p>
+    <p> Loading with <span class="icode">.AsNoTracking()</span>, modifying a property, calling <span class="icode">SaveChanges()</span>, and expecting an <span class="icode">UPDATE</span> — since the entity was never registered with the change tracker, EF Core has no idea it exists, let alone that it changed. No exception, no error — the save simply does nothing for that entity.  Use tracked queries (the default — just don't call <span class="icode">.AsNoTracking()</span>) for anything you intend to modify and save; if you already have a no-tracking instance you need to update, explicitly re-attach it with <span class="icode">context.Update(entity)</span> or <span class="icode">context.Attach(entity)</span> first.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Leaving every query tracked "by default" on a read-heavy endpoint</h4>
-    <p>❌ A dashboard or listing endpoint that queries hundreds of entities every request, never calling <span class="icode">SaveChanges()</span> on them, but never adding <span class="icode">.AsNoTracking()</span> either — every one of those requests pays full change-tracking overhead for nothing. ✅ Default to <span class="icode">.AsNoTracking()</span> for any query whose results are purely for reading/returning, and reserve tracked queries for the specific operations that actually modify and save data.</p>
+    <p> A dashboard or listing endpoint that queries hundreds of entities every request, never calling <span class="icode">SaveChanges()</span> on them, but never adding <span class="icode">.AsNoTracking()</span> either — every one of those requests pays full change-tracking overhead for nothing.  Default to <span class="icode">.AsNoTracking()</span> for any query whose results are purely for reading/returning, and reserve tracked queries for the specific operations that actually modify and save data.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming .AsNoTracking() disables lazy loading or navigation property population</h4>
-    <p>❌ Adding <span class="icode">.AsNoTracking()</span> and being surprised that <span class="icode">.Include(...)</span> still works, or that included navigation properties are still populated. ✅ <span class="icode">.AsNoTracking()</span> only changes what happens to tracking state after materialization — <span class="icode">.Include(...)</span> and query shaping behave exactly the same either way.</p>
+    <p> Adding <span class="icode">.AsNoTracking()</span> and being surprised that <span class="icode">.Include(...)</span> still works, or that included navigation properties are still populated.  <span class="icode">.AsNoTracking()</span> only changes what happens to tracking state after materialization — <span class="icode">.Include(...)</span> and query shaping behave exactly the same either way.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -551,7 +551,7 @@ public class ProductsController(ShopDbContext context) : ControllerBase
         </table>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Ask one question per query: "will I call <span class="icode">SaveChanges()</span> on anything this query returns?" If no, add <span class="icode">.AsNoTracking()</span>. If yes, leave it tracked (the default). Don't guess — the question has a definite answer for almost every query you'll write.
+        <strong> Rule of thumb:</strong> Ask one question per query: "will I call <span class="icode">SaveChanges()</span> on anything this query returns?" If no, add <span class="icode">.AsNoTracking()</span>. If yes, leave it tracked (the default). Don't guess — the question has a definite answer for almost every query you'll write.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -577,7 +577,7 @@ public class ProductsController(ShopDbContext context) : ControllerBase
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen what tracking actually costs, and when skipping it pays off. Let's confirm the reasoning stuck.</p>
 
     <div class="quiz-question">
@@ -591,11 +591,11 @@ public class ProductsController(ShopDbContext context) : ControllerBase
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> A no-tracking entity is never added to the change tracker, so it has no snapshot to compare against and SaveChangesAsync() has no way of knowing it was ever loaded, let alone modified. The call succeeds — it just does nothing for that entity.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the mistaken assumption the lesson warns against — no-tracking absolutely does affect whether a later save picks up the change, because tracking is what makes SaveChanges() aware of the change at all.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> EF Core doesn't throw in this situation — there's no error at all, which is precisely what makes this mistake easy to miss during development.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> A no-tracking entity is a completely ordinary C# object — its properties can be set freely; the object just isn't watched by EF Core.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is exactly the mistaken assumption the lesson warns against — no-tracking absolutely does affect whether a later save picks up the change, because tracking is what makes SaveChanges() aware of the change at all.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> EF Core doesn't throw in this situation — there's no error at all, which is precisely what makes this mistake easy to miss during development.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> A no-tracking entity is a completely ordinary C# object — its properties can be set freely; the object just isn't watched by EF Core.</p>
                 <p><strong>Reinforcement:</strong> No-tracking entities can be edited in C# just fine — the missing piece is that EF Core was never told to watch for that edit in the first place.</p>
             </div>
         </details>
@@ -612,11 +612,11 @@ public class ProductsController(ShopDbContext context) : ControllerBase
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> The deciding factor is whether SaveChanges() will run against the results. The listing endpoint only reads and returns data — tracking buys it nothing. The update endpoint needs to detect exactly what changed, which is the entire purpose of tracking — no-tracking there would silently break the update, just like in question 1.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This isn't a general truth about HTTP verbs — the reasoning is specific to whether SaveChanges() runs, not the verb used.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such enforced convention — the choice is a deliberate performance/correctness decision per query, not an automatic rule tied to the HTTP method.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Tracked entities serialize into JSON exactly the same as no-tracking ones — tracking state has nothing to do with serialization.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This isn't a general truth about HTTP verbs — the reasoning is specific to whether SaveChanges() runs, not the verb used.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no such enforced convention — the choice is a deliberate performance/correctness decision per query, not an automatic rule tied to the HTTP method.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Tracked entities serialize into JSON exactly the same as no-tracking ones — tracking state has nothing to do with serialization.</p>
                 <p><strong>Reinforcement:</strong> The one question that decides tracking vs no-tracking is always the same: will this query's results be modified and saved afterward?</p>
             </div>
         </details>
@@ -633,17 +633,17 @@ public class ProductsController(ShopDbContext context) : ControllerBase
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> .AsNoTracking() only affects post-materialization behavior — whether the change tracker keeps a snapshot and watches the entity. It has no effect on query shaping: .Include(...) still generates the join and populates the navigation property exactly the same way.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This describes a real but unrelated gotcha (forgetting .Include(...) entirely) — not what .AsNoTracking() itself does. Combining the two works fine and is a very common, recommended pattern for read-only queries with related data.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> .AsNoTracking() is a normal LINQ extension method affecting tracking behavior — it doesn't change how the query is translated to SQL or bypass the query pipeline.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> These two are commonly and safely combined — there's no conflict between eager loading and skipping change tracking.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This describes a real but unrelated gotcha (forgetting .Include(...) entirely) — not what .AsNoTracking() itself does. Combining the two works fine and is a very common, recommended pattern for read-only queries with related data.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> .AsNoTracking() is a normal LINQ extension method affecting tracking behavior — it doesn't change how the query is translated to SQL or bypass the query pipeline.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> These two are commonly and safely combined — there's no conflict between eager loading and skipping change tracking.</p>
                 <p><strong>Reinforcement:</strong> Keep the two concerns separate in your mind: .Include(...) controls what data comes back; .AsNoTracking() controls what EF Core does with it afterward.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly when to skip change tracking for a real performance win, and when you can't afford to. Next up: what happens when saving needs to span more than one operation — transactions and concurrency.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now know exactly when to skip change tracking for a real performance win, and when you can't afford to. Next up: what happens when saving needs to span more than one operation — transactions and concurrency.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

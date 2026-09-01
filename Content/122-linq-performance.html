@@ -369,14 +369,14 @@
     <!-- ====== WHY DOES IT EXIST? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
     <p>LINQ's biggest strength — hiding the looping mechanics behind clean, declarative method calls — is also exactly what makes its costs easy to miss. A hand-written loop makes every pass over the data visually obvious; a chain of LINQ calls can quietly hide a second (or third) full pass behind what looks like a single, simple line:</p>
-    <div class="code-block"><code>// ❌ Looks like ONE operation. Is actually TWO full passes over expensiveQuery.
+    <div class="code-block"><code>//  Looks like ONE operation. Is actually TWO full passes over expensiveQuery.
 var expensiveQuery = products.Where(p =&gt; ExpensiveCheck(p)); // deferred — nothing has run yet
 if (expensiveQuery.Any())                 // pass #1 — enumerates until first match
 {
     foreach (var p in expensiveQuery)     // pass #2 — enumerates the WHOLE thing again
         Console.WriteLine(p.Name);
 }</code></div>
-    <div class="code-block"><code>// ✅ ONE pass, explicitly, because it was forced exactly once
+    <div class="code-block"><code>//  ONE pass, explicitly, because it was forced exactly once
 var results = products.Where(p =&gt; ExpensiveCheck(p)).ToList();
 if (results.Count &gt; 0)
 {
@@ -390,10 +390,10 @@ if (results.Count &gt; 0)
     <div class="flow-container">
         <div class="flow-title">THE FIVE PATTERNS THIS LESSON COVERS</div>
         <div class="feature-grid">
-            <div class="feature-card"><span class="emoji">🔁</span><span class="label">Multiple Enumeration</span><span class="desc">Same deferred query, run more than once</span></div>
-            <div class="feature-card"><span class="emoji">🔢</span><span class="label">Count() vs .Count</span><span class="desc">A method call vs. a stored property</span></div>
-            <div class="feature-card"><span class="emoji">📋</span><span class="label">Unnecessary ToList()</span><span class="desc">Materializing when nothing needed it</span></div>
-            <div class="feature-card"><span class="emoji">🔀</span><span class="label">Operator Order</span><span class="desc">Filtering before sorting/projecting</span></div>
+            <div class="feature-card"><span class="emoji"></span><span class="label">Multiple Enumeration</span><span class="desc">Same deferred query, run more than once</span></div>
+            <div class="feature-card"><span class="emoji"></span><span class="label">Count() vs .Count</span><span class="desc">A method call vs. a stored property</span></div>
+            <div class="feature-card"><span class="emoji"></span><span class="label">Unnecessary ToList()</span><span class="desc">Materializing when nothing needed it</span></div>
+            <div class="feature-card"><span class="emoji"></span><span class="label">Operator Order</span><span class="desc">Filtering before sorting/projecting</span></div>
         </div>
         <div style="text-align:center;font-size:0.85rem;color:var(--text-muted,#94A3B8);padding-top:0.8rem;">Plus the judgment call that ties them together: when a hand-written loop genuinely beats LINQ.</div>
     </div>
@@ -410,11 +410,11 @@ IEnumerable&lt;Product&gt; GetDiscountedProducts(List&lt;Product&gt; catalog)
 
 var discounted = GetDiscountedProducts(products);
 
-// ❌ Each of these lines re-runs the ENTIRE Where + Select chain, independently
+//  Each of these lines re-runs the ENTIRE Where + Select chain, independently
 Console.WriteLine($"Count: {discounted.Count()}");     // pass #1
 Console.WriteLine($"Total: {discounted.Sum(p =&gt; p.Price)}"); // pass #2
 foreach (var p in discounted) Console.WriteLine(p.Name);      // pass #3</code></div>
-    <div class="code-block"><code>// ✅ Force once, reuse the materialized result for everything after
+    <div class="code-block"><code>//  Force once, reuse the materialized result for everything after
 var discounted = GetDiscountedProducts(products).ToList();
 Console.WriteLine($"Count: {discounted.Count}");        // reads the stored list
 Console.WriteLine($"Total: {discounted.Sum(p =&gt; p.Price)}"); // one pass over the list, cheap
@@ -432,14 +432,14 @@ int c = products.Where(p =&gt; p.Stock &gt; 0).Count();  // O(n) — Where's res
 
     <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Pitfall 3 — Unnecessary <code>ToList()</code> Calls Mid-Chain</h3>
     <p>Already covered as a Common Mistake in the Immediate Execution lesson, worth restating here as a genuine performance cost, not just a stylistic one: every <code>ToList()</code> call allocates a new internal array and copies every item into it. Calling it more than once in a single chain multiplies that allocation cost for zero benefit.</p>
-    <div class="code-block"><code>// ❌ TWO allocations, TWO full copies — the middle ToList() serves no purpose
+    <div class="code-block"><code>//  TWO allocations, TWO full copies — the middle ToList() serves no purpose
 var result = products
     .Where(p =&gt; p.Stock &gt; 0)
     .ToList()                          // wasted allocation #1
     .Where(p =&gt; p.Price &lt; 100)
     .ToList();                          // allocation #2
 
-// ✅ ONE allocation, at the very end, once everything is fully chained
+//  ONE allocation, at the very end, once everything is fully chained
 var result = products
     .Where(p =&gt; p.Stock &gt; 0)
     .Where(p =&gt; p.Price &lt; 100)
@@ -447,12 +447,12 @@ var result = products
 
     <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Pitfall 4 — Operator Order: Filter Before You Sort or Project</h3>
     <p><code>Where</code> can shrink a sequence before the next, potentially more expensive operator has to touch it. Reversing the order does needless extra work:</p>
-    <div class="code-block"><code>// ❌ Sorts ALL 50,000 products (an O(n log n) pass), THEN throws most of them away
+    <div class="code-block"><code>//  Sorts ALL 50,000 products (an O(n log n) pass), THEN throws most of them away
 var slow = products
     .OrderBy(p =&gt; p.Price)
     .Where(p =&gt; p.Category == "Electronics"); // only ~5,000 of the 50,000 survive — too late, already sorted everything
 
-// ✅ Filters down to ~5,000 FIRST, so the sort only has to handle those
+//  Filters down to ~5,000 FIRST, so the sort only has to handle those
 var fast = products
     .Where(p =&gt; p.Category == "Electronics")
     .OrderBy(p =&gt; p.Price);</code></div>
@@ -461,17 +461,17 @@ var fast = products
     <!-- ====== SIMPLE EXAMPLE ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
     <p>One more common pitfall, tying back to the very first lesson of this module — using <code>Where(...).First()</code> instead of <code>First(predicate)</code> directly:</p>
-    <div class="code-block"><code>// ❌ Builds a whole deferred filter, THEN asks for the first match through it
+    <div class="code-block"><code>//  Builds a whole deferred filter, THEN asks for the first match through it
 var product = products.Where(p =&gt; p.Id == 42).First();
 
-// ✅ First(predicate) stops the instant it finds a match — no intermediate Where needed
+//  First(predicate) stops the instant it finds a match — no intermediate Where needed
 var product = products.First(p =&gt; p.Id == 42);</code></div>
     <p><strong>Code → Meaning → Result:</strong> Both versions return the identical product. But <code>First(predicate)</code> is implemented to short-circuit — it stops enumerating the moment a match is found, exactly like <code>Any(predicate)</code> does — while <code>Where(...).First()</code> builds an extra iterator layer for no real benefit. This is a small cost individually, but it's a habit worth building since it appears constantly in real code.</p>
 
     <!-- ====== REAL-WORLD EXAMPLE ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
     <p>An e-commerce catalog search endpoint, showing every pitfall from this lesson stacked together — then fixed, one at a time:</p>
-    <div class="code-block"><code>// ❌ BEFORE — five separate performance problems in one method
+    <div class="code-block"><code>//  BEFORE — five separate performance problems in one method
 public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category, decimal maxPrice)
 {
     var results = catalog
@@ -487,7 +487,7 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
     }
     return new SearchResponse([], 0);
 }</code></div>
-    <div class="code-block"><code>// ✅ AFTER — filter first, project after, materialize exactly once, reuse the result
+    <div class="code-block"><code>//  AFTER — filter first, project after, materialize exactly once, reuse the result
 public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category, decimal maxPrice)
 {
     var results = catalog
@@ -503,7 +503,7 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📦</span> Sort the Boxes You're Keeping, Not All of Them</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> Sort the Boxes You're Keeping, Not All of Them</div>
         <p>Imagine moving apartments: a hundred boxes sit in the old place, and only twenty are actually going to the new one. Sorting all hundred boxes alphabetically before figuring out which twenty to keep wastes enormous effort on boxes about to be left behind. The efficient approach is obvious once stated: pick the twenty first, <em>then</em> sort just those. That's exactly "filter before you sort" — LINQ doesn't know which items you'll eventually keep until <code>Where</code> tells it, so give <code>Where</code> the earliest possible say in the chain.</p>
     </div>
 
@@ -537,16 +537,16 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
     <!-- ====== COMMON MISTAKES ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Using <code>Count() > 0</code> instead of <code>Any()</code></h4>
-    <p>❌ <code>if (products.Where(p =&gt; p.Stock &gt; 0).Count() &gt; 0)</code> forces a full count of every matching item, just to check whether at least one exists. ✅ <code>if (products.Any(p =&gt; p.Stock &gt; 0))</code> stops at the very first match — for a sequence with thousands of matches, this is the difference between checking one item and checking all of them.</p>
+    <p> <code>if (products.Where(p =&gt; p.Stock &gt; 0).Count() &gt; 0)</code> forces a full count of every matching item, just to check whether at least one exists.  <code>if (products.Any(p =&gt; p.Stock &gt; 0))</code> stops at the very first match — for a sequence with thousands of matches, this is the difference between checking one item and checking all of them.</p>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Rewriting a simple, single-pass loop as an over-engineered LINQ chain</h4>
-    <p>❌ Forcing a genuinely simple accumulation ("sum these, but also log every tenth one") through several chained LINQ calls with side effects smuggled into a <code>Select</code>, just because "LINQ is more idiomatic." ✅ When a loop needs multiple side effects per iteration, or the logic doesn't cleanly decompose into filter/project/sort, a plain <code>foreach</code> loop is often clearer <em>and</em> just as fast — this is exactly the judgment call the next section covers.</p>
+    <p> Forcing a genuinely simple accumulation ("sum these, but also log every tenth one") through several chained LINQ calls with side effects smuggled into a <code>Select</code>, just because "LINQ is more idiomatic."  When a loop needs multiple side effects per iteration, or the logic doesn't cleanly decompose into filter/project/sort, a plain <code>foreach</code> loop is often clearer <em>and</em> just as fast — this is exactly the judgment call the next section covers.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <p>The most important skill in this lesson isn't memorizing five rules — it's the judgment to know when LINQ's readability is worth its (usually small) cost, and when it isn't:</p>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ LINQ is the right default when</h4>
+            <h4> LINQ is the right default when</h4>
             <ul>
                 <li>The logic is a clean filter/project/sort/group/aggregate pipeline — LINQ's entire vocabulary, built across this module, exists exactly for this shape.</li>
                 <li>Readability and correctness matter more than shaving the last few percent off a rarely-hot code path.</li>
@@ -554,7 +554,7 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ A hand-written loop may serve better when</h4>
+            <h4> A hand-written loop may serve better when</h4>
             <ul>
                 <li>Profiling has actually identified this specific code as a genuine bottleneck — never optimize away from LINQ on a guess.</li>
                 <li>The logic needs multiple, distinct side effects per iteration that don't map cleanly onto filter/project/select.</li>
@@ -563,7 +563,7 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
         </div>
     </div>
     <div class="callout">
-        <strong>💡 The practical rule:</strong> Write it in LINQ first — clean, one operator per line, filter before you sort or project, materialize exactly once at the end. Only reach for a hand-written loop after profiling shows this specific piece of code genuinely needs it. Across nearly all real-world business code, "write it well in LINQ" and "write it fast" turn out to be the very same advice.
+        <strong> The practical rule:</strong> Write it in LINQ first — clean, one operator per line, filter before you sort or project, materialize exactly once at the end. Only reach for a hand-written loop after profiling shows this specific piece of code genuinely needs it. Across nearly all real-world business code, "write it well in LINQ" and "write it fast" turn out to be the very same advice.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -594,7 +594,7 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've learned the key LINQ performance patterns that close out this module. Let's check your understanding.</p>
 
     <div class="quiz-question">
@@ -608,11 +608,11 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As shown in How It Works (Pitfall 1) and Why Does It Exist?, a deferred query has no memory of previous enumerations — each one independently re-runs the entire chain, tripling the real work in this scenario.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> LINQ never caches deferred query results automatically — that's precisely why <code>ToList()</code> exists, to force and store a result deliberately.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Re-enumerating a deferred query multiple times is completely valid, exception-free C# — it's just potentially wasteful, not an error.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> All three — <code>Any()</code>, <code>Count()</code>, and <code>foreach</code> — genuinely enumerate the query and run real work each time.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> LINQ never caches deferred query results automatically — that's precisely why <code>ToList()</code> exists, to force and store a result deliberately.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Re-enumerating a deferred query multiple times is completely valid, exception-free C# — it's just potentially wasteful, not an error.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> All three — <code>Any()</code>, <code>Count()</code>, and <code>foreach</code> — genuinely enumerate the query and run real work each time.</p>
                 <p><strong>Reinforcement:</strong> Whenever a query result will be touched more than once, materialize it with <code>ToList()</code> first.</p>
             </div>
         </details>
@@ -629,11 +629,11 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As explained in How It Works (Pitfall 2), <code>Count()</code>'s O(1) shortcut depends on its source still being a concrete <code>ICollection&lt;T&gt;</code> like <code>List&lt;T&gt;</code> — <code>Where</code>'s output is a lazy iterator, not a collection, so that shortcut is unavailable and <code>Count()</code> must enumerate everything to produce an answer.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>products.Count()</code> with no <code>Where</code> genuinely does get the O(1) shortcut, as shown directly in the code example — it isn't a coincidence, it's a documented behavior of <code>Enumerable.Count()</code>.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This combination compiles and runs correctly — it's simply less efficient than it might look, not erroneous.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The whole point of this pitfall is that the cost genuinely differs based on what precedes <code>Count()</code> in the chain.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> <code>products.Count()</code> with no <code>Where</code> genuinely does get the O(1) shortcut, as shown directly in the code example — it isn't a coincidence, it's a documented behavior of <code>Enumerable.Count()</code>.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This combination compiles and runs correctly — it's simply less efficient than it might look, not erroneous.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The whole point of this pitfall is that the cost genuinely differs based on what precedes <code>Count()</code> in the chain.</p>
                 <p><strong>Reinforcement:</strong> The O(1) shortcut for <code>Count()</code> quietly disappears the moment any deferred operator sits between the source collection and the call.</p>
             </div>
         </details>
@@ -650,11 +650,11 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As shown in How It Works (Pitfall 4) and the Analogy, sorting the entire source before filtering wastes effort sorting items that are about to be discarded — filtering first means the sort only ever has to handle the smaller, already-narrowed set.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The order genuinely changes how much work each operator does — this is the entire point of the pitfall.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>Where</code> does not perform binary search regardless of prior sorting — it always checks the predicate against each item in sequence.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>OrderBy</code> is deferred at the call site, but as the Sorting lesson established, it still must pull the entire source through and fully sort it the moment enumeration actually begins — it isn't skipped.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The order genuinely changes how much work each operator does — this is the entire point of the pitfall.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> <code>Where</code> does not perform binary search regardless of prior sorting — it always checks the predicate against each item in sequence.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>OrderBy</code> is deferred at the call site, but as the Sorting lesson established, it still must pull the entire source through and fully sort it the moment enumeration actually begins — it isn't skipped.</p>
                 <p><strong>Reinforcement:</strong> Put <code>Where</code> as early in a chain as the query's logic allows, so every operator after it works with less data.</p>
             </div>
         </details>
@@ -671,11 +671,11 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> As stated directly in When Should I Use It?, the practical rule is to write clean LINQ first and only switch to a hand-written loop once profiling actually justifies it, or when the logic's shape (multiple side effects, complex early-exit conditions) doesn't map cleanly onto LINQ's vocabulary.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This lesson explicitly pushes back on "LINQ is always slower" as a myth — hand-written loops aren't automatically better.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> The lesson explicitly acknowledges cases — complex side effects, proven bottlenecks — where a loop genuinely serves better.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> No specific item-count threshold was given anywhere in this lesson — the decision is about proven bottlenecks and code shape, not an arbitrary size cutoff.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This lesson explicitly pushes back on "LINQ is always slower" as a myth — hand-written loops aren't automatically better.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> The lesson explicitly acknowledges cases — complex side effects, proven bottlenecks — where a loop genuinely serves better.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> No specific item-count threshold was given anywhere in this lesson — the decision is about proven bottlenecks and code shape, not an arbitrary size cutoff.</p>
                 <p><strong>Reinforcement:</strong> "Write it well in LINQ first, optimize only with evidence" is the single most important habit this capstone lesson teaches.</p>
             </div>
         </details>
@@ -692,17 +692,17 @@ public SearchResponse SearchCatalog(List&lt;Product&gt; catalog, string category
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> As shown in Simple Example, both produce the identical matching product — the difference is purely one of avoiding an unneeded intermediate step, since <code>First(predicate)</code> can search and stop directly, without constructing a separate <code>Where</code> layer first.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Both expressions locate the exact same item under the exact same condition.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> Both throw <code>InvalidOperationException</code> when nothing matches — <code>First</code> (as opposed to <code>FirstOrDefault</code>) never returns <code>null</code> in either form.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no such requirement — <code>First(predicate)</code> accepts any boolean-returning lambda, <code>&amp;&amp;</code> included, exactly like <code>Where</code> does.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Both expressions locate the exact same item under the exact same condition.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> Both throw <code>InvalidOperationException</code> when nothing matches — <code>First</code> (as opposed to <code>FirstOrDefault</code>) never returns <code>null</code> in either form.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no such requirement — <code>First(predicate)</code> accepts any boolean-returning lambda, <code>&amp;&amp;</code> included, exactly like <code>Where</code> does.</p>
                 <p><strong>Reinforcement:</strong> Prefer the predicate-overload versions (<code>First</code>, <code>Any</code>, <code>Single</code>) directly over combining <code>Where</code> with a parameterless call — a small, easy habit with a real, if modest, payoff.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 Congratulations — you've completed Part IV: LINQ. You can now filter, project, sort, group, join, and aggregate data fluently, understand exactly when your queries actually run, write them in either syntax, extend LINQ with your own operators, and write all of it with real performance awareness.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> Congratulations — you've completed Part IV: LINQ. You can now filter, project, sort, group, join, and aggregate data fluently, understand exactly when your queries actually run, write them in either syntax, extend LINQ with your own operators, and write all of it with real performance awareness.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

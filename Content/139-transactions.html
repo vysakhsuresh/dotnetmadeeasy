@@ -421,20 +421,20 @@ catch
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🔴 Without a Transaction</h4>
+            <h4> Without a Transaction</h4>
             <ul>
                 <li>Debit Account A → commits immediately</li>
-                <li>💥 Crash / dropped connection</li>
+                <li> Crash / dropped connection</li>
                 <li>Credit Account B → never runs</li>
                 <li>Result: $500 permanently disappeared</li>
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>🟢 With a Transaction</h4>
+            <h4> With a Transaction</h4>
             <ul>
                 <li>BeginTransaction()</li>
                 <li>Debit Account A → held, not yet permanent</li>
-                <li>💥 Crash / dropped connection</li>
+                <li> Crash / dropped connection</li>
                 <li>Neither change was ever committed → database rolls back automatically → both accounts unchanged</li>
             </ul>
         </div>
@@ -535,7 +535,7 @@ catch
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📦</span> A Draft, Not Yet Published</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Draft, Not Yet Published</div>
         <p>Think of a transaction like editing a shared document in draft mode. While you're making changes, nobody else sees them — they're still visible only to you, in your draft. If you decide the edit was a mistake halfway through, you can discard the whole draft and the document reverts to exactly what it was before you started — none of your half-finished edits leak through.</p>
         <p>Only when you hit "Publish" (<span class="icode">Commit()</span>) do all your changes become visible to everyone at once, as a single, complete update. There's no moment where other readers see half your edit — that's isolation and atomicity working together, the same guarantee a database transaction gives your SQL statements.</p>
         <p><strong>Where the analogy stops:</strong> a real "discard draft" in a document editor is a manual choice you make. A database transaction is discarded (rolled back) automatically the moment something goes wrong and you never called <span class="icode">Commit()</span> — you don't have to remember to clean up the partial changes yourself.</p>
@@ -574,16 +574,16 @@ catch
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Forgetting to attach the transaction to a command</h4>
-    <p>❌ Calling <span class="icode">connection.BeginTransaction()</span> but forgetting <span class="icode">command.Transaction = transaction;</span> on one of the commands. That command runs <em>outside</em> the transaction and commits immediately on its own, regardless of what happens to the rest — a subtle bug that's easy to miss until it causes exactly the kind of partial update transactions exist to prevent. ✅ Set <span class="icode">Transaction</span> on every command sharing the unit of work — some teams write a small helper method that always sets it, precisely to avoid forgetting.</p>
+    <p> Calling <span class="icode">connection.BeginTransaction()</span> but forgetting <span class="icode">command.Transaction = transaction;</span> on one of the commands. That command runs <em>outside</em> the transaction and commits immediately on its own, regardless of what happens to the rest — a subtle bug that's easy to miss until it causes exactly the kind of partial update transactions exist to prevent.  Set <span class="icode">Transaction</span> on every command sharing the unit of work — some teams write a small helper method that always sets it, precisely to avoid forgetting.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Not rolling back in a catch block (or not using try/catch at all)</h4>
-    <p>❌ Letting an exception propagate up without calling <span class="icode">Rollback()</span> first, and without disposing the transaction. If the connection stays open elsewhere, the transaction can be left dangling, holding locks other operations are now waiting on. ✅ Always wrap transaction work in try/catch, roll back explicitly on failure, and use <span class="icode">await using</span> on the transaction so it's disposed even if you forget the explicit rollback.</p>
+    <p> Letting an exception propagate up without calling <span class="icode">Rollback()</span> first, and without disposing the transaction. If the connection stays open elsewhere, the transaction can be left dangling, holding locks other operations are now waiting on.  Always wrap transaction work in try/catch, roll back explicitly on failure, and use <span class="icode">await using</span> on the transaction so it's disposed even if you forget the explicit rollback.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Holding a transaction open across slow, unrelated work</h4>
-    <p>❌ Beginning a transaction, then calling a slow external API or waiting on user input before running the remaining statements and committing. The longer a transaction stays open, the longer it holds locks on the affected rows — blocking other operations that need those same rows. ✅ Keep the time between <span class="icode">BeginTransaction</span> and <span class="icode">Commit</span>/<span class="icode">Rollback</span> as short as possible — do slow, non-database work before starting the transaction or after it ends.</p>
+    <p> Beginning a transaction, then calling a slow external API or waiting on user input before running the remaining statements and committing. The longer a transaction stays open, the longer it holds locks on the affected rows — blocking other operations that need those same rows.  Keep the time between <span class="icode">BeginTransaction</span> and <span class="icode">Commit</span>/<span class="icode">Rollback</span> as short as possible — do slow, non-database work before starting the transaction or after it ends.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 4 — Wrapping a single statement in a transaction "just in case"</h4>
-    <p>❌ Adding <span class="icode">BeginTransaction</span>/<span class="icode">Commit</span> around one single <span class="icode">UPDATE</span> statement. It adds ceremony and a small amount of overhead without adding any real safety — that one statement was already atomic on its own. ✅ Reach for an explicit transaction only when two or more statements genuinely need to succeed or fail together.</p>
+    <p> Adding <span class="icode">BeginTransaction</span>/<span class="icode">Commit</span> around one single <span class="icode">UPDATE</span> statement. It adds ceremony and a small amount of overhead without adding any real safety — that one statement was already atomic on its own.  Reach for an explicit transaction only when two or more statements genuinely need to succeed or fail together.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -600,7 +600,7 @@ catch
         </table>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Ask "if step 2 fails, should step 1's effect still be permanent?" If the honest answer is no, those steps belong inside one transaction.
+        <strong> Rule of thumb:</strong> Ask "if step 2 fails, should step 1's effect still be permanent?" If the honest answer is no, those steps belong inside one transaction.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -628,7 +628,7 @@ catch
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen why the bank-transfer scenario needs a transaction, and how ACID describes the guarantee. Let's confirm it clicked.</p>
 
     <div class="quiz-question">
@@ -642,11 +642,11 @@ catch
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Because the changes were never committed, atomicity guarantees that none of them became permanent. The crash leaves the uncommitted transaction rolled back — both accounts are exactly as they were before the transfer began.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the outcome a transaction prevents — it would be the result if the two statements had run without any transaction wrapping them.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The database isn't corrupted — rollback is a normal, built-in recovery mechanism, not a manual repair process.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The credit statement never even ran, since the crash happened before it — there's no way its effect could appear.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is exactly the outcome a transaction prevents — it would be the result if the two statements had run without any transaction wrapping them.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The database isn't corrupted — rollback is a normal, built-in recovery mechanism, not a manual repair process.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The credit statement never even ran, since the crash happened before it — there's no way its effect could appear.</p>
                 <p><strong>Reinforcement:</strong> An uncommitted transaction is treated as if it never happened at all — that's exactly the safety property atomicity provides.</p>
             </div>
         </details>
@@ -663,11 +663,11 @@ catch
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: D</span></p>
+                <p><span class="correct"> Correct: D</span></p>
                 <p><strong>Why D is correct:</strong> Durability is specifically the promise that once a transaction is committed, its changes are permanent — a crash immediately afterward cannot undo them, because the change was already durably recorded before Commit() returned.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Atomicity is about all-or-nothing execution of the statements within the transaction, not about survival after a crash post-commit.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> Consistency is about the database never landing in a state that violates its rules/constraints — it's not specifically about crash survival.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Isolation is about concurrent transactions not seeing each other's uncommitted changes — unrelated to what happens after a successful commit.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Atomicity is about all-or-nothing execution of the statements within the transaction, not about survival after a crash post-commit.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> Consistency is about the database never landing in a state that violates its rules/constraints — it's not specifically about crash survival.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Isolation is about concurrent transactions not seeing each other's uncommitted changes — unrelated to what happens after a successful commit.</p>
                 <p><strong>Reinforcement:</strong> Each ACID letter maps to a distinct guarantee — durability specifically covers "survives a crash after commit."</p>
             </div>
         </details>
@@ -684,11 +684,11 @@ catch
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> A transaction holds locks on the rows it has modified for as long as it stays open. Doing slow, unrelated work (like an external API call) in the middle of a transaction needlessly extends how long those rows stay locked, increasing contention for anything else that needs them.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Transactions can contain any number of statements — that's the whole point of grouping multiple statements into one unit.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> A transaction only governs database changes — an external API call is not part of the database and is never rolled back by a database transaction, regardless of when it happens relative to the transaction.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Ordinary C# code can run between statements inside a transaction — the problem isn't that it's disallowed, it's that doing so while the transaction is open extends lock duration.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Transactions can contain any number of statements — that's the whole point of grouping multiple statements into one unit.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> A transaction only governs database changes — an external API call is not part of the database and is never rolled back by a database transaction, regardless of when it happens relative to the transaction.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Ordinary C# code can run between statements inside a transaction — the problem isn't that it's disallowed, it's that doing so while the transaction is open extends lock duration.</p>
                 <p><strong>Reinforcement:</strong> Keep transactions short — do slow or external work before starting one or after it ends, not in the middle.</p>
             </div>
         </details>
@@ -705,17 +705,17 @@ catch
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> The database engine already wraps every individual statement in its own implicit transaction — it either fully applies or doesn't apply at all. Explicit transactions become necessary only when multiple statements must succeed or fail together as one unit.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> UPDATE statements are fully covered by ACID guarantees — there's no exemption; a single UPDATE is simply already atomic without needing an explicit wrapper.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Explicit transactions work with any combination of statements — INSERT, UPDATE, DELETE, and even SELECT can all participate in a transaction.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> An UPDATE inside an explicit transaction absolutely can be rolled back — that's exactly what makes transactions useful in the first place.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> UPDATE statements are fully covered by ACID guarantees — there's no exemption; a single UPDATE is simply already atomic without needing an explicit wrapper.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Explicit transactions work with any combination of statements — INSERT, UPDATE, DELETE, and even SELECT can all participate in a transaction.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> An UPDATE inside an explicit transaction absolutely can be rolled back — that's exactly what makes transactions useful in the first place.</p>
                 <p><strong>Reinforcement:</strong> Reach for an explicit transaction specifically when two or more statements need to succeed or fail as a single unit — not for every single statement by default.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand transactions, ACID, and how to keep multi-step database operations safe. Next up: leaving raw ADO.NET behind and meeting Entity Framework Core.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now understand transactions, ACID, and how to keep multi-step database operations safe. Next up: leaving raw ADO.NET behind and meeting Entity Framework Core.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

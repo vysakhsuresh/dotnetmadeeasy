@@ -275,7 +275,7 @@
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🧠 IMemoryCache</h4>
+            <h4> IMemoryCache</h4>
             <ul>
                 <li>Caches arbitrary <strong>values</strong> — objects, query results, computed data</li>
                 <li>You control exactly what gets cached and for how long</li>
@@ -284,7 +284,7 @@
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>📦 Output Caching (.NET 7+)</h4>
+            <h4> Output Caching (.NET 7+)</h4>
             <ul>
                 <li>Caches the <strong>entire HTTP response</strong> for an endpoint</li>
                 <li>Configured as middleware, with policies per route</li>
@@ -394,13 +394,13 @@ app.MapGet("/api/products", async (AppDbContext db) =&gt;
     <p>The first request runs the handler, queries the database, and caches the full serialized response for two minutes, tagged <code>"catalog"</code>. Every request in that window — from any client — gets the cached response served directly by the output caching middleware, with zero of your endpoint code, and zero database round-trips, running again. The <code>Tag</code> matters: it gives you a handle to invalidate this cached response explicitly (via <code>IOutputCacheStore.EvictByTagAsync("catalog", ...)</code>) the moment a product actually changes, rather than waiting out the full two minutes.</p>
 
     <div class="callout">
-        <strong>💡 Output caching vs. <code>[ResponseCache]</code>:</strong> The older <code>[ResponseCache]</code> attribute is often mistaken for server-side caching — it isn't, primarily. It mainly sets HTTP response headers like <code>Cache-Control</code> and <code>Expires</code>, which are <em>instructions to the browser and any intermediate proxies</em> about how long <em>they're</em> allowed to reuse the response, without contacting your server again at all. Your server still runs the endpoint on every request that does reach it. Output caching middleware is different in kind: your own server actually stores the rendered response and serves it back directly, without a client-side or proxy cache being involved at all.
+        <strong> Output caching vs. <code>[ResponseCache]</code>:</strong> The older <code>[ResponseCache]</code> attribute is often mistaken for server-side caching — it isn't, primarily. It mainly sets HTTP response headers like <code>Cache-Control</code> and <code>Expires</code>, which are <em>instructions to the browser and any intermediate proxies</em> about how long <em>they're</em> allowed to reuse the response, without contacting your server again at all. Your server still runs the endpoint on every request that does reach it. Output caching middleware is different in kind: your own server actually stores the rendered response and serves it back directly, without a client-side or proxy cache being involved at all.
     </div>
 
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📋</span> The Receptionist's Sticky Note</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> The Receptionist's Sticky Note</div>
         <p>Imagine a receptionist who gets asked "what's today's exchange rate?" fifty times an hour. Instead of calling the finance desk every single time, she calls once, writes the answer on a sticky note, and reads from the note for the next hour. Anyone who asks gets a fast, correct-enough answer without a phone call.</p>
         <p>But the note has a problem: if the rate changes mid-hour and nobody tells her, she keeps handing out the old number — confidently, and wrongly — until either the hour is up (expiration) or someone walks over and updates the note (explicit invalidation). The note is fast precisely because it isn't the live source of truth; that's the whole trade caching makes.</p>
     </div>
@@ -435,14 +435,14 @@ app.MapGet("/api/products", async (AppDbContext db) =&gt;
     <!-- ====== COMMON MISTAKES ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Caching with no expiration at all</h4>
-    <p>❌ <code>cache.Set(key, value)</code> with no expiration means the entry lives until it's explicitly removed or evicted under memory pressure — an easy way to silently serve data that's hours or days stale.</p>
-    <p>✅ Always set an explicit expiration appropriate to how quickly the underlying data can realistically change — even a short one is a safety net.</p>
+    <p> <code>cache.Set(key, value)</code> with no expiration means the entry lives until it's explicitly removed or evicted under memory pressure — an easy way to silently serve data that's hours or days stale.</p>
+    <p> Always set an explicit expiration appropriate to how quickly the underlying data can realistically change — even a short one is a safety net.</p>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Caching data that changes per-request but keying it too broadly</h4>
-    <p>❌ Caching a "current user's cart total" under a single shared key that doesn't include the user's ID — every user ends up seeing whichever user's total got cached first. This is a correctness bug, not just a staleness one.</p>
-    <p>✅ Build cache keys from everything that makes the value unique: <code>$"cart-total:{userId}"</code>, not just <code>"cart-total"</code>.</p>
+    <p> Caching a "current user's cart total" under a single shared key that doesn't include the user's ID — every user ends up seeing whichever user's total got cached first. This is a correctness bug, not just a staleness one.</p>
+    <p> Build cache keys from everything that makes the value unique: <code>$"cart-total:{userId}"</code>, not just <code>"cart-total"</code>.</p>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Caching data that changes on almost every write</h4>
-    <p>❌ Wrapping a value in a cache when the write-to-read ratio is roughly 1:1 — you pay all the complexity of managing cache invalidation and get almost none of the performance benefit, because the cache is invalidated about as often as it would have been recomputed anyway.</p>
-    <p>✅ Reserve caching for data that's read far more often than it's written — that's where the trade genuinely pays off.</p>
+    <p> Wrapping a value in a cache when the write-to-read ratio is roughly 1:1 — you pay all the complexity of managing cache invalidation and get almost none of the performance benefit, because the cache is invalidated about as often as it would have been recomputed anyway.</p>
+    <p> Reserve caching for data that's read far more often than it's written — that's where the trade genuinely pays off.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -460,7 +460,7 @@ app.MapGet("/api/products", async (AppDbContext db) =&gt;
     </ul>
 
     <div class="callout">
-        <strong>💡 Looking ahead:</strong> Everything in this lesson lives inside <em>one</em> running instance of your app. The moment your app scales out to more than one instance behind a load balancer, each instance's <code>IMemoryCache</code> becomes its own island — invisible to every other instance. That's exactly the problem the next lesson, <strong>Distributed Caching</strong>, solves.
+        <strong> Looking ahead:</strong> Everything in this lesson lives inside <em>one</em> running instance of your app. The moment your app scales out to more than one instance behind a load balancer, each instance's <code>IMemoryCache</code> becomes its own island — invisible to every other instance. That's exactly the problem the next lesson, <strong>Distributed Caching</strong>, solves.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -490,7 +490,7 @@ app.MapGet("/api/products", async (AppDbContext db) =&gt;
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen how in-process caching works and why invalidation is the real challenge. Let's check your reasoning.</p>
 
     <div class="quiz-question">
@@ -504,11 +504,11 @@ app.MapGet("/api/products", async (AppDbContext db) =&gt;
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly the profile where caching pays off — expensive to produce, read constantly, changes rarely relative to how often it's requested. Caching it once and serving that answer for a bounded window avoids massive repeated cost for no loss of meaningful accuracy.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Caching doesn't speed up the query itself — it avoids running the query again at all, which only helps because the result would be identical anyway.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such built-in requirement or rule in ASP.NET Core.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>IMemoryCache</code> is explicitly per-instance, not shared — that's the whole reason the next lesson on distributed caching exists.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Caching doesn't speed up the query itself — it avoids running the query again at all, which only helps because the result would be identical anyway.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no such built-in requirement or rule in ASP.NET Core.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>IMemoryCache</code> is explicitly per-instance, not shared — that's the whole reason the next lesson on distributed caching exists.</p>
                 <p><strong>Reinforcement:</strong> Cache when the cost of producing an answer is high and the answer doesn't change often relative to how often it's asked for.</p>
             </div>
         </details>
@@ -525,11 +525,11 @@ app.MapGet("/api/products", async (AppDbContext db) =&gt;
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> <code>[ResponseCache]</code> is primarily about instructing external caches (browser, CDN, proxy) via headers like <code>Cache-Control</code> — your server still typically runs the endpoint on every request that reaches it. Output caching middleware genuinely stores the rendered response server-side and can serve it back without your endpoint code running again at all.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> They solve related but meaningfully different problems — client/proxy hinting versus real server-side response storage.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Output caching works with both Minimal APIs and MVC controllers.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Neither is inherently database-backed by default; the distinction is about headers-to-clients versus actual server-side response storage, not storage medium.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> They solve related but meaningfully different problems — client/proxy hinting versus real server-side response storage.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Output caching works with both Minimal APIs and MVC controllers.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Neither is inherently database-backed by default; the distinction is about headers-to-clients versus actual server-side response storage, not storage medium.</p>
                 <p><strong>Reinforcement:</strong> "Caches the response" can mean very different things depending on whether the caching happens on the server or is merely requested of the client.</p>
             </div>
         </details>
@@ -546,11 +546,11 @@ app.MapGet("/api/products", async (AppDbContext db) =&gt;
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly the "staleness has real consequences" case from the lesson — an account balance is the kind of value where showing outdated data can cause genuine problems (a user overdrafting believing they have more funds than they do, for example). This is a case where caching needs, at minimum, aggressive invalidation on write — or shouldn't be cached this way at all.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>IMemoryCache</code> can store any object, decimals included — that's not a real limitation.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Caching speeds up reads on a cache hit; the concern here is correctness, not speed.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There is no universally "safe" expiration — the right duration depends entirely on how much staleness the specific data can tolerate, and financial data tolerates very little.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> <code>IMemoryCache</code> can store any object, decimals included — that's not a real limitation.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Caching speeds up reads on a cache hit; the concern here is correctness, not speed.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There is no universally "safe" expiration — the right duration depends entirely on how much staleness the specific data can tolerate, and financial data tolerates very little.</p>
                 <p><strong>Reinforcement:</strong> The right question before caching anything isn't just "is this expensive?" — it's also "what happens if someone sees a stale version of this?"</p>
             </div>
         </details>
@@ -567,17 +567,17 @@ app.MapGet("/api/products", async (AppDbContext db) =&gt;
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> These are the real, practical tools the lesson covers: bound staleness with expiration, actively evict/replace an entry the moment you know its source data changed, and design keys so that a data change naturally produces a different key (avoiding the old value being read at all).</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> No expiration is one of the common mistakes covered — it doesn't solve staleness, it just makes it unbounded and easy to forget about.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This "solves" staleness by discarding all caching benefit and adding operational chaos — not a real strategy.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Invalidation is hard, not impossible — the lesson's whole point is that there are real, workable strategies, they just require deliberate design rather than being automatic.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> No expiration is one of the common mistakes covered — it doesn't solve staleness, it just makes it unbounded and easy to forget about.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This "solves" staleness by discarding all caching benefit and adding operational chaos — not a real strategy.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Invalidation is hard, not impossible — the lesson's whole point is that there are real, workable strategies, they just require deliberate design rather than being automatic.</p>
                 <p><strong>Reinforcement:</strong> Cache invalidation is hard specifically because it requires you to actively think about staleness, not because there's no way to manage it.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand in-process caching with IMemoryCache and output caching — and why cache invalidation is the part that actually takes engineering judgment. Next: what happens once your app runs as more than one instance.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now understand in-process caching with IMemoryCache and output caching — and why cache invalidation is the part that actually takes engineering judgment. Next: what happens once your app runs as more than one instance.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

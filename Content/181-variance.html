@@ -303,10 +303,10 @@
     <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — A Real Precedent for What Happens Without the Rule</h3>
     <p>C# didn't invent this caution from nothing — it had already shipped an unsafe version of covariance once, for arrays, back in C# 1.0, before generics existed at all (added in C# 2.0). Arrays have always allowed a derived-to-base widening conversion with no restriction on read vs. write positions:</p>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">string[] strings = new string[3];
-object[] objects = strings;      // ✅ compiles — arrays are covariant, unconditionally
+object[] objects = strings;      //  compiles — arrays are covariant, unconditionally
 
-objects[0] = 42;                 // ✅ ALSO compiles — object[] accepts any object, including an int (boxed)
-// 💥 ArrayTypeMismatchException at runtime — the actual array is a string[], and 42 isn't a string</code></pre>
+objects[0] = 42;                 //  ALSO compiles — object[] accepts any object, including an int (boxed)
+//  ArrayTypeMismatchException at runtime — the actual array is a string[], and 42 isn't a string</code></pre>
     <p>This is real, documented, and still true in current .NET — arrays are covariant for <em>every</em> reference-element-type array, with no <code>out</code>/<code>in</code>-style restriction, and the CLR only catches the violation with a runtime type check on every array-element write, not at compile time.</p>
 
     <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need</h3>
@@ -368,13 +368,13 @@ public interface IProducer&lt;T&gt;
             <div class="step-label">3. ADD out — THE COMPILER VERIFIES IT FOR YOU</div>
             <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IProducer&lt;out T&gt;
 {
-    T Produce(); // ✅ compiles — T only ever appears in an output position
+    T Produce(); //  compiles — T only ever appears in an output position
 }
 
 public class DogProducer : IProducer&lt;Dog&gt; { public Dog Produce() => new Dog(); }
 
 IProducer&lt;Dog&gt; dogProducer = new DogProducer();
-IProducer&lt;Animal&gt; animalProducer = dogProducer; // ✅ covariance — widening is safe</code></pre>
+IProducer&lt;Animal&gt; animalProducer = dogProducer; //  covariance — widening is safe</code></pre>
         </div>
         <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
         <div class="flow-step">
@@ -387,7 +387,7 @@ IProducer&lt;Animal&gt; animalProducer = dogProducer; // ✅ covariance — wide
 public class AnimalConsumer : IConsumer&lt;Animal&gt; { public void Consume(Animal a) { } }
 
 IConsumer&lt;Animal&gt; animalConsumer = new AnimalConsumer();
-IConsumer&lt;Dog&gt; dogConsumer = animalConsumer; // ✅ contravariance — narrowing is safe</code></pre>
+IConsumer&lt;Dog&gt; dogConsumer = animalConsumer; //  contravariance — narrowing is safe</code></pre>
             <ul>
                 <li>Try adding <code>T Peek();</code> to <code>IConsumer&lt;in T&gt;</code> and it fails to compile immediately — the compiler catches the direction violation the instant you write it, exactly the guarantee that makes this whole system trustworthy.</li>
             </ul>
@@ -398,20 +398,20 @@ IConsumer&lt;Dog&gt; dogConsumer = animalConsumer; // ✅ contravariance — nar
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
 
     <p>Reproducing the array covariance hole exactly, then showing why the generic equivalent can't happen:</p>
-    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ Arrays: this compiles, and blows up at runtime
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">//  Arrays: this compiles, and blows up at runtime
 public class Animal { }
 public class Dog : Animal { }
 public class Cat : Animal { }
 
 Animal[] animals = new Dog[3]; // legal — array covariance, no restriction at all
 animals[0] = new Cat();        // compiles! Cat IS an Animal, as far as the compiler can see
-// 💥 System.ArrayTypeMismatchException at runtime — the real array only holds Dogs
+//  System.ArrayTypeMismatchException at runtime — the real array only holds Dogs
 
-// ✅ Generics: the equivalent mistake simply cannot compile
+//  Generics: the equivalent mistake simply cannot compile
 List&lt;Dog&gt; dogs = new List&lt;Dog&gt;();
-// List&lt;Animal&gt; genericAnimals = dogs;  // ❌ compile error — List&lt;T&gt; is invariant, full stop
+// List&lt;Animal&gt; genericAnimals = dogs;  //  compile error — List&lt;T&gt; is invariant, full stop
 // IList&lt;Animal&gt; also would not compile — IList&lt;T&gt; has no out/in annotation, for the same reason
-IEnumerable&lt;Animal&gt; readOnlyView = dogs; // ✅ fine — IEnumerable&lt;out T&gt; is read-only, provably safe</code></pre>
+IEnumerable&lt;Animal&gt; readOnlyView = dogs; //  fine — IEnumerable&lt;out T&gt; is read-only, provably safe</code></pre>
     <p><strong>Meaning:</strong> The array version trades a compile-time guarantee for a runtime check that can fail in production. The generic interface version refuses to compile the moment you'd need write access through a widened reference — the mistake is caught before the program ever runs.</p>
 
     <!-- ====== REAL-WORLD EXAMPLE ====== -->
@@ -445,10 +445,10 @@ public class GeneralNotificationHandler : INotificationHandler&lt;Notification&g
 
 // Usage — both directions of variance doing real work:
 INotificationSource&lt;OrderShippedNotification&gt; shippedSource = new OrderShippedSource();
-INotificationSource&lt;Notification&gt; genericSource = shippedSource; // ✅ covariance
+INotificationSource&lt;Notification&gt; genericSource = shippedSource; //  covariance
 
 INotificationHandler&lt;Notification&gt; generalHandler = new GeneralNotificationHandler();
-INotificationHandler&lt;OrderShippedNotification&gt; shippedHandler = generalHandler; // ✅ contravariance
+INotificationHandler&lt;OrderShippedNotification&gt; shippedHandler = generalHandler; //  contravariance
 
 shippedHandler.Handle(shippedSource.GetNext()); // "Logging: Shipped"</code></pre>
     <p>The general-purpose handler, written once against the base <code>Notification</code> type, is reusable for any specific notification subtype without writing per-subtype handlers — exactly the kind of design variance is meant to enable.</p>
@@ -457,7 +457,7 @@ shippedHandler.Handle(shippedSource.GetNext()); // "Logging: Shipped"</code></pr
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🚪</span> A building inspector who checks every doorway before opening it</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A building inspector who checks every doorway before opening it</div>
         <p>Array covariance is like a building where every door is unlocked by default, and a security guard (the runtime type check) stands behind each one, ready to physically block anyone who tries to carry the wrong item through. It mostly works — but only because someone's standing there every single time, and if they're ever not paying close attention (an edge case the CLR's own runtime check doesn't hit for every array operation), something wrong gets through. It's also just wasted effort on every single legitimate pass-through, since most doors are only ever used correctly.</p>
         <p>Generic interface variance is like an inspector who, before the building is even opened for business, walks the entire blueprint and certifies: "this door is architecturally impossible to misuse — it physically cannot swing the wrong way." Once that certification is granted (<code>out T</code>/<code>in T</code> compiles successfully), no guard is needed at that door ever again, because the mistake literally cannot occur — not "is checked for," but structurally ruled out.</p>
     </div>
@@ -518,19 +518,19 @@ shippedHandler.Handle(shippedSource.GetNext()); // "Logging: Shipped"</code></pr
 
 string[] names = new string[5];
 PopulateWithDefault(names, "N/A"); // fine — "N/A" is a string
-PopulateWithDefault(names, 42);    // 💥 ArrayTypeMismatchException — 42 isn't a string</code></pre>
-    <p>✅ Avoid designing APIs that accept a covariant array reference for writing at all; accept the specific element type, or use a generic method constrained appropriately, so the compiler — not a runtime exception — catches the mistake.</p>
+PopulateWithDefault(names, 42);    //  ArrayTypeMismatchException — 42 isn't a string</code></pre>
+    <p> Avoid designing APIs that accept a covariant array reference for writing at all; accept the specific element type, or use a generic method constrained appropriately, so the compiler — not a runtime exception — catches the mistake.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Trying to force a mixed read/write interface to be variant</h4>
-    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IRepository&lt;out T&gt;   // ❌ compile error
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IRepository&lt;out T&gt;   //  compile error
 {
     T GetById(int id);
     void Add(T item);   // T as an input — violates 'out'
 }</code></pre>
-    <p>✅ Split responsibilities into a read-only, genuinely covariant interface and a separate read/write (invariant) interface if you need both — don't fight the compiler on this; the error is telling you the design itself is unsafe as a single variant contract, exactly as it should.</p>
+    <p> Split responsibilities into a read-only, genuinely covariant interface and a separate read/write (invariant) interface if you need both — don't fight the compiler on this; the error is telling you the design itself is unsafe as a single variant contract, exactly as it should.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming a covariant interface reference is somehow "read-only" at the object level</h4>
-    <p>❌ Believing that once you have an <code>IEnumerable&lt;Animal&gt;</code> view over a <code>List&lt;Dog&gt;</code>, the underlying list itself becomes immutable. ✅ Variance only restricts what's reachable <em>through that specific reference</em> — if you still hold the original <code>List&lt;Dog&gt;</code> reference elsewhere, it remains fully mutable through that reference; nothing about the object itself changed.</p>
+    <p> Believing that once you have an <code>IEnumerable&lt;Animal&gt;</code> view over a <code>List&lt;Dog&gt;</code>, the underlying list itself becomes immutable.  Variance only restricts what's reachable <em>through that specific reference</em> — if you still hold the original <code>List&lt;Dog&gt;</code> reference elsewhere, it remains fully mutable through that reference; nothing about the object itself changed.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -542,7 +542,7 @@ PopulateWithDefault(names, 42);    // 💥 ArrayTypeMismatchException — 42 isn
     </ul>
 
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> If you can honestly say a generic interface member "only ever hands out <code>T</code>," mark it <code>out</code>. If it "only ever takes <code>T</code> in," mark it <code>in</code>. If you're not sure, leave it invariant — the compiler will tell you immediately, and for free, whether your <code>out</code>/<code>in</code> attempt is actually safe.
+        <strong> Rule of thumb:</strong> If you can honestly say a generic interface member "only ever hands out <code>T</code>," mark it <code>out</code>. If it "only ever takes <code>T</code> in," mark it <code>in</code>. If you're not sure, leave it invariant — the compiler will tell you immediately, and for free, whether your <code>out</code>/<code>in</code> attempt is actually safe.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -569,7 +569,7 @@ PopulateWithDefault(names, 42);    // 💥 ArrayTypeMismatchException — 42 isn
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen the formal reasoning behind variance safety, the legacy array covariance hole, and how to write your own variant interfaces. Let's check your understanding.</p>
 
     <div class="quiz-question">
@@ -583,11 +583,11 @@ PopulateWithDefault(names, 42);    // 💥 ArrayTypeMismatchException — 42 isn
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the exact array covariance hole this lesson describes — arrays widen unconditionally at compile time, but the CLR must catch invalid writes with a runtime type check, which throws here.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Unlike generic classes such as <code>List&lt;T&gt;</code>, arrays have always been covariant — this is precisely the legacy design this lesson contrasts with the safer generic model.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no automatic conversion of <code>42</code> into a <code>string</code> — the runtime check exists specifically to reject this kind of mismatch, and it does so by throwing.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The first line compiles successfully — array covariance is unconditional; the failure happens later, at runtime, on the write.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Unlike generic classes such as <code>List&lt;T&gt;</code>, arrays have always been covariant — this is precisely the legacy design this lesson contrasts with the safer generic model.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no automatic conversion of <code>42</code> into a <code>string</code> — the runtime check exists specifically to reject this kind of mismatch, and it does so by throwing.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The first line compiles successfully — array covariance is unconditional; the failure happens later, at runtime, on the write.</p>
                 <p><strong>Reinforcement:</strong> Array covariance trades a compile-time guarantee for a runtime safety net that can fail — the exact opposite trade-off generic interface variance makes.</p>
             </div>
         </details>
@@ -604,11 +604,11 @@ PopulateWithDefault(names, 42);    // 💥 ArrayTypeMismatchException — 42 isn
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> The compiler checks every single member of an <code>out T</code> interface for output-only usage of <code>T</code>. <code>Add(T item)</code> accepts <code>T</code> as a parameter — an input position — which alone disqualifies the whole interface from being covariant.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Interfaces can have any number of members; that's not the issue here.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The two method names don't conflict at all — this isn't a naming problem.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no such one-method limit — plenty of real covariant interfaces, like <code>IEnumerable&lt;T&gt;</code> together with its enumerator, have multiple members; what matters is that every one of them respects the direction.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Interfaces can have any number of members; that's not the issue here.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The two method names don't conflict at all — this isn't a naming problem.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no such one-method limit — plenty of real covariant interfaces, like <code>IEnumerable&lt;T&gt;</code> together with its enumerator, have multiple members; what matters is that every one of them respects the direction.</p>
                 <p><strong>Reinforcement:</strong> A single input-position use of <code>T</code> anywhere in the interface is enough to disqualify it from being <code>out</code> — the compiler checks exhaustively, not just the "main" method.</p>
             </div>
         </details>
@@ -625,11 +625,11 @@ PopulateWithDefault(names, 42);    // 💥 ArrayTypeMismatchException — 42 isn
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As explained in "Under the Hood," variance is checkable specifically because an interface is a pure contract with no storage — every use of <code>T</code> appears explicitly in a member signature the compiler can inspect. A class's actual fields inherently support both reading and writing, which structurally can't satisfy an "output-only" requirement.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The restriction isn't an arbitrary syntax ban — it reflects a genuine structural reason, tied to storage, as explained above.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>List&lt;T&gt;</code> does implement several interfaces (like <code>IList&lt;T&gt;</code>, <code>IEnumerable&lt;T&gt;</code>); that's unrelated to why the class itself can't be variant.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Interfaces aren't value types — they're reference types just like classes; the class-vs-interface distinction here is about storage and contract, not the value/reference type split.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The restriction isn't an arbitrary syntax ban — it reflects a genuine structural reason, tied to storage, as explained above.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> <code>List&lt;T&gt;</code> does implement several interfaces (like <code>IList&lt;T&gt;</code>, <code>IEnumerable&lt;T&gt;</code>); that's unrelated to why the class itself can't be variant.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Interfaces aren't value types — they're reference types just like classes; the class-vs-interface distinction here is about storage and contract, not the value/reference type split.</p>
                 <p><strong>Reinforcement:</strong> Variance is checkable specifically because interfaces have no backing storage — every generic class with real fields is invariant for the same structural reason.</p>
             </div>
         </details>
@@ -646,17 +646,17 @@ PopulateWithDefault(names, 42);    // 💥 ArrayTypeMismatchException — 42 isn
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly the "Common Mistakes" scenario — accepting a covariant array reference for writing invites a real runtime exception when the caller's actual array is more specific than <code>object[]</code>. A generic method, checked at compile time, avoids the whole category of bug.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely wrong — the declared parameter type (<code>object[]</code>) and the actual runtime array type (e.g. <code>string[]</code>) can and do differ, which is the entire source of the risk.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> It's a real, documented, and reproducible exception — the example in "Common Mistakes" demonstrates it directly, not as a theoretical curiosity.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>readonly</code> on a parameter isn't valid C# for this purpose, and even if some read-only mechanism were used, it wouldn't address the specific write happening inside this method — the fix is to change the API shape, not add a modifier.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is precisely wrong — the declared parameter type (<code>object[]</code>) and the actual runtime array type (e.g. <code>string[]</code>) can and do differ, which is the entire source of the risk.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> It's a real, documented, and reproducible exception — the example in "Common Mistakes" demonstrates it directly, not as a theoretical curiosity.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>readonly</code> on a parameter isn't valid C# for this purpose, and even if some read-only mechanism were used, it wouldn't address the specific write happening inside this method — the fix is to change the API shape, not add a modifier.</p>
                 <p><strong>Reinforcement:</strong> Prefer generic, type-checked APIs over covariant array parameters whenever writing is involved — it moves the safety net from runtime back to compile time.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand not just that variance works, but exactly why it's provably safe — and you've seen the real, historical counter-example that makes the contrast concrete.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now understand not just that variance works, but exactly why it's provably safe — and you've seen the real, historical counter-example that makes the contrast concrete.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

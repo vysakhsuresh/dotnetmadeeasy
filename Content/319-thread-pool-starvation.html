@@ -388,7 +388,7 @@
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Starvation vs. Deadlock, Restated From Lesson 318</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🐌 Thread Pool Starvation (this lesson)</h4>
+            <h4> Thread Pool Starvation (this lesson)</h4>
             <ul>
                 <li>No thread is waiting on another thread's lock — there's no cycle at all</li>
                 <li>Every request slows down or stalls roughly uniformly, because they're all competing for the same scarce pool</li>
@@ -398,7 +398,7 @@
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>🔒 Deadlock (lesson 218 / 318)</h4>
+            <h4> Deadlock (lesson 218 / 318)</h4>
             <ul>
                 <li>A confirmed cycle: specific threads waiting on each other's locks</li>
                 <li>Only the specific threads/requests caught in the cycle are affected — others can be fine</li>
@@ -447,7 +447,7 @@
 
     <!-- ====== SIMPLE EXAMPLE ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — The Blocking Call That Starves the Pool</h2>
-    <div class="code-block"><code>// ❌ A minimal API endpoint that blocks a thread-pool thread synchronously.
+    <div class="code-block"><code>//  A minimal API endpoint that blocks a thread-pool thread synchronously.
 // In ASP.NET Core (no captured SynchronizationContext — lesson 218's
 // comparison-grid), this usually does NOT deadlock. But it DOES tie up
 // the pool thread for the entire duration of GetOrderAsync's real work.
@@ -457,7 +457,7 @@ app.MapGet("/orders/{id}", (int id, IOrderService orders) =&gt;
     return Results.Ok(order);
 });
 
-// ✅ Fully async — the pool thread is released back to the pool the
+//  Fully async — the pool thread is released back to the pool the
 // instant execution hits the await, free to pick up other queued work
 // while this request's I/O is in flight.
 app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
@@ -474,7 +474,7 @@ app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">☕</span> The Coffee Shop With a Slow Hiring Policy</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> The Coffee Shop With a Slow Hiring Policy</div>
         <p>Picture a coffee shop with two baristas, and a deliberate company policy of hiring at most one new barista every few minutes when the line gets long — never a sudden mass hire, because ramping up staff too aggressively for a five-minute rush would waste money the moment the rush passes. Normally, this works fine. But suppose the current two baristas start taking unusually long personal breaks in the back — not stuck, not fighting over anything, just gone for ten minutes at a time instead of quickly handing off a coffee and moving to the next customer. The line backs up fast. The slow-hire policy kicks in, but one new barista every few minutes can't possibly outpace a line that's growing every thirty seconds. Nobody in that line is deadlocked with anybody else — there's no standoff, no two customers each waiting on the other — there just aren't enough hands working the counter, and the shop's own conservative staffing policy means it takes real time to catch up, even after the long breaks stop.</p>
     </div>
 
@@ -496,16 +496,16 @@ app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Sync-over-async on a hot request path</h4>
-    <p>❌ Calling <code class="icode">.Result</code>, <code class="icode">.Wait()</code>, or a blocking, synchronous overload of an I/O call from inside a request handler, tying up a pool thread for the entire duration of work that should have released it.</p>
-    <p>✅ Async all the way, exactly as lesson 218 already established — <code class="icode">await</code> the call so the thread returns to the pool during the wait instead of sitting idle-but-unavailable.</p>
+    <p> Calling <code class="icode">.Result</code>, <code class="icode">.Wait()</code>, or a blocking, synchronous overload of an I/O call from inside a request handler, tying up a pool thread for the entire duration of work that should have released it.</p>
+    <p> Async all the way, exactly as lesson 218 already established — <code class="icode">await</code> the call so the thread returns to the pool during the wait instead of sitting idle-but-unavailable.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Queueing genuinely CPU-bound work onto the same pool serving async I/O continuations</h4>
-    <p>❌ Dispatching heavy, long-running CPU-bound computation via the same shared thread pool that's also trying to service quick async continuations for ordinary requests, letting the heavy work starve the lighter work of capacity.</p>
-    <p>✅ Consider isolating genuinely CPU-bound work — via a dedicated task scheduler, a separate worker process, or the parallel-programming patterns from lessons 212-213 — so it doesn't compete directly with the pool your request-handling depends on.</p>
+    <p> Dispatching heavy, long-running CPU-bound computation via the same shared thread pool that's also trying to service quick async continuations for ordinary requests, letting the heavy work starve the lighter work of capacity.</p>
+    <p> Consider isolating genuinely CPU-bound work — via a dedicated task scheduler, a separate worker process, or the parallel-programming patterns from lessons 212-213 — so it doesn't compete directly with the pool your request-handling depends on.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Never checking ThreadPool metrics until a full-blown incident is already underway</h4>
-    <p>❌ Only discovering a growing ThreadPool queue length during an active outage, with no baseline to compare it against.</p>
-    <p>✅ Include ThreadPool Queue Length and Thread Count among the routine metrics checked via <code class="icode">dotnet-counters</code> (as lesson 315 recommended), so a developing starvation pattern is visible well before it becomes a full incident.</p>
+    <p> Only discovering a growing ThreadPool queue length during an active outage, with no baseline to compare it against.</p>
+    <p> Include ThreadPool Queue Length and Thread Count among the routine metrics checked via <code class="icode">dotnet-counters</code> (as lesson 315 recommended), so a developing starvation pattern is visible well before it becomes a full incident.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -515,7 +515,7 @@ app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
         <li style="margin-bottom:0.4rem;"><strong>Not</strong> the right diagnosis if specific requests never recover no matter how long you wait, with other threads sitting genuinely idle and unaffected — that pattern points back to a real deadlock (318), not starvation.</li>
     </ul>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> A ThreadPool Queue Length that's non-zero and climbing, alongside a Thread Count that's growing only slowly, is the starvation signature. If the queue length is near zero and the hang is still happening, look for a deadlock instead — starvation, by definition, involves a backlog of queued-but-not-yet-running work.
+        <strong> Rule of thumb:</strong> A ThreadPool Queue Length that's non-zero and climbing, alongside a Thread Count that's growing only slowly, is the starvation signature. If the queue length is near zero and the hang is still happening, look for a deadlock instead — starvation, by definition, involves a backlog of queued-but-not-yet-running work.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -543,7 +543,7 @@ app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen why the ThreadPool grows slowly on purpose, how blocking calls cause starvation, and the crisp distinction against lesson 318's deadlock. Let's confirm it landed.</p>
 
     <div class="quiz-question">
@@ -557,11 +557,11 @@ app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly the design rationale the lesson lays out — threads are not free, and reacting instantly to every brief spike would cost more, in overhead and scheduler thrashing, than most short-lived backlogs are worth. The throttled growth is a deliberate efficiency trade-off.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Instant thread creation is technically possible — the throttling is a deliberate policy choice, not a technical limitation.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The throttled growth policy is a cross-platform characteristic of the .NET ThreadPool, not an OS-specific quirk.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Thread creation speed has no direct relationship to managed memory leaks (lesson 316's topic, about unintended object reachability) — these are unrelated concerns.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Instant thread creation is technically possible — the throttling is a deliberate policy choice, not a technical limitation.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The throttled growth policy is a cross-platform characteristic of the .NET ThreadPool, not an OS-specific quirk.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Thread creation speed has no direct relationship to managed memory leaks (lesson 316's topic, about unintended object reachability) — these are unrelated concerns.</p>
                 <p><strong>Reinforcement:</strong> The throttled growth is a deliberate efficiency trade-off, and it's exactly why genuine starvation can be so persistent once it occurs.</p>
             </div>
         </details>
@@ -578,11 +578,11 @@ app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> A growing ThreadPool queue with slowly-growing thread count, combined with the absence of any syncblk cycle, is exactly the diagnostic signature this lesson (and lesson 318) describe for starvation — plenty of queued work, not enough available threads, and no circular wait anywhere.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> A genuine deadlock requires a confirmed syncblk cycle (lesson 318) — its explicit absence here rules that out.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> ThreadPool queue length reflects pending work items, not heap object reachability — a memory leak (lesson 316) would show up in a growing gcdump comparison, not a ThreadPool counter.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Regex backtracking (lesson 317) is a CPU-bound pathology that would show up as high, concentrated CPU in a flame graph — it has no direct connection to ThreadPool queue metrics.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> A genuine deadlock requires a confirmed syncblk cycle (lesson 318) — its explicit absence here rules that out.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> ThreadPool queue length reflects pending work items, not heap object reachability — a memory leak (lesson 316) would show up in a growing gcdump comparison, not a ThreadPool counter.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Regex backtracking (lesson 317) is a CPU-bound pathology that would show up as high, concentrated CPU in a flame graph — it has no direct connection to ThreadPool queue metrics.</p>
                 <p><strong>Reinforcement:</strong> Growing queue + no lock cycle = starvation. Confirmed lock cycle = deadlock. These metrics are exactly how you tell them apart instead of guessing.</p>
             </div>
         </details>
@@ -599,11 +599,11 @@ app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> The lesson is explicit about this — SetMinThreads is a real, blunt lever that raises the floor of readily-available threads, which can genuinely reduce the pain of a starvation episode, but it does not remove the blocking calls that caused the problem in the first place.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the misconception the "Common Confusion" section warns against — SetMinThreads mitigates the symptom's severity, it doesn't fix the root cause (the blocking calls themselves).</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> SetMinThreads has a real, documented effect — raising the minimum thread count the pool keeps available without the slow throttle applying.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> SetMinThreads addresses ThreadPool capacity, not lock acquisition order — it has no bearing on a genuine deadlock (lesson 218/318), which requires a different fix entirely.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is exactly the misconception the "Common Confusion" section warns against — SetMinThreads mitigates the symptom's severity, it doesn't fix the root cause (the blocking calls themselves).</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> SetMinThreads has a real, documented effect — raising the minimum thread count the pool keeps available without the slow throttle applying.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> SetMinThreads addresses ThreadPool capacity, not lock acquisition order — it has no bearing on a genuine deadlock (lesson 218/318), which requires a different fix entirely.</p>
                 <p><strong>Reinforcement:</strong> SetMinThreads is a mitigation lever, not a substitute for removing the actual blocking calls.</p>
             </div>
         </details>
@@ -620,11 +620,11 @@ app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly why starvation "feels like the whole app is slow" — the ThreadPool is a shared resource. A thread tied up blocking on one endpoint's call is unavailable to service any other queued work, including completely unrelated requests competing for the same pool.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The Real-World Example specifically shows unrelated endpoints (like product search) getting affected precisely because they share the same starved pool — the effect is not confined to the offending endpoint.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> A blocking call doesn't propagate exceptions to other requests — the mechanism here is resource contention (thread availability), not exception propagation.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a within-process, in-memory ThreadPool concern — physical server placement has nothing to do with it.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The Real-World Example specifically shows unrelated endpoints (like product search) getting affected precisely because they share the same starved pool — the effect is not confined to the offending endpoint.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> A blocking call doesn't propagate exceptions to other requests — the mechanism here is resource contention (thread availability), not exception propagation.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This is a within-process, in-memory ThreadPool concern — physical server placement has nothing to do with it.</p>
                 <p><strong>Reinforcement:</strong> Because the ThreadPool is shared, a blocking-call problem on one code path can degrade capacity for everything else running in that same process.</p>
             </div>
         </details>
@@ -641,17 +641,17 @@ app.MapGet("/orders/{id}", async (int id, IOrderService orders) =&gt;
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is precisely the "cleanest single test" the lesson describes — a genuine deadlock never resolves on its own; requests genuinely completing over time, even under a persistent overall backlog, is the signature of starvation still slowly working through queued work, not a permanent standoff.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> A real deadlock's defining trait, per lesson 318, is that the specific caught requests never recover no matter how long you wait — some of these did recover, which rules out a genuine deadlock for those requests.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This pattern describes request completion behavior over time, not heap growth — it has no direct bearing on diagnosing a memory leak, which is confirmed via gcdump snapshots (lesson 316), not request recovery patterns.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Requests actively completing, even slowly, is direct evidence the ThreadPool is still functioning and processing queued work — the opposite of having stopped entirely.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> A real deadlock's defining trait, per lesson 318, is that the specific caught requests never recover no matter how long you wait — some of these did recover, which rules out a genuine deadlock for those requests.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This pattern describes request completion behavior over time, not heap growth — it has no direct bearing on diagnosing a memory leak, which is confirmed via gcdump snapshots (lesson 316), not request recovery patterns.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Requests actively completing, even slowly, is direct evidence the ThreadPool is still functioning and processing queued work — the opposite of having stopped entirely.</p>
                 <p><strong>Reinforcement:</strong> Recovery over time is the tell — a deadlock never lets go, starvation eventually does.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You can now tell a genuine deadlock apart from thread pool starvation with confidence, and diagnose either one with the right tool instead of a guess. Next up: a failure mode that often triggers exactly this kind of thread-pool pressure from somewhere else entirely — the database. Database Bottlenecks.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You can now tell a genuine deadlock apart from thread pool starvation with confidence, and diagnose either one with the right tool instead of a guess. Next up: a failure mode that often triggers exactly this kind of thread-pool pressure from somewhere else entirely — the database. Database Bottlenecks.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

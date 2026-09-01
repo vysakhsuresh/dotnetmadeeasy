@@ -304,7 +304,7 @@
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>❌ WITHOUT ArrayPool&lt;T&gt;</h4>
+            <h4> WITHOUT ArrayPool&lt;T&gt;</h4>
             <ul>
                 <li><code>new byte[8192]</code> every iteration</li>
                 <li>Each buffer becomes garbage almost immediately</li>
@@ -313,7 +313,7 @@
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>✅ WITH ArrayPool&lt;T&gt;</h4>
+            <h4> WITH ArrayPool&lt;T&gt;</h4>
             <ul>
                 <li><code>ArrayPool&lt;byte&gt;.Shared.Rent(8192)</code> — reuses an existing array whenever one's available</li>
                 <li><code>Return</code> it when done — it goes right back into the pool</li>
@@ -390,7 +390,7 @@ ProcessChunk(buffer.AsSpan(0, bytesRead)); // use only the bytes you actually as
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🥡</span> A library of reusable takeout containers, not disposable ones</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A library of reusable takeout containers, not disposable ones</div>
         <p>Imagine a busy kitchen that used a brand-new disposable container for every single order, then threw it in the trash the moment the food was served. Wasteful, but it works. Now imagine instead a shelf of sturdy, reusable containers: grab one that's big enough, use it, wash it, put it back on the shelf for the next order. Same job done, dramatically less waste generated.</p>
         <p><code>ArrayPool&lt;T&gt;</code> is that shelf. <code>Rent</code> is grabbing a container — possibly a slightly bigger one than you strictly needed, if that's the nearest size the shelf has. <code>Return</code> is putting it back, clean, for someone else to use. Forget to put it back, and it's not lost forever — it's still a perfectly good container sitting in a drawer somewhere — it just never makes it back to the shelf where it could keep being useful.</p>
     </div>
@@ -451,26 +451,26 @@ ProcessChunk(buffer.AsSpan(0, bytesRead)); // use only the bytes you actually as
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Trusting array.Length after renting</h4>
-    <p>❌ Iterating <code>for (int i = 0; i &lt; buffer.Length; i++)</code> over a rented buffer, assuming it's exactly the size requested.</p>
+    <p> Iterating <code>for (int i = 0; i &lt; buffer.Length; i++)</code> over a rented buffer, assuming it's exactly the size requested.</p>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">byte[] buffer = ArrayPool&lt;byte&gt;.Shared.Rent(100);
-for (int i = 0; i &lt; buffer.Length; i++) // ❌ buffer.Length could be 128, not 100 — processes garbage bytes 100-127
+for (int i = 0; i &lt; buffer.Length; i++) //  buffer.Length could be 128, not 100 — processes garbage bytes 100-127
     Process(buffer[i]);</code></pre>
-    <p>✅ Track and use your own requested/logical length explicitly, everywhere: <code>for (int i = 0; i &lt; 100; i++)</code>, or better, work through a properly-bounded <code>Span&lt;T&gt;</code> slice: <code>buffer.AsSpan(0, 100)</code>.</p>
+    <p> Track and use your own requested/logical length explicitly, everywhere: <code>for (int i = 0; i &lt; 100; i++)</code>, or better, work through a properly-bounded <code>Span&lt;T&gt;</code> slice: <code>buffer.AsSpan(0, 100)</code>.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Not returning on an exception path</h4>
-    <p>❌ <code>Rent</code>, then a plain sequence of statements with no <code>try</code>/<code>finally</code> — if anything throws before the <code>Return</code> call at the end, the array never makes it back.</p>
-    <p>✅ Always wrap rent/use/return in a <code>try</code>/<code>finally</code>, or use a small <code>IDisposable</code> wrapper type around the rent/return pair so a <code>using</code> block guarantees it — following the same RAII discipline you already use for other disposable resources.</p>
+    <p> <code>Rent</code>, then a plain sequence of statements with no <code>try</code>/<code>finally</code> — if anything throws before the <code>Return</code> call at the end, the array never makes it back.</p>
+    <p> Always wrap rent/use/return in a <code>try</code>/<code>finally</code>, or use a small <code>IDisposable</code> wrapper type around the rent/return pair so a <code>using</code> block guarantees it — following the same RAII discipline you already use for other disposable resources.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Returning the same array twice, or using it after returning it</h4>
-    <p>❌ Calling <code>Return</code> more than once on the same array, or continuing to read/write a buffer after it's already been returned — both corrupt the pool's internal bookkeeping and can lead to two unrelated parts of your code silently sharing (and stomping on) the same array.</p>
-    <p>✅ Treat <code>Return</code> as transferring ownership away, exactly once, at exactly one place — typically the single <code>finally</code> block that also did the corresponding <code>Rent</code>.</p>
+    <p> Calling <code>Return</code> more than once on the same array, or continuing to read/write a buffer after it's already been returned — both corrupt the pool's internal bookkeeping and can lead to two unrelated parts of your code silently sharing (and stomping on) the same array.</p>
+    <p> Treat <code>Return</code> as transferring ownership away, exactly once, at exactly one place — typically the single <code>finally</code> block that also did the corresponding <code>Rent</code>.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Reach for ArrayPool&lt;T&gt; when</h4>
+            <h4> Reach for ArrayPool&lt;T&gt; when</h4>
             <ul>
                 <li>You need a plain <code>T[]</code> buffer, allocated and discarded repeatedly, on a genuinely hot path (high call frequency, or per-request in a high-throughput service)</li>
                 <li>The buffer is sizable enough that repeated allocation is a real, measured (or well-understood) source of GC pressure — not merely a small, infrequent array</li>
@@ -478,7 +478,7 @@ for (int i = 0; i &lt; buffer.Length; i++) // ❌ buffer.Length could be 128, no
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>❌ Skip it when</h4>
+            <h4> Skip it when</h4>
             <ul>
                 <li>The array is small, or the code path is cold (rarely executed) — the added complexity isn't worth it</li>
                 <li>You specifically need <code>Memory&lt;T&gt;</code>/<code>IMemoryOwner&lt;T&gt;</code>-based pooling instead of a raw array — that's <code>MemoryPool&lt;T&gt;</code>, the next lesson</li>
@@ -488,7 +488,7 @@ for (int i = 0; i &lt; buffer.Length; i++) // ❌ buffer.Length could be 128, no
     </div>
 
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Reach for <code>ArrayPool&lt;T&gt;.Shared</code> specifically on paths that allocate the same-shaped buffer repeatedly, at real frequency, under real load — a file-upload loop, a socket-reading loop, a per-request scratch buffer in a high-throughput API. For everyday, infrequent array needs, <code>new T[n]</code> remains simpler and entirely appropriate.
+        <strong> Rule of thumb:</strong> Reach for <code>ArrayPool&lt;T&gt;.Shared</code> specifically on paths that allocate the same-shaped buffer repeatedly, at real frequency, under real load — a file-upload loop, a socket-reading loop, a per-request scratch buffer in a high-throughput API. For everyday, infrequent array needs, <code>new T[n]</code> remains simpler and entirely appropriate.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -514,7 +514,7 @@ for (int i = 0; i &lt; buffer.Length; i++) // ❌ buffer.Length could be 128, no
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen how renting and returning avoids repeated allocation. Let's check the gotchas actually landed.</p>
 
     <div class="quiz-question">
@@ -528,11 +528,11 @@ for (int i = 0; i &lt; buffer.Length; i++) // ❌ buffer.Length could be 128, no
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> <code>Rent</code> guarantees an array of at least the requested length, but the pool organizes arrays into size buckets internally and may hand back a larger one if that's the smallest available match — real, documented behavior, not an edge case to dismiss.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is the exact assumption the lesson warns against — relying on it leads to processing stale or garbage data beyond your intended range.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>Rent</code> never returns an array shorter than requested — that would violate the entire contract of the method.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>buffer.Length</code> is a perfectly well-defined value immediately after <code>Rent</code> returns — you just can't assume it equals your requested length.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is the exact assumption the lesson warns against — relying on it leads to processing stale or garbage data beyond your intended range.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> <code>Rent</code> never returns an array shorter than requested — that would violate the entire contract of the method.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>buffer.Length</code> is a perfectly well-defined value immediately after <code>Rent</code> returns — you just can't assume it equals your requested length.</p>
                 <p><strong>Reinforcement:</strong> Always track your own logical/used length separately from <code>array.Length</code> when working with rented arrays.</p>
             </div>
         </details>
@@ -549,11 +549,11 @@ for (int i = 0; i &lt; buffer.Length; i++) // ❌ buffer.Length could be 128, no
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> A rented array that's never returned is still a completely normal managed array. Once nothing references it, the GC collects it exactly as it would any other object. What's actually lost is more subtle: the pool never gets that array back, so it can't be reused — a lost efficiency, not a leak or a crash.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> A forgotten <code>Return</code> doesn't prevent garbage collection — the array remains perfectly reclaimable once unreferenced, so this doesn't cause an <code>OutOfMemoryException</code> on its own.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>ArrayPool&lt;T&gt;</code> has no mechanism to detect or reject based on missing returns — it simply has fewer arrays available to hand out, potentially allocating a new one instead.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no automatic timeout-based return mechanism — a forgotten <code>Return</code> stays forgotten indefinitely, permanently losing that array's pooling benefit.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> A forgotten <code>Return</code> doesn't prevent garbage collection — the array remains perfectly reclaimable once unreferenced, so this doesn't cause an <code>OutOfMemoryException</code> on its own.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> <code>ArrayPool&lt;T&gt;</code> has no mechanism to detect or reject based on missing returns — it simply has fewer arrays available to hand out, potentially allocating a new one instead.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no automatic timeout-based return mechanism — a forgotten <code>Return</code> stays forgotten indefinitely, permanently losing that array's pooling benefit.</p>
                 <p><strong>Reinforcement:</strong> Forgetting <code>Return</code> is a silent efficiency loss, not a correctness bug or a leak — but it's still worth avoiding rigorously with <code>try</code>/<code>finally</code> or a disposable wrapper.</p>
             </div>
         </details>
@@ -570,11 +570,11 @@ for (int i = 0; i &lt; buffer.Length; i++) // ❌ buffer.Length could be 128, no
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Zeroing out an array's contents takes time proportional to its size, and doing that on every single <code>Return</code> call — even for the overwhelming majority of buffers whose contents get overwritten before being read anyway — would undercut much of the pool's performance benefit. It's left as an opt-in specifically for cases (sensitive data) where leftover contents genuinely matter.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Clearing and size-tracking are unrelated concerns — the pool tracks bucket sizes independently of whether an array's contents are cleared.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such technical restriction — <code>Return(array, clearArray: true)</code> works on any rented array, regardless of how it was originally allocated.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>clearArray</code> works uniformly across any element type <code>T</code> — the option isn't restricted by whether <code>T</code> is a value type or reference type.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Clearing and size-tracking are unrelated concerns — the pool tracks bucket sizes independently of whether an array's contents are cleared.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no such technical restriction — <code>Return(array, clearArray: true)</code> works on any rented array, regardless of how it was originally allocated.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>clearArray</code> works uniformly across any element type <code>T</code> — the option isn't restricted by whether <code>T</code> is a value type or reference type.</p>
                 <p><strong>Reinforcement:</strong> Performance-cost-vs-benefit trade-offs like this are common in pooling APIs — the default favors the common case (overwrite-before-read), with an explicit opt-in for the less common but genuinely important sensitive-data case.</p>
             </div>
         </details>
@@ -591,17 +591,17 @@ for (int i = 0; i &lt; buffer.Length; i++) // ❌ buffer.Length could be 128, no
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> If an exception is thrown while using the rented array — say, from within <code>ProcessChunk</code> — a plain sequential <code>Return</code> call written after that code would simply never execute, and the array would never make it back to the pool. Placing <code>Return</code> in a <code>finally</code> block guarantees it runs on every exit path, exception or not.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>try</code>/<code>finally</code> has no meaningful runtime performance cost in the non-exceptional case — its purpose here is correctness under failure, not speed.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Nothing in <code>ArrayPool&lt;T&gt;</code>'s API enforces this structurally — it's a recommended pattern for correctness, not a compiler-enforced requirement.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The two approaches behave identically only when nothing throws — the entire point of the pattern is to handle the case where something does.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> <code>try</code>/<code>finally</code> has no meaningful runtime performance cost in the non-exceptional case — its purpose here is correctness under failure, not speed.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Nothing in <code>ArrayPool&lt;T&gt;</code>'s API enforces this structurally — it's a recommended pattern for correctness, not a compiler-enforced requirement.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The two approaches behave identically only when nothing throws — the entire point of the pattern is to handle the case where something does.</p>
                 <p><strong>Reinforcement:</strong> The same RAII discipline you already apply to other disposable resources (files, connections) applies here — guarantee cleanup runs regardless of how the method exits.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You can now cut real GC pressure out of hot buffer-processing paths with <code>ArrayPool&lt;T&gt;</code> — and you know exactly why <code>array.Length</code> can't be trusted after renting. Next: the <code>Memory&lt;T&gt;</code>-flavored version of the same idea.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You can now cut real GC pressure out of hot buffer-processing paths with <code>ArrayPool&lt;T&gt;</code> — and you know exactly why <code>array.Length</code> can't be trusted after renting. Next: the <code>Memory&lt;T&gt;</code>-flavored version of the same idea.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

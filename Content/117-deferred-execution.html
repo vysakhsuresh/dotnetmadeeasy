@@ -375,7 +375,7 @@ var expensive = products.Where(p => p.Price > 1000); // would run the ENTIRE fil
 // You then decide you also want in-stock only
 var expensiveInStock = expensive.Where(p => p.Stock > 0); // would run the WHOLE thing again</code></div>
     <p>Eager evaluation would mean every intermediate step in a chain does its own full pass over the data — wasted work whenever you build a query up gradually, or whenever the final consumer only needs the first few results and never asks for the rest. Deferred execution lets you compose a query piece by piece, exactly like assembling a plan, and pay the actual computation cost only once, at the one moment you actually need results:</p>
-    <div class="code-block"><code>// ✅ Deferred — building this up costs nothing until enumerated
+    <div class="code-block"><code>//  Deferred — building this up costs nothing until enumerated
 var query = products
     .Where(p => p.Price > 1000)
     .Where(p => p.Stock > 0)
@@ -461,7 +461,7 @@ foreach (var p in affordable)
     {
         DateOnly today = DateOnly.FromDateTime(DateTime.Now);
 
-        // ❌ Looks like a snapshot of "today" — it is NOT.
+        //  Looks like a snapshot of "today" — it is NOT.
         // "today" is captured by reference; the predicate re-evaluates
         // DateOnly.FromDateTime(DateTime.Now) — no wait, it captures the LOCAL "today" variable,
         // which is fine here since it's not reassigned — but the underlying QUERY still
@@ -477,14 +477,14 @@ int countAtNoon = report.Count();      // filters _orders right now, at noon
 _orders.Add(new Order(999, DateToday, 42.00m)); // a new order comes in
 int countAtFivePm = report.Count();    // filters AGAIN — includes the new order too
 
-// ✅ FIX — snapshot the result once, deliberately, if a stable point-in-time view is what's needed:
+//  FIX — snapshot the result once, deliberately, if a stable point-in-time view is what's needed:
 var stableReport = service.GetTodaysOrders().ToList(); // covered fully in the next lesson</code></div>
     <p>Whether re-evaluating on every call is a bug or a feature depends entirely on intent: if "always reflect the current state of <code>_orders</code>" is exactly what's wanted, deferred execution is doing its job perfectly. If a <em>stable snapshot</em> at one point in time was actually needed, this is the bug — and the fix (forcing immediate execution) is exactly what the next lesson covers.</p>
 
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📋</span> A Recipe, Not a Finished Meal</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Recipe, Not a Finished Meal</div>
         <p>Writing a LINQ query is like writing down a recipe: "take the vegetables, filter out anything wilted, chop them, sort by size." Writing the recipe down doesn't put food on the table — nothing gets chopped or sorted until someone actually starts cooking. If the pantry's contents change between when the recipe was written and when someone finally cooks it, the cook uses whatever's in the pantry <em>at cooking time</em>, not whatever was there when the recipe was jotted down. That's deferred execution: the query is the recipe; enumeration is the cooking.</p>
     </div>
 
@@ -518,15 +518,15 @@ var stableReport = service.GetTodaysOrders().ToList(); // covered fully in the n
     <!-- ====== COMMON MISTAKES ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Treating a query variable as if it already holds a result</h4>
-    <p>❌ Assuming <code>var query = products.Where(...);</code> means "the filtered list is sitting in <code>query</code> right now." ✅ It means "when something enumerates <code>query</code>, run this filter against whatever <code>products</code> contains at that moment." If a genuine snapshot is needed, force it — the very next lesson shows how.</p>
+    <p> Assuming <code>var query = products.Where(...);</code> means "the filtered list is sitting in <code>query</code> right now."  It means "when something enumerates <code>query</code>, run this filter against whatever <code>products</code> contains at that moment." If a genuine snapshot is needed, force it — the very next lesson shows how.</p>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Enumerating the same expensive query multiple times without realizing it re-runs each time</h4>
-    <p>❌ Calling <code>.Count()</code> and then separately <code>foreach</code>-ing over the exact same deferred query variable, unaware that this triggers the whole predicate chain to run <em>twice</em> — costly if the predicate does real work (a database call inside a delegate, heavy computation, and so on). ✅ Recognize when a query is about to be enumerated more than once, and decide deliberately whether that's intended or whether the result should be materialized once instead.</p>
+    <p> Calling <code>.Count()</code> and then separately <code>foreach</code>-ing over the exact same deferred query variable, unaware that this triggers the whole predicate chain to run <em>twice</em> — costly if the predicate does real work (a database call inside a delegate, heavy computation, and so on).  Recognize when a query is about to be enumerated more than once, and decide deliberately whether that's intended or whether the result should be materialized once instead.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Deferred execution is the right default when</h4>
+            <h4> Deferred execution is the right default when</h4>
             <ul>
                 <li>You're building a query up gradually across several lines or method calls before it's finally consumed.</li>
                 <li>You genuinely want a query to reflect the current, possibly-changing state of its source each time it runs.</li>
@@ -534,7 +534,7 @@ var stableReport = service.GetTodaysOrders().ToList(); // covered fully in the n
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ Force immediate execution instead when</h4>
+            <h4> Force immediate execution instead when</h4>
             <ul>
                 <li>You need a stable snapshot that won't silently change if the source is mutated later.</li>
                 <li>The same query result will be enumerated more than once, and re-running it each time would be wasteful or incorrect.</li>
@@ -570,7 +570,7 @@ var stableReport = service.GetTodaysOrders().ToList(); // covered fully in the n
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've learned what deferred execution really means, and the two classic gotchas it causes. Let's check your understanding.</p>
 
     <div class="quiz-question">
@@ -584,11 +584,11 @@ var stableReport = service.GetTodaysOrders().ToList(); // covered fully in the n
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the core idea of the entire lesson — calling <code>Where</code> builds an iterator object describing the filter; the predicate itself doesn't run against any item until enumeration begins.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the misconception deferred execution corrects.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The size of <code>products</code> has no bearing on whether execution is deferred — deferral is a property of how <code>Where</code> is built, not of the data.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Absolutely nothing runs, not even a single item's worth, until something actually starts enumerating the result.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is exactly the misconception deferred execution corrects.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The size of <code>products</code> has no bearing on whether execution is deferred — deferral is a property of how <code>Where</code> is built, not of the data.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Absolutely nothing runs, not even a single item's worth, until something actually starts enumerating the result.</p>
                 <p><strong>Reinforcement:</strong> A LINQ query variable is instructions, not a result — remember this before assuming any work has happened.</p>
             </div>
         </details>
@@ -605,11 +605,11 @@ var stableReport = service.GetTodaysOrders().ToList(); // covered fully in the n
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> As shown in Gotcha 1, a deferred query is a standing instruction re-executed on every enumeration, always against the source's current state — the mutation is fully visible the next time it's enumerated.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing about a deferred query caches or freezes the first result — there is no such snapshotting unless you explicitly force it.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> Adding an item to a <code>List&lt;T&gt;</code> between two separate, complete enumerations doesn't throw — that specific exception only applies to modifying a collection <em>during</em> an in-progress enumeration of it.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The query variable remains perfectly valid and reusable — that's precisely why it can be enumerated a second time at all.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Nothing about a deferred query caches or freezes the first result — there is no such snapshotting unless you explicitly force it.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> Adding an item to a <code>List&lt;T&gt;</code> between two separate, complete enumerations doesn't throw — that specific exception only applies to modifying a collection <em>during</em> an in-progress enumeration of it.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The query variable remains perfectly valid and reusable — that's precisely why it can be enumerated a second time at all.</p>
                 <p><strong>Reinforcement:</strong> A deferred query always reflects its source's state at the moment of enumeration, not at the moment it was declared.</p>
             </div>
         </details>
@@ -626,11 +626,11 @@ var stableReport = service.GetTodaysOrders().ToList(); // covered fully in the n
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As shown in Gotcha 2, a lambda captures the variable, not a copy of its value at the time of writing. Since the predicate doesn't actually run until <code>foreach</code> enumerates <code>q</code> — after <code>threshold</code> was reassigned — it sees 500m.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the intuitive-but-wrong assumption the lesson warns about — the value at declaration time is irrelevant to what the predicate actually uses.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This is entirely valid C# — capturing and later reassigning a local variable used in a lambda compiles and runs without error, even though the behavior can be surprising.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no alternation — every single item in the enumeration uses whatever <code>threshold</code> holds at that point (500m throughout, since it isn't reassigned again mid-enumeration).</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is exactly the intuitive-but-wrong assumption the lesson warns about — the value at declaration time is irrelevant to what the predicate actually uses.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This is entirely valid C# — capturing and later reassigning a local variable used in a lambda compiles and runs without error, even though the behavior can be surprising.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no alternation — every single item in the enumeration uses whatever <code>threshold</code> holds at that point (500m throughout, since it isn't reassigned again mid-enumeration).</p>
                 <p><strong>Reinforcement:</strong> Combined with deferred execution, closure-captured variables can change out from under a query before it ever runs — a genuinely common real-world bug.</p>
             </div>
         </details>
@@ -647,17 +647,17 @@ var stableReport = service.GetTodaysOrders().ToList(); // covered fully in the n
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As shown in Under the Hood (and previously in the Filtering and Projection lessons' own "Under the Hood" sections), <code>Where</code> and <code>Select</code> are built with <code>yield return</code> — the compiler-generated state machine is precisely the mechanism that makes "nothing runs until <code>MoveNext()</code> is called" true.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> They're directly connected — deferred execution is a direct consequence of how <code>yield return</code>-based iterators work.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Multiple operators across this module (<code>Where</code>, <code>Select</code>, <code>SelectMany</code>) have all been shown using <code>yield return</code> — it's not limited to any one operator.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>yield return</code> remains a core, actively used C# feature and is exactly what underlies deferred execution — nothing has replaced it.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> They're directly connected — deferred execution is a direct consequence of how <code>yield return</code>-based iterators work.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Multiple operators across this module (<code>Where</code>, <code>Select</code>, <code>SelectMany</code>) have all been shown using <code>yield return</code> — it's not limited to any one operator.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>yield return</code> remains a core, actively used C# feature and is exactly what underlies deferred execution — nothing has replaced it.</p>
                 <p><strong>Reinforcement:</strong> Deferred execution isn't a separate LINQ-specific trick — it's a natural consequence of the same iterator mechanism you already learned in Foundations.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand why LINQ queries behave the way they do. Next up: the operators that deliberately break out of deferred execution and run right now.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now understand why LINQ queries behave the way they do. Next up: the operators that deliberately break out of deferred execution and run right now.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

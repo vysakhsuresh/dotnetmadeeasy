@@ -331,7 +331,7 @@ public interface IExportable { void Render(); }   // means: write to disk as a f
 
 public sealed class ReportDocument : IPrintable, IExportable
 {
-    // ❌ One Render() has to somehow mean both "print this" and "export this."
+    //  One Render() has to somehow mean both "print this" and "export this."
     // It physically cannot honor two different intents under one name and one body.
     public void Render() => Console.WriteLine("Doing... something?");
 }</code></pre>
@@ -351,12 +351,12 @@ public sealed class ReportDocument : IPrintable, IExportable
 }
 
 var doc = new ReportDocument();
-// doc.Render();                 // ❌ Does not compile — Render() is not on ReportDocument's public surface at all
-((IPrintable)doc).Render();      // ✅ "Sending to physical printer..."
-((IExportable)doc).Render();     // ✅ "Writing export file to disk..."
+// doc.Render();                 //  Does not compile — Render() is not on ReportDocument's public surface at all
+((IPrintable)doc).Render();      //  "Sending to physical printer..."
+((IExportable)doc).Render();     //  "Writing export file to disk..."
 
 IPrintable printable = doc;
-printable.Render();              // ✅ Same call, no cast needed — the variable's static type is already IPrintable</code></pre>
+printable.Render();              //  Same call, no cast needed — the variable's static type is already IPrintable</code></pre>
     <p>Two things changed compared to lesson 078's shared-signature case. First, each interface now gets its <em>own</em> method body — the naming collision is resolved because the compiler knows exactly which <code>Render()</code> you mean from the reference type doing the calling. Second, neither <code>Render()</code> shows up when you call a member directly on a <code>ReportDocument</code>-typed variable — explicit members are invisible on the class's own public surface, reachable only through the interface.</p>
 
     <!-- ====== WHY DOES IT EXIST? ====== -->
@@ -422,7 +422,7 @@ IPrintable p = doc; p.Render(); // via a variable already typed as the interface
         </div>
     </div>
     <div class="callout">
-        <strong>💡 A member can be implicit for one interface and explicit for another, on the same class.</strong> If only <code>IExportable</code>'s meaning of <code>Render()</code> was ever going to be called directly on the class, you could make <code>IExportable.Render()</code> implicit (a normal public method) and <code>IPrintable.Render()</code> explicit — the choice is per-interface, not all-or-nothing.
+        <strong> A member can be implicit for one interface and explicit for another, on the same class.</strong> If only <code>IExportable</code>'s meaning of <code>Render()</code> was ever going to be called directly on the class, you could make <code>IExportable.Render()</code> implicit (a normal public method) and <code>IPrintable.Render()</code> explicit — the choice is per-interface, not all-or-nothing.
     </div>
 
     <!-- ====== SIMPLE EXAMPLE ====== -->
@@ -508,7 +508,7 @@ public sealed class StripePaymentGateway(IStripeClient client) : IPaymentGateway
 // Everyday application code sees only the clean, modern surface:
 IPaymentGateway gateway = new StripePaymentGateway(stripeClient);
 await gateway.ChargeAsync(49.99m, "USD", customerToken, ct);
-// gateway.Charge(...)  ❌ doesn't exist here — ILegacyChargeable is invisible through IPaymentGateway
+// gateway.Charge(...)   doesn't exist here — ILegacyChargeable is invisible through IPaymentGateway
 
 // Only the old batch job, which still genuinely needs it, reaches the legacy member:
 ILegacyChargeable legacy = new StripePaymentGateway(stripeClient);
@@ -563,24 +563,24 @@ legacy.Charge(accountRef: "acct_123", amountCents: 4999);</code></pre>
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Reaching for explicit implementation as a general-purpose "hide this method" tool</h4>
-    <p>❌ Making a method explicit purely because a developer doesn't want it cluttering IntelliSense, when there's no genuine naming collision and no real "this belongs to a different audience" reason — the member just becomes harder to find for no real design benefit, and callers have to know a specific cast or interface-typed variable exists to use it at all.</p>
-    <p>✅ Reserve explicit implementation for genuine collisions (Problem 1) or a deliberate decision that a member is not part of the class's everyday identity (Problem 2, like the legacy adapter above) — not as a substitute for good naming or for splitting an interface that's grown unfocused (lesson 079).</p>
+    <p> Making a method explicit purely because a developer doesn't want it cluttering IntelliSense, when there's no genuine naming collision and no real "this belongs to a different audience" reason — the member just becomes harder to find for no real design benefit, and callers have to know a specific cast or interface-typed variable exists to use it at all.</p>
+    <p> Reserve explicit implementation for genuine collisions (Problem 1) or a deliberate decision that a member is not part of the class's everyday identity (Problem 2, like the legacy adapter above) — not as a substitute for good naming or for splitting an interface that's grown unfocused (lesson 079).</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forgetting that an explicit member requires the interface type to call it, and being surprised at compile time</h4>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">var doc = new ReportDocument();
-doc.Render();   // ❌ CS1061 — 'ReportDocument' does not contain a definition for 'Render'
+doc.Render();   //  CS1061 — 'ReportDocument' does not contain a definition for 'Render'
 // This is not a bug — it's exactly what explicit implementation is designed to do.</code></pre>
-    <p>✅ If you find yourself constantly casting or declaring an interface-typed local variable just to reach a member, that's a signal worth pausing on — either the member genuinely belongs on the interface-typed API you're already using elsewhere, or you reached for explicit implementation when implicit would have served the class better.</p>
+    <p> If you find yourself constantly casting or declaring an interface-typed local variable just to reach a member, that's a signal worth pausing on — either the member genuinely belongs on the interface-typed API you're already using elsewhere, or you reached for explicit implementation when implicit would have served the class better.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Using explicit implementation to "fix" a design that should have used interface segregation instead</h4>
-    <p>❌ A class implements one bloated interface and uses explicit implementation to hide the members it doesn't want cluttering its public surface — treating the symptom (an inconvenient member showing up) instead of the cause (the interface was too broad for this implementer in the first place).</p>
-    <p>✅ If the real problem is that an interface is trying to do too much for one implementer, the fix from lesson 079 — splitting it into focused interfaces — is usually the better move. Explicit implementation is for genuine name collisions and deliberate audience-hiding, not a patch for an interface that needed to be segregated.</p>
+    <p> A class implements one bloated interface and uses explicit implementation to hide the members it doesn't want cluttering its public surface — treating the symptom (an inconvenient member showing up) instead of the cause (the interface was too broad for this implementer in the first place).</p>
+    <p> If the real problem is that an interface is trying to do too much for one implementer, the fix from lesson 079 — splitting it into focused interfaces — is usually the better move. Explicit implementation is for genuine name collisions and deliberate audience-hiding, not a patch for an interface that needed to be segregated.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Good fit</h4>
+            <h4> Good fit</h4>
             <ul>
                 <li>Two implemented interfaces genuinely collide on a member name with different intended meanings (<code>IBox.Volume</code> vs. <code>IContainer.Volume</code>)</li>
                 <li>A member exists only to satisfy a framework or legacy contract, and shouldn't be part of the class's everyday, "obvious" public API</li>
@@ -588,7 +588,7 @@ doc.Render();   // ❌ CS1061 — 'ReportDocument' does not contain a definition
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>❌ Overkill</h4>
+            <h4> Overkill</h4>
             <ul>
                 <li>Only one interface is involved and there's no collision — a plain public implicit method is simpler and more discoverable</li>
                 <li>You're trying to enforce real access control — that's what <code>private</code>, <code>internal</code>, or a genuinely narrower interface is for, not this</li>
@@ -597,7 +597,7 @@ doc.Render();   // ❌ CS1061 — 'ReportDocument' does not contain a definition
         </div>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> reach for explicit implementation only when you can name, specifically, either the colliding interface or the narrower audience you're hiding the member from. If you can't articulate either reason, an ordinary public implicit method is almost always the better, more discoverable choice.
+        <strong> Rule of thumb:</strong> reach for explicit implementation only when you can name, specifically, either the colliding interface or the narrower audience you're hiding the member from. If you can't articulate either reason, an ordinary public implicit method is almost always the better, more discoverable choice.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -627,7 +627,7 @@ doc.Render();   // ❌ CS1061 — 'ReportDocument' does not contain a definition
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen explicit implementation solve a genuine collision and quietly hide a legacy detail. Let's confirm you know exactly when — and when not — to reach for it.</p>
 
     <!-- Question 1 -->
@@ -642,11 +642,11 @@ doc.Render();   // ❌ CS1061 — 'ReportDocument' does not contain a definition
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> An explicit interface member is reachable only through a reference whose static type is the owning interface — casting to <code>IPrintable</code> (or holding an already-<code>IPrintable</code>-typed variable) is exactly how you reach it.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely what explicit implementation prevents — <code>Render()</code> is not part of <code>ReportDocument</code>'s own public surface, so this fails to compile.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Interface implementations are instance members, not static ones — this isn't valid syntax for calling an implemented interface member either way.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Explicit implementation is not a privacy mechanism — the member is fully callable by any code holding the correct interface-typed reference, as shown in B.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is precisely what explicit implementation prevents — <code>Render()</code> is not part of <code>ReportDocument</code>'s own public surface, so this fails to compile.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Interface implementations are instance members, not static ones — this isn't valid syntax for calling an implemented interface member either way.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Explicit implementation is not a privacy mechanism — the member is fully callable by any code holding the correct interface-typed reference, as shown in B.</p>
                 <p><strong>Reinforcement:</strong> Explicit members require you to go through the interface, not through the concrete class — that's their entire mechanism.</p>
             </div>
         </details>
@@ -664,11 +664,11 @@ doc.Render();   // ❌ CS1061 — 'ReportDocument' does not contain a definition
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the exact reasoning behind the whole lesson — when two interfaces genuinely disagree on what a shared name should return, a single implicit implementation is forced to pick one answer, silently shortchanging whichever caller wanted the other meaning. Explicit implementation gives each interface its own, independently correct body.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> C# allows this fine, as lesson 078 demonstrated with <code>IPrintable</code>/<code>IExportable</code>'s matching <code>Render()</code> — the issue only arises when the meanings genuinely diverge, not merely when the names match.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Properties can absolutely be implemented explicitly — <code>int IBox.Volume => ...</code> is valid, exactly as shown in the Simple Example.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Merging the interfaces would just recreate the same naming collision inside one interface — it doesn't solve anything, and loses the distinct meanings entirely.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> C# allows this fine, as lesson 078 demonstrated with <code>IPrintable</code>/<code>IExportable</code>'s matching <code>Render()</code> — the issue only arises when the meanings genuinely diverge, not merely when the names match.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Properties can absolutely be implemented explicitly — <code>int IBox.Volume => ...</code> is valid, exactly as shown in the Simple Example.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Merging the interfaces would just recreate the same naming collision inside one interface — it doesn't solve anything, and loses the distinct meanings entirely.</p>
                 <p><strong>Reinforcement:</strong> A genuine meaning conflict — not merely a shared name — is what makes explicit implementation necessary.</p>
             </div>
         </details>
@@ -686,11 +686,11 @@ doc.Render();   // ❌ CS1061 — 'ReportDocument' does not contain a definition
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is Problem 2 from the "Why Does It Exist?" section — hiding an implementation detail from the class's own public surface. Making <code>Charge</code> explicit keeps developers who type <code>stripeGateway.</code> from ever seeing the old, blocking, cents-based method that exists purely for one legacy batch job.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no such restriction — synchronous methods can be implemented implicitly just as easily; the choice here is deliberate, not forced by the method's signature.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> A class can implement any number of interfaces implicitly, as lesson 078 covered — <code>StripePaymentGateway</code> implements <code>IPaymentGateway</code> implicitly right alongside its one explicit member.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Explicit implementation has no performance effect — the "Under the Hood" section confirmed resolution happens at compile time with no extra runtime cost either way.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> There's no such restriction — synchronous methods can be implemented implicitly just as easily; the choice here is deliberate, not forced by the method's signature.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> A class can implement any number of interfaces implicitly, as lesson 078 covered — <code>StripePaymentGateway</code> implements <code>IPaymentGateway</code> implicitly right alongside its one explicit member.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Explicit implementation has no performance effect — the "Under the Hood" section confirmed resolution happens at compile time with no extra runtime cost either way.</p>
                 <p><strong>Reinforcement:</strong> Explicit implementation is a discoverability and API-shape decision, made deliberately — not a technical requirement or a performance choice.</p>
             </div>
         </details>
@@ -708,11 +708,11 @@ doc.Render();   // ❌ CS1061 — 'ReportDocument' does not contain a definition
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> This is exactly Mistake 1 — using explicit implementation as a general "hide this method" habit, without a genuine collision or a deliberate audience-hiding reason, trades away discoverability for no real benefit. Callers now have to know a specific cast or interface-typed reference exists just to use ordinary functionality.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Explicit implementation is reserved for genuine collisions or deliberate hiding (Problems 1 and 2) — using it reflexively, without either reason, is the mistake this question describes.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> As covered in "Under the Hood," explicit implementation has no performance benefit at all — it's purely a compile-time visibility decision.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Explicit implementation is legal with just one interface — the compiler doesn't require a collision to exist; it simply doesn't stop you from making a poor design choice.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Explicit implementation is reserved for genuine collisions or deliberate hiding (Problems 1 and 2) — using it reflexively, without either reason, is the mistake this question describes.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> As covered in "Under the Hood," explicit implementation has no performance benefit at all — it's purely a compile-time visibility decision.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Explicit implementation is legal with just one interface — the compiler doesn't require a collision to exist; it simply doesn't stop you from making a poor design choice.</p>
                 <p><strong>Reinforcement:</strong> Reach for explicit implementation only when you can name a specific colliding interface or a specific audience you're deliberately hiding a member from.</p>
             </div>
         </details>
@@ -730,17 +730,17 @@ doc.Render();   // ❌ CS1061 — 'ReportDocument' does not contain a definition
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: A</span></p>
+                <p><span class="correct"> Correct: A</span></p>
                 <p><strong>Why A is correct:</strong> As the "Common Confusion" section explained, an explicit member is still fully public — any code can cast to the interface type (as trivially as <code>((IPrintable)doc).Render()</code>) and call it. Explicit implementation changes what's <em>discoverable</em> through the concrete class, not what's actually reachable.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> The compiler fully enforces the syntax and dispatch rules of explicit implementation — that enforcement is real, it just isn't an access-control mechanism.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Explicit members do not appear on the concrete class's member list at all, even in a de-emphasized form — they're absent, not merely hidden visually.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Explicit implementation works with interfaces of any accessibility — <code>public</code>, <code>internal</code>, or otherwise; accessibility of the interface itself is an unrelated concern.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> The compiler fully enforces the syntax and dispatch rules of explicit implementation — that enforcement is real, it just isn't an access-control mechanism.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Explicit members do not appear on the concrete class's member list at all, even in a de-emphasized form — they're absent, not merely hidden visually.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Explicit implementation works with interfaces of any accessibility — <code>public</code>, <code>internal</code>, or otherwise; accessibility of the interface itself is an unrelated concern.</p>
                 <p><strong>Reinforcement:</strong> For genuine access control, reach for <code>private</code>, <code>internal</code>, or a properly scoped interface — explicit implementation is about API shape and discoverability, not security.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have the full toolbox — composition, multiple interfaces, segregation, and explicit implementation — for shaping honest, focused contracts. One question remains: what principle ties all of it together into a design philosophy? That's the capstone, lesson 081.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now have the full toolbox — composition, multiple interfaces, segregation, and explicit implementation — for shaping honest, focused contracts. One question remains: what principle ties all of it together into a design philosophy? That's the capstone, lesson 081.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

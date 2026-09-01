@@ -401,9 +401,9 @@
         <table>
             <thead><tr><th>Isolation Level</th><th>Dirty Reads</th><th>Non-Repeatable Reads</th><th>Phantom Reads</th><th>Concurrency Cost</th></tr></thead>
             <tbody>
-                <tr><td><strong>Read Committed</strong> (SQL Server default)</td><td>❌ Prevented</td><td>✅ Possible</td><td>✅ Possible</td><td>Low — the sensible default</td></tr>
-                <tr><td><strong>Repeatable Read</strong></td><td>❌ Prevented</td><td>❌ Prevented</td><td>✅ Possible</td><td>Moderate — read locks held longer</td></tr>
-                <tr><td><strong>Serializable</strong></td><td>❌ Prevented</td><td>❌ Prevented</td><td>❌ Prevented</td><td>High — real concurrency cost, more blocking</td></tr>
+                <tr><td><strong>Read Committed</strong> (SQL Server default)</td><td> Prevented</td><td> Possible</td><td> Possible</td><td>Low — the sensible default</td></tr>
+                <tr><td><strong>Repeatable Read</strong></td><td> Prevented</td><td> Prevented</td><td> Possible</td><td>Moderate — read locks held longer</td></tr>
+                <tr><td><strong>Serializable</strong></td><td> Prevented</td><td> Prevented</td><td> Prevented</td><td>High — real concurrency cost, more blocking</td></tr>
             </tbody>
         </table>
     </div>
@@ -543,7 +543,7 @@ catch
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🚪</span> How Much of the Room Can Others Rearrange While You're In It?</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> How Much of the Room Can Others Rearrange While You're In It?</div>
         <p><strong>Read Committed</strong> is like other people being free to rearrange furniture in the room between your glances at it — every time you look, you see the current, real, finished state of the room (never a half-moved chair mid-carry), but you can't assume the couch is still where it was the last time you looked.</p>
         <p><strong>Repeatable Read</strong> is like putting a "do not touch" sticky note on any specific piece of furniture the moment you look at it — nobody can move <em>that</em> item again until you leave, though someone could still walk in and drop a brand-new chair in the corner you hadn't looked at yet.</p>
         <p><strong>Serializable</strong> is like locking the whole room the moment you walk in — nothing in it, seen or unseen, can change until you're done, guaranteeing the room looks exactly the same on your way out as it did coming in, at the cost of everyone else waiting outside the door.</p>
@@ -587,13 +587,13 @@ catch
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Defaulting to Serializable everywhere "to be extra safe"</h4>
-    <p>❌ Wrapping every transaction in <span class="icode">IsolationLevel.Serializable</span> without a specific reason, then wondering why the application's throughput collapses under real concurrent load. ✅ Start at Read Committed (the sensible default) and only raise the isolation level for a specific operation once you've identified a specific anomaly (non-repeatable or phantom reads) that would actually cause a real problem for that operation.</p>
+    <p> Wrapping every transaction in <span class="icode">IsolationLevel.Serializable</span> without a specific reason, then wondering why the application's throughput collapses under real concurrent load.  Start at Read Committed (the sensible default) and only raise the isolation level for a specific operation once you've identified a specific anomaly (non-repeatable or phantom reads) that would actually cause a real problem for that operation.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Reaching for TransactionScope across multiple resources without understanding the cost</h4>
-    <p>❌ Wrapping a database write and a message-queue publish in a <span class="icode">TransactionScope</span> as a quick fix, without realizing this may require the transaction to escalate to a full distributed transaction coordinator, or that many modern queues don't even support participating in a two-phase commit at all — silently defeating the atomicity you thought you were getting. ✅ Understand this is genuine distributed-transaction complexity before reaching for it, and know that the Outbox pattern — covered later — is the modern, more resilient answer to this exact problem for most applications.</p>
+    <p> Wrapping a database write and a message-queue publish in a <span class="icode">TransactionScope</span> as a quick fix, without realizing this may require the transaction to escalate to a full distributed transaction coordinator, or that many modern queues don't even support participating in a two-phase commit at all — silently defeating the atomicity you thought you were getting.  Understand this is genuine distributed-transaction complexity before reaching for it, and know that the Outbox pattern — covered later — is the modern, more resilient answer to this exact problem for most applications.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Holding a high-isolation transaction open across slow, unrelated work</h4>
-    <p>❌ Beginning a Repeatable Read or Serializable transaction, then doing slow, unrelated work (an external API call, user think-time) before committing — every extra second extends exactly how long other transactions are blocked. ✅ The "keep transactions short" rule from Intermediate matters even more at higher isolation levels — the locks held are broader and the concurrency cost of holding them longer is correspondingly higher.</p>
+    <p> Beginning a Repeatable Read or Serializable transaction, then doing slow, unrelated work (an external API call, user think-time) before committing — every extra second extends exactly how long other transactions are blocked.  The "keep transactions short" rule from Intermediate matters even more at higher isolation levels — the locks held are broader and the concurrency cost of holding them longer is correspondingly higher.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -610,7 +610,7 @@ catch
         </table>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Start at Read Committed. Raise the isolation level only for the specific operation that needs a stronger guarantee, and only after naming exactly which anomaly you're protecting against — never as a blanket, "safer by default" setting.
+        <strong> Rule of thumb:</strong> Start at Read Committed. Raise the isolation level only for the specific operation that needs a stronger guarantee, and only after naming exactly which anomaly you're protecting against — never as a blanket, "safer by default" setting.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -640,7 +640,7 @@ catch
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've gone deep on isolation levels and the tools around multi-step, multi-resource transactions. Let's confirm it clicked.</p>
 
     <div class="quiz-question">
@@ -654,11 +654,11 @@ catch
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Reading the same row twice within one transaction and getting two different (both committed) values is the textbook definition of a non-repeatable read. Repeatable Read specifically prevents this by holding a lock or version pin on any row your transaction has already read, blocking other transactions from changing it until yours finishes. Serializable, being strictly stronger, prevents it too.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> A dirty read is seeing another transaction's <em>uncommitted</em> data — here, the other transaction's change was already committed by the time the second read happened, which rules out a dirty read.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> A phantom read is about a query's row-<em>set</em> changing between re-runs (new/missing rows), not about a single already-read row's value changing — and Read Committed does not prevent this anomaly at all, it's the level that explicitly allows it.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This is exactly the anomaly Read Committed (the default) permits — re-reading the same row can absolutely return a different value under Read Committed.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> A dirty read is seeing another transaction's <em>uncommitted</em> data — here, the other transaction's change was already committed by the time the second read happened, which rules out a dirty read.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> A phantom read is about a query's row-<em>set</em> changing between re-runs (new/missing rows), not about a single already-read row's value changing — and Read Committed does not prevent this anomaly at all, it's the level that explicitly allows it.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This is exactly the anomaly Read Committed (the default) permits — re-reading the same row can absolutely return a different value under Read Committed.</p>
                 <p><strong>Reinforcement:</strong> Match the anomaly to its precise definition — dirty (uncommitted), non-repeatable (same row, different value), phantom (different row set) — each is prevented starting at a specific isolation level.</p>
             </div>
         </details>
@@ -675,11 +675,11 @@ catch
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> To prevent phantom reads, the engine must guard against new rows being inserted into the range a query matched against — not just protect rows that were already read, which is all Repeatable Read does. Guarding a range is a broader, more expensive form of locking than pinning specific already-read rows.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Serializable doesn't lock the whole database — it guards the specific ranges relevant to the transaction's queries, which is still narrower than a whole-database lock, though broader than Repeatable Read's per-row locking.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's a genuine mechanical difference — range-guarding versus per-row locking — not just a naming distinction.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Isolation levels have no relationship to connection pooling — pooling operates entirely independently of what isolation level a transaction uses.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Serializable doesn't lock the whole database — it guards the specific ranges relevant to the transaction's queries, which is still narrower than a whole-database lock, though broader than Repeatable Read's per-row locking.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's a genuine mechanical difference — range-guarding versus per-row locking — not just a naming distinction.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Isolation levels have no relationship to connection pooling — pooling operates entirely independently of what isolation level a transaction uses.</p>
                 <p><strong>Reinforcement:</strong> Each step up in isolation level enforces a broader guarantee through broader locking — that's precisely why it costs more concurrency.</p>
             </div>
         </details>
@@ -696,17 +696,17 @@ catch
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> TransactionScope genuinely can coordinate a commit across a database and another resource manager, but doing so is real distributed-transaction territory — more complex, and not every resource (many modern queues included) even supports participating in it. The lesson names the Outbox pattern as the more modern, resilient answer most systems reach for instead.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson is explicit that this introduces real complexity and cost — it is not presented as a simple, trade-off-free solution.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> TransactionScope's whole purpose is coordinating across multiple resource managers, potentially including things beyond a single database — the limitation is whether each resource manager actually supports participating, not a hard restriction to one database.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> EF Core's implicit transaction only ever covers the database changes within one SaveChanges() call — it has no awareness of, or effect on, an entirely separate resource like a message queue.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The lesson is explicit that this introduces real complexity and cost — it is not presented as a simple, trade-off-free solution.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> TransactionScope's whole purpose is coordinating across multiple resource managers, potentially including things beyond a single database — the limitation is whether each resource manager actually supports participating, not a hard restriction to one database.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> EF Core's implicit transaction only ever covers the database changes within one SaveChanges() call — it has no awareness of, or effect on, an entirely separate resource like a message queue.</p>
                 <p><strong>Reinforcement:</strong> Recognize TransactionScope's real purpose and real cost, and recognize the Outbox pattern by name as where this problem is more properly solved later in the curriculum.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand isolation levels precisely, and the honest shape of multi-resource transaction coordination. Next up: concurrency, taken deeper than a RowVersion token and an exception type.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now understand isolation levels precisely, and the honest shape of multi-resource transaction coordination. Next up: concurrency, taken deeper than a RowVersion token and an exception type.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

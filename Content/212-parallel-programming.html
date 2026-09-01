@@ -381,7 +381,7 @@ Parallel.ForEach&lt;TSource&gt;(IEnumerable&lt;TSource&gt; source, Action&lt;TSo
     <p>Under the hood, all three are built on the same foundation as everything else in this Part: ordinary <code class="icode">Task</code> objects, scheduled onto the <strong>ThreadPool</strong> (the internals of which are covered elsewhere in this Part). What <code class="icode">Parallel</code> adds on top is the bookkeeping — partitioning the work, deciding how many pieces to run at once, and waiting for every piece to finish — so you don't have to hand-write that coordination yourself with raw <code class="icode">Task.Run</code> calls.</p>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> This lesson sets up the next one</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> This lesson sets up the next one</div>
         <p><code class="icode">Parallel.Invoke</code> and <code class="icode">Parallel.For</code> get a proper introduction here. <code class="icode">Parallel.ForEach</code> — the member of this family you'll actually reach for most often in real code — gets its own full lesson right after this one, because it deserves a deeper look at partitioning, <code class="icode">ParallelOptions</code>, and thread-safety.</p>
     </div>
 
@@ -404,7 +404,7 @@ Parallel.ForEach&lt;TSource&gt;(IEnumerable&lt;TSource&gt; source, Action&lt;TSo
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>🧮 CPU-bound — parallel programming</h4>
+            <h4> CPU-bound — parallel programming</h4>
             <ul>
                 <li>The thread is <strong>genuinely busy</strong> computing something</li>
                 <li>The CPU <em>is</em> the bottleneck — there's no external wait at all</li>
@@ -514,7 +514,7 @@ Console.WriteLine("All three reports are done.");
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">👷</span> One Chef vs. a Kitchen Full of Chefs</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> One Chef vs. a Kitchen Full of Chefs</div>
         <p>Imagine a kitchen that needs to chop vegetables, grill meat, and bake bread — three genuinely independent, hands-on tasks, none of which involves standing around waiting for a delivery. One chef doing all three, one after another, takes the sum of all three durations. Three chefs, each assigned one task, working <em>at the same time</em>, finish in roughly the time of the slowest single task.</p>
         <p>This is different from the "buzzer" analogy from the async lessons, where one person placed an order and went off to do something else while <em>waiting</em> for food to be ready. Here, nobody is waiting on an external delivery — every chef is actively, continuously working the entire time. That's the essence of CPU-bound parallel work: more hands, genuinely busy at once, not one hand freed up during idle time.</p>
     </div>
@@ -557,43 +557,43 @@ Console.WriteLine("All three reports are done.");
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Reaching for Parallel.Invoke to run I/O-bound operations "at the same time"</h4>
-    <p>❌ Wrapping three independent network calls in <code class="icode">Parallel.Invoke</code> to make them run concurrently.</p>
-    <p>✅ Independent I/O-bound work belongs to <code class="icode">Task.WhenAll</code>, not <code class="icode">Parallel.Invoke</code>. <code class="icode">Parallel.Invoke</code> is a <em>blocking</em> call built for CPU-bound work — using it for I/O-bound operations would tie up a thread for each one, waiting synchronously, which is precisely the thread-wasting problem the whole Async Programming part exists to avoid.</p>
+    <p> Wrapping three independent network calls in <code class="icode">Parallel.Invoke</code> to make them run concurrently.</p>
+    <p> Independent I/O-bound work belongs to <code class="icode">Task.WhenAll</code>, not <code class="icode">Parallel.Invoke</code>. <code class="icode">Parallel.Invoke</code> is a <em>blocking</em> call built for CPU-bound work — using it for I/O-bound operations would tie up a thread for each one, waiting synchronously, which is precisely the thread-wasting problem the whole Async Programming part exists to avoid.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Calling Parallel.Invoke from a thread you're trying to keep responsive</h4>
-    <p>❌ Calling <code class="icode">Parallel.Invoke</code> directly on a UI thread or a request-handling thread and expecting it to stay responsive while the work runs.</p>
-    <p>✅ <code class="icode">Parallel.Invoke</code> blocks the calling thread until everything finishes. If that thread needs to remain free (a UI thread, for instance), dispatch the whole parallel operation onto a background thread first (e.g. with <code class="icode">Task.Run</code>), rather than calling it directly from a thread you need to stay free.</p>
+    <p> Calling <code class="icode">Parallel.Invoke</code> directly on a UI thread or a request-handling thread and expecting it to stay responsive while the work runs.</p>
+    <p> <code class="icode">Parallel.Invoke</code> blocks the calling thread until everything finishes. If that thread needs to remain free (a UI thread, for instance), dispatch the whole parallel operation onto a background thread first (e.g. with <code class="icode">Task.Run</code>), rather than calling it directly from a thread you need to stay free.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Using Parallel.Invoke for a huge, dynamic collection of items</h4>
-    <p>❌ Manually building a giant array of lambdas — one per item in a collection of thousands — and passing them all to <code class="icode">Parallel.Invoke</code>.</p>
-    <p>✅ <code class="icode">Parallel.Invoke</code> is meant for a small, fixed, known-in-advance set of distinct operations. For "run this same operation across every item in a large collection," <code class="icode">Parallel.ForEach</code> — the next lesson — is the right tool: it partitions the collection efficiently instead of requiring you to build a huge list of delegates by hand.</p>
+    <p> Manually building a giant array of lambdas — one per item in a collection of thousands — and passing them all to <code class="icode">Parallel.Invoke</code>.</p>
+    <p> <code class="icode">Parallel.Invoke</code> is meant for a small, fixed, known-in-advance set of distinct operations. For "run this same operation across every item in a large collection," <code class="icode">Parallel.ForEach</code> — the next lesson — is the right tool: it partitions the collection efficiently instead of requiring you to build a huge list of delegates by hand.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="feature-grid">
         <div class="feature-card">
-            <span class="emoji">✅</span>
+            <span class="emoji"></span>
             <div class="label">A small, fixed set of independent CPU-bound operations</div>
             <div class="desc">A handful of distinct, known-in-advance computations — Parallel.Invoke's ideal shape.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">📦</span>
+            <span class="emoji"></span>
             <div class="label">The same operation across a large collection</div>
             <div class="desc">That's Parallel.For / Parallel.ForEach — next lesson's territory.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">🚫</span>
+            <span class="emoji"></span>
             <div class="label">Not for I/O-bound waiting</div>
             <div class="desc">Network calls, database queries, file I/O — use async/Task.WhenAll instead.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">⚠️</span>
+            <span class="emoji"></span>
             <div class="label">Not for tiny, trivial work</div>
             <div class="desc">The overhead of scheduling and coordinating parallel work can outweigh doing something genuinely fast on one core.</div>
         </div>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Ask the same question this whole Part keeps coming back to — "is the thread waiting, or is it working?" If it's waiting on something external, that's async/await territory. If it's genuinely, continuously crunching numbers with nothing to wait on, and there's more than one independent chunk of that crunching to do, that's what the <code class="icode">Parallel</code> class exists for.
+        <strong> Rule of thumb:</strong> Ask the same question this whole Part keeps coming back to — "is the thread waiting, or is it working?" If it's waiting on something external, that's async/await territory. If it's genuinely, continuously crunching numbers with nothing to wait on, and there's more than one independent chunk of that crunching to do, that's what the <code class="icode">Parallel</code> class exists for.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -622,7 +622,7 @@ Console.WriteLine("All three reports are done.");
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've drawn the line between async/await and parallel programming. Let's make sure it's solid before moving on to Parallel.ForEach.</p>
 
     <div class="quiz-question">
@@ -636,10 +636,10 @@ Console.WriteLine("All three reports are done.");
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Calling a web API is I/O-bound — the thread is waiting on a network response, not doing CPU work. That's exactly the problem async/await and Task.WhenAll solve: freeing the thread during the wait rather than blocking it.</p>
-                <p><span class="incorrect">❌ Why A and C are incorrect:</span> Parallel.Invoke and Parallel.ForEach are blocking, CPU-bound tools built on top of the ThreadPool. Using them for I/O-bound waiting would tie up a thread per call, blocking it for the entire wait — exactly the waste async programming was designed to eliminate.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> A sequential loop with await inside it runs the calls one after another, adding up their durations instead of overlapping them.</p>
+                <p><span class="incorrect"> Why A and C are incorrect:</span> Parallel.Invoke and Parallel.ForEach are blocking, CPU-bound tools built on top of the ThreadPool. Using them for I/O-bound waiting would tie up a thread per call, blocking it for the entire wait — exactly the waste async programming was designed to eliminate.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> A sequential loop with await inside it runs the calls one after another, adding up their durations instead of overlapping them.</p>
                 <p><strong>Reinforcement:</strong> I/O-bound waiting → async/await family. CPU-bound computation → Parallel family.</p>
             </div>
         </details>
@@ -656,11 +656,11 @@ Console.WriteLine("All three reports are done.");
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> Three independent, CPU-bound operations with an acceptable blocking wait is precisely Parallel.Invoke's use case — it can run all three genuinely simultaneously on separate cores, finishing in roughly the time of the slowest one instead of the sum of all three.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Task.WhenAll's benefit comes from not wasting threads during I/O waits — it doesn't, by itself, make CPU-bound work run on multiple cores at once.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> Running them sequentially uses only one core for the entire duration, leaving other cores idle for no reason.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Adding async/await alone doesn't parallelize CPU-bound computation — there's nothing to "await" if there's no external wait involved.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Task.WhenAll's benefit comes from not wasting threads during I/O waits — it doesn't, by itself, make CPU-bound work run on multiple cores at once.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> Running them sequentially uses only one core for the entire duration, leaving other cores idle for no reason.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Adding async/await alone doesn't parallelize CPU-bound computation — there's nothing to "await" if there's no external wait involved.</p>
                 <p><strong>Reinforcement:</strong> Parallel.Invoke is built specifically for a small, fixed set of independent, CPU-bound operations that can block the calling thread.</p>
             </div>
         </details>
@@ -677,11 +677,11 @@ Console.WriteLine("All three reports are done.");
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Degree of Parallelism describes true simultaneity — how many pieces of work are actually executing at the same instant. It's capped by the number of available CPU cores, and can be capped further by an explicit limit you set (covered fully in the next lesson's ParallelOptions.MaxDegreeOfParallelism).</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The total count of Tasks created over a program's lifetime says nothing about how many were running simultaneously at any given moment.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Loop iteration count is unrelated — a loop could iterate a million times while only a handful of iterations ever run in parallel at once.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> .NET's Parallel class doesn't have a "priority" concept for parallel operations in this sense.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The total count of Tasks created over a program's lifetime says nothing about how many were running simultaneously at any given moment.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Loop iteration count is unrelated — a loop could iterate a million times while only a handful of iterations ever run in parallel at once.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> .NET's Parallel class doesn't have a "priority" concept for parallel operations in this sense.</p>
                 <p><strong>Reinforcement:</strong> Degree of Parallelism is about genuine simultaneity, not total volume of work.</p>
             </div>
         </details>
@@ -698,11 +698,11 @@ Console.WriteLine("All three reports are done.");
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Parallel.Invoke waits for every action to finish (or fail), then throws a single AggregateException whose InnerExceptions collection contains every exception that occurred — not just the first one.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Both exceptions are preserved and accessible; neither is silently dropped.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The AggregateException is an ordinary .NET exception — it can be caught with a standard try/catch, exactly like any other exception.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Exceptions are not swallowed — they propagate out of the Parallel.Invoke call as an AggregateException.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Both exceptions are preserved and accessible; neither is silently dropped.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The AggregateException is an ordinary .NET exception — it can be caught with a standard try/catch, exactly like any other exception.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Exceptions are not swallowed — they propagate out of the Parallel.Invoke call as an AggregateException.</p>
                 <p><strong>Reinforcement:</strong> Like Task.WhenAll, Parallel.Invoke captures every failure rather than only reporting the first one it encounters.</p>
             </div>
         </details>
@@ -719,17 +719,17 @@ Console.WriteLine("All three reports are done.");
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the central distinction of the lesson. async/await's win is not wasting a thread during an external wait — often without any thread actively working at all during that wait. Parallel programming's win is genuinely running computation on multiple cores at the same instant, when the CPU itself is the bottleneck.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The underlying mechanisms and the problems they solve are fundamentally different, not just a difference in syntax.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Both are general-purpose .NET techniques usable in web apps, desktop apps, console apps, and services alike.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Neither is a "faster version" of the other — applying parallel techniques to I/O-bound waiting doesn't help, and applying async/await to CPU-bound computation doesn't help either. Each is the right tool for a different kind of problem.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The underlying mechanisms and the problems they solve are fundamentally different, not just a difference in syntax.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Both are general-purpose .NET techniques usable in web apps, desktop apps, console apps, and services alike.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Neither is a "faster version" of the other — applying parallel techniques to I/O-bound waiting doesn't help, and applying async/await to CPU-bound computation doesn't help either. Each is the right tool for a different kind of problem.</p>
                 <p><strong>Reinforcement:</strong> Match the tool to the bottleneck: waiting → async/await; computing → parallel programming.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have the core distinction this entire Part builds on: I/O-bound waiting vs. CPU-bound computation. Next up: a deep dive into Parallel.ForEach — the member of the Parallel family you'll use most often in real code.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now have the core distinction this entire Part builds on: I/O-bound waiting vs. CPU-bound computation. Next up: a deep dive into Parallel.ForEach — the member of the Parallel family you'll use most often in real code.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

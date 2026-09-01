@@ -387,7 +387,7 @@ IAuditableEntity invoice = new Invoice(DateTime.UtcNow.AddDays(-3));
 Console.WriteLine(invoice.DescribeAge());   // "Created 3 day(s) ago"</code></pre>
     <p>This was added mainly to solve <strong>API evolution</strong>: a published interface used by thousands of consumers could never gain a new member without breaking every existing implementer — until now. Adding a new member with a default body doesn't break anyone; every existing implementation keeps compiling, and simply inherits the default until it chooses to override it.</p>
     <div class="callout">
-        <strong>💡 Important limitation:</strong> a default interface method can only be called through the <em>interface</em> type — <code>invoice.DescribeAge()</code> works when the variable's static type is <code>IAuditableEntity</code>, but if <code>invoice</code> were typed as <code>Invoice</code> and <code>Invoice</code> didn't declare <code>DescribeAge()</code> itself, it wouldn't appear on that variable at all. This is a real, frequently-surprising gotcha — covered further in lesson 080's explicit interface implementation.
+        <strong> Important limitation:</strong> a default interface method can only be called through the <em>interface</em> type — <code>invoice.DescribeAge()</code> works when the variable's static type is <code>IAuditableEntity</code>, but if <code>invoice</code> were typed as <code>Invoice</code> and <code>Invoice</code> didn't declare <code>DescribeAge()</code> itself, it wouldn't appear on that variable at all. This is a real, frequently-surprising gotcha — covered further in lesson 080's explicit interface implementation.
     </div>
 
     <!-- ====== BIG PICTURE ====== -->
@@ -537,22 +537,22 @@ Debug.Assert(!inventory.ReserveWasCalled);   // correctly never reserved stock i
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Interfaces that leak implementation details</h4>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public interface IPaymentGateway
 {
-    // ❌ Ties every implementer and every test fake to Stripe's own response shape
+    //  Ties every implementer and every test fake to Stripe's own response shape
     Task&lt;StripeChargeResponse&gt; ChargeAsync(decimal amount);
 }</code></pre>
-    <p>✅ Define a neutral <code>PaymentResult</code> type owned by the abstraction itself, and have <code>StripeGateway</code> translate Stripe's response into it — the interface should never require its callers to understand any one implementation's data shape.</p>
+    <p> Define a neutral <code>PaymentResult</code> type owned by the abstraction itself, and have <code>StripeGateway</code> translate Stripe's response into it — the interface should never require its callers to understand any one implementation's data shape.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming default interface methods behave like abstract class defaults</h4>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">Invoice invoice = new Invoice(DateTime.UtcNow);
-// invoice.DescribeAge();   // ❌ compiler error — DescribeAge() isn't visible
+// invoice.DescribeAge();   //  compiler error — DescribeAge() isn't visible
 //                              on the Invoice type itself, only on IAuditableEntity
 IAuditableEntity asInterface = invoice;
-asInterface.DescribeAge();   // ✅ works — accessed through the interface type</code></pre>
-    <p>✅ Remember that a default interface method is only visible when the value is referenced through the interface type — an easy trap the first time you rely on one, and a key reason to understand explicit interface implementation (lesson 080), which relies on the very same mechanism deliberately.</p>
+asInterface.DescribeAge();   //  works — accessed through the interface type</code></pre>
+    <p> Remember that a default interface method is only visible when the value is referenced through the interface type — an easy trap the first time you rely on one, and a key reason to understand explicit interface implementation (lesson 080), which relies on the very same mechanism deliberately.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — One interface per concrete class, with no real abstraction behind it</h4>
-    <p>❌ Generating <code>IOrderService</code> for <code>OrderService</code>, <code>ICustomerService</code> for <code>CustomerService</code>, and so on, mechanically, purely because "everything should have an interface" — often with only one implementation ever, and members that mirror the concrete class exactly.</p>
-    <p>✅ Introduce an interface when there's a genuine reason: multiple implementations, a testing seam, or a real team boundary (echoing lesson 073's Mistake 2) — not as a reflexive naming ritual applied to every class in the project.</p>
+    <p> Generating <code>IOrderService</code> for <code>OrderService</code>, <code>ICustomerService</code> for <code>CustomerService</code>, and so on, mechanically, purely because "everything should have an interface" — often with only one implementation ever, and members that mirror the concrete class exactly.</p>
+    <p> Introduce an interface when there's a genuine reason: multiple implementations, a testing seam, or a real team boundary (echoing lesson 073's Mistake 2) — not as a reflexive naming ritual applied to every class in the project.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -562,7 +562,7 @@ asInterface.DescribeAge();   // ✅ works — accessed through the interface typ
         <li style="margin-bottom:0.4rem;">You're defining a boundary between modules, layers, or teams, where the contract needs to be agreed upon and stable, independent of either side's internal class hierarchy.</li>
     </ul>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> if you find yourself writing "I need to test this without hitting a real X," an interface around X is very likely the fix. If there's exactly one implementation, no plausible second one, and no team-boundary reason to abstract it, a plain concrete class is simpler and honest about that.
+        <strong> Rule of thumb:</strong> if you find yourself writing "I need to test this without hitting a real X," an interface around X is very likely the fix. If there's exactly one implementation, no plausible second one, and no team-boundary reason to abstract it, a plain concrete class is simpler and honest about that.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -591,7 +591,7 @@ asInterface.DescribeAge();   // ✅ works — accessed through the interface typ
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">Let's confirm you can reason about interfaces as production design tools, not just syntax.</p>
 
     <!-- Question 1 -->
@@ -606,11 +606,11 @@ asInterface.DescribeAge();   // ✅ works — accessed through the interface typ
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> The core motivation was API evolution — before C# 8, adding any member to a published interface broke every existing implementation. A default body means existing implementers keep compiling and simply inherit the new default until they choose to override it.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Interfaces still cannot hold instance fields even with default interface methods — that remains one of the clearest lines between interfaces and abstract classes.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Abstract classes remain useful specifically for state, constructors, and single-inheritance shared implementation — default interface methods narrow one gap but don't replace the tool.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Interfaces, with or without default methods, still cannot be instantiated directly — you can only instantiate a concrete implementing type.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Interfaces still cannot hold instance fields even with default interface methods — that remains one of the clearest lines between interfaces and abstract classes.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Abstract classes remain useful specifically for state, constructors, and single-inheritance shared implementation — default interface methods narrow one gap but don't replace the tool.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Interfaces, with or without default methods, still cannot be instantiated directly — you can only instantiate a concrete implementing type.</p>
                 <p><strong>Reinforcement:</strong> Default interface methods solve a specific problem — breaking changes on interface growth — not a general substitute for abstract classes.</p>
             </div>
         </details>
@@ -628,11 +628,11 @@ asInterface.DescribeAge();   // ✅ works — accessed through the interface typ
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> A default interface method is only reachable through the interface type. Since the variable is statically typed as <code>Invoice</code>, not <code>IAuditableEntity</code>, and <code>Invoice</code> doesn't declare <code>DescribeAge()</code> itself, the compiler reports it as not found — this is the exact gotcha called out in Mistake 2.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This would be true if <code>invoice</code> were typed (or cast) as <code>IAuditableEntity</code> — but as a plain <code>Invoice</code> reference, the call doesn't compile at all.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This is a compile-time visibility issue, not a runtime failure — the code never reaches execution in the first place.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no silent failure here; the compiler stops the build before this could ever run.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This would be true if <code>invoice</code> were typed (or cast) as <code>IAuditableEntity</code> — but as a plain <code>Invoice</code> reference, the call doesn't compile at all.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This is a compile-time visibility issue, not a runtime failure — the code never reaches execution in the first place.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no silent failure here; the compiler stops the build before this could ever run.</p>
                 <p><strong>Reinforcement:</strong> Always be explicit about which type — the interface or the concrete class — you're calling a default interface method through.</p>
             </div>
         </details>
@@ -650,11 +650,11 @@ asInterface.DescribeAge();   // ✅ works — accessed through the interface typ
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> An interface contract is exactly the team-boundary tool this lesson describes — Checkout needs no knowledge of Payments' internal class hierarchy, and Payments can refactor freely as long as the interface's promise is honored, letting both teams ship independently.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> An abstract class would force Checkout's classes to inherit from a Payments-owned base, spending Checkout's single inheritance slot and coupling their class hierarchies together — exactly the weaker team-boundary property called out in this lesson's comparison table.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This sidesteps the technical question entirely and isn't a software design answer — the interface contract is what enables two teams to stay separate while still collaborating safely.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Depending on a concrete class directly couples Checkout to Stripe specifically and to Payments' internal implementation details, defeating the entire purpose of the abstraction.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> An abstract class would force Checkout's classes to inherit from a Payments-owned base, spending Checkout's single inheritance slot and coupling their class hierarchies together — exactly the weaker team-boundary property called out in this lesson's comparison table.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This sidesteps the technical question entirely and isn't a software design answer — the interface contract is what enables two teams to stay separate while still collaborating safely.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Depending on a concrete class directly couples Checkout to Stripe specifically and to Payments' internal implementation details, defeating the entire purpose of the abstraction.</p>
                 <p><strong>Reinforcement:</strong> Interfaces let two teams change independently as long as the shared contract stays honored — that's their real value at organizational scale.</p>
             </div>
         </details>
@@ -672,17 +672,17 @@ asInterface.DescribeAge();   // ✅ works — accessed through the interface typ
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Returning <code>StripeChargeResponse</code> leaks one specific implementation's data shape into the contract — every other implementer (PayPal, ACH, and every test fake) is forced to either depend on Stripe's types or produce awkward, meaningless values for fields that don't apply to them. This is exactly Mistake 1 from this lesson.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This signature uses a neutral result type and an idiomatic cancellation token — a well-designed, implementation-agnostic member.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This uses plain, neutral types (a bool and a general-purpose list) that any implementation or fake can satisfy easily.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This is the well-designed <code>IClock</code> member from the Simple Example — small, neutral, and trivially fakeable.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This signature uses a neutral result type and an idiomatic cancellation token — a well-designed, implementation-agnostic member.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This uses plain, neutral types (a bool and a general-purpose list) that any implementation or fake can satisfy easily.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This is the well-designed <code>IClock</code> member from the Simple Example — small, neutral, and trivially fakeable.</p>
                 <p><strong>Reinforcement:</strong> A good interface member's types belong to the abstraction, never to one specific implementation behind it.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now see interfaces as design seams, not decoration — which sets up multiple interface implementation (078) and interface segregation (079) perfectly.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now see interfaces as design seams, not decoration — which sets up multiple interface implementation (078) and interface segregation (079) perfectly.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

@@ -376,13 +376,13 @@ HashSet&lt;T&gt; ToHashSet&lt;T&gt;(this IEnumerable&lt;T&gt; source)</code></di
     <p>Deferred execution is the right default for most LINQ code, exactly as the previous lesson explained — but it creates three real problems when a query is going to be used more than once, or handed somewhere else in your program:</p>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>⚠️ Problem 1 — Repeated re-evaluation</h4>
+            <h4> Problem 1 — Repeated re-evaluation</h4>
             <ul>
                 <li>Enumerating the same deferred query twice runs the <em>entire</em> filter/sort/project chain twice — wasted work if the predicate does anything nontrivial.</li>
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ Problem 2 — No stable snapshot</h4>
+            <h4> Problem 2 — No stable snapshot</h4>
             <ul>
                 <li>If the source mutates between two enumerations, a deferred query silently reflects the new state — sometimes exactly what you want, sometimes a bug, as Gotcha 1 in the previous lesson showed.</li>
             </ul>
@@ -390,13 +390,13 @@ HashSet&lt;T&gt; ToHashSet&lt;T&gt;(this IEnumerable&lt;T&gt; source)</code></di
     </div>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>⚠️ Problem 3 — Multiple enumeration bugs</h4>
+            <h4> Problem 3 — Multiple enumeration bugs</h4>
             <ul>
                 <li>Passing a deferred query into a method that enumerates it more than once (once to count, once to loop, say) can produce inconsistent results, or run expensive work twice without anyone intending it.</li>
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>✅ The fix — force it once, deliberately</h4>
+            <h4> The fix — force it once, deliberately</h4>
             <ul>
                 <li><code>ToList()</code> (or <code>ToArray()</code>, and friends) runs the chain exactly once, right now, and gives you back a plain collection that behaves exactly like any other — no hidden re-computation, ever.</li>
             </ul>
@@ -440,13 +440,13 @@ List&lt;Product&gt; products =
     new(3, "Desk Lamp",      0),
 ];
 
-// ❌ BEFORE — deferred, re-evaluated on every enumeration
+//  BEFORE — deferred, re-evaluated on every enumeration
 var inStockQuery = products.Where(p =&gt; p.Stock &gt; 0);
 Console.WriteLine(inStockQuery.Count()); // 2
 products.Add(new Product(4, "Headphones", 8));
 Console.WriteLine(inStockQuery.Count()); // 3 — silently changed!
 
-// ✅ AFTER — forced immediately, a stable snapshot
+//  AFTER — forced immediately, a stable snapshot
 var inStockSnapshot = products.Where(p =&gt; p.Stock &gt; 0).ToList();
 Console.WriteLine(inStockSnapshot.Count); // 2 (using List&lt;T&gt;.Count, the PROPERTY — more on this in the Performance lesson)
 products.Add(new Product(5, "Monitor Arm", 30));
@@ -471,7 +471,7 @@ bool hasFurniture = categories.Contains("Furniture"); // O(1)</code></div>
 {
     private readonly List&lt;Order&gt; _orders;
 
-    // ✅ Snapshot the result the moment it's requested — deliberately
+    //  Snapshot the result the moment it's requested — deliberately
     public List&lt;Order&gt; GetTodaysOrders()
     {
         DateOnly today = DateOnly.FromDateTime(DateTime.Now);
@@ -490,7 +490,7 @@ int countAtFivePm = report.Count;         // STILL the noon snapshot — unaffec
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📸</span> A Photograph, Not a Live Camera Feed</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Photograph, Not a Live Camera Feed</div>
         <p>A deferred query is like a live camera feed pointed at the pantry — check it now, and you see the current contents; check it again in an hour, and you see whatever's there <em>then</em>. Calling <code>ToList()</code> is like snapping a photograph: the instant the shutter clicks, that moment is frozen forever. Someone could empty the entire pantry a second later — the photograph doesn't change. That's exactly the guarantee <code>ToList()</code> gives you: a fixed, unchanging record of what matched, at that one instant.</p>
     </div>
 
@@ -524,15 +524,15 @@ int countAtFivePm = report.Count;         // STILL the noon snapshot — unaffec
     <!-- ====== COMMON MISTAKES ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Calling <code>ToList()</code> in the middle of a chain, then continuing to filter</h4>
-    <p>❌ <code>products.Where(p =&gt; p.Stock &gt; 0).ToList().Where(p =&gt; p.Price &lt; 100)</code> forces a full, wasted materialization of the in-stock products before the price filter even runs — an unnecessary allocation with no benefit. ✅ Chain every deferred operator first, and call <code>ToList()</code> exactly once, at the very end: <code>products.Where(p =&gt; p.Stock &gt; 0).Where(p =&gt; p.Price &lt; 100).ToList()</code>. (This exact pitfall gets its own full treatment in the Performance lesson, later in this module.)</p>
+    <p> <code>products.Where(p =&gt; p.Stock &gt; 0).ToList().Where(p =&gt; p.Price &lt; 100)</code> forces a full, wasted materialization of the in-stock products before the price filter even runs — an unnecessary allocation with no benefit.  Chain every deferred operator first, and call <code>ToList()</code> exactly once, at the very end: <code>products.Where(p =&gt; p.Stock &gt; 0).Where(p =&gt; p.Price &lt; 100).ToList()</code>. (This exact pitfall gets its own full treatment in the Performance lesson, later in this module.)</p>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forcing execution "just to be safe," even when it isn't needed</h4>
-    <p>❌ Reflexively appending <code>.ToList()</code> to every LINQ expression, out of habit, even when the query is enumerated exactly once and never re-touched. ✅ Deferred execution is the right default — reach for <code>ToList()</code> (or the others) deliberately, for one of the three specific reasons covered in this lesson, not automatically.</p>
+    <p> Reflexively appending <code>.ToList()</code> to every LINQ expression, out of habit, even when the query is enumerated exactly once and never re-touched.  Deferred execution is the right default — reach for <code>ToList()</code> (or the others) deliberately, for one of the three specific reasons covered in this lesson, not automatically.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Force immediate execution when</h4>
+            <h4> Force immediate execution when</h4>
             <ul>
                 <li>The result will be enumerated more than once, and re-running the query each time would be wasteful or produce inconsistent results.</li>
                 <li>You need a stable snapshot that must not change even if the source is mutated afterward.</li>
@@ -541,7 +541,7 @@ int countAtFivePm = report.Count;         // STILL the noon snapshot — unaffec
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ Stay deferred instead when</h4>
+            <h4> Stay deferred instead when</h4>
             <ul>
                 <li>The query is only going to be enumerated once, immediately.</li>
                 <li>You're still building the query up — more <code>Where</code>/<code>Select</code>/<code>OrderBy</code> calls are still coming, and forcing early would be wasted, premature work.</li>
@@ -577,7 +577,7 @@ int countAtFivePm = report.Count;         // STILL the noon snapshot — unaffec
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've learned how and why to force LINQ queries to run immediately. Let's check your understanding.</p>
 
     <div class="quiz-question">
@@ -591,11 +591,11 @@ int countAtFivePm = report.Count;         // STILL the noon snapshot — unaffec
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> <code>ToList()</code> forces immediate execution — by the time the line finishes running, the filter has already been applied once and the matching items copied into a brand-new, independent <code>List&lt;T&gt;</code>. Nothing connects <code>snapshot</code> back to <code>products</code> afterward.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> That would describe the deferred query <em>before</em> <code>ToList()</code>, not the materialized result after it.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>snapshot</code> is a plain <code>List&lt;T&gt;</code> at this point — enumerating it again just reads the already-stored items; it does not re-run any filter.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Whether the new item would match is irrelevant — <code>snapshot</code> was already fully built before the addition happened, and nothing re-evaluates it afterward.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> That would describe the deferred query <em>before</em> <code>ToList()</code>, not the materialized result after it.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> <code>snapshot</code> is a plain <code>List&lt;T&gt;</code> at this point — enumerating it again just reads the already-stored items; it does not re-run any filter.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Whether the new item would match is irrelevant — <code>snapshot</code> was already fully built before the addition happened, and nothing re-evaluates it afterward.</p>
                 <p><strong>Reinforcement:</strong> Immediate execution produces a fixed, disconnected result — exactly the "photograph, not a live feed" idea from the Analogy section.</p>
             </div>
         </details>
@@ -612,9 +612,9 @@ int countAtFivePm = report.Count;         // STILL the noon snapshot — unaffec
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: D</span></p>
+                <p><span class="correct"> Correct: D</span></p>
                 <p><strong>Why D is correct:</strong> Immediate execution is a runtime behavior — it affects when the query's logic actually runs, not how long the code takes to compile. Compilation speed was never part of the discussion.</p>
-                <p><span class="incorrect">❌ Why A, B, and C are incorrect:</span> All three are explicitly the real, practical reasons covered in Why Does It Exist? and When Should I Use It? — avoiding wasted re-runs, getting a frozen snapshot, and preventing multiple-enumeration bugs.</p>
+                <p><span class="incorrect"> Why A, B, and C are incorrect:</span> All three are explicitly the real, practical reasons covered in Why Does It Exist? and When Should I Use It? — avoiding wasted re-runs, getting a frozen snapshot, and preventing multiple-enumeration bugs.</p>
                 <p><strong>Reinforcement:</strong> Immediate execution is entirely a runtime concern — it's about controlling when and how often a query's work actually happens while your program is running.</p>
             </div>
         </details>
@@ -631,11 +631,11 @@ int countAtFivePm = report.Count;         // STILL the noon snapshot — unaffec
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As explained in Under the Hood, producing one scalar answer inherently requires walking through (all or part of) the source right then — there's no meaningful way to "defer" a sum or a count without ever actually computing it.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is the opposite of the truth — <code>Count()</code>, <code>Sum()</code>, and similar methods are exactly as immediate as <code>ToList()</code>, just returning a scalar instead of a collection.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> They force execution the moment they're called, regardless of what surrounds them in the code — no <code>foreach</code> is required.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This behavior applies to any <code>IEnumerable&lt;T&gt;</code> source, not just arrays.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is the opposite of the truth — <code>Count()</code>, <code>Sum()</code>, and similar methods are exactly as immediate as <code>ToList()</code>, just returning a scalar instead of a collection.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> They force execution the moment they're called, regardless of what surrounds them in the code — no <code>foreach</code> is required.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This behavior applies to any <code>IEnumerable&lt;T&gt;</code> source, not just arrays.</p>
                 <p><strong>Reinforcement:</strong> "Forces execution" and "returns a whole new collection" are two separate ideas — aggregation methods do the first without doing the second.</p>
             </div>
         </details>
@@ -652,17 +652,17 @@ int countAtFivePm = report.Count;         // STILL the noon snapshot — unaffec
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> As covered in Common Mistakes, the middle <code>ToList()</code> forces a full, allocated copy of the in-stock products before the price filter has even had a chance to run — pure wasted work. The fix is <code>products.Where(...).Where(...).ToList()</code>, forcing exactly once at the end.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> It compiles and runs correctly, but it's inefficient — an unnecessary allocation for no benefit.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> There's no such restriction — <code>ToList()</code> can be called as many times in an expression as you like; it's just wasteful to do so unnecessarily.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The final results are correct — the problem is purely one of unnecessary cost, not correctness.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> It compiles and runs correctly, but it's inefficient — an unnecessary allocation for no benefit.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> There's no such restriction — <code>ToList()</code> can be called as many times in an expression as you like; it's just wasteful to do so unnecessarily.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The final results are correct — the problem is purely one of unnecessary cost, not correctness.</p>
                 <p><strong>Reinforcement:</strong> Chain every deferred operator first; materialize exactly once, at the end.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know when and how to force a LINQ query to run right now. Next up: the two different ways to write a LINQ query in the first place — query syntax and method syntax.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now know when and how to force a LINQ query to run right now. Next up: the two different ways to write a LINQ query in the first place — query syntax and method syntax.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

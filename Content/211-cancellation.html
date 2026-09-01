@@ -274,7 +274,7 @@
     <p>Internally, a <code>CancellationTokenSource</code> maintains a registry of callbacks — delegates that code has asked to be invoked at the exact moment <code>Cancel()</code> is called. <code>token.Register(Action callback)</code> adds an entry to that registry and returns a <code>CancellationTokenRegistration</code> — itself a handle you can use to remove that specific registration later (via <code>Dispose()</code> on it), if the code that registered it no longer cares. When <code>Cancel()</code> runs, the source walks its entire registry and invokes every callback still registered, synchronously, one after another, on the thread that called <code>Cancel()</code> — <code>token.IsCancellationRequested</code> flipping to <code>true</code> and every awaiting <code>Task</code> from a cancellation-aware API throwing <code>OperationCanceledException</code> are themselves implemented as consequences of this same registry mechanism, not a separate, parallel system.</p>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> Why this matters practically</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> Why this matters practically</div>
         <p><code>IsCancellationRequested</code> is a value you check yourself, in your own loop. <code>Register(...)</code> is how you get <em>notified</em>, without polling, the instant cancellation happens — which is exactly what lets a <code>Task</code>-returning API built on top of a token transition to a canceled state immediately, rather than only noticing on its next manual check.</p>
     </div>
 
@@ -361,9 +361,9 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
 {
     foreach (var order in orders)
     {
-        token.ThrowIfCancellationRequested(); // ✅ checked at the TOP of every iteration — a sensible, regular point
+        token.ThrowIfCancellationRequested(); //  checked at the TOP of every iteration — a sensible, regular point
 
-        await ValidateAsync(order, token);     // ✅ token passed down into every cancellation-aware call
+        await ValidateAsync(order, token);     //  token passed down into every cancellation-aware call
         await ChargePaymentAsync(order, token); // if this throws OperationCanceledException, the record is left
                                                  // in a known, safe state — not partially charged and partially shipped
         await ShipOrderAsync(order, token);
@@ -377,7 +377,7 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📢</span> A Fire Alarm, Not a Checklist You Re-read Every Second</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Fire Alarm, Not a Checklist You Re-read Every Second</div>
         <p>Polling <code>IsCancellationRequested</code> in a loop is like periodically glancing up from your desk to check whether the building's fire light is on. <code>Register(...)</code> is installing an actual fire alarm — something that goes off and reacts <em>the instant</em> the alarm is triggered, whether or not anyone happened to be looking up at that exact moment. <code>CreateLinkedTokenSource</code> is wiring two separate alarm systems (a manual pull station and an automatic smoke detector) into one shared bell — either one triggers the same evacuation, and everyone downstream only needs to listen for that one bell.</p>
     </div>
 
@@ -420,26 +420,26 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Only checking cancellation at the very start of a long-running method</h4>
-    <p>❌ <strong>Wrong:</strong></p>
+    <p> <strong>Wrong:</strong></p>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async Task ProcessAllAsync(List&lt;Item&gt; items, CancellationToken token)
 {
     token.ThrowIfCancellationRequested(); // checked once, at the top — then never again
     foreach (var item in items)
         await ProcessItemAsync(item); // could run for minutes across thousands of items with no way to stop
 }</code></pre>
-    <p>✅ <strong>Fix:</strong> check at sensible, regular points throughout the loop — as the Real-World Example demonstrated, once per iteration is usually the right granularity for per-item work.</p>
+    <p> <strong>Fix:</strong> check at sensible, regular points throughout the loop — as the Real-World Example demonstrated, once per iteration is usually the right granularity for per-item work.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Checking cancellation so often it hurts readability or performance for no real benefit</h4>
-    <p>❌ Calling <code>ThrowIfCancellationRequested()</code> after every single line inside a tight, fast inner loop that completes in microseconds anyway. ✅ Match the check frequency to how long each unit of work actually takes — checking once per outer-loop iteration over meaningful units of work (a record, a file, a batch) is almost always the right granularity; checking inside a sub-millisecond inner loop adds noise without meaningfully improving responsiveness.</p>
+    <p> Calling <code>ThrowIfCancellationRequested()</code> after every single line inside a tight, fast inner loop that completes in microseconds anyway.  Match the check frequency to how long each unit of work actually takes — checking once per outer-loop iteration over meaningful units of work (a record, a file, a batch) is almost always the right granularity; checking inside a sub-millisecond inner loop adds noise without meaningfully improving responsiveness.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Disposing a CancellationTokenSource from a different thread than the one that might still be canceling it</h4>
-    <p>❌ Manually calling <code>.Dispose()</code> on a shared <code>CancellationTokenSource</code> from one thread while another thread might concurrently call <code>.Cancel()</code> on it or still be running a registered callback — exactly the race Under the Hood point 2 described. ✅ Prefer a <code>using</code> declaration scoped to the code that owns the source, so disposal happens after the operation (and any cancellation triggered during it) has already fully completed — the pattern used throughout this lesson's examples.</p>
+    <p> Manually calling <code>.Dispose()</code> on a shared <code>CancellationTokenSource</code> from one thread while another thread might concurrently call <code>.Cancel()</code> on it or still be running a registered callback — exactly the race Under the Hood point 2 described.  Prefer a <code>using</code> declaration scoped to the code that owns the source, so disposal happens after the operation (and any cancellation triggered during it) has already fully completed — the pattern used throughout this lesson's examples.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Reach for these tools when</h4>
+            <h4> Reach for these tools when</h4>
             <ul>
                 <li><code>CancelAfter</code> — any operation that should have a hard timeout with no external caller needed to enforce it.</li>
                 <li><code>CreateLinkedTokenSource</code> — a method that needs to honor a caller's token AND enforce its own internal timeout or other stop condition.</li>
@@ -448,7 +448,7 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ Keep it proportionate</h4>
+            <h4> Keep it proportionate</h4>
             <ul>
                 <li>Short, fast operations rarely need explicit cancellation checks beyond passing the token through to whatever async APIs they call.</li>
                 <li>Don't reach for <code>Register</code> callbacks for logic that's simpler to express as a straightforward periodic check in your own loop.</li>
@@ -486,7 +486,7 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've gone past the basic pattern from lesson 153 into the actual mechanics of cancellation. Let's check your understanding.</p>
 
     <div class="quiz-question">
@@ -500,11 +500,11 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As "What Is It?" and the Simple Example demonstrated, Cancel() walks the source's callback registry and invokes every registered callback synchronously — that registry mechanism is also what underlies IsCancellationRequested and the exceptions thrown by cancellation-aware APIs.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the misconception Common Confusion #1 corrects — cancellation is cooperative, never a forced thread termination.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Cancellation is entirely a managed, in-process concept — it has no direct relationship to OS-wide I/O control.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing about Cancel() automatically throws on unrelated threads — code that never checks the token, or isn't built on a cancellation-aware API, is entirely unaffected.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is exactly the misconception Common Confusion #1 corrects — cancellation is cooperative, never a forced thread termination.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Cancellation is entirely a managed, in-process concept — it has no direct relationship to OS-wide I/O control.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Nothing about Cancel() automatically throws on unrelated threads — code that never checks the token, or isn't built on a cancellation-aware API, is entirely unaffected.</p>
                 <p><strong>Reinforcement:</strong> Cancel() is a registry walk, not a forced interruption — cooperative by design, all the way down.</p>
             </div>
         </details>
@@ -521,11 +521,11 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As How It Works Part 2 and Common Confusion #2 explained, the linked source is a new, independent source whose token fires when any of the input tokens fire — the relationship flows one direction only, into the linked token, never back to the originals.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Canceling the linked source does not cancel tokenA or tokenB — the wiring only flows from the originals into the new linked token, not the reverse.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> tokenA and tokenB remain entirely intact, independent, and usable elsewhere — nothing about them is destroyed or altered by linking.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This describes an AND relationship; CreateLinkedTokenSource implements an OR relationship — either source alone is sufficient to cancel the linked token.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Canceling the linked source does not cancel tokenA or tokenB — the wiring only flows from the originals into the new linked token, not the reverse.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> tokenA and tokenB remain entirely intact, independent, and usable elsewhere — nothing about them is destroyed or altered by linking.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This describes an AND relationship; CreateLinkedTokenSource implements an OR relationship — either source alone is sufficient to cancel the linked token.</p>
                 <p><strong>Reinforcement:</strong> Linked tokens are "cancel if ANY of these fire" — a one-directional OR, built from the same registry mechanism as ordinary Register calls.</p>
             </div>
         </details>
@@ -542,11 +542,11 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As Common Mistakes #1 demonstrated, checking only once at the top means cancellation requested any time after that point has no effect until the loop naturally completes — cooperative cancellation only takes effect at points the code actually checks.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no automatic, runtime-driven re-checking — cancellation is entirely opt-in; the code itself must call ThrowIfCancellationRequested() or check IsCancellationRequested at each point it wants to respond.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This is exactly the "forced from outside" misconception this lesson corrects — nothing throws automatically at arbitrary points; only an explicit check (or a cancellation-aware API call) does.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no such automatic disposal behavior tied to check frequency — this isn't how CancellationTokenSource lifetime management works.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> There's no automatic, runtime-driven re-checking — cancellation is entirely opt-in; the code itself must call ThrowIfCancellationRequested() or check IsCancellationRequested at each point it wants to respond.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This is exactly the "forced from outside" misconception this lesson corrects — nothing throws automatically at arbitrary points; only an explicit check (or a cancellation-aware API call) does.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no such automatic disposal behavior tied to check frequency — this isn't how CancellationTokenSource lifetime management works.</p>
                 <p><strong>Reinforcement:</strong> Cooperative cancellation only takes effect exactly where the code checks for it — placement matters as much as passing the token at all.</p>
             </div>
         </details>
@@ -563,11 +563,11 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As Under the Hood point 2 explained, this is a real, documented gotcha — Cancel() and registered callbacks can be mid-execution on another thread at the exact moment Dispose() runs, creating a genuine race over shared resources like an internal timer.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the false confidence this lesson is warning against — the race is real, which is why the recommended pattern is scoping disposal with using rather than manual, arbitrarily-timed disposal from another thread.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Dispose() does not wait for an in-flight Cancel() call or callback to finish — that's precisely why the race exists in the first place.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> CancellationTokenSource does implement IDisposable and is routinely disposed via using — the concern here is about disposal timing relative to concurrent Cancel() calls, not about whether disposal is possible at all.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is exactly the false confidence this lesson is warning against — the race is real, which is why the recommended pattern is scoping disposal with using rather than manual, arbitrarily-timed disposal from another thread.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Dispose() does not wait for an in-flight Cancel() call or callback to finish — that's precisely why the race exists in the first place.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> CancellationTokenSource does implement IDisposable and is routinely disposed via using — the concern here is about disposal timing relative to concurrent Cancel() calls, not about whether disposal is possible at all.</p>
                 <p><strong>Reinforcement:</strong> The using-declaration pattern shown throughout this lesson exists specifically to sidestep this exact race.</p>
             </div>
         </details>
@@ -584,17 +584,17 @@ Console.WriteLine("Cancel() has returned — the callback above already ran.");<
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As the Real-World Example explained, the check placement is a deliberate design choice — stopping between orders leaves the system in a clean state, while stopping mid-charge could leave a payment half-processed, which is a worse outcome than waiting slightly longer to honor the cancellation.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing prevents checking the token as many times and at as many points as a method needs — the choice here is deliberate, not a language limitation.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such once-per-method restriction — CancellationToken can be checked as often as makes sense for the operation.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Checking the token multiple times in one method is completely normal and doesn't throw anything by itself — only an actual cancellation request combined with ThrowIfCancellationRequested() throws.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Nothing prevents checking the token as many times and at as many points as a method needs — the choice here is deliberate, not a language limitation.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no such once-per-method restriction — CancellationToken can be checked as often as makes sense for the operation.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Checking the token multiple times in one method is completely normal and doesn't throw anything by itself — only an actual cancellation request combined with ThrowIfCancellationRequested() throws.</p>
                 <p><strong>Reinforcement:</strong> Good cancellation design is about choosing safe stopping points, not just checking as frequently as technically possible.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You've completed the internals half of Part IV — Task, SynchronizationContext, ThreadPool, ValueTask, and Cancellation. Next: putting concurrency itself to work, with Parallel programming and thread-safe collections.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You've completed the internals half of Part IV — Task, SynchronizationContext, ThreadPool, ValueTask, and Cancellation. Next: putting concurrency itself to work, with Parallel programming and thread-safe collections.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

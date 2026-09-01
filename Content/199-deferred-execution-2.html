@@ -301,7 +301,7 @@
     <p>As lesson 197 established, this is a genuinely deliberate design choice, for a different reason entirely: an expression tree can only be translated correctly once it's <em>complete</em>. If <code>Where</code> executed the instant it was called, there would be no opportunity to also see the <code>OrderBy</code> and <code>Select</code> that come after it in the same chain, and no way to combine all three into one efficient SQL statement. Deferring until the whole tree is built — and only then handing it, complete, to the provider — is what makes single-round-trip translation possible at all.</p>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> The One-Sentence Distinction</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> The One-Sentence Distinction</div>
         <p>LINQ to Objects defers because <strong>pausing is what an iterator does</strong>. LINQ to Queryables defers because <strong>translation needs the whole picture before it can start</strong>. Same word, same surface symptom, two unrelated underlying reasons — and, as the rest of this lesson shows, two very different costs when you get the "re-enumerate without meaning to" gotcha wrong.</p>
     </div>
 
@@ -375,7 +375,7 @@ var list = await inStockQuery.ToListAsync();        // EXECUTION #2 — SELECT *
 // a SECOND full read against the live database — for data that, in this example,
 // didn't even need to be fetched twice.</code></div>
     <p><strong>Code → Meaning → Result:</strong> Both snippets are the same shape of bug — a deferred query variable enumerated more than once without realizing it — and both are, mechanically, "correct" C# that compiles and runs without error. The difference is entirely about what "enumerate" costs in each world: a re-run in-memory loop versus a second live query hitting a production database. The fix is identical in both worlds too, and it's the one you already learned in Intermediate lesson 118 (Immediate Execution): materialize once, with <code>ToList()</code>/<code>ToListAsync()</code>, and reuse the materialized result for everything after.</p>
-    <div class="code-block"><code>// ✅ FIX — identical pattern in both worlds: materialize ONCE, reuse the result
+    <div class="code-block"><code>//  FIX — identical pattern in both worlds: materialize ONCE, reuse the result
 var inStockList = products.Where(p =&gt; p.Stock &gt; 0).ToList();          // World 1 — one CPU pass
 int count = inStockList.Count;                                          // reads a stored List&lt;T&gt;.Count — O(1)
 foreach (var p in inStockList) { ... }                                   // reuses the SAME materialized list
@@ -387,7 +387,7 @@ foreach (var p in inStockList2) { ... }                                  // reus
     <!-- ====== REAL-WORLD EXAMPLE ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
     <p>An ASP.NET Core endpoint that returns a paginated list alongside a total count — a genuinely common shape, and a genuinely common place for this exact bug to hide, since it's not obvious at a glance that two separate database queries are about to fire:</p>
-    <div class="code-block"><code>// ❌ BEFORE — the query variable is enumerated TWICE, silently, against the database
+    <div class="code-block"><code>//  BEFORE — the query variable is enumerated TWICE, silently, against the database
 [HttpGet]
 public async Task&lt;IActionResult&gt; GetProducts(int page, int pageSize)
 {
@@ -402,7 +402,7 @@ public async Task&lt;IActionResult&gt; GetProducts(int page, int pageSize)
     return Ok(new { totalCount, items });
 }</code></div>
     <p>This specific example is actually <em>correct</em> — it's not a bug, because <code>CountAsync</code> and the paginated <code>ToListAsync</code> genuinely need to run two different SQL statements (a <code>COUNT</code> and a paged <code>SELECT</code> aren't the same query). It's included deliberately to show the important nuance: two round trips aren't automatically wrong — what's wrong is <em>not knowing</em> that two round trips are happening. The real bug shows up when a developer, trying to "simplify," reuses the same fully-built query for both without realizing each <code>await</code> is its own independent execution:</p>
-    <div class="code-block"><code>// ❌ THE ACTUAL BUG — same query re-enumerated for no reason, THREE times
+    <div class="code-block"><code>//  THE ACTUAL BUG — same query re-enumerated for no reason, THREE times
 public async Task&lt;IActionResult&gt; GetProductSummary()
 {
     var expensiveQuery = context.Products
@@ -418,7 +418,7 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
     return Ok(new { total = 0, top10 = Array.Empty&lt;Product&gt;() });
 }
 
-// ✅ FIX — materialize the FILTERED set once, or restructure to genuinely need only what's necessary
+//  FIX — materialize the FILTERED set once, or restructure to genuinely need only what's necessary
 public async Task&lt;IActionResult&gt; GetProductSummary()
 {
     var matching = await context.Products
@@ -433,7 +433,7 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">☎️</span> Re-Reading Your Own Notes vs Re-Placing the Same Phone Call</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> Re-Reading Your Own Notes vs Re-Placing the Same Phone Call</div>
         <p>Re-enumerating a LINQ-to-Objects query is like re-reading a page of notes you already have sitting in front of you — a little redundant, mildly wasteful of your own time, but the information was already right there the whole time; nothing outside the room had to be involved again.</p>
         <p>Re-enumerating an EF Core <code>IQueryable&lt;T&gt;</code> is like re-dialing the same phone number and re-asking the same question to someone on the other end of a long-distance call — every single time, even though you already got the answer a moment ago. The information wasn't sitting in front of you; it lived somewhere else, and getting it again means paying the full cost of the call again: the dial time, the connection, the other person's time answering the exact same question they just answered.</p>
     </div>
@@ -472,23 +472,23 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Passing a still-<code>IQueryable&lt;T&gt;</code> value through several methods, each enumerating it independently</h4>
-    <p>❌ A service method that builds a filtered <code>IQueryable&lt;T&gt;</code> and returns it, letting three different callers each independently call <code>.ToListAsync()</code> or <code>.CountAsync()</code> on it without realizing every call is its own live database round trip. ✅ Either materialize inside the method that builds the query (return a <code>List&lt;T&gt;</code>, not an <code>IQueryable&lt;T&gt;</code>, once the caller only needs the data), or clearly document that the returned <code>IQueryable&lt;T&gt;</code> is meant to be enumerated exactly once by its caller.</p>
+    <p> A service method that builds a filtered <code>IQueryable&lt;T&gt;</code> and returns it, letting three different callers each independently call <code>.ToListAsync()</code> or <code>.CountAsync()</code> on it without realizing every call is its own live database round trip.  Either materialize inside the method that builds the query (return a <code>List&lt;T&gt;</code>, not an <code>IQueryable&lt;T&gt;</code>, once the caller only needs the data), or clearly document that the returned <code>IQueryable&lt;T&gt;</code> is meant to be enumerated exactly once by its caller.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming the LINQ-to-Objects "it's just a minor inefficiency" mindset transfers to EF Core</h4>
-    <p>❌ Treating a repeated <code>IQueryable&lt;T&gt;</code> enumeration the same way you'd treat a repeated in-memory <code>Where</code> enumeration — "a bit wasteful, not a big deal." ✅ Recognize that the cost model is categorically different: an in-memory re-pass costs microseconds of CPU; a repeated database round trip costs network latency, connection/command overhead, and real load on a shared production database — often milliseconds to seconds, multiplied across every request your API serves.</p>
+    <p> Treating a repeated <code>IQueryable&lt;T&gt;</code> enumeration the same way you'd treat a repeated in-memory <code>Where</code> enumeration — "a bit wasteful, not a big deal."  Recognize that the cost model is categorically different: an in-memory re-pass costs microseconds of CPU; a repeated database round trip costs network latency, connection/command overhead, and real load on a shared production database — often milliseconds to seconds, multiplied across every request your API serves.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Keep a query deferred (don't materialize yet) when</h4>
+            <h4> Keep a query deferred (don't materialize yet) when</h4>
             <ul>
                 <li>You're still chaining additional filtering, sorting, or paging operators onto it — materializing early forfeits translation for anything chained after (Intermediate lesson 110's warning).</li>
                 <li>The query genuinely will only be enumerated exactly once.</li>
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ Materialize immediately (ToList/ToListAsync) when</h4>
+            <h4> Materialize immediately (ToList/ToListAsync) when</h4>
             <ul>
                 <li>The fully-built query is about to be enumerated more than once — always, in both worlds, but with dramatically higher stakes in the <code>IQueryable&lt;T&gt;</code> world.</li>
                 <li>A method is about to return a query result to a caller who has no visibility into whether re-enumerating it is cheap (in-memory) or expensive (a live database round trip) — prefer returning an already-materialized collection in that case.</li>
@@ -496,7 +496,7 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
         </div>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Before enumerating a query variable a second time, ask what kind of deferred it is. If it's <code>IEnumerable&lt;T&gt;</code>, a second enumeration is a minor, local inefficiency. If it's <code>IQueryable&lt;T&gt;</code>, a second enumeration is a second trip to a real, shared, possibly-remote database — treat it with the seriousness of any other unnecessary network call, because that's exactly what it is.
+        <strong> Rule of thumb:</strong> Before enumerating a query variable a second time, ask what kind of deferred it is. If it's <code>IEnumerable&lt;T&gt;</code>, a second enumeration is a minor, local inefficiency. If it's <code>IQueryable&lt;T&gt;</code>, a second enumeration is a second trip to a real, shared, possibly-remote database — treat it with the seriousness of any other unnecessary network call, because that's exactly what it is.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -526,7 +526,7 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've traced deferred execution through both mechanisms and seen the same gotcha carry very different real-world costs. Let's check your understanding.</p>
 
     <div class="quiz-question">
@@ -540,11 +540,11 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is precisely lesson 196's mechanism, restated as the "why" behind LINQ-to-Objects deferral — the state machine simply hasn't been asked to advance yet.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> No background threading or async scheduling is involved in ordinary LINQ-to-Objects deferral — it's entirely a synchronous, single-threaded state-machine mechanism unless you separately introduce async code yourself.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no artificial delay of any kind — execution begins the instant something calls <code>MoveNext()</code>, which can happen immediately.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> No such call is inserted — deferral is purely a consequence of how iterator methods are structured, not any explicit timing mechanism.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> No background threading or async scheduling is involved in ordinary LINQ-to-Objects deferral — it's entirely a synchronous, single-threaded state-machine mechanism unless you separately introduce async code yourself.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no artificial delay of any kind — execution begins the instant something calls <code>MoveNext()</code>, which can happen immediately.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> No such call is inserted — deferral is purely a consequence of how iterator methods are structured, not any explicit timing mechanism.</p>
                 <p><strong>Reinforcement:</strong> LINQ-to-Objects deferral is a direct, mechanical consequence of how <code>yield return</code> compiles — nothing more exotic than that.</p>
             </div>
         </details>
@@ -561,11 +561,11 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the central distinction the entire lesson is built to make explicit — <code>IQueryable&lt;T&gt;</code>'s deferral comes from an unexecuted expression tree needing to be complete before translation, a mechanically separate reason from LINQ-to-Objects' paused state machine.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>Queryable.Where</code> never uses <code>yield return</code> — it builds tree nodes via <code>Expression.Call</code>, as lesson 197 showed directly; there is no state machine involved at all in this path.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no throttling mechanism involved — deferral here is purely about the tree needing to be fully built before it can be translated, not about rate-limiting.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>IQueryable&lt;T&gt;</code> extending <code>IEnumerable&lt;T&gt;</code> is an interface inheritance relationship, not a claim that both use identical underlying mechanisms — <code>Queryable</code>'s own operator implementations are entirely separate from <code>Enumerable</code>'s.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> <code>Queryable.Where</code> never uses <code>yield return</code> — it builds tree nodes via <code>Expression.Call</code>, as lesson 197 showed directly; there is no state machine involved at all in this path.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no throttling mechanism involved — deferral here is purely about the tree needing to be fully built before it can be translated, not about rate-limiting.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>IQueryable&lt;T&gt;</code> extending <code>IEnumerable&lt;T&gt;</code> is an interface inheritance relationship, not a claim that both use identical underlying mechanisms — <code>Queryable</code>'s own operator implementations are entirely separate from <code>Enumerable</code>'s.</p>
                 <p><strong>Reinforcement:</strong> Same word, "deferred," but two unrelated mechanisms — a paused iterator versus an unexecuted, translatable tree.</p>
             </div>
         </details>
@@ -582,11 +582,11 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> As Under the Hood explained, the <code>IQueryable&lt;T&gt;</code> variable is just an immutable expression tree plus a provider reference — executing it once doesn't mark or mutate the tree in any way, so a second enumeration is a fully independent second translate-and-execute cycle, complete with its own database round trip.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> There is no automatic result caching on an <code>IQueryable&lt;T&gt;</code> variable — this is exactly the false assumption Under the Hood point 3 warned against, including the specific point that EF Core's change tracker doesn't provide this either.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> Re-enumerating the same <code>IQueryable&lt;T&gt;</code> variable multiple times is entirely valid, exception-free C# — it's just potentially wasteful, not an error.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Both calls genuinely execute against the database — nothing about the second call is skipped or treated as redundant automatically.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> There is no automatic result caching on an <code>IQueryable&lt;T&gt;</code> variable — this is exactly the false assumption Under the Hood point 3 warned against, including the specific point that EF Core's change tracker doesn't provide this either.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> Re-enumerating the same <code>IQueryable&lt;T&gt;</code> variable multiple times is entirely valid, exception-free C# — it's just potentially wasteful, not an error.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Both calls genuinely execute against the database — nothing about the second call is skipped or treated as redundant automatically.</p>
                 <p><strong>Reinforcement:</strong> An <code>IQueryable&lt;T&gt;</code> variable has no built-in memory of having run before — every enumeration is a fresh, full execution.</p>
             </div>
         </details>
@@ -603,11 +603,11 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the Big Picture comparison made explicit — the same shape of mistake carries a fundamentally different cost profile depending on where the "re-run" actually happens: local memory versus a real network call to a shared database.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The cost difference can span orders of magnitude — microseconds of local CPU work versus milliseconds-to-seconds of network and database overhead, especially under load.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This lesson makes no such blanket claim — the concern here is specifically about redundant re-execution, not a general comparison of the two worlds' baseline speed.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing about re-running a read query corrupts data — the concern is purely about wasted performance and unnecessary load, not correctness or data integrity.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The cost difference can span orders of magnitude — microseconds of local CPU work versus milliseconds-to-seconds of network and database overhead, especially under load.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This lesson makes no such blanket claim — the concern here is specifically about redundant re-execution, not a general comparison of the two worlds' baseline speed.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Nothing about re-running a read query corrupts data — the concern is purely about wasted performance and unnecessary load, not correctness or data integrity.</p>
                 <p><strong>Reinforcement:</strong> The mechanism causing the gotcha is similar in shape across both worlds; the real-world stakes of paying that cost are not.</p>
             </div>
         </details>
@@ -624,17 +624,17 @@ public async Task&lt;IActionResult&gt; GetProductSummary()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly Mistake 1 and the "When Should I Use It?" guidance — since each caller enumerating the shared <code>IQueryable&lt;T&gt;</code> independently triggers its own full database round trip, materializing once (before the three callers ever see the result) collapses that down to a single query, reused everywhere it's needed.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> As established throughout this lesson, there is no automatic caching of query results across callers — each independent enumeration is a fully independent execution.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Running the three redundant queries in parallel instead of sequentially still means three separate, wasteful database round trips — it doesn't address the actual root cause at all.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Locking doesn't reduce the number of database round trips — it would only serialize three still-independent, still-redundant executions.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> As established throughout this lesson, there is no automatic caching of query results across callers — each independent enumeration is a fully independent execution.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Running the three redundant queries in parallel instead of sequentially still means three separate, wasteful database round trips — it doesn't address the actual root cause at all.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Locking doesn't reduce the number of database round trips — it would only serialize three still-independent, still-redundant executions.</p>
                 <p><strong>Reinforcement:</strong> When a query result will genuinely be needed by more than one consumer, materialize it once and share the materialized result — never share the still-deferred query itself.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand deferred execution as two distinct, traceable mechanisms rather than one vague idea. Next: the concrete performance facts — allocations, boxing, and how to actually measure any of this — that close out this module.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now understand deferred execution as two distinct, traceable mechanisms rather than one vague idea. Next: the concrete performance facts — allocations, boxing, and how to actually measure any of this — that close out this module.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

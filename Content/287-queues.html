@@ -275,7 +275,7 @@
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🏁 Competing Consumers (this lesson)</h4>
+            <h4> Competing Consumers (this lesson)</h4>
             <ul>
                 <li>Several consumer instances listen to one queue</li>
                 <li>Each message goes to exactly ONE winning consumer</li>
@@ -284,7 +284,7 @@
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>📡 Fan-Out (later, 288–289)</h4>
+            <h4> Fan-Out (later, 288–289)</h4>
             <ul>
                 <li>Several independent subscribers listen to one stream</li>
                 <li>EVERY subscriber gets its own full copy of each event</li>
@@ -303,7 +303,7 @@
     <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Durable Storage, Explicit Acknowledgment, and Competing Consumers</h3>
     <p>A message broker's queue solves both problems directly: messages are stored durably (surviving a broker restart, in a well-configured deployment), and the ack/nack mechanism means a message is only considered "done" once a consumer explicitly says so — if it never says so, the broker assumes something went wrong and gives another consumer a chance to try.</p>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight — and why idempotency matters here</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> The key insight — and why idempotency matters here</div>
         <p>Redelivery-on-failure is exactly why <strong>idempotency</strong> — a topic covered in depth elsewhere in this Part — matters so much in messaging systems. Picture a consumer that successfully reduces stock in the database, but crashes <em>before</em> it manages to send the ack back to the broker. From the broker's point of view, that message was never acknowledged — so it redelivers it, to another consumer, which then reduces stock <em>again</em>, for the same order. The message was genuinely delivered and processed more than once, even though nothing was technically "wrong" — the consumer really did crash at an unlucky moment. Any consumer's processing logic has to be safe to run twice for the same message, or this ordinary, expected failure mode silently corrupts data.</p>
     </div>
 
@@ -390,7 +390,7 @@ public class OrderProcessor
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🎫</span> A Take-a-Number Counter, Not a Bulletin Board</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Take-a-Number Counter, Not a Bulletin Board</div>
         <p>A queue works like a take-a-number counter at a busy office: tickets are pulled in order, and several clerks can be working at once — but each ticket is served by exactly one clerk. A clerk who steps away mid-service without finishing (crashes) doesn't get to keep the ticket — it goes back into circulation for the next available clerk to pick up (redelivery). And a ticket that repeatedly can't be resolved by any clerk (perhaps it's simply invalid) eventually gets pulled aside into a separate tray for a supervisor to review by hand (the dead-letter queue) — instead of endlessly being handed to the next available clerk forever.</p>
         <p>This is deliberately <em>not</em> a bulletin board where every clerk reads the same notice — that's the fan-out model covered in the next two lessons, and conflating the two leads to real misunderstandings about how many times a piece of work actually gets done.</p>
     </div>
@@ -413,16 +413,16 @@ public class OrderProcessor
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Writing non-idempotent consumer logic</h4>
-    <p>❌ A consumer that reduces stock, sends an email, or charges a card with no safeguard against processing the exact same message twice — as covered above, redelivery after a crash is an ordinary, expected occurrence, not a rare edge case.</p>
-    <p>✅ Design processing logic so running it twice for the same message produces the same end result as running it once — for instance, checking whether that specific order's stock has already been reduced before reducing it again.</p>
+    <p> A consumer that reduces stock, sends an email, or charges a card with no safeguard against processing the exact same message twice — as covered above, redelivery after a crash is an ordinary, expected occurrence, not a rare edge case.</p>
+    <p> Design processing logic so running it twice for the same message produces the same end result as running it once — for instance, checking whether that specific order's stock has already been reduced before reducing it again.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — No dead-letter queue, or no one watching it</h4>
-    <p>❌ Letting a permanently-failing message retry forever, silently consuming worker capacity, or configuring a dead-letter queue but never actually monitoring or alerting on messages that land there.</p>
-    <p>✅ Configure a sensible retry limit before dead-lettering, and treat a growing dead-letter queue as an active signal worth investigating — messages there represent real, unprocessed work that something went wrong with.</p>
+    <p> Letting a permanently-failing message retry forever, silently consuming worker capacity, or configuring a dead-letter queue but never actually monitoring or alerting on messages that land there.</p>
+    <p> Configure a sensible retry limit before dead-lettering, and treat a growing dead-letter queue as an active signal worth investigating — messages there represent real, unprocessed work that something went wrong with.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming a queue preserves strict global ordering under multiple competing consumers</h4>
-    <p>❌ Relying on messages being processed in the exact order they were sent when several workers are competing for them — with multiple consumers pulling concurrently, one worker can finish a later message before another worker finishes an earlier one it's still working on.</p>
-    <p>✅ If strict ordering genuinely matters for a specific set of related messages, route them so only one consumer at a time handles that particular set (many brokers support this via a "session" or "partition key" concept), or reconsider whether Kafka's stronger per-partition ordering guarantee, covered next, is actually the better fit.</p>
+    <p> Relying on messages being processed in the exact order they were sent when several workers are competing for them — with multiple consumers pulling concurrently, one worker can finish a later message before another worker finishes an earlier one it's still working on.</p>
+    <p> If strict ordering genuinely matters for a specific set of related messages, route them so only one consumer at a time handles that particular set (many brokers support this via a "session" or "partition key" concept), or reconsider whether Kafka's stronger per-partition ordering guarantee, covered next, is actually the better fit.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -433,7 +433,7 @@ public class OrderProcessor
     </ul>
 
     <div class="callout">
-        <strong>💡 Looking ahead:</strong> Everything in this lesson assumed one queue, competing consumers, one winner per message. The next lesson introduces Kafka — a genuinely different technology, where multiple independent consumer groups each get their own full copy of the stream, and messages aren't deleted the moment they're consumed. Don't carry this lesson's "one message, one winner" assumption over to Kafka without checking it first.
+        <strong> Looking ahead:</strong> Everything in this lesson assumed one queue, competing consumers, one winner per message. The next lesson introduces Kafka — a genuinely different technology, where multiple independent consumer groups each get their own full copy of the stream, and messages aren't deleted the moment they're consumed. Don't carry this lesson's "one message, one winner" assumption over to Kafka without checking it first.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -461,7 +461,7 @@ public class OrderProcessor
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen how a traditional queue distributes work and recovers from consumer failure. Let's confirm the mechanics.</p>
 
     <div class="quiz-question">
@@ -475,11 +475,11 @@ public class OrderProcessor
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the defining trait of a traditional queue covered throughout the lesson — multiple consumers compete for messages, and each individual message goes to exactly one winning consumer, not to all of them.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> That "every subscriber gets a copy" behavior describes the fan-out model covered in the next two lessons, not a traditional competing-consumers queue.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> A message is an atomic, indivisible unit for a consumer — it isn't split across multiple consumers.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Which consumer wins is decided per-message, based on which consumer happens to be free next — not fixed permanently to one instance.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> That "every subscriber gets a copy" behavior describes the fan-out model covered in the next two lessons, not a traditional competing-consumers queue.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> A message is an atomic, indivisible unit for a consumer — it isn't split across multiple consumers.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Which consumer wins is decided per-message, based on which consumer happens to be free next — not fixed permanently to one instance.</p>
                 <p><strong>Reinforcement:</strong> "Competing consumers" means many listeners, but only one winner per message — this is the core idea of the lesson.</p>
             </div>
         </details>
@@ -496,11 +496,11 @@ public class OrderProcessor
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Without a received ack, the broker cannot distinguish "processing failed" from "processing succeeded but the ack was lost" — so it redelivers, and the same real-world work can genuinely happen twice. This is exactly why idempotent processing is essential.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The broker only removes a message once it receives an explicit ack — it never infers success from the absence of a nack.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Dead-lettering happens only after a message repeatedly fails past a configured retry limit, not automatically after a single crash.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Redelivery commonly goes to whichever consumer is next available — which may or may not be the same instance that crashed.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The broker only removes a message once it receives an explicit ack — it never infers success from the absence of a nack.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Dead-lettering happens only after a message repeatedly fails past a configured retry limit, not automatically after a single crash.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Redelivery commonly goes to whichever consumer is next available — which may or may not be the same instance that crashed.</p>
                 <p><strong>Reinforcement:</strong> "Delivered and processed more than once" is a normal, expected outcome of ordinary crash-recovery in a message queue — design for it, don't treat it as a rare bug.</p>
             </div>
         </details>
@@ -517,11 +517,11 @@ public class OrderProcessor
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the lesson's exact definition — a message that exceeds its retry limit gets moved aside into the dead-letter queue rather than blocking or endlessly consuming capacity in the main queue.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Successfully processed and acknowledged messages are simply removed from the queue — a dead-letter queue is specifically for failed messages, not a general audit log.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> A dead-letter queue has nothing to do with delivery priority or speed — it's a holding area for problem messages.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> That fan-out behavior belongs to a different model entirely (covered in the next two lessons) — a dead-letter queue is a failure-handling mechanism, not a broadcast mechanism.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Successfully processed and acknowledged messages are simply removed from the queue — a dead-letter queue is specifically for failed messages, not a general audit log.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> A dead-letter queue has nothing to do with delivery priority or speed — it's a holding area for problem messages.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> That fan-out behavior belongs to a different model entirely (covered in the next two lessons) — a dead-letter queue is a failure-handling mechanism, not a broadcast mechanism.</p>
                 <p><strong>Reinforcement:</strong> A dead-letter queue exists so persistently-failing messages become visible and actionable, rather than silently retrying forever.</p>
             </div>
         </details>
@@ -538,17 +538,17 @@ public class OrderProcessor
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the lesson's explicit warning — the two models answer different questions (spreading out one workload vs. letting multiple independent parties each react to the same event), and mixing them up leads to real misunderstandings about how many times something actually happens.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson repeatedly stresses this is a meaningful, real distinction, not interchangeable terminology.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Fan-out isn't tied to one specific broker product — it's a general delivery model, most notably associated with Kafka's consumer-group design in the next lesson.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Competing consumers is specifically about having multiple consumer instances share one stream of work — a single consumer wouldn't even demonstrate the "competing" part of the pattern.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The lesson repeatedly stresses this is a meaningful, real distinction, not interchangeable terminology.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Fan-out isn't tied to one specific broker product — it's a general delivery model, most notably associated with Kafka's consumer-group design in the next lesson.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Competing consumers is specifically about having multiple consumer instances share one stream of work — a single consumer wouldn't even demonstrate the "competing" part of the pattern.</p>
                 <p><strong>Reinforcement:</strong> Keep "one winner per message" (this lesson) and "every subscriber gets a copy" (next lessons) as two clearly separate mental models.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand the traditional, competing-consumers queue model — ack/nack, redelivery, dead-letter queues, and why idempotency matters here. Next: Kafka, a genuinely different technology built around an entirely different delivery model.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now understand the traditional, competing-consumers queue model — ack/nack, redelivery, dead-letter queues, and why idempotency matters here. Next: Kafka, a genuinely different technology built around an entirely different delivery model.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

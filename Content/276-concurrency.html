@@ -499,13 +499,13 @@ catch (DbUpdateConcurrencyException ex)
     <p>A <span class="icode">Product</span> row with <span class="icode">Name</span>, <span class="icode">Price</span>, and <span class="icode">StockCount</span>. Agent A updates only <span class="icode">Price</span>. Agent B, concurrently, updates only <span class="icode">StockCount</span>. Neither agent touched the field the other one changed:</p>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🔴 Database Wins or Client Wins</h4>
+            <h4> Database Wins or Client Wins</h4>
             <ul>
                 <li>Whichever agent's save is retried second either loses their entire change, or silently discards the other agent's — even though the two changes never actually conflicted at the field level</li>
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>🟢 Field-by-Field Merge</h4>
+            <h4> Field-by-Field Merge</h4>
             <ul>
                 <li>Agent B's retry keeps their own StockCount change, and picks up Agent A's already-committed Price change for the field they never touched</li>
                 <li>Both agents' real intent survives</li>
@@ -531,7 +531,7 @@ catch (DbUpdateConcurrencyException ex)
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📄</span> Two Editors, One Shared Document</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> Two Editors, One Shared Document</div>
         <p>Two people edit the same paragraph of a shared document while both were offline, then both try to sync. <strong>Database wins</strong> is the sync tool discarding your edit entirely and showing you the current version — you have to look and manually redo your change. <strong>Client wins</strong> is the sync tool forcing your version through, silently erasing whatever the other person wrote. <strong>Merge</strong> is what a good version-control diff tool actually does: if you edited paragraph 3 and they edited paragraph 7, both edits survive intact, because neither person touched the other's paragraph — it's only when you both edited the <em>same</em> line that a real, human-visible conflict remains.</p>
     </div>
 
@@ -573,13 +573,13 @@ catch (DbUpdateConcurrencyException ex)
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Applying "client wins" as a blanket default because it's the easiest retry to write</h4>
-    <p>❌ Wrapping every <span class="icode">DbUpdateConcurrencyException</span> handler in a generic "overwrite and retry" without ever asking whether that entity's data can safely be blindly overwritten. ✅ Choose the strategy per entity, based on what silently discarding a concurrent change would actually mean for that specific data — financial and audit-sensitive data almost never belongs to "client wins."</p>
+    <p> Wrapping every <span class="icode">DbUpdateConcurrencyException</span> handler in a generic "overwrite and retry" without ever asking whether that entity's data can safely be blindly overwritten.  Choose the strategy per entity, based on what silently discarding a concurrent change would actually mean for that specific data — financial and audit-sensitive data almost never belongs to "client wins."</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Retrying without checking whether the row was deleted entirely</h4>
-    <p>❌ Calling <span class="icode">GetDatabaseValuesAsync()</span> and assuming it always returns a value — if the other transaction <em>deleted</em> the row instead of updating it, this returns <span class="icode">null</span>, and code that doesn't check for that throws a confusing <span class="icode">NullReferenceException</span> instead of a meaningful error. ✅ Always check for <span class="icode">null</span> and handle "the row no longer exists" as its own distinct case.</p>
+    <p> Calling <span class="icode">GetDatabaseValuesAsync()</span> and assuming it always returns a value — if the other transaction <em>deleted</em> the row instead of updating it, this returns <span class="icode">null</span>, and code that doesn't check for that throws a confusing <span class="icode">NullReferenceException</span> instead of a meaningful error.  Always check for <span class="icode">null</span> and handle "the row no longer exists" as its own distinct case.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for pessimistic locking as a first instinct because "it prevents conflicts entirely"</h4>
-    <p>❌ Adding explicit row-level locking hints to avoid ever having to handle <span class="icode">DbUpdateConcurrencyException</span>, without weighing the real throughput cost against how rare actual conflicts genuinely are for that entity. ✅ Default to optimistic concurrency — it fits the vast majority of web applications well — and only reach for pessimistic locking where measured, high-contention scenarios show that retry storms are a worse problem than the blocking pessimistic locking would introduce.</p>
+    <p> Adding explicit row-level locking hints to avoid ever having to handle <span class="icode">DbUpdateConcurrencyException</span>, without weighing the real throughput cost against how rare actual conflicts genuinely are for that entity.  Default to optimistic concurrency — it fits the vast majority of web applications well — and only reach for pessimistic locking where measured, high-contention scenarios show that retry storms are a worse problem than the blocking pessimistic locking would introduce.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -597,7 +597,7 @@ catch (DbUpdateConcurrencyException ex)
         </table>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Optimistic concurrency is the right default for the vast majority of web applications. Choose a conflict-resolution strategy deliberately per entity based on what the data actually means — never apply one strategy uniformly everywhere out of convenience.
+        <strong> Rule of thumb:</strong> Optimistic concurrency is the right default for the vast majority of web applications. Choose a conflict-resolution strategy deliberately per entity based on what the data actually means — never apply one strategy uniformly everywhere out of convenience.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -626,7 +626,7 @@ catch (DbUpdateConcurrencyException ex)
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've written real conflict-resolution code, not just caught the exception. Let's confirm it clicked.</p>
 
     <div class="quiz-question">
@@ -640,11 +640,11 @@ catch (DbUpdateConcurrencyException ex)
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> Since the two systems modified different fields, a field-by-field merge preserves both changes intact — Price from one system, StockCount from the other — by keeping a field's proposed value only where it actually differs from the original, and taking the database's current value everywhere else.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Database wins would discard whichever change retries second entirely, even though it never actually conflicted at the field level with what's already saved.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> Client wins would force the second save's values through, silently overwriting the first system's already-committed, non-conflicting change to a different field.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This is exactly the scenario RowVersion-based optimistic concurrency detects — the second save's WHERE clause fails to match because the RowVersion already changed, triggering DbUpdateConcurrencyException.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Database wins would discard whichever change retries second entirely, even though it never actually conflicted at the field level with what's already saved.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> Client wins would force the second save's values through, silently overwriting the first system's already-committed, non-conflicting change to a different field.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This is exactly the scenario RowVersion-based optimistic concurrency detects — the second save's WHERE clause fails to match because the RowVersion already changed, triggering DbUpdateConcurrencyException.</p>
                 <p><strong>Reinforcement:</strong> Merge is the right tool specifically when concurrent changes touch different fields — it's not a universal answer, but it's the best fit for this exact shape of conflict.</p>
             </div>
         </details>
@@ -661,11 +661,11 @@ catch (DbUpdateConcurrencyException ex)
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> OriginalValues represents what EF Core will check the row against in the retried UPDATE's WHERE clause. Setting it to the current database values (including the current RowVersion) makes that check pass, while CurrentValues — the client's actual in-memory change — is left completely untouched, so it's what actually gets written.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is backwards — CurrentValues is deliberately left alone specifically so the client's change survives; only OriginalValues is updated.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This has nothing to do with deletion — it only updates in-memory tracking metadata used for the next save attempt.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The RowVersion check still runs on every future save — this call only resolves the current conflict by aligning the tracked original value with what's now in the database.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is backwards — CurrentValues is deliberately left alone specifically so the client's change survives; only OriginalValues is updated.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This has nothing to do with deletion — it only updates in-memory tracking metadata used for the next save attempt.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The RowVersion check still runs on every future save — this call only resolves the current conflict by aligning the tracked original value with what's now in the database.</p>
                 <p><strong>Reinforcement:</strong> Client wins works by updating what EF Core checks against, not by bypassing the check — the mechanism stays intact, it's just satisfied.</p>
             </div>
         </details>
@@ -682,17 +682,17 @@ catch (DbUpdateConcurrencyException ex)
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Achieving pessimistic locking means dropping to engine-specific locking hints or explicit lock management, which is inherently less portable than the EF-native, database-agnostic RowVersion/[Timestamp] mechanism — and since optimistic concurrency fits most real applications well, that's what EF Core builds first-class, portable support around.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Pessimistic locking is entirely achievable in relational databases (via constructs like row-level locking hints) — it's just not wrapped in an EF-native, portable API the way optimistic tokens are.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The lesson is explicit that this support is asymmetric — optimistic tokens get a dedicated, portable attribute-based mechanism; pessimistic locking does not have an equivalent.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Pessimistic concurrency is a relational-database concept just as much as optimistic concurrency is — both apply squarely to the relational databases this curriculum covers.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Pessimistic locking is entirely achievable in relational databases (via constructs like row-level locking hints) — it's just not wrapped in an EF-native, portable API the way optimistic tokens are.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The lesson is explicit that this support is asymmetric — optimistic tokens get a dedicated, portable attribute-based mechanism; pessimistic locking does not have an equivalent.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Pessimistic concurrency is a relational-database concept just as much as optimistic concurrency is — both apply squarely to the relational databases this curriculum covers.</p>
                 <p><strong>Reinforcement:</strong> Recognize this as an honest, real gap in EF Core's feature set, not an oversight to work around by pretending equivalent support exists.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have real, working conflict-resolution strategies, and an honest picture of optimistic versus pessimistic concurrency. Next up: connection management — what a DbContext's lifetime actually does, and doesn't, control.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now have real, working conflict-resolution strategies, and an honest picture of optimistic versus pessimistic concurrency. Next up: connection management — what a DbContext's lifetime actually does, and doesn't, control.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

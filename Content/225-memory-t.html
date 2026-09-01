@@ -264,13 +264,13 @@
     <p>Try this and the compiler will stop you cold:</p>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public class BufferHolder
 {
-    private Span&lt;byte&gt; _buffer; // ❌ compile error: cannot use ref struct 'Span&lt;byte&gt;' as a field
+    private Span&lt;byte&gt; _buffer; //  compile error: cannot use ref struct 'Span&lt;byte&gt;' as a field
 }
 
 public async Task ProcessAsync(Span&lt;byte&gt; data)
 {
     await Task.Delay(100);
-    Use(data); // ❌ compile error: cannot use 'data' after 'await'
+    Use(data); //  compile error: cannot use 'data' after 'await'
 }</code></pre>
     <p>These aren't quirky edge-case restrictions — they're the direct, unavoidable consequence of what makes <code>Span&lt;T&gt;</code> safe in the first place, as the last two lessons flagged and deferred. A <code>ref struct</code> can only live on the stack, tied to one synchronous method call. A class field lives on the heap for as long as the object does. An <code>async</code> method's local state gets moved into a heap-allocated state machine the moment it needs to survive an <code>await</code>. None of those destinations can give the compiler the guarantee a <code>Span&lt;T&gt;</code> needs — so the compiler simply refuses.</p>
     <p><strong>In this lesson, you'll meet <code>Memory&lt;T&gt;</code> and <code>ReadOnlyMemory&lt;T&gt;</code> — the heap-friendly counterparts to <code>Span&lt;T&gt;</code>/<code>ReadOnlySpan&lt;T&gt;</code>, designed specifically to be stored, passed into async methods, and held across <code>await</code>, then converted back into a fast <code>Span&lt;T&gt;</code> only at the moment you're ready to do real work with it.</strong></p>
@@ -305,7 +305,7 @@ public async Task ProcessAsync(Span&lt;byte&gt; data)
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>⚡ Span&lt;T&gt; / ReadOnlySpan&lt;T&gt;</h4>
+            <h4> Span&lt;T&gt; / ReadOnlySpan&lt;T&gt;</h4>
             <ul>
                 <li><code>ref struct</code> — stack-only</li>
                 <li>Fast, direct indexing</li>
@@ -314,7 +314,7 @@ public async Task ProcessAsync(Span&lt;byte&gt; data)
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>📦 Memory&lt;T&gt; / ReadOnlyMemory&lt;T&gt;</h4>
+            <h4> Memory&lt;T&gt; / ReadOnlyMemory&lt;T&gt;</h4>
             <ul>
                 <li>Ordinary struct — can live anywhere a struct can</li>
                 <li>No direct fast indexing — convert to <code>.Span</code> first</li>
@@ -407,7 +407,7 @@ async Task ReadFileAsync(Stream fileStream)
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🎫</span> A claim ticket vs. the item itself</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A claim ticket vs. the item itself</div>
         <p>A <code>Span&lt;T&gt;</code> is like actually holding the item in your hands — you can use it immediately, but you can't put it in a locker and walk away, because you're physically holding it. A <code>Memory&lt;T&gt;</code> is like a claim ticket for that same item: you can put the ticket in your pocket, hand it to someone else, carry it across a lunch break (an <code>await</code>) — and whenever you're ready to actually use the item, you hand the ticket to the counter (call <code>.Span</code>) and get the real, usable thing back in your hands for as long as you need it right then.</p>
         <p>The ticket itself isn't useful for doing the actual work — you can't write with a claim ticket — but it's exactly what you need for the part of the process where you're not actively using the item: storage, transport, waiting.</p>
     </div>
@@ -463,28 +463,28 @@ async Task ReadFileAsync(Stream fileStream)
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Trying to make a method parameter Span&lt;T&gt; when it needs to be async</h4>
-    <p>❌ Writing <code>async Task ProcessAsync(Span&lt;byte&gt; data)</code> and being confused when it won't compile the moment the method body contains an <code>await</code>.</p>
-    <p>✅ If a method is genuinely <code>async</code> and needs the buffer both before and after an <code>await</code>, its parameter has to be <code>Memory&lt;byte&gt;</code> (or <code>ReadOnlyMemory&lt;byte&gt;</code>) — convert to <code>.Span</code> only in the fully synchronous portions.</p>
+    <p> Writing <code>async Task ProcessAsync(Span&lt;byte&gt; data)</code> and being confused when it won't compile the moment the method body contains an <code>await</code>.</p>
+    <p> If a method is genuinely <code>async</code> and needs the buffer both before and after an <code>await</code>, its parameter has to be <code>Memory&lt;byte&gt;</code> (or <code>ReadOnlyMemory&lt;byte&gt;</code>) — convert to <code>.Span</code> only in the fully synchronous portions.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Holding onto a .Span result across an await inside the same method</h4>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">async Task BadAsync(Memory&lt;byte&gt; memory)
 {
     Span&lt;byte&gt; span = memory.Span;
-    await Task.Delay(10); // ❌ compile error: 'span' is used after this await
+    await Task.Delay(10); //  compile error: 'span' is used after this await
     span[0] = 1;
 }</code></pre>
-    <p>✅ Don't call <code>.Span</code> until after every <code>await</code> that comes before the work you need it for — the compiler will catch this anyway, but understanding <em>why</em> makes the error obvious on sight instead of confusing.</p>
+    <p> Don't call <code>.Span</code> until after every <code>await</code> that comes before the work you need it for — the compiler will catch this anyway, but understanding <em>why</em> makes the error obvious on sight instead of confusing.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for Memory&lt;T&gt; when a method is entirely synchronous</h4>
-    <p>❌ Using <code>Memory&lt;T&gt;</code> parameters throughout a codebase "for consistency," even in purely synchronous helper methods that never store or capture the data.</p>
-    <p>✅ Default to <code>Span&lt;T&gt;</code>/<code>ReadOnlySpan&lt;T&gt;</code> for ordinary synchronous methods — they're simpler, and every caller with a <code>Memory&lt;T&gt;</code> can trivially pass <code>.Span</code> to one anyway. Reach for <code>Memory&lt;T&gt;</code> specifically at genuine storage or async boundaries.</p>
+    <p> Using <code>Memory&lt;T&gt;</code> parameters throughout a codebase "for consistency," even in purely synchronous helper methods that never store or capture the data.</p>
+    <p> Default to <code>Span&lt;T&gt;</code>/<code>ReadOnlySpan&lt;T&gt;</code> for ordinary synchronous methods — they're simpler, and every caller with a <code>Memory&lt;T&gt;</code> can trivially pass <code>.Span</code> to one anyway. Reach for <code>Memory&lt;T&gt;</code> specifically at genuine storage or async boundaries.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Reach for Memory&lt;T&gt; when</h4>
+            <h4> Reach for Memory&lt;T&gt; when</h4>
             <ul>
                 <li>You need a buffer parameter or field on an <code>async</code> method or type that must survive an <code>await</code></li>
                 <li>You need to store a zero-copy view of data in a class field, a collection, or a captured closure</li>
@@ -492,7 +492,7 @@ async Task ReadFileAsync(Stream fileStream)
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>❌ Skip it when</h4>
+            <h4> Skip it when</h4>
             <ul>
                 <li>The method is entirely synchronous and doesn't need to store the data — use <code>Span&lt;T&gt;</code>/<code>ReadOnlySpan&lt;T&gt;</code> directly, it's simpler and faster to work with</li>
                 <li>You're inside a hot, tight, synchronous loop — convert to <code>.Span</code> once, at the top, and work with that</li>
@@ -501,7 +501,7 @@ async Task ReadFileAsync(Stream fileStream)
     </div>
 
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> If the signature needs to be <code>async</code>, or the value needs to live in a field, reach for <code>Memory&lt;T&gt;</code>. If you're doing the actual, synchronous byte-pushing work right now, reach for <code>Span&lt;T&gt;</code> — usually by calling <code>.Span</code> on a <code>Memory&lt;T&gt;</code> you already have.
+        <strong> Rule of thumb:</strong> If the signature needs to be <code>async</code>, or the value needs to live in a field, reach for <code>Memory&lt;T&gt;</code>. If you're doing the actual, synchronous byte-pushing work right now, reach for <code>Span&lt;T&gt;</code> — usually by calling <code>.Span</code> on a <code>Memory&lt;T&gt;</code> you already have.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -527,7 +527,7 @@ async Task ReadFileAsync(Stream fileStream)
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen why <code>Memory&lt;T&gt;</code> exists and how it partners with <code>Span&lt;T&gt;</code>. Let's confirm the distinction is solid.</p>
 
     <div class="quiz-question">
@@ -541,11 +541,11 @@ async Task ReadFileAsync(Stream fileStream)
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> <code>Span&lt;T&gt;</code>'s safety comes entirely from being a <code>ref struct</code>, confined to the stack. <code>Memory&lt;T&gt;</code> is deliberately declared as an ordinary struct instead, which is exactly why it can be stored anywhere an ordinary struct can — including class fields.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Speed isn't the deciding factor here — it's a structural/safety distinction about where each type is legally allowed to exist.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Both <code>Span&lt;T&gt;</code> and <code>Memory&lt;T&gt;</code> work with the same range of element types — the restriction discussed here has nothing to do with value vs. reference types as <code>T</code>.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>Memory&lt;T&gt;</code> doesn't copy any data — it's still a zero-copy view, just one built without the stack-only restriction.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Speed isn't the deciding factor here — it's a structural/safety distinction about where each type is legally allowed to exist.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Both <code>Span&lt;T&gt;</code> and <code>Memory&lt;T&gt;</code> work with the same range of element types — the restriction discussed here has nothing to do with value vs. reference types as <code>T</code>.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>Memory&lt;T&gt;</code> doesn't copy any data — it's still a zero-copy view, just one built without the stack-only restriction.</p>
                 <p><strong>Reinforcement:</strong> The <code>ref struct</code> vs. ordinary struct distinction is the entire reason these two types exist side by side, each suited to a different kind of lifetime.</p>
             </div>
         </details>
@@ -562,11 +562,11 @@ async Task ReadFileAsync(Stream fileStream)
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> An <code>async</code> method that genuinely performs I/O needs to be able to suspend at an <code>await</code> and resume later. A <code>Span&lt;byte&gt;</code> parameter cannot survive that suspension, so a truly asynchronous <code>ReadAsync</code> could never accept one — <code>Memory&lt;byte&gt;</code> is the only option that supports both the async lifetime and zero-copy buffer access.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Once you call <code>.Span</code> on a <code>Memory&lt;byte&gt;</code>, the resulting access is just as fast as a native <code>Span&lt;byte&gt;</code> — this isn't a speed difference, it's a lifetime/safety one.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>Span&lt;byte&gt;</code> represents byte arrays (and slices of them) perfectly well — the issue is specifically about surviving an async suspension, not representational capability.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a deliberate, load-bearing design decision directly tied to what <code>ref struct</code> restrictions make possible — not an accident of history.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Once you call <code>.Span</code> on a <code>Memory&lt;byte&gt;</code>, the resulting access is just as fast as a native <code>Span&lt;byte&gt;</code> — this isn't a speed difference, it's a lifetime/safety one.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> <code>Span&lt;byte&gt;</code> represents byte arrays (and slices of them) perfectly well — the issue is specifically about surviving an async suspension, not representational capability.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This is a deliberate, load-bearing design decision directly tied to what <code>ref struct</code> restrictions make possible — not an accident of history.</p>
                 <p><strong>Reinforcement:</strong> Any time you see an async API accept <code>Memory&lt;T&gt;</code> where you might expect <code>Span&lt;T&gt;</code>, it's because that method's whole point is to suspend and resume — exactly the situation <code>Span&lt;T&gt;</code> cannot survive.</p>
             </div>
         </details>
@@ -583,11 +583,11 @@ async Task ReadFileAsync(Stream fileStream)
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Just like slicing a <code>Span&lt;T&gt;</code>, converting via <code>.Span</code> never copies data — it builds a new view (a <code>Span&lt;byte&gt;</code>) over the same memory the <code>Memory&lt;byte&gt;</code> already pointed to, cheaply and directly.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> No allocation or copying happens — this would defeat the entire zero-copy premise both types share.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The original <code>Memory&lt;byte&gt;</code> is completely unaffected and remains fully usable — <code>.Span</code> is a read-only, repeatable conversion, not a one-time consuming operation.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Calling <code>.Span</code> multiple times on the same <code>Memory&lt;byte&gt;</code> is perfectly normal and safe — each call just constructs another view over the same data.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> No allocation or copying happens — this would defeat the entire zero-copy premise both types share.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The original <code>Memory&lt;byte&gt;</code> is completely unaffected and remains fully usable — <code>.Span</code> is a read-only, repeatable conversion, not a one-time consuming operation.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Calling <code>.Span</code> multiple times on the same <code>Memory&lt;byte&gt;</code> is perfectly normal and safe — each call just constructs another view over the same data.</p>
                 <p><strong>Reinforcement:</strong> <code>.Span</code> is the cheap, repeatable bridge from the "can be stored anywhere" world of <code>Memory&lt;T&gt;</code> back to the "fast, direct access" world of <code>Span&lt;T&gt;</code>.</p>
             </div>
         </details>
@@ -604,17 +604,17 @@ async Task ReadFileAsync(Stream fileStream)
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Once you call <code>.Span</code>, you have a genuine <code>Span&lt;byte&gt;</code> again, with all the same <code>ref struct</code> restrictions as always — including the ban on being used across an <code>await</code>. The compiler catches this at compile time, which is exactly why you should call <code>.Span</code> as late as possible, after any <code>await</code>s that come before the work you actually need it for.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no automatic conversion back to <code>Memory&lt;T&gt;</code> — the compiler simply refuses to let the code compile in the first place.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This is caught as a compile-time error, well before the program would ever run.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The code never reaches runtime in this state — the compiler rejects it outright, precisely to prevent this kind of undefined-behavior scenario from ever occurring.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> There's no automatic conversion back to <code>Memory&lt;T&gt;</code> — the compiler simply refuses to let the code compile in the first place.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This is caught as a compile-time error, well before the program would ever run.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The code never reaches runtime in this state — the compiler rejects it outright, precisely to prevent this kind of undefined-behavior scenario from ever occurring.</p>
                 <p><strong>Reinforcement:</strong> Getting <code>.Span</code> doesn't grant it any special exemption — it's an ordinary <code>Span&lt;T&gt;</code> from that point on, with every one of the usual restrictions in full force.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly when to reach for <code>Memory&lt;T&gt;</code> versus <code>Span&lt;T&gt;</code> — and why async I/O in .NET is shaped the way it is. Next: how to avoid allocating the buffers themselves in the first place, with <code>ArrayPool&lt;T&gt;</code>.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now know exactly when to reach for <code>Memory&lt;T&gt;</code> versus <code>Span&lt;T&gt;</code> — and why async I/O in .NET is shaped the way it is. Next: how to avoid allocating the buffers themselves in the first place, with <code>ArrayPool&lt;T&gt;</code>.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

@@ -397,7 +397,7 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
 {
     private readonly List&lt;Entity&gt; _entities = [];
 
-    // ❌ Typed IEnumerable&lt;Entity&gt; — every single call to this method boxes the
+    //  Typed IEnumerable&lt;Entity&gt; — every single call to this method boxes the
     // enumerator and pays virtual dispatch, EVERY frame, for EVERY entity
     public void UpdateAll_Slow(IEnumerable&lt;Entity&gt; entities)
     {
@@ -405,7 +405,7 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
             entity.Update();
     }
 
-    // ✅ Typed List&lt;Entity&gt; — the concrete struct enumerator, zero allocation,
+    //  Typed List&lt;Entity&gt; — the concrete struct enumerator, zero allocation,
     // non-virtual MoveNext()/Current, every single frame
     public void UpdateAll_Fast(List&lt;Entity&gt; entities)
     {
@@ -423,7 +423,7 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📦</span> A Tool in Your Hand vs a Tool Behind a Locked Cabinet</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Tool in Your Hand vs a Tool Behind a Locked Cabinet</div>
         <p>A struct enumerator accessed through its concrete type is like a tool already in your hand — you use it directly, immediately, with no extra step. The same tool accessed only through an <code>IEnumerable&lt;T&gt;</code> reference is like that same tool locked inside a labeled cabinet: before you can use it, someone has to take a photograph of it (box it — copy its state onto the heap), hand you the photograph, and every time you want to "use the tool" you're actually describing what you want done to someone else standing at the cabinet, who does it on your behalf (a virtual call). The tool itself never changed. What changed is how indirectly you're forced to reach it — and that indirection is exactly what boxing plus virtual dispatch costs.</p>
     </div>
 
@@ -466,19 +466,19 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Typing a genuinely hot-path method parameter as <code>IEnumerable&lt;T&gt;</code> out of habit</h4>
-    <p>❌ Reflexively typing every collection parameter as the "most abstract" interface, even on a method known (through actual profiling — see Mistake 3) to be called millions of times per second in a tight loop: <code>void UpdateAll(IEnumerable&lt;Entity&gt; entities)</code>. ✅ On a genuinely proven hot path, prefer the concrete type your callers actually have (<code>List&lt;Entity&gt;</code>, or a generic constraint like <code>where TCollection : IEnumerable&lt;T&gt;</code> that still preserves struct-enumerator devirtualization for the caller's concrete type), as shown in the Real-World Example above.</p>
+    <p> Reflexively typing every collection parameter as the "most abstract" interface, even on a method known (through actual profiling — see Mistake 3) to be called millions of times per second in a tight loop: <code>void UpdateAll(IEnumerable&lt;Entity&gt; entities)</code>.  On a genuinely proven hot path, prefer the concrete type your callers actually have (<code>List&lt;Entity&gt;</code>, or a generic constraint like <code>where TCollection : IEnumerable&lt;T&gt;</code> that still preserves struct-enumerator devirtualization for the caller's concrete type), as shown in the Real-World Example above.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming every collection type even has a struct enumerator to lose</h4>
-    <p>❌ Applying this lesson's boxing concern to every collection type uniformly — <code>Dictionary&lt;TKey,TValue&gt;</code>, <code>HashSet&lt;T&gt;</code>, and arrays all also expose their own struct enumerators (with the same interface-typing caveat), but plenty of custom or third-party enumerable types genuinely only implement the plain interface, with no concrete struct enumerator to optimize toward in the first place. ✅ This distinction matters specifically for BCL types documented to expose a struct enumerator — verify (or benchmark) rather than assuming it applies universally to every enumerable type you encounter.</p>
+    <p> Applying this lesson's boxing concern to every collection type uniformly — <code>Dictionary&lt;TKey,TValue&gt;</code>, <code>HashSet&lt;T&gt;</code>, and arrays all also expose their own struct enumerators (with the same interface-typing caveat), but plenty of custom or third-party enumerable types genuinely only implement the plain interface, with no concrete struct enumerator to optimize toward in the first place.  This distinction matters specifically for BCL types documented to expose a struct enumerator — verify (or benchmark) rather than assuming it applies universally to every enumerable type you encounter.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Hand-optimizing around this before profiling has identified an actual bottleneck</h4>
-    <p>❌ Rewriting ordinary, non-hot-path application code to avoid <code>IEnumerable&lt;T&gt;</code> parameters "just in case," at a real cost to API flexibility and readability, with no evidence the code in question is ever a meaningful contributor to overall performance. ✅ Exactly as Intermediate 122 concluded for its own five patterns: write clean, readable code first — reach for BenchmarkDotNet to confirm a genuine hot path exists, and only then, with real numbers in hand, consider trading some abstraction for the concrete-type optimization this lesson describes.</p>
+    <p> Rewriting ordinary, non-hot-path application code to avoid <code>IEnumerable&lt;T&gt;</code> parameters "just in case," at a real cost to API flexibility and readability, with no evidence the code in question is ever a meaningful contributor to overall performance.  Exactly as Intermediate 122 concluded for its own five patterns: write clean, readable code first — reach for BenchmarkDotNet to confirm a genuine hot path exists, and only then, with real numbers in hand, consider trading some abstraction for the concrete-type optimization this lesson describes.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Reach for concrete collection types (and skip LINQ) when</h4>
+            <h4> Reach for concrete collection types (and skip LINQ) when</h4>
             <ul>
                 <li>BenchmarkDotNet has confirmed a specific loop is a genuine, measurable bottleneck — not a guess, an actual number.</li>
                 <li>The loop runs extremely frequently over a large collection — a per-frame game loop, a hot networking or serialization path, a tight inner loop in a data-processing pipeline.</li>
@@ -486,7 +486,7 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ Keep writing ordinary LINQ and <code>IEnumerable&lt;T&gt;</code> parameters when</h4>
+            <h4> Keep writing ordinary LINQ and <code>IEnumerable&lt;T&gt;</code> parameters when</h4>
             <ul>
                 <li>The code isn't a proven hot path — the overwhelming majority of real-world business logic, exactly as Intermediate 122 concluded.</li>
                 <li>API flexibility (accepting any enumerable source, not just a specific concrete type) matters more than the small, usually-irrelevant allocation and dispatch cost.</li>
@@ -495,7 +495,7 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
         </div>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Know this mechanism exists so you can recognize it when profiling points at it. Don't reach for it as a default habit — the same "write it clean first, optimize only once profiling justifies it" advice from Intermediate 122 applies just as strongly here, now with a concrete, measurable mechanism (boxing, virtual dispatch) behind it instead of a vague sense that "interfaces might be slower."
+        <strong> Rule of thumb:</strong> Know this mechanism exists so you can recognize it when profiling points at it. Don't reach for it as a default habit — the same "write it clean first, optimize only once profiling justifies it" advice from Intermediate 122 applies just as strongly here, now with a concrete, measurable mechanism (boxing, virtual dispatch) behind it instead of a vague sense that "interfaces might be slower."
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -527,7 +527,7 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've traced LINQ's real allocation cost and one of .NET's most subtle, well-documented performance details. Let's check your understanding.</p>
 
     <div class="quiz-question">
@@ -541,11 +541,11 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As Fact 1 traced directly, each operator call constructs its own wrapping iterator object the instant it's called — five operators means five separate objects, each holding a reference to the one before it, all before <code>MoveNext()</code> is ever called on any of them.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> No result set is pre-allocated — LINQ to Objects operators are lazy and streaming; nothing about the final result size is known or reserved in advance.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This isn't a general C# rule about method chains — it's specific to how LINQ's operators happen to be implemented, as iterator-wrapping-iterator objects.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This is exactly the "LINQ composition is free" myth this lesson corrects — each operator genuinely remains its own separate object at runtime, not fused into one loop.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> No result set is pre-allocated — LINQ to Objects operators are lazy and streaming; nothing about the final result size is known or reserved in advance.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This isn't a general C# rule about method chains — it's specific to how LINQ's operators happen to be implemented, as iterator-wrapping-iterator objects.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This is exactly the "LINQ composition is free" myth this lesson corrects — each operator genuinely remains its own separate object at runtime, not fused into one loop.</p>
                 <p><strong>Reinforcement:</strong> Every LINQ operator call is a real allocation, made at chain-construction time, independent of when (or whether) enumeration ever happens.</p>
             </div>
         </details>
@@ -562,11 +562,11 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As "Why Does It Exist?" and How It Works both explained, <code>foreach</code> uses compile-time duck typing to bind directly to a concrete type's own <code>GetEnumerator()</code> when one is visible — <code>List&lt;T&gt;</code>'s returns a struct, avoiding both the boxing and the virtual dispatch that going through the interface would require.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>foreach</code> genuinely does use enumerators for <code>List&lt;T&gt;</code> — arrays get special direct-indexing treatment instead, but <code>List&lt;T&gt;</code> specifically uses its struct enumerator.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>List&lt;T&gt;</code> genuinely does implement <code>IEnumerable&lt;T&gt;</code> — it just also exposes a separate, concretely-typed <code>GetEnumerator()</code> that <code>foreach</code> prefers when it can see the concrete type.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no such caching mechanism — a fresh struct enumerator (on the stack, not cached) is produced for each <code>foreach</code> loop.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> <code>foreach</code> genuinely does use enumerators for <code>List&lt;T&gt;</code> — arrays get special direct-indexing treatment instead, but <code>List&lt;T&gt;</code> specifically uses its struct enumerator.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> <code>List&lt;T&gt;</code> genuinely does implement <code>IEnumerable&lt;T&gt;</code> — it just also exposes a separate, concretely-typed <code>GetEnumerator()</code> that <code>foreach</code> prefers when it can see the concrete type.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no such caching mechanism — a fresh struct enumerator (on the stack, not cached) is produced for each <code>foreach</code> loop.</p>
                 <p><strong>Reinforcement:</strong> Compile-time visibility of the concrete type is the entire trigger for this optimization — nothing about the collection's runtime identity matters.</p>
             </div>
         </details>
@@ -583,11 +583,11 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly Common Confusion point 1 — the boxing happens inside <code>Where</code>'s own implementation, driven by <code>Where</code>'s own parameter type, entirely independent of how <code>numbers</code> happened to be declared at your call site.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the misconception this lesson corrects — your variable's declared type outside the call has no bearing on how the callee accesses it internally.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Query syntax and method syntax compile to the identical underlying method calls — there's no difference in boxing behavior between the two.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>Where</code>'s real implementation (lesson 196) does use a <code>foreach</code> internally over its <code>source</code> parameter — and that <code>foreach</code> is exactly where the boxing in question happens, since <code>source</code> is typed <code>IEnumerable&lt;T&gt;</code> there.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is precisely the misconception this lesson corrects — your variable's declared type outside the call has no bearing on how the callee accesses it internally.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Query syntax and method syntax compile to the identical underlying method calls — there's no difference in boxing behavior between the two.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>Where</code>'s real implementation (lesson 196) does use a <code>foreach</code> internally over its <code>source</code> parameter — and that <code>foreach</code> is exactly where the boxing in question happens, since <code>source</code> is typed <code>IEnumerable&lt;T&gt;</code> there.</p>
                 <p><strong>Reinforcement:</strong> Boxing is determined by the compile-time type at the point of actual access — inside the callee, not at your own call site.</p>
             </div>
         </details>
@@ -604,17 +604,17 @@ PrintAll(numbers); // even though the CALLER's "numbers" is a concrete List&lt;i
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As Under the Hood point 4 and "When Should I Use It?" both concluded, this lesson explicitly recommends measuring with BenchmarkDotNet and reserving this optimization for proven hot paths — never applying it as a blanket, unmeasured default.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is explicitly called out as Mistake 3 and Common Confusion point 2 — an unmeasured, blanket rewrite trades away readability and API flexibility for a cost that's usually irrelevant.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The Real-World Example showed a genuine, real scenario (a per-frame hot loop) where this cost is measurably significant — it's real, just not universally significant.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> No such fixed threshold exists in .NET or in this lesson's guidance — the right trigger is measured evidence of a bottleneck, not an arbitrary operator count.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is explicitly called out as Mistake 3 and Common Confusion point 2 — an unmeasured, blanket rewrite trades away readability and API flexibility for a cost that's usually irrelevant.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The Real-World Example showed a genuine, real scenario (a per-frame hot loop) where this cost is measurably significant — it's real, just not universally significant.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> No such fixed threshold exists in .NET or in this lesson's guidance — the right trigger is measured evidence of a bottleneck, not an arbitrary operator count.</p>
                 <p><strong>Reinforcement:</strong> Know the mechanism, but let actual measurement — not intuition or a fixed rule — decide when it's worth acting on.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You've completed Part III — LINQ Deep Dive. Iterators, expression trees, query providers, deferred execution across both worlds, and the real allocation/dispatch costs underneath all of it — you now understand LINQ's mechanics from the inside out. Part IV continues directly from here: custom LINQ operators revisited, LINQ to Objects and LINQ to EF Core compared in depth, and avoiding LINQ's real-world performance traps in production.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You've completed Part III — LINQ Deep Dive. Iterators, expression trees, query providers, deferred execution across both worlds, and the real allocation/dispatch costs underneath all of it — you now understand LINQ's mechanics from the inside out. Part IV continues directly from here: custom LINQ operators revisited, LINQ to Objects and LINQ to EF Core compared in depth, and avoiding LINQ's real-world performance traps in production.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

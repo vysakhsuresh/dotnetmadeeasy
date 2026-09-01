@@ -274,7 +274,7 @@
     <p><code>System.Threading.Tasks.ValueTask&lt;TResult&gt;</code> is a readonly struct that internally holds either a directly-stored result value (the synchronous-completion path, no allocation) or a reference to a backing <code>Task&lt;TResult&gt;</code> (the asynchronous path) — or, in advanced BCL scenarios, a reference to an <code>IValueTaskSource&lt;TResult&gt;</code>, a pluggable, poolable mechanism some high-performance APIs use instead of allocating even a <code>Task</code> for the async path. Which of these it's holding is an implementation detail you don't inspect directly — you just <code>await</code> it, and the compiler-generated awaiter handles both cases correctly, once, for you.</p>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> The trade being made</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> The trade being made</div>
         <p><code>Task&lt;T&gt;</code> is a class — always a heap object, always safe to hold onto, pass around, and await from multiple places. <code>ValueTask&lt;T&gt;</code> is a struct that sometimes avoids that heap object entirely — but in exchange, it gives up some of <code>Task</code>'s convenient guarantees. This lesson is really about understanding that trade precisely, so you make it deliberately instead of by accident.</p>
     </div>
 
@@ -302,7 +302,7 @@
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>📦 Task&lt;T&gt; — always a class</h4>
+            <h4> Task&lt;T&gt; — always a class</h4>
             <ul>
                 <li>Always a heap-allocated object, every call, every completion mode.</li>
                 <li>Safe to store, pass around, and <code>await</code> as many times, from as many places, as you want.</li>
@@ -310,7 +310,7 @@
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚡ ValueTask&lt;T&gt; — a struct, sometimes zero-allocation</h4>
+            <h4> ValueTask&lt;T&gt; — a struct, sometimes zero-allocation</h4>
             <ul>
                 <li>Synchronous completion path: no heap allocation — the value lives directly in the struct.</li>
                 <li>Asynchronous path: falls back to wrapping a real <code>Task&lt;T&gt;</code> (or, in advanced cases, an <code>IValueTaskSource&lt;T&gt;</code>).</li>
@@ -351,7 +351,7 @@
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public async ValueTask&lt;Price&gt; GetPriceAsync(string productId)
 {
     if (_cache.TryGetValue(productId, out var cached))
-        return cached; // ✅ no Task&lt;Price&gt; allocated — the value goes straight into the struct
+        return cached; //  no Task&lt;Price&gt; allocated — the value goes straight into the struct
 
     var price = await _database.LoadPriceAsync(productId); // genuinely async — falls back to a real Task internally
     _cache[productId] = price;
@@ -359,7 +359,7 @@
 }
 
 // Called normally — the call site looks identical either way:
-Price price = await pricingService.GetPriceAsync("SKU-123"); // ✅ fine — awaited exactly once, immediately</code></pre>
+Price price = await pricingService.GetPriceAsync("SKU-123"); //  fine — awaited exactly once, immediately</code></pre>
     <p><strong>Code → Meaning → Result:</strong> On a cache hit, this call allocates nothing beyond ordinary struct copying — a measurable win at high call volume. On a cache miss, it behaves exactly like the original <code>Task&lt;Price&gt;</code> version, falling back to a real <code>Task&lt;Price&gt;</code> underneath. The calling code above is exactly the pattern <code>ValueTask</code> is designed for: <code>await</code> it once, immediately, and let it go — never stored, never awaited a second time.</p>
 
     <!-- ====== REAL-WORLD EXAMPLE ====== -->
@@ -378,7 +378,7 @@ while ((bytesRead = await stream.ReadAsync(buffer)) > 0) // ValueTask&lt;int&gt;
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🎫</span> A Ticket That Might Just Be a Note in Your Pocket</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Ticket That Might Just Be a Note in Your Pocket</div>
         <p>A <code>Task&lt;T&gt;</code> is a claim ticket from lesson 207's analogy — a real, physical object, filed at a counter, that anyone can walk up to and check on, any number of times, from anywhere. A <code>ValueTask&lt;T&gt;</code> is sometimes that same ticket, and sometimes it's just a sticky note in your own pocket that already says "the answer is 42" — no counter, no filing, nothing anyone else can look up. The sticky note is faster to produce, but it only works if exactly one person reads it, once, and throws it away — hand a copy to a second person expecting them to also read "the answer," and there's no guarantee the note even still says what it said the first time, or that a second reader gets a sensible result at all. That's precisely why a <code>ValueTask</code> is safe to <code>await</code> only once.</p>
     </div>
 
@@ -421,25 +421,25 @@ while ((bytesRead = await stream.ReadAsync(buffer)) > 0) // ValueTask&lt;int&gt;
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Awaiting the same ValueTask twice</h4>
-    <p>❌ <strong>Wrong:</strong></p>
+    <p> <strong>Wrong:</strong></p>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">ValueTask&lt;int&gt; vt = ReadNextAsync();
 int a = await vt;
-int b = await vt; // ❌ UNDEFINED / UNSAFE — this exact pattern is explicitly forbidden</code></pre>
-    <p>✅ <strong>Fix:</strong> <code>await</code> once, and keep the plain result value if you need it again:</p>
+int b = await vt; //  UNDEFINED / UNSAFE — this exact pattern is explicitly forbidden</code></pre>
+    <p> <strong>Fix:</strong> <code>await</code> once, and keep the plain result value if you need it again:</p>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">int a = await ReadNextAsync();
 int b = a; // fine — 'a' is a plain int, safe to reuse as many times as you want</code></pre>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Passing a ValueTask around like a Task, to be awaited "somewhere else, later"</h4>
-    <p>❌ Storing a <code>ValueTask&lt;T&gt;</code> in a field, a list of "pending work," or passing it into a method that might not await it immediately — treating it exactly like the always-safe <code>Task&lt;T&gt;</code> reference it superficially resembles. ✅ If you genuinely need something that can be stored, passed around, and awaited flexibly later, call <code>.AsTask()</code> on the <code>ValueTask</code> once, immediately, and work with the resulting real <code>Task&lt;T&gt;</code> from then on — that conversion is explicitly supported specifically for this situation.</p>
+    <p> Storing a <code>ValueTask&lt;T&gt;</code> in a field, a list of "pending work," or passing it into a method that might not await it immediately — treating it exactly like the always-safe <code>Task&lt;T&gt;</code> reference it superficially resembles.  If you genuinely need something that can be stored, passed around, and awaited flexibly later, call <code>.AsTask()</code> on the <code>ValueTask</code> once, immediately, and work with the resulting real <code>Task&lt;T&gt;</code> from then on — that conversion is explicitly supported specifically for this situation.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for ValueTask on ordinary, low-frequency application methods "for performance"</h4>
-    <p>❌ Changing a rarely-called service method's return type to <code>ValueTask&lt;T&gt;</code> in the name of micro-optimization, adding the single-await constraint's risk to code that was never going to see a measurable allocation benefit in the first place. ✅ Default to <code>Task&lt;T&gt;</code> for ordinary application code. Reach for <code>ValueTask&lt;T&gt;</code> deliberately, on genuinely hot, high-call-frequency paths — after profiling shows allocation from this exact call is actually worth avoiding, not on a hunch.</p>
+    <p> Changing a rarely-called service method's return type to <code>ValueTask&lt;T&gt;</code> in the name of micro-optimization, adding the single-await constraint's risk to code that was never going to see a measurable allocation benefit in the first place.  Default to <code>Task&lt;T&gt;</code> for ordinary application code. Reach for <code>ValueTask&lt;T&gt;</code> deliberately, on genuinely hot, high-call-frequency paths — after profiling shows allocation from this exact call is actually worth avoiding, not on a hunch.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ ValueTask is worth it when</h4>
+            <h4> ValueTask is worth it when</h4>
             <ul>
                 <li>The method is called extremely frequently — a hot, high-call-frequency path.</li>
                 <li>Synchronous completion is common in practice, not a rare edge case (cache hits, buffered reads).</li>
@@ -448,7 +448,7 @@ int b = a; // fine — 'a' is a plain int, safe to reuse as many times as you wa
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ Stick with Task&lt;T&gt; when</h4>
+            <h4> Stick with Task&lt;T&gt; when</h4>
             <ul>
                 <li>This is ordinary application/service-layer code — controllers, business logic, most everyday async methods.</li>
                 <li>The result might need to be stored, awaited more than once, or awaited from multiple places.</li>
@@ -486,7 +486,7 @@ int b = a; // fine — 'a' is a plain int, safe to reuse as many times as you wa
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've learned the allocation-avoiding trick behind ValueTask, and the sharp edge that comes with it. Let's check your understanding.</p>
 
     <div class="quiz-question">
@@ -500,11 +500,11 @@ int b = a; // fine — 'a' is a plain int, safe to reuse as many times as you wa
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As "Why Does It Exist?" explained, every Task&lt;T&gt;-returning async method allocates a Task&lt;T&gt; object even on the synchronous-completion path; ValueTask&lt;T&gt; can skip that allocation by holding the value directly in the struct.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> ValueTask doesn't change threading behavior at all — it's purely about avoiding an allocation, not about parallelism or speed of execution.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> You still await a ValueTask exactly as you would a Task — the keyword and general usage pattern are unchanged.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Nothing about ValueTask involves retries — that would be application-level or resiliency-library logic, unrelated to this type.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> ValueTask doesn't change threading behavior at all — it's purely about avoiding an allocation, not about parallelism or speed of execution.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> You still await a ValueTask exactly as you would a Task — the keyword and general usage pattern are unchanged.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Nothing about ValueTask involves retries — that would be application-level or resiliency-library logic, unrelated to this type.</p>
                 <p><strong>Reinforcement:</strong> ValueTask's entire reason for existing is allocation avoidance on the synchronous-completion path.</p>
             </div>
         </details>
@@ -521,11 +521,11 @@ int b = a; // fine — 'a' is a plain int, safe to reuse as many times as you wa
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the documented, critical constraint Under the Hood walked through in detail — unlike Task, which is safe to await repeatedly and from multiple places, ValueTask makes no such guarantee, precisely because its underlying storage may be reset or reused once consumed.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Exception handling around a ValueTask works exactly like it does for a Task — there's no special try/catch requirement unique to ValueTask.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> ValueTask is a general-purpose BCL type usable in any .NET application type — nothing ties it specifically to ASP.NET Core.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> ValueTask doesn't implement IDisposable in the way that would require this, and no explicit disposal step is part of its normal usage pattern.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Exception handling around a ValueTask works exactly like it does for a Task — there's no special try/catch requirement unique to ValueTask.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> ValueTask is a general-purpose BCL type usable in any .NET application type — nothing ties it specifically to ASP.NET Core.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> ValueTask doesn't implement IDisposable in the way that would require this, and no explicit disposal step is part of its normal usage pattern.</p>
                 <p><strong>Reinforcement:</strong> The single-await rule is the one fact about ValueTask that matters most to get right — and it's the opposite of how Task behaves.</p>
             </div>
         </details>
@@ -542,11 +542,11 @@ int b = a; // fine — 'a' is a plain int, safe to reuse as many times as you wa
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As Under the Hood point 2 explained, pooling an IValueTaskSource&lt;T&gt; is only safe because the contract promises single consumption — awaiting a second time can observe state that's already been handed back to the pool and reused, producing silently wrong results.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This compiles fine — the danger is a runtime correctness issue, not a compile-time error, which is exactly what makes it dangerous rather than merely inconvenient.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such thread-affinity rule for ValueTask — the danger is about the underlying storage's lifecycle, not about which thread performs the await.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The failure mode isn't a guaranteed, obvious exception — it can be silent and hard to trace, which is precisely why this rule needs to be followed deliberately rather than discovered through testing.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This compiles fine — the danger is a runtime correctness issue, not a compile-time error, which is exactly what makes it dangerous rather than merely inconvenient.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no such thread-affinity rule for ValueTask — the danger is about the underlying storage's lifecycle, not about which thread performs the await.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The failure mode isn't a guaranteed, obvious exception — it can be silent and hard to trace, which is precisely why this rule needs to be followed deliberately rather than discovered through testing.</p>
                 <p><strong>Reinforcement:</strong> The danger of double-awaiting a ValueTask is quiet, not loud — exactly why the rule matters even when nothing seems to go wrong at first.</p>
             </div>
         </details>
@@ -563,11 +563,11 @@ int b = a; // fine — 'a' is a plain int, safe to reuse as many times as you wa
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As Common Confusion #2 and When Should I Use It? explained, Task&lt;T&gt; is exactly the right tool when a result needs to be stored or awaited from multiple places — that's a documented, safe, supported Task guarantee that ValueTask&lt;T&gt; does not make.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> "Always faster" ignores the scenario's actual requirement — storing and re-awaiting is precisely the usage pattern ValueTask is unsafe for, regardless of any raw speed difference.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This is exactly the wrong intuition this lesson corrects — the two types have a real, documented asymmetry specifically around repeated/stored awaiting.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Calling .Result once doesn't retroactively make repeated consumption safe, and blocking with .Result reintroduces the dangers covered in lessons 208 and 209 besides.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> "Always faster" ignores the scenario's actual requirement — storing and re-awaiting is precisely the usage pattern ValueTask is unsafe for, regardless of any raw speed difference.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This is exactly the wrong intuition this lesson corrects — the two types have a real, documented asymmetry specifically around repeated/stored awaiting.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Calling .Result once doesn't retroactively make repeated consumption safe, and blocking with .Result reintroduces the dangers covered in lessons 208 and 209 besides.</p>
                 <p><strong>Reinforcement:</strong> "Will this be stored or awaited more than once?" is the deciding question between Task&lt;T&gt; and ValueTask&lt;T&gt;.</p>
             </div>
         </details>
@@ -584,17 +584,17 @@ int b = a; // fine — 'a' is a plain int, safe to reuse as many times as you wa
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As When Should I Use It? and Common Mistakes #3 explained, ValueTask's benefit only shows up under high call frequency with common synchronous completion — applying it to a rarely-called method trades real safety (the single-await rule) for a benefit that was never actually there to gain.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the "faster is always better" misconception Common Confusion #1 warned against — ValueTask is a specialized tool, not a universal upgrade.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Whether a method is virtual has no bearing on whether ValueTask is an appropriate return type — this isn't a real constraint.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> ValueTask&lt;T&gt; can technically be used anywhere Task&lt;T&gt; could — the concern here is whether it's a wise choice for this specific scenario, not whether it's technically permitted.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is exactly the "faster is always better" misconception Common Confusion #1 warned against — ValueTask is a specialized tool, not a universal upgrade.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Whether a method is virtual has no bearing on whether ValueTask is an appropriate return type — this isn't a real constraint.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> ValueTask&lt;T&gt; can technically be used anywhere Task&lt;T&gt; could — the concern here is whether it's a wise choice for this specific scenario, not whether it's technically permitted.</p>
                 <p><strong>Reinforcement:</strong> Reach for ValueTask deliberately, backed by an actual hot-path/high-frequency justification — not reflexively, in the name of general "performance."</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly when — and when not — to trade Task's safety for ValueTask's speed. Next: going deeper on cooperative cancellation than Intermediate lesson 153 covered.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now know exactly when — and when not — to trade Task's safety for ValueTask's speed. Next: going deeper on cooperative cancellation than Intermediate lesson 153 covered.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

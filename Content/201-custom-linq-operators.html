@@ -380,7 +380,7 @@
     <!-- ====== WHY DOES IT EXIST? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
     <p>Batching shows up constantly in real systems: sending 10,000 emails through a provider that only accepts 100 recipients per API call, inserting 50,000 rows through a bulk-insert API capped at 500 rows per batch, or paging through a huge in-memory report for a UI that renders 20 rows at a time. Without a dedicated operator, every one of those call sites reinvents the same manual chunking loop:</p>
-    <div class="code-block"><code>// ❌ The same manual chunking logic, rewritten at every call site
+    <div class="code-block"><code>//  The same manual chunking logic, rewritten at every call site
 var recipients = GetAllRecipients(); // 10,000 items
 var chunk = new List&lt;Recipient&gt;();
 foreach (var r in recipients)
@@ -394,7 +394,7 @@ foreach (var r in recipients)
 }
 if (chunk.Count &gt; 0)
     SendBatch(chunk); // don't forget the leftover partial batch!</code></div>
-    <div class="code-block"><code>// ✅ Written once, reused everywhere, and the "leftover partial batch" edge case
+    <div class="code-block"><code>//  Written once, reused everywhere, and the "leftover partial batch" edge case
 // can never be forgotten again — it's handled inside Batch itself
 foreach (var chunk in recipients.Batch(100))
     SendBatch(chunk);</code></div>
@@ -517,7 +517,7 @@ public async Task NotifyAllSubscribersAsync(IEnumerable&lt;Subscriber&gt; subscr
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📦</span> A Conveyor Belt With a Box-Packer at the End</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Conveyor Belt With a Box-Packer at the End</div>
         <p>Picture a conveyor belt carrying items one at a time — that's your source sequence, arriving lazily, one per moment. At the end of the belt stands a packer with an empty box (the buffer). Each item that arrives goes into the current box. The moment the box holds exactly 100 items, the packer seals it, sends it off (<code class="icode">yield return</code>), and grabs a fresh empty box. If the belt stops with the box only partially full, the packer still seals and sends that last, smaller box rather than leaving it standing there forever. The packer never needs to see the whole belt's worth of items at once — just enough to fill one box at a time.</p>
     </div>
 
@@ -556,17 +556,17 @@ public async Task NotifyAllSubscribersAsync(IEnumerable&lt;Subscriber&gt; subscr
     <!-- ====== COMMON MISTAKES ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Validating <code class="icode">size</code> inside the <code class="icode">yield return</code> iterator itself</h4>
-    <p>❌ Putting <code class="icode">ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(size, 0)</code> directly inside <code class="icode">BatchIterator</code> — the same deferred-validation bug the Intermediate lesson covered for <code class="icode">WhereNotNull</code>, and one that's just as easy to reintroduce here: the exception wouldn't fire until the first <code class="icode">foreach</code> iteration, not at the moment <code class="icode">.Batch(-1)</code> is actually called. ✅ Keep validation in the public, non-iterator method, exactly as shown throughout this lesson.</p>
+    <p> Putting <code class="icode">ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(size, 0)</code> directly inside <code class="icode">BatchIterator</code> — the same deferred-validation bug the Intermediate lesson covered for <code class="icode">WhereNotNull</code>, and one that's just as easy to reintroduce here: the exception wouldn't fire until the first <code class="icode">foreach</code> iteration, not at the moment <code class="icode">.Batch(-1)</code> is actually called.  Keep validation in the public, non-iterator method, exactly as shown throughout this lesson.</p>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Reusing the same buffer array/list instance across yielded chunks</h4>
-    <p>❌ <code class="icode">yield return buffer;</code> followed by <code class="icode">buffer.Clear()</code> on the <em>same</em> <code class="icode">List&lt;T&gt;</code> instance — since the caller might not have finished consuming the first chunk before the second one overwrites the same underlying list, this can silently corrupt data the caller thought it already had. ✅ Yield a fresh, independent array with <code class="icode">buffer.ToArray()</code> (or a new list) each time, so every chunk the caller receives is a stable, independent snapshot.</p>
+    <p> <code class="icode">yield return buffer;</code> followed by <code class="icode">buffer.Clear()</code> on the <em>same</em> <code class="icode">List&lt;T&gt;</code> instance — since the caller might not have finished consuming the first chunk before the second one overwrites the same underlying list, this can silently corrupt data the caller thought it already had.  Yield a fresh, independent array with <code class="icode">buffer.ToArray()</code> (or a new list) each time, so every chunk the caller receives is a stable, independent snapshot.</p>
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Forgetting the trailing partial chunk</h4>
-    <p>❌ Only yielding when <code class="icode">buffer.Count == size</code>, with no check after the <code class="icode">foreach</code> loop ends — silently drops the last, smaller chunk whenever the source's length isn't an exact multiple of the batch size. ✅ Always check <code class="icode">if (buffer.Count &gt; 0)</code> once the loop over <code class="icode">source</code> has finished, exactly as shown in the Simple Example.</p>
+    <p> Only yielding when <code class="icode">buffer.Count == size</code>, with no check after the <code class="icode">foreach</code> loop ends — silently drops the last, smaller chunk whenever the source's length isn't an exact multiple of the batch size.  Always check <code class="icode">if (buffer.Count &gt; 0)</code> once the loop over <code class="icode">source</code> has finished, exactly as shown in the Simple Example.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Write (or reach for) a custom operator like this when</h4>
+            <h4> Write (or reach for) a custom operator like this when</h4>
             <ul>
                 <li>A shaping pattern — batching, deduplicating by a key, windowing — repeats across the codebase and no built-in operator covers it.</li>
                 <li>The data is genuinely in-memory (a <code class="icode">List&lt;T&gt;</code>, an array, a stream already materialized) — LINQ-to-Objects territory.</li>
@@ -574,7 +574,7 @@ public async Task NotifyAllSubscribersAsync(IEnumerable&lt;Subscriber&gt; subscr
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ Don't when</h4>
+            <h4> Don't when</h4>
             <ul>
                 <li>The framework already ships it — check first (<code class="icode">Chunk</code>, <code class="icode">DistinctBy</code>, <code class="icode">GroupBy</code>, and others cover a lot of ground already).</li>
                 <li>The source is an <code class="icode">IQueryable&lt;T&gt;</code> you want translated to SQL — a plain <code class="icode">yield return</code> operator will silently force full materialization instead, as covered in Under the Hood.</li>
@@ -583,7 +583,7 @@ public async Task NotifyAllSubscribersAsync(IEnumerable&lt;Subscriber&gt; subscr
         </div>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Build a custom LINQ-to-Objects operator to learn how the mechanism works, or to capture a genuinely repeated in-memory pattern — never as a substitute for checking whether .NET already ships it, and never against a source you actually want translated to SQL.
+        <strong> Rule of thumb:</strong> Build a custom LINQ-to-Objects operator to learn how the mechanism works, or to capture a genuinely repeated in-memory pattern — never as a substitute for checking whether .NET already ships it, and never against a source you actually want translated to SQL.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -612,7 +612,7 @@ public async Task NotifyAllSubscribersAsync(IEnumerable&lt;Subscriber&gt; subscr
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've designed a genuinely more sophisticated custom LINQ operator, and seen exactly where it stops working. Let's check the reasoning stuck.</p>
 
     <div class="quiz-question">
@@ -626,11 +626,11 @@ public async Task NotifyAllSubscribersAsync(IEnumerable&lt;Subscriber&gt; subscr
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As covered in How It Works, choosing a standard, general shape for the return type is exactly what keeps a custom operator composable — a caller can chain further LINQ onto the result without first unwrapping some bespoke type.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Extension methods can return any type, including custom ones — the constraint here is a design choice about composability, not a language limitation.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no meaningful performance difference tied to the return type shape here — the reasoning is entirely about how easily the result composes with other LINQ code.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The return type has a real, practical consequence for whether the operator "feels like" a LINQ operator at the call site — this is a genuine design decision, not a stylistic one.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Extension methods can return any type, including custom ones — the constraint here is a design choice about composability, not a language limitation.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no meaningful performance difference tied to the return type shape here — the reasoning is entirely about how easily the result composes with other LINQ code.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The return type has a real, practical consequence for whether the operator "feels like" a LINQ operator at the call site — this is a genuine design decision, not a stylistic one.</p>
                 <p><strong>Reinforcement:</strong> Favor the most general, standard shape LINQ already uses, so custom operators snap into the rest of a query the same way built-in ones do.</p>
             </div>
         </details>
@@ -647,11 +647,11 @@ public async Task NotifyAllSubscribersAsync(IEnumerable&lt;Subscriber&gt; subscr
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> As explained in Under the Hood, since <code class="icode">IQueryable&lt;T&gt;</code> inherits from <code class="icode">IEnumerable&lt;T&gt;</code>, and no <code class="icode">IQueryable&lt;T&gt;</code>-specific overload of <code class="icode">Batch</code> exists, C# silently binds the call to the <code class="icode">IEnumerable&lt;T&gt;</code> version — which requires the entire source to already be enumerable in memory, forcing a full, unfiltered table load with no warning.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> A plain <code class="icode">yield return</code> operator has no expression tree for EF Core's provider to inspect — there is nothing for it to translate, so no SQL-level batching happens.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> This compiles fine — <code class="icode">IQueryable&lt;Product&gt;</code> satisfies the <code class="icode">IEnumerable&lt;T&gt;</code> constraint, since it inherits from it. The problem is a silent runtime behavior, not a compile error.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> EF Core's translation failure exception applies to expressions inside the <code class="icode">IQueryable&lt;T&gt;</code> pipeline itself — this scenario never reaches EF Core's translator at all, because the call already resolved to plain in-memory <code class="icode">IEnumerable&lt;T&gt;</code> LINQ before EF Core gets involved.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> A plain <code class="icode">yield return</code> operator has no expression tree for EF Core's provider to inspect — there is nothing for it to translate, so no SQL-level batching happens.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> This compiles fine — <code class="icode">IQueryable&lt;Product&gt;</code> satisfies the <code class="icode">IEnumerable&lt;T&gt;</code> constraint, since it inherits from it. The problem is a silent runtime behavior, not a compile error.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> EF Core's translation failure exception applies to expressions inside the <code class="icode">IQueryable&lt;T&gt;</code> pipeline itself — this scenario never reaches EF Core's translator at all, because the call already resolved to plain in-memory <code class="icode">IEnumerable&lt;T&gt;</code> LINQ before EF Core gets involved.</p>
                 <p><strong>Reinforcement:</strong> A <code class="icode">yield return</code>-based custom operator silently forces full materialization when called on an <code class="icode">IQueryable&lt;T&gt;</code> — it compiles cleanly and gives no error, which is exactly what makes it a dangerous, easy-to-miss mistake.</p>
             </div>
         </details>
@@ -668,11 +668,11 @@ public async Task NotifyAllSubscribersAsync(IEnumerable&lt;Subscriber&gt; subscr
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As reinforced in How It Works and Common Mistakes, an entire <code class="icode">yield return</code> method body — including any validation inside it — gets swept into the compiler-generated state machine, so it only executes once iteration actually begins, not at the moment the method is called.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Iterator methods can absolutely contain <code class="icode">if</code> statements — the buffering logic inside <code class="icode">BatchIterator</code> itself uses one. The issue is strictly about *when* code inside such a method runs, not whether certain statements are allowed.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Private methods can throw exceptions freely — accessibility has nothing to do with whether an exception can be thrown from a method.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code class="icode">ArgumentOutOfRangeException</code> (and any exception type) can be thrown from a method of any accessibility level — public, private, or otherwise.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Iterator methods can absolutely contain <code class="icode">if</code> statements — the buffering logic inside <code class="icode">BatchIterator</code> itself uses one. The issue is strictly about *when* code inside such a method runs, not whether certain statements are allowed.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Private methods can throw exceptions freely — accessibility has nothing to do with whether an exception can be thrown from a method.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code class="icode">ArgumentOutOfRangeException</code> (and any exception type) can be thrown from a method of any accessibility level — public, private, or otherwise.</p>
                 <p><strong>Reinforcement:</strong> Whenever a custom operator needs both eager validation and a <code class="icode">yield return</code> iterator, split them into two methods — this is a recurring, essential pattern, not a one-off fix for a single example.</p>
             </div>
         </details>
@@ -689,17 +689,17 @@ public async Task NotifyAllSubscribersAsync(IEnumerable&lt;Subscriber&gt; subscr
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As stated explicitly in What Is It? and Common Confusion, this exercise exists to show, by construction, exactly how an operator like this works — the buffering, the validation split, the laziness — while being clear that real code should reach for the framework's own tested implementation instead of duplicating it.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> <code class="icode">Enumerable.Chunk</code> is a current, actively supported part of .NET — nothing about it is deprecated.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> No performance claim like this was made, and there's no general reason a hand-rolled reimplementation would outperform a framework-shipped, well-tested equivalent.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code class="icode">Enumerable.Chunk</code> works on <code class="icode">IEnumerable&lt;T&gt;</code> — the same in-memory LINQ-to-Objects territory <code class="icode">Batch&lt;T&gt;</code> operates in, for the exact same reasons covered in Under the Hood.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> <code class="icode">Enumerable.Chunk</code> is a current, actively supported part of .NET — nothing about it is deprecated.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> No performance claim like this was made, and there's no general reason a hand-rolled reimplementation would outperform a framework-shipped, well-tested equivalent.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code class="icode">Enumerable.Chunk</code> works on <code class="icode">IEnumerable&lt;T&gt;</code> — the same in-memory LINQ-to-Objects territory <code class="icode">Batch&lt;T&gt;</code> operates in, for the exact same reasons covered in Under the Hood.</p>
                 <p><strong>Reinforcement:</strong> Building your own version of something the framework already provides is a legitimate way to learn — just don't ship the hand-rolled version when a tested, official one already exists.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You've now designed a genuinely non-trivial custom LINQ operator, and can explain exactly why it stops working the moment the source becomes an <code class="icode">IQueryable&lt;T&gt;</code> you want translated to SQL. Next up: giving that exact distinction — LINQ-to-Objects versus everything else — its proper, formal name.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You've now designed a genuinely non-trivial custom LINQ operator, and can explain exactly why it stops working the moment the source becomes an <code class="icode">IQueryable&lt;T&gt;</code> you want translated to SQL. Next up: giving that exact distinction — LINQ-to-Objects versus everything else — its proper, formal name.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

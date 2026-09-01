@@ -394,7 +394,7 @@
     <p>A typical local development connection string looks like:</p>
     <div class="code-block"><code>"Server=localhost;Database=ShopDb;Trusted_Connection=True;TrustServerCertificate=True;"</code></div>
     <div class="callout">
-        <strong>⚠️ Never hard-code a connection string with real credentials directly in source code.</strong> In real applications, connection strings live in configuration (<span class="icode">appsettings.json</span>, environment variables, or a secrets manager) — the same configuration system you learned about in Intermediate Part V.
+        <strong> Never hard-code a connection string with real credentials directly in source code.</strong> In real applications, connection strings live in configuration (<span class="icode">appsettings.json</span>, environment variables, or a secrets manager) — the same configuration system you learned about in Intermediate Part V.
     </div>
 
     <!-- ====== WHY DOES IT EXIST? ====== -->
@@ -409,7 +409,7 @@
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🔴 What You Might Assume Happens</h4>
+            <h4> What You Might Assume Happens</h4>
             <ul>
                 <li>new SqlConnection() → brand-new TCP handshake, every time</li>
                 <li>Open() is always slow</li>
@@ -418,7 +418,7 @@
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>🟢 What Actually Happens</h4>
+            <h4> What Actually Happens</h4>
             <ul>
                 <li>new SqlConnection() creates a lightweight wrapper object only</li>
                 <li>Open() usually grabs an already-open physical connection from the pool</li>
@@ -516,7 +516,7 @@ public async Task&lt;int&gt; GetProductCountAsync(string connectionString)
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🚕</span> A Taxi Rank, Not a Personal Car</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Taxi Rank, Not a Personal Car</div>
         <p>Owning a personal car (one permanent, shared connection) means dealing with parking, maintenance, and only one person can drive it at a time. Calling a taxi every single trip and giving it back afterward (open/dispose per call) sounds wasteful — until you realize there's a whole <strong>rank of taxis</strong> waiting nearby (the connection pool).</p>
         <p>You don't own the taxi. You just "check one out" for your trip, and the moment you're done, it goes right back to the rank for the next passenger — engine still running, ready instantly. That's exactly what <span class="icode">Open()</span> and <span class="icode">Dispose()</span> are doing with pooled connections: borrowing and returning, not building and destroying.</p>
     </div>
@@ -554,23 +554,23 @@ public async Task&lt;int&gt; GetProductCountAsync(string connectionString)
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Forgetting to dispose the connection</h4>
-    <p>❌ <strong>Wrong:</strong></p>
+    <p> <strong>Wrong:</strong></p>
     <div class="code-block"><code>var connection = new SqlConnection(connectionString);
 connection.Open();
 // ...run a command...
 // no Dispose() or Close() call — the connection never returns to the pool</code></div>
-    <p>Left long enough, this exhausts the pool — new callers eventually get a <span class="icode">Timeout expired</span> exception waiting for a free connection. ✅ Always use <span class="icode">using</span> (or <span class="icode">await using</span>) so disposal happens automatically, even on an exception.</p>
+    <p>Left long enough, this exhausts the pool — new callers eventually get a <span class="icode">Timeout expired</span> exception waiting for a free connection.  Always use <span class="icode">using</span> (or <span class="icode">await using</span>) so disposal happens automatically, even on an exception.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Storing one shared connection instance as a singleton field</h4>
-    <p>❌ Declaring <span class="icode">private static SqlConnection _connection = ...</span> and reusing it across every request in a web application. This breaks under concurrency and defeats the entire point of pooling. ✅ Create, open, use, and dispose a connection per unit of work — let the pool handle reuse.</p>
+    <p> Declaring <span class="icode">private static SqlConnection _connection = ...</span> and reusing it across every request in a web application. This breaks under concurrency and defeats the entire point of pooling.  Create, open, use, and dispose a connection per unit of work — let the pool handle reuse.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Opening the connection long before you actually need it</h4>
-    <p>❌ Opening a connection at the start of a long method that does other, unrelated work first, then finally runs a query near the end — holding a pooled connection open the whole time. ✅ Open as late as reasonably possible, and dispose as soon as you're done, so the connection returns to the pool quickly for others to use.</p>
+    <p> Opening a connection at the start of a long method that does other, unrelated work first, then finally runs a query near the end — holding a pooled connection open the whole time.  Open as late as reasonably possible, and dispose as soon as you're done, so the connection returns to the pool quickly for others to use.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Create a new connection object, open it, do your work, and dispose it — every time, for every unit of work — whether that's a raw ADO.NET call or, as you'll see soon, a single <span class="icode">DbContext</span> lifetime in EF Core. Don't try to be "efficient" by holding one connection open longer than necessary; the pool is already doing that job for you, far better than manual management could.
+        <strong> Rule of thumb:</strong> Create a new connection object, open it, do your work, and dispose it — every time, for every unit of work — whether that's a raw ADO.NET call or, as you'll see soon, a single <span class="icode">DbContext</span> lifetime in EF Core. Don't try to be "efficient" by holding one connection open longer than necessary; the pool is already doing that job for you, far better than manual management could.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -600,7 +600,7 @@ connection.Open();
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen why "open and dispose per call" is the right pattern, not a wasteful one. Let's confirm it clicked.</p>
 
     <div class="quiz-question">
@@ -614,11 +614,11 @@ connection.Open();
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Connection pooling already reuses the underlying physical connection transparently across separate <span class="icode">SqlConnection</span> instances. Forcing one shared instance instead removes that safety net and introduces thread-safety problems if that connection is ever used concurrently.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is the opposite of the recommended pattern — create/open/dispose per unit of work is correct precisely because pooling makes it cheap.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> A given <span class="icode">SqlConnection</span> object instance can be opened and closed, though the recommended pattern is a new instance per unit of work, backed by the pool.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Connection strings don't "expire" after use — that's not a real ADO.NET concept.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is the opposite of the recommended pattern — create/open/dispose per unit of work is correct precisely because pooling makes it cheap.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> A given <span class="icode">SqlConnection</span> object instance can be opened and closed, though the recommended pattern is a new instance per unit of work, backed by the pool.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Connection strings don't "expire" after use — that's not a real ADO.NET concept.</p>
                 <p><strong>Reinforcement:</strong> Trust the pool — open/dispose per call is efficient, not wasteful.</p>
             </div>
         </details>
@@ -635,11 +635,11 @@ connection.Open();
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> In the normal pooled case, disposing a connection returns the physical connection to the pool rather than tearing it down — that's the entire mechanism that makes frequent open/dispose calls cheap.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This would defeat the purpose of pooling — the physical connection generally stays alive, just idle in the pool.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Disposal has nothing to do with privilege levels — that's not a concept connection pooling deals with.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Dispose() has a real, important effect — it's what makes the connection object's resources available again, including returning it to the pool.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This would defeat the purpose of pooling — the physical connection generally stays alive, just idle in the pool.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Disposal has nothing to do with privilege levels — that's not a concept connection pooling deals with.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Dispose() has a real, important effect — it's what makes the connection object's resources available again, including returning it to the pool.</p>
                 <p><strong>Reinforcement:</strong> Disposal returns connections to the pool — it usually does not close them at the network level.</p>
             </div>
         </details>
@@ -656,11 +656,11 @@ connection.Open();
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Pools are keyed on the full connection string text, not just the target server/database. Two connection strings that differ in authentication method (or any other part) get separate pools entirely.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Targeting the same database isn't enough — the pooling key is the connection string itself, which differs here.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no time-of-day behavior in connection pooling.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This behavior is consistent across modern .NET versions — it's a property of how the provider keys its pools, not a version-specific quirk.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Targeting the same database isn't enough — the pooling key is the connection string itself, which differs here.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no time-of-day behavior in connection pooling.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This behavior is consistent across modern .NET versions — it's a property of how the provider keys its pools, not a version-specific quirk.</p>
                 <p><strong>Reinforcement:</strong> Keep connection strings consistent across calls that should share a pool — even small differences create separate pools.</p>
             </div>
         </details>
@@ -677,17 +677,17 @@ connection.Open();
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> A locally-scoped, disposed-per-call connection is the recommended pattern — it's cheap thanks to pooling, and a <span class="icode">using</span> statement guarantees disposal even if an exception occurs mid-method.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> A shared static connection isn't thread-safe for concurrent use and defeats the pool's own reuse mechanism.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> You must explicitly call <span class="icode">Open()</span> (or <span class="icode">OpenAsync()</span>) before running commands — it isn't automatic.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Holding a connection open indefinitely ties up a pooled resource unnecessarily and isn't the recommended lifecycle.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> A shared static connection isn't thread-safe for concurrent use and defeats the pool's own reuse mechanism.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> You must explicitly call <span class="icode">Open()</span> (or <span class="icode">OpenAsync()</span>) before running commands — it isn't automatic.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Holding a connection open indefinitely ties up a pooled resource unnecessarily and isn't the recommended lifecycle.</p>
                 <p><strong>Reinforcement:</strong> Scope connections tightly around the unit of work that needs them, and let disposal (via using) happen automatically.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand connections, connection strings, and why pooling makes frequent open/dispose calls the right pattern. Next up: sending actual SQL statements with commands.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now understand connections, connection strings, and why pooling makes frequent open/dispose calls the right pattern. Next up: sending actual SQL statements with commands.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

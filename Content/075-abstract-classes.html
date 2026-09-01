@@ -326,7 +326,7 @@
 
     <!-- ====== HOOK ====== -->
     <p>Picture a payment processing module with three gateways: Stripe, PayPal, and a bank-transfer ACH processor. All three need to log every attempt, retry on transient failure, and record a transaction record afterward — that part is identical, word for word, in all three. But the actual "send this to the payment network" step is completely different for each one. If you model this purely with an interface, you'll write the exact same logging-and-retry code three times:</p>
-    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ With just an interface, this exact block gets copy-pasted into
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">//  With just an interface, this exact block gets copy-pasted into
 // StripeGateway, PayPalGateway, and AchGateway — three times, with
 // three chances to drift out of sync when someone fixes a bug in one.
 public class StripeGateway : IPaymentGateway
@@ -359,7 +359,7 @@ public class StripeGateway : IPaymentGateway
     protected abstract PaymentResult SendToNetwork(PaymentRequest request);
 }
 
-// var gateway = new PaymentGateway(logger); // ❌ compiler error: cannot instantiate an abstract class</code></pre>
+// var gateway = new PaymentGateway(logger); //  compiler error: cannot instantiate an abstract class</code></pre>
     <p>Two rules define the whole feature: an abstract class cannot be <code>new</code>'d up on its own, and an abstract member has no implementation at all in the class that declares it — only in a class that overrides it can it get one.</p>
 
     <!-- ====== WHY DOES IT EXIST? ====== -->
@@ -566,22 +566,22 @@ public sealed class AchGateway(ILogger logger, ITransactionStore store, IAchClie
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Using an abstract class purely for the contract, with no shared implementation</h4>
-    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ❌ Nothing here is shared — every member is abstract. This "spends"
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">//  Nothing here is shared — every member is abstract. This "spends"
 // the derived class's one inheritance slot for zero benefit.
 public abstract class INotificationChannel_Wrong
 {
     public abstract string ChannelName { get; }
     public abstract Task SendAsync(string recipient, string message);
 }</code></pre>
-    <p>✅ If a base type has no real implementation to share, it should be an interface — <code>INotificationChannel</code> — precisely as seen in lesson 073's notification service. Reserve abstract classes for when there's genuine shared code to write once.</p>
+    <p> If a base type has no real implementation to share, it should be an interface — <code>INotificationChannel</code> — precisely as seen in lesson 073's notification service. Reserve abstract classes for when there's genuine shared code to write once.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Marking a member <code>abstract</code> when a sensible default actually exists</h4>
-    <p>❌ Forcing every subclass to reimplement something that's genuinely the same 95% of the time creates needless repetition and gives each implementation a chance to diverge by accident.</p>
-    <p>✅ Give it a <code>virtual</code> default implementation instead, and let the rare subclass that needs something different <code>override</code> it. Reserve <code>abstract</code> for members with no reasonable default at all.</p>
+    <p> Forcing every subclass to reimplement something that's genuinely the same 95% of the time creates needless repetition and gives each implementation a chance to diverge by accident.</p>
+    <p> Give it a <code>virtual</code> default implementation instead, and let the rare subclass that needs something different <code>override</code> it. Reserve <code>abstract</code> for members with no reasonable default at all.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for an abstract class when the real need is multiple capabilities on one class</h4>
-    <p>❌ <code>abstract class AuditableEntity</code> and <code>abstract class CacheableEntity</code> — a class that needs to be both auditable <em>and</em> cacheable can't inherit from both; C# doesn't allow multiple base classes.</p>
-    <p>✅ Model each capability as its own interface (<code>IAuditable</code>, <code>ICacheable</code>) — lesson 078 covers exactly this pattern of implementing several interfaces on one class.</p>
+    <p> <code>abstract class AuditableEntity</code> and <code>abstract class CacheableEntity</code> — a class that needs to be both auditable <em>and</em> cacheable can't inherit from both; C# doesn't allow multiple base classes.</p>
+    <p> Model each capability as its own interface (<code>IAuditable</code>, <code>ICacheable</code>) — lesson 078 covers exactly this pattern of implementing several interfaces on one class.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -591,7 +591,7 @@ public abstract class INotificationChannel_Wrong
         <li style="margin-bottom:0.4rem;">The set of subclasses is reasonably closed and internal to your codebase — abstract classes work best when you control both the base and the derived types.</li>
     </ul>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> if you can describe the base type's job as "here's the shared engine, plus one part only you can fill in," reach for an abstract class. If you can describe it as "here's a capability, implemented however you like," reach for an interface (lesson 077).
+        <strong> Rule of thumb:</strong> if you can describe the base type's job as "here's the shared engine, plus one part only you can fill in," reach for an abstract class. If you can describe it as "here's a capability, implemented however you like," reach for an interface (lesson 077).
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -620,7 +620,7 @@ public abstract class INotificationChannel_Wrong
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">Let's confirm you can reason about when abstract classes earn their keep — and when they don't.</p>
 
     <!-- Question 1 -->
@@ -635,11 +635,11 @@ public abstract class INotificationChannel_Wrong
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the entire point of <code>abstract</code> — the compiler enforces completeness. A class that doesn't implement every abstract member from its base either provides that implementation or is itself marked <code>abstract</code>, pushing the obligation further down the hierarchy; it can never silently compile as a concrete, instantiable type.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Abstract members have no body at all — there's no "does nothing" implementation for the compiler to fall back on.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This describes the failure mode of Option A in the "Why Does It Exist" section — a virtual method with a throwing default. Abstract members catch this at compile time instead, which is the whole advantage.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The compiler never invents behavior on your behalf; it only checks that you supplied it.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Abstract members have no body at all — there's no "does nothing" implementation for the compiler to fall back on.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This describes the failure mode of Option A in the "Why Does It Exist" section — a virtual method with a throwing default. Abstract members catch this at compile time instead, which is the whole advantage.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The compiler never invents behavior on your behalf; it only checks that you supplied it.</p>
                 <p><strong>Reinforcement:</strong> This compile-time guarantee is the main practical advantage abstract methods have over a throwing virtual default.</p>
             </div>
         </details>
@@ -657,11 +657,11 @@ public abstract class INotificationChannel_Wrong
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Because the algorithm's shape (log, retry, record) is genuinely shared and shouldn't vary per gateway, keeping it non-virtual guarantees every gateway gets identical, guaranteed behavior — mirroring the "template method" reasoning from lesson 072's <code>ShipmentProcessor</code> example.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no such requirement; an abstract class could in principle consist entirely of abstract members, though that would usually mean it should have been an interface (Mistake 1 in this lesson).</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Abstract classes routinely mix concrete and abstract members — that mixture is the entire feature.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Constructor timing is unrelated to whether a method is virtual — <code>Charge()</code> is called by application code well after construction completes.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> There's no such requirement; an abstract class could in principle consist entirely of abstract members, though that would usually mean it should have been an interface (Mistake 1 in this lesson).</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Abstract classes routinely mix concrete and abstract members — that mixture is the entire feature.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Constructor timing is unrelated to whether a method is virtual — <code>Charge()</code> is called by application code well after construction completes.</p>
                 <p><strong>Reinforcement:</strong> Keep the parts that must never vary non-virtual; make abstract only the parts that genuinely have no shared default.</p>
             </div>
         </details>
@@ -679,11 +679,11 @@ public abstract class INotificationChannel_Wrong
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> C#'s single-inheritance rule applies only to classes (including abstract ones) — a class can extend one base class while implementing as many interfaces as it needs, side by side. This is one of the most common real-world shapes: one shared abstract base plus several capability interfaces.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Extending a base class and implementing interfaces are entirely compatible and extremely common together.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> They mix constantly and are designed to work together — this lesson's comparison table exists precisely because both tools are usually used side by side, not as alternatives to pick exclusively.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> No conversion is necessary; the single-inheritance limit only ever applies to the one class you're extending, never to interfaces.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Extending a base class and implementing interfaces are entirely compatible and extremely common together.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> They mix constantly and are designed to work together — this lesson's comparison table exists precisely because both tools are usually used side by side, not as alternatives to pick exclusively.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> No conversion is necessary; the single-inheritance limit only ever applies to the one class you're extending, never to interfaces.</p>
                 <p><strong>Reinforcement:</strong> The one-base-class limit is exactly why choosing an abstract base is a bigger commitment than implementing an interface — you only get to spend it once.</p>
             </div>
         </details>
@@ -701,17 +701,17 @@ public abstract class INotificationChannel_Wrong
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly Mistake 1 from this lesson — when there's no real implementation to share, an abstract class provides no benefit over an interface, while still consuming the derived class's single-inheritance slot and blocking it from extending some other, more useful base class later.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This compiles perfectly fine — it's a legal but poorly-chosen design, not a syntax error.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no minimum member count for an abstract class in C#.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> It has a real, concrete downside — the wasted inheritance slot — which is precisely why the comparison table in this lesson calls out multiple inheritance as a key deciding factor.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This compiles perfectly fine — it's a legal but poorly-chosen design, not a syntax error.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no minimum member count for an abstract class in C#.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> It has a real, concrete downside — the wasted inheritance slot — which is precisely why the comparison table in this lesson calls out multiple inheritance as a key deciding factor.</p>
                 <p><strong>Reinforcement:</strong> Choose an abstract class specifically because there's implementation to share — not merely to declare a contract.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You can now tell, in seconds, whether a base type belongs as an abstract class or an interface — which sets up sealed classes (076) and the deep dive into interfaces (077) perfectly.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You can now tell, in seconds, whether a base type belongs as an abstract class or an interface — which sets up sealed classes (076) and the deep dive into interfaces (077) perfectly.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

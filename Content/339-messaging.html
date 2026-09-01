@@ -501,7 +501,7 @@ public class OutboxPublisherService(
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📰</span> A Published Bulletin, Not a Phone Call to Three People</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Published Bulletin, Not a Phone Call to Three People</div>
         <p>338's in-memory queue was like calling three people, one after another, to tell them the news — if you got interrupted partway through your calls, whoever you hadn't reached yet simply never finds out. Publishing <span class="icode">OrderPlaced</span> to <span class="icode">order-events</span> is like posting a bulletin to a board that <span class="icode">inventory</span>, <span class="icode">shipping</span>, and <span class="icode">notification</span> each check independently, at their own pace — the bulletin stays on the board whether or not you're still there, and each reader keeps their own bookmark for what they've already read, so nobody misses it and nobody reads the same notice twice by mistake (that bookmark is exactly 290's idempotency check).</p>
     </div>
 
@@ -522,13 +522,13 @@ public class OutboxPublisherService(
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Publishing to Kafka directly inside PlaceOrderAsync, skipping the Outbox table</h4>
-    <p>❌ Calling <span class="icode">producer.ProduceAsync</span> right after <span class="icode">SaveChangesAsync</span> in the same method, reasoning "Kafka is durable, so this is fine." If the process crashes between those two calls — after the <span class="icode">Order</span> committed, before Kafka received anything — the event is gone forever, with no record it was ever supposed to be sent. ✅ Write the event as an <span class="icode">OutboxMessage</span> row in the same transaction as the <span class="icode">Order</span>, and let <span class="icode">OutboxPublisherService</span> handle the actual Kafka call afterward, exactly as 294 specifies.</p>
+    <p> Calling <span class="icode">producer.ProduceAsync</span> right after <span class="icode">SaveChangesAsync</span> in the same method, reasoning "Kafka is durable, so this is fine." If the process crashes between those two calls — after the <span class="icode">Order</span> committed, before Kafka received anything — the event is gone forever, with no record it was ever supposed to be sent.  Write the event as an <span class="icode">OutboxMessage</span> row in the same transaction as the <span class="icode">Order</span>, and let <span class="icode">OutboxPublisherService</span> handle the actual Kafka call afterward, exactly as 294 specifies.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Skipping the idempotency check because "Kafka redelivery is rare"</h4>
-    <p>❌ Having <span class="icode">InventoryEventConsumer</span> reserve stock unconditionally on every message received, treating duplicate delivery as an edge case not worth the extra table and query. ✅ At-least-once delivery is Kafka's actual, documented guarantee, not a rare failure mode — 290's deduplication check with a genuine unique database constraint is required, not optional, for any consumer whose action isn't already naturally idempotent.</p>
+    <p> Having <span class="icode">InventoryEventConsumer</span> reserve stock unconditionally on every message received, treating duplicate delivery as an edge case not worth the extra table and query.  At-least-once delivery is Kafka's actual, documented guarantee, not a rare failure mode — 290's deduplication check with a genuine unique database constraint is required, not optional, for any consumer whose action isn't already naturally idempotent.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Publishing OrderPlaced without a consistent partition key</h4>
-    <p>❌ Producing to <span class="icode">order-events</span> with no key, or a random one, letting Kafka spread related messages across partitions arbitrarily. ✅ Key by <span class="icode">OrderId</span> (or the outbox message's own id, tied back to one order), exactly as 288's Mistake 1 warned — this is what keeps any set of events for the same order consistently ordered relative to each other, should OrderFlow ever publish more than one event per order.</p>
+    <p> Producing to <span class="icode">order-events</span> with no key, or a random one, letting Kafka spread related messages across partitions arbitrarily.  Key by <span class="icode">OrderId</span> (or the outbox message's own id, tied back to one order), exactly as 288's Mistake 1 warned — this is what keeps any set of events for the same order consistently ordered relative to each other, should OrderFlow ever publish more than one event per order.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -538,7 +538,7 @@ public class OutboxPublisherService(
         <li style="margin-bottom:0.4rem;">Idempotency checks aren't optional here — any consumer reacting to an at-least-once delivered message needs one, full stop, per 290.</li>
     </ul>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> If a crash at the worst possible moment — right between two operations — would cause a real, silent problem, that's the signal those two operations need the Outbox pattern's atomicity, not just "usually works" sequencing.
+        <strong> Rule of thumb:</strong> If a crash at the worst possible moment — right between two operations — would cause a real, silent problem, that's the signal those two operations need the Outbox pattern's atomicity, not just "usually works" sequencing.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -566,7 +566,7 @@ public class OutboxPublisherService(
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen how OrderFlow's async pipeline becomes durable and multi-instance-safe. Let's confirm the reasoning behind each piece.</p>
 
     <div class="quiz-question">
@@ -580,11 +580,11 @@ public class OutboxPublisherService(
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly Common Mistake 1 and the Why Does It Exist? reasoning — the Outbox pattern closes the crash window between "the order is saved" and "the event is actually sent," which a direct Kafka call right after <span class="icode">SaveChangesAsync</span> leaves wide open.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The real issue isn't a technical restriction on calling Kafka from inside a transaction — it's that Kafka publication can't participate in the same local database transaction as the Order insert, so a separate atomic mechanism (the Outbox row) is needed instead.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Nothing in ASP.NET Core itself requires an Outbox table — this is a deliberate architectural choice made for OrderFlow's specific durability needs, not a framework requirement.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The lesson's own "Common Mistakes" section describes exactly the scenario of calling Kafka directly from the same method that handles the request — nothing technically prevents it; it's simply unsafe.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The real issue isn't a technical restriction on calling Kafka from inside a transaction — it's that Kafka publication can't participate in the same local database transaction as the Order insert, so a separate atomic mechanism (the Outbox row) is needed instead.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Nothing in ASP.NET Core itself requires an Outbox table — this is a deliberate architectural choice made for OrderFlow's specific durability needs, not a framework requirement.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The lesson's own "Common Mistakes" section describes exactly the scenario of calling Kafka directly from the same method that handles the request — nothing technically prevents it; it's simply unsafe.</p>
                 <p><strong>Reinforcement:</strong> The Outbox row is what guarantees the event's eventual publication survives a crash at the worst possible moment.</p>
             </div>
         </details>
@@ -601,11 +601,11 @@ public class OutboxPublisherService(
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly the idempotency reasoning from 290, applied to OrderFlow — Kafka's real guarantee is at-least-once, so redelivery is expected behavior, not a rare edge case, and the check is what prevents a redelivered event from reserving stock a second time.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This inverts Kafka's actual guarantee — it is explicitly at-least-once, not exactly-once, which is precisely why the check is necessary rather than a defensive formality.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Stock counts live on the <span class="icode">Products</span> table (336); <span class="icode">ProcessedMessages</span> exists purely to track which messages have already been handled.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> This is a deliberate design choice made for OrderFlow's specific consumers, not a blanket framework requirement.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This inverts Kafka's actual guarantee — it is explicitly at-least-once, not exactly-once, which is precisely why the check is necessary rather than a defensive formality.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Stock counts live on the <span class="icode">Products</span> table (336); <span class="icode">ProcessedMessages</span> exists purely to track which messages have already been handled.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> This is a deliberate design choice made for OrderFlow's specific consumers, not a blanket framework requirement.</p>
                 <p><strong>Reinforcement:</strong> At-least-once delivery makes idempotent consumers a requirement, not an optional safeguard.</p>
             </div>
         </details>
@@ -622,17 +622,17 @@ public class OutboxPublisherService(
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Under the Hood and Common Confusion #1 both state this directly — the hosting mechanism (<span class="icode">BackgroundService</span>) is unchanged from 165/338; this lesson only replaces the queue underneath it with a durable, shared Kafka topic fed by the Outbox pattern.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Kafka doesn't require or provide its own .NET hosting mechanism — <span class="icode">BackgroundService</span> remains exactly how consumers and the publisher are hosted.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Kafka is a transport for events — it has no awareness of OrderFlow's actual business logic (charging, reserving, shipping); real application code, running inside <span class="icode">BackgroundService</span> subclasses, still has to do that work.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <span class="icode">BackgroundService</span> is built entirely around <span class="icode">async</span>/<span class="icode">await</span>, as both 165 and 338's examples demonstrate — this claim is simply false.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Kafka doesn't require or provide its own .NET hosting mechanism — <span class="icode">BackgroundService</span> remains exactly how consumers and the publisher are hosted.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Kafka is a transport for events — it has no awareness of OrderFlow's actual business logic (charging, reserving, shipping); real application code, running inside <span class="icode">BackgroundService</span> subclasses, still has to do that work.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <span class="icode">BackgroundService</span> is built entirely around <span class="icode">async</span>/<span class="icode">await</span>, as both 165 and 338's examples demonstrate — this claim is simply false.</p>
                 <p><strong>Reinforcement:</strong> This lesson changed OrderFlow's transport and durability guarantees, not the underlying .NET mechanism used to host background work.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 OrderFlow's core is complete — layered (334), secured (335), persisted and queried efficiently (336), cached correctly (337), and now processed asynchronously with genuine durability (338-339). The build continues in 340, where OrderFlow gets the logging and observability a real production system can't ship without.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> OrderFlow's core is complete — layered (334), secured (335), persisted and queried efficiently (336), cached correctly (337), and now processed asynchronously with genuine durability (338-339). The build continues in 340, where OrderFlow gets the logging and observability a real production system can't ship without.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

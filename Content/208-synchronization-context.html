@@ -274,7 +274,7 @@
     <p><code>System.Threading.SynchronizationContext</code> is a base class providing a general way to queue a unit of work — a delegate — to whatever execution environment the context represents, primarily via its <code>Post(SendOrPostCallback, object)</code> method (queue and return immediately) and <code>Send(...)</code> (queue and block until it's run). Each thread that has one exposes it through <code>SynchronizationContext.Current</code>. WPF and WinForms install a context on their UI thread whose <code>Post</code> pumps the callback through that framework's message loop, guaranteeing it eventually runs on that exact thread. By default, an <code>await</code> on a <code>Task</code> captures whatever <code>SynchronizationContext.Current</code> was at the moment of the <code>await</code>, and — if one was captured — schedules the continuation through that context's <code>Post</code> instead of just picking any thread-pool thread.</p>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> The one sentence to remember</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> The one sentence to remember</div>
         <p><code>await</code> captures "where am I allowed to resume" before it suspends, and uses that captured context to route the continuation back to the right place — silently, automatically, every single time, unless you tell it not to.</p>
     </div>
 
@@ -292,7 +292,7 @@
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🖥️ WPF / WinForms — HAS a context</h4>
+            <h4> WPF / WinForms — HAS a context</h4>
             <ul>
                 <li>The UI thread installs a <code>SynchronizationContext</code> whose <code>Post</code> pumps work through the message loop.</li>
                 <li><code>await</code> in a UI event handler captures it automatically.</li>
@@ -300,7 +300,7 @@
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>🌐 Classic ASP.NET (System.Web) — HAD a context</h4>
+            <h4> Classic ASP.NET (System.Web) — HAD a context</h4>
             <ul>
                 <li>Each request had its own <code>AspNetSynchronizationContext</code>, tied to that request's identity, culture, and <code>HttpContext.Current</code>.</li>
                 <li><code>await</code>ed continuations resumed back on a thread <em>able to act as that request</em> — but classic ASP.NET only allowed <strong>one thread at a time</strong> inside a given request's context.</li>
@@ -310,7 +310,7 @@
     </div>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🚀 ASP.NET Core — NO context by default</h4>
+            <h4> ASP.NET Core — NO context by default</h4>
             <ul>
                 <li>There is no request-bound <code>SynchronizationContext</code> installed on request-handling threads.</li>
                 <li><code>await</code>ed continuations simply resume on any available thread-pool thread — whichever one is free.</li>
@@ -318,7 +318,7 @@
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>💻 Console apps / most background services — NO context</h4>
+            <h4> Console apps / most background services — NO context</h4>
             <ul>
                 <li><code>SynchronizationContext.Current</code> is <code>null</code> on ordinary threads with no special environment installed.</li>
                 <li><code>await</code> just resumes on a thread-pool thread — there's nothing to marshal back to.</li>
@@ -357,7 +357,7 @@
         </div>
         <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
         <div class="flow-step">
-            <div class="step-label">5. ✅ EXECUTION RESUMES ON THE UI THREAD — ordersList.ItemsSource = orders; IS SAFE</div>
+            <div class="step-label">5.  EXECUTION RESUMES ON THE UI THREAD — ordersList.ItemsSource = orders; IS SAFE</div>
         </div>
     </div>
 
@@ -383,7 +383,7 @@
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// Inside a WPF button click handler (runs on the UI thread):
 private void LoadButton_Click(object sender, EventArgs e)
 {
-    var orders = GetOrdersAsync().Result; // ❌ BLOCKS the UI thread — deadlocks
+    var orders = GetOrdersAsync().Result; //  BLOCKS the UI thread — deadlocks
     ordersList.ItemsSource = orders;
 }
 
@@ -411,7 +411,7 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
         </div>
         <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
         <div class="flow-step">
-            <div class="step-label">🔒 DEADLOCK: the continuation is waiting for the UI thread to be free; the UI thread is waiting (via .Result) for the continuation to finish. Neither ever happens.</div>
+            <div class="step-label"> DEADLOCK: the continuation is waiting for the UI thread to be free; the UI thread is waiting (via .Result) for the continuation to finish. Neither ever happens.</div>
         </div>
     </div>
     <p>This exact pattern — a synchronous <code>.Result</code>/<code>.Wait()</code> call from a thread that owns a <code>SynchronizationContext</code>, blocking on an awaited chain whose continuation needs that same thread back — is the "classic ASP.NET / WPF deadlock." It's the reason <code>ConfigureAwait(false)</code> (which tells an <code>await</code> "don't bother capturing or restoring a context — resume anywhere") was such heavily emphasized advice for library code targeting WPF or classic ASP.NET: it breaks step 3's requirement that the continuation must run specifically on the blocked thread. In an ASP.NET Core app, this exact same blocking code is far less likely to deadlock in the first place — there's no request-bound context to capture, so the continuation is free to run on any available thread-pool thread, including one that isn't stuck blocking. This is precisely why the old, once-universal <code>ConfigureAwait(false)</code> advice matters far less in ordinary ASP.NET Core application code than it did in WPF, WinForms, or classic ASP.NET — though blocking with <code>.Result</code>/<code>.Wait()</code> remains a bad idea there too, for the thread-pool-starvation reasons lesson 209 covers next.</p>
@@ -419,7 +419,7 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📮</span> A Return Address on Every Letter</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Return Address on Every Letter</div>
         <p>Think of starting an async operation as mailing a letter that expects a reply. If you write a return address on it (the captured <code>SynchronizationContext</code>), the reply comes back specifically to you, at that address — useful when only you (the UI thread) are allowed to open the mailbox. If you don't write one, the reply goes to a general sorting office (the thread pool), and whichever available clerk is free handles it — nobody's waiting for a reply to reach one specific desk.</p>
         <p>The deadlock happens when you write your own address on the envelope, then physically stand blocking your own front door waiting for the reply to arrive — while the mail carrier is standing right outside, unable to get past you to deliver it. You're both waiting on each other, and neither will move first.</p>
     </div>
@@ -463,19 +463,19 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Blocking on async code from a thread that owns a context</h4>
-    <p>❌ Any use of <code>.Result</code> or <code>.Wait()</code> on a Task, from a WPF/WinForms UI thread or (historically) from inside a classic ASP.NET request, when the awaited chain eventually needs that same thread back to resume. This is the exact deadlock demonstrated in the Real-World Example. ✅ <code>await</code> all the way up the call chain — "async all the way," exactly as lesson 152 taught — never block synchronously on async work from a context-owning thread.</p>
+    <p> Any use of <code>.Result</code> or <code>.Wait()</code> on a Task, from a WPF/WinForms UI thread or (historically) from inside a classic ASP.NET request, when the awaited chain eventually needs that same thread back to resume. This is the exact deadlock demonstrated in the Real-World Example.  <code>await</code> all the way up the call chain — "async all the way," exactly as lesson 152 taught — never block synchronously on async work from a context-owning thread.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Applying old ConfigureAwait(false) advice uniformly to ASP.NET Core application code without understanding why</h4>
-    <p>❌ Reflexively sprinkling <code>.ConfigureAwait(false)</code> everywhere in an ASP.NET Core app's own request-handling code, treating it as a universal "best practice" carried over unchanged from WPF/classic-ASP.NET-era guidance. Since ASP.NET Core has no request-bound context to avoid capturing in the first place, this specific deadlock-avoidance reason for it simply doesn't apply there — although some teams still use it in shared/reusable library code for other reasons (avoiding unnecessary context-marshaling overhead, or supporting callers in contexts that do have one). ✅ Understand <em>why</em> a guideline exists before applying it — this lesson is exactly that "why," for this one.</p>
+    <p> Reflexively sprinkling <code>.ConfigureAwait(false)</code> everywhere in an ASP.NET Core app's own request-handling code, treating it as a universal "best practice" carried over unchanged from WPF/classic-ASP.NET-era guidance. Since ASP.NET Core has no request-bound context to avoid capturing in the first place, this specific deadlock-avoidance reason for it simply doesn't apply there — although some teams still use it in shared/reusable library code for other reasons (avoiding unnecessary context-marshaling overhead, or supporting callers in contexts that do have one).  Understand <em>why</em> a guideline exists before applying it — this lesson is exactly that "why," for this one.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming code after an await always continues on the same thread it started on</h4>
-    <p>❌ Writing thread-affinity-dependent logic ("I know I'm still on thread 7") in ordinary console/service/ASP.NET Core code just because it happened to work that way once. Without a captured <code>SynchronizationContext</code>, there's no such guarantee — the continuation can legitimately land on any thread-pool thread. ✅ Never assume thread identity persists across an <code>await</code> unless you know, specifically, that a context requiring it is present (a UI thread being the main real-world case).</p>
+    <p> Writing thread-affinity-dependent logic ("I know I'm still on thread 7") in ordinary console/service/ASP.NET Core code just because it happened to work that way once. Without a captured <code>SynchronizationContext</code>, there's no such guarantee — the continuation can legitimately land on any thread-pool thread.  Never assume thread identity persists across an <code>await</code> unless you know, specifically, that a context requiring it is present (a UI thread being the main real-world case).</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Reach for this knowledge when</h4>
+            <h4> Reach for this knowledge when</h4>
             <ul>
                 <li>Writing WPF/WinForms code that updates UI after an <code>await</code> — you now know exactly why it "just works" without manual dispatching.</li>
                 <li>Diagnosing a hang that looks exactly like the Real-World Example's deadlock in older or UI code.</li>
@@ -484,7 +484,7 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>⚠️ Don't over-apply it</h4>
+            <h4> Don't over-apply it</h4>
             <ul>
                 <li>You never construct or install a <code>SynchronizationContext</code> yourself in ordinary application code — it's framework-managed infrastructure.</li>
                 <li>The real fix for the deadlock is almost always "don't block synchronously on async code," not "remember to add <code>ConfigureAwait(false)</code> everywhere."</li>
@@ -520,7 +520,7 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've traced the exact mechanism behind .NET's most famous deadlock. Let's check your understanding.</p>
 
     <div class="quiz-question">
@@ -534,11 +534,11 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As "What Is It?" explained, SynchronizationContext exists specifically to answer "where should code resume after an await" — it's the mechanism that routes a continuation back to a required thread, such as a UI thread.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Thread pool sizing is a separate concern, covered in lesson 209 — SynchronizationContext doesn't manage thread count.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> CancellationToken is an entirely separate, orthogonal mechanism (lesson 211) for signaling "please stop," unrelated to where code resumes.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no serialization concept involved here at all — this is purely about thread routing for continuations.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Thread pool sizing is a separate concern, covered in lesson 209 — SynchronizationContext doesn't manage thread count.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> CancellationToken is an entirely separate, orthogonal mechanism (lesson 211) for signaling "please stop," unrelated to where code resumes.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no serialization concept involved here at all — this is purely about thread routing for continuations.</p>
                 <p><strong>Reinforcement:</strong> SynchronizationContext = "where," not "how many" or "whether to stop."</p>
             </div>
         </details>
@@ -555,11 +555,11 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As the Big Picture comparison and Under the Hood point 2 explained, this is a real, documented, deliberate difference — classic ASP.NET's AspNetSynchronizationContext tied continuations to the request's thread; ASP.NET Core removed that by design, letting continuations land on any free thread-pool thread.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the misconception this lesson corrects — the two frameworks behave meaningfully differently here, which is exactly why old ConfigureAwait(false) advice matters less in ASP.NET Core.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This has the history backwards — classic ASP.NET is the one that had the request-bound context; ASP.NET Core removed it.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> SynchronizationContext is a general BCL abstraction (System.Threading), used by ASP.NET (classic), WPF, and WinForms alike — not exclusive to any one of them.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is precisely the misconception this lesson corrects — the two frameworks behave meaningfully differently here, which is exactly why old ConfigureAwait(false) advice matters less in ASP.NET Core.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This has the history backwards — classic ASP.NET is the one that had the request-bound context; ASP.NET Core removed it.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> SynchronizationContext is a general BCL abstraction (System.Threading), used by ASP.NET (classic), WPF, and WinForms alike — not exclusive to any one of them.</p>
                 <p><strong>Reinforcement:</strong> This specific classic-vs-Core difference is one of the most important, well-documented facts in this whole module.</p>
             </div>
         </details>
@@ -576,11 +576,11 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the exact mechanism walked through step by step in the Real-World Example — the captured SynchronizationContext requires the continuation to resume on the UI thread, but that thread is permanently stuck inside .Result, so the continuation can never run, and .Result can never return.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> .Result doesn't inherently throw — the danger is the deadlock (a hang), not a guaranteed exception.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> WPF supports async Task methods perfectly well when awaited properly — the deadlock comes specifically from blocking with .Result instead of awaiting.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The HTTP call itself completes normally — the problem is entirely about which thread its continuation is scheduled to resume on, not whether the underlying operation finishes.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> .Result doesn't inherently throw — the danger is the deadlock (a hang), not a guaranteed exception.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> WPF supports async Task methods perfectly well when awaited properly — the deadlock comes specifically from blocking with .Result instead of awaiting.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The HTTP call itself completes normally — the problem is entirely about which thread its continuation is scheduled to resume on, not whether the underlying operation finishes.</p>
                 <p><strong>Reinforcement:</strong> The deadlock is a mutual-wait between the blocked thread and the continuation that needs that exact thread back — not a failure of the async operation itself.</p>
             </div>
         </details>
@@ -597,11 +597,11 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> With no context to capture, the awaited continuation is free to resume on any free thread-pool thread rather than requiring the one specific thread that's stuck blocking — removing the mutual-wait condition that caused the classic deadlock.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> .Result remains perfectly legal C# in ASP.NET Core — it's just less likely to deadlock there, though it's still a bad practice for other reasons (thread pool starvation, covered in lesson 209).</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such dedicated separate thread guarantee — the point is precisely that ASP.NET Core doesn't tie continuations to any one specific thread at all.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> HTTP calls in ASP.NET Core remain genuinely asynchronous — the difference is entirely about which thread the continuation is allowed to resume on, not about synchronicity of the I/O itself.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> .Result remains perfectly legal C# in ASP.NET Core — it's just less likely to deadlock there, though it's still a bad practice for other reasons (thread pool starvation, covered in lesson 209).</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no such dedicated separate thread guarantee — the point is precisely that ASP.NET Core doesn't tie continuations to any one specific thread at all.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> HTTP calls in ASP.NET Core remain genuinely asynchronous — the difference is entirely about which thread the continuation is allowed to resume on, not about synchronicity of the I/O itself.</p>
                 <p><strong>Reinforcement:</strong> Removing the captured context removes the specific mechanism that caused the classic deadlock — by design, not by accident.</p>
             </div>
         </details>
@@ -618,17 +618,17 @@ private async Task&lt;List&lt;Order&gt;&gt; GetOrdersAsync()
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As Under the Hood point 3 explained, ConfigureAwait(false) is a per-await opt-out from context capture — the continuation is free to resume on any thread-pool thread rather than being forced back through a captured SynchronizationContext.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> ConfigureAwait has nothing to do with cancellation — that's the separate, dedicated job of CancellationToken (lesson 211).</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> ConfigureAwait doesn't change the Task's type or allocation behavior — ValueTask (lesson 210) is an entirely separate, unrelated mechanism.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The awaited operation still runs asynchronously exactly as before — ConfigureAwait(false) only changes where the continuation is permitted to resume, not whether the operation itself is synchronous.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> ConfigureAwait has nothing to do with cancellation — that's the separate, dedicated job of CancellationToken (lesson 211).</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> ConfigureAwait doesn't change the Task's type or allocation behavior — ValueTask (lesson 210) is an entirely separate, unrelated mechanism.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The awaited operation still runs asynchronously exactly as before — ConfigureAwait(false) only changes where the continuation is permitted to resume, not whether the operation itself is synchronous.</p>
                 <p><strong>Reinforcement:</strong> ConfigureAwait(false) is specifically a context-capture opt-out — the exact lever that breaks the deadlock chain when used correctly in library code.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly where a continuation resumes, and why. Next: the pool of threads that carries out that work when there's no context dictating otherwise.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now know exactly where a continuation resumes, and why. Next: the pool of threads that carries out that work when there's no context dictating otherwise.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

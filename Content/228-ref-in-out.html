@@ -353,7 +353,7 @@
 {
     if (b == 0)
     {
-        result = 0;   // ❌ compile error without this line — this path doesn't assign 'result'
+        result = 0;   //  compile error without this line — this path doesn't assign 'result'
         return false;
     }
     result = a / b;   // this path assigns it too
@@ -393,7 +393,7 @@ Console.WriteLine($"{x}, {y}"); // 2, 1 — the CALLER's actual variables change
 
 float ComputeDeterminant(in Matrix4x4 m)
 {
-    // m.M11 = 0; // ❌ compile error: cannot assign to a member of 'm' because it is an 'in' parameter
+    // m.M11 = 0; //  compile error: cannot assign to a member of 'm' because it is an 'in' parameter
     return m.Determinant(); // reading is completely fine
 }</code></pre>
     <p><strong>What's happening:</strong> the method receives a reference to the caller's actual 64-byte struct — no copy — but the compiler statically rejects any attempt to write through <code>m</code>, whether directly or by calling a member that would mutate it. You get <code>ref</code>'s performance (no copy) with plain pass-by-value's safety guarantee (the caller's data can't change).</p>
@@ -465,7 +465,7 @@ Console.WriteLine($"Total: {dayTotal:C}, Flagged: {flagged}");</code></pre>
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">📮</span> Handing someone your actual mailbox key, not a photocopy</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> Handing someone your actual mailbox key, not a photocopy</div>
         <p>Ordinary pass-by-value is handing someone a photocopy of a letter — they can read it, scribble on their copy, even burn it, and your original letter is completely unaffected. <code>ref</code> is handing someone the actual key to your mailbox: they can take mail out, put new mail in, and every change is real, visible in your mailbox the moment you check it again. <code>in</code> is letting someone look through the glass window of a mailbox they can't open — they can read what's inside without ever touching it, and you never had to photocopy the letter just so they could look. <code>out</code> is handing someone an empty mailbox with an explicit promise: "you must put something in here before you leave" — and the mail carrier (the compiler) genuinely won't let them walk away until they have.</p>
     </div>
 
@@ -524,7 +524,7 @@ Console.WriteLine(grid.At(5)); // 42</code></pre>
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Missing an assignment path on an out parameter</h4>
-    <p>❌ Writing a method with multiple branches and forgetting to assign the <code>out</code> parameter on one of them, expecting the compiler to somehow let it slide.</p>
+    <p> Writing a method with multiple branches and forgetting to assign the <code>out</code> parameter on one of them, expecting the compiler to somehow let it slide.</p>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public bool TryGetValue(string key, out string value)
 {
     if (_data.ContainsKey(key))
@@ -532,29 +532,29 @@ Console.WriteLine(grid.At(5)); // 42</code></pre>
         value = _data[key];
         return true;
     }
-    // ❌ compile error: 'value' is not definitely assigned on this path
+    //  compile error: 'value' is not definitely assigned on this path
     return false;
 }</code></pre>
-    <p>✅ Assign <code>value = null;</code> (or an appropriate default) on every remaining path before returning — the compiler is doing you a favor by refusing to compile this, since the alternative would be silently handing callers an unassigned variable.</p>
+    <p> Assign <code>value = null;</code> (or an appropriate default) on every remaining path before returning — the compiler is doing you a favor by refusing to compile this, since the alternative would be silently handing callers an unassigned variable.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Reaching for ref when the intent is really "give me a new value"</h4>
-    <p>❌ Using <code>ref</code> for a parameter the method only ever overwrites, never reads — forcing every caller to pre-initialize a variable pointlessly.</p>
+    <p> Using <code>ref</code> for a parameter the method only ever overwrites, never reads — forcing every caller to pre-initialize a variable pointlessly.</p>
     <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">void Compute(ref int result) =&gt; result = 42; // never reads 'result' — 'out' says this intent honestly
 
 int x = 0; // pointless initialization, forced by using 'ref' instead of 'out'
 Compute(ref x);</code></pre>
-    <p>✅ If the method never reads the parameter's incoming value, that's the signal it should be <code>out</code>, not <code>ref</code> — it documents the real contract and removes the caller's unnecessary initialization.</p>
+    <p> If the method never reads the parameter's incoming value, that's the signal it should be <code>out</code>, not <code>ref</code> — it documents the real contract and removes the caller's unnecessary initialization.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for in/ref on small structs or reference types "for performance"</h4>
-    <p>❌ Sprinkling <code>in</code> across parameters of type <code>int</code>, <code>bool</code>, or small structs, or across reference-type parameters, expecting a meaningful speedup.</p>
-    <p>✅ For a reference type, the "copy" being passed by value is already just a small pointer — <code>in</code>/<code>ref</code> add no benefit there and only add visual noise. For small value types, the copy cost is already negligible. Reserve <code>in</code> for parameters that are genuinely large structs (as a rough guide, meaningfully larger than a machine word or two) on paths that are actually called often enough to matter.</p>
+    <p> Sprinkling <code>in</code> across parameters of type <code>int</code>, <code>bool</code>, or small structs, or across reference-type parameters, expecting a meaningful speedup.</p>
+    <p> For a reference type, the "copy" being passed by value is already just a small pointer — <code>in</code>/<code>ref</code> add no benefit there and only add visual noise. For small value types, the copy cost is already negligible. Reserve <code>in</code> for parameters that are genuinely large structs (as a rough guide, meaningfully larger than a machine word or two) on paths that are actually called often enough to matter.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
 
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ Reach for them when</h4>
+            <h4> Reach for them when</h4>
             <ul>
                 <li><code>out</code> — a method needs to hand back one or more values the caller didn't have, alongside its main return value (the <code>TryXxx</code> pattern)</li>
                 <li><code>ref</code> — a method genuinely needs to both read and mutate the caller's own variable in place (a true swap, an in-place transform)</li>
@@ -562,7 +562,7 @@ Compute(ref x);</code></pre>
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>❌ Skip them when</h4>
+            <h4> Skip them when</h4>
             <ul>
                 <li>The parameter is a reference type — passing the reference itself is already cheap; these modifiers add nothing there</li>
                 <li>The parameter is a small value type (an <code>int</code>, a <code>bool</code>, a two-field struct) — the copy cost was never meaningful to begin with</li>
@@ -572,7 +572,7 @@ Compute(ref x);</code></pre>
     </div>
 
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> These modifiers matter mostly in performance-sensitive code working with sizable structs — most everyday application code, working with reference types and small structs, doesn't need any of them. Reach for <code>out</code> when the framework convention (<code>TryXxx</code>) calls for it, and reach for <code>ref</code>/<code>in</code> deliberately, on measured hot paths involving large structs — not as a reflexive habit.
+        <strong> Rule of thumb:</strong> These modifiers matter mostly in performance-sensitive code working with sizable structs — most everyday application code, working with reference types and small structs, doesn't need any of them. Reach for <code>out</code> when the framework convention (<code>TryXxx</code>) calls for it, and reach for <code>ref</code>/<code>in</code> deliberately, on measured hot paths involving large structs — not as a reflexive habit.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -599,7 +599,7 @@ Compute(ref x);</code></pre>
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've used <code>out</code> for a long time and just met the precise rule behind it, alongside <code>ref</code> and <code>in</code>. Let's confirm the distinctions are solid.</p>
 
     <div class="quiz-question">
@@ -613,11 +613,11 @@ Compute(ref x);</code></pre>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the precise mechanism the lesson names: the compiler performs static analysis on the body of any method with an <code>out</code> parameter, confirming that every code path assigns it before the method returns. That compile-time guarantee is exactly what makes reading it immediately after the call safe.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no automatic zero-initialization for <code>out</code> variables from the caller's side — the guarantee comes entirely from the callee being required to assign it.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Uninitialized local variables of any type, including <code>int</code>, are not safe to read in C# in general — the definite-assignment rule for <code>out</code> parameters is precisely what makes this particular case safe.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>TryParse</code> is an ordinary method following the same <code>out</code> parameter rules any developer-written method with an <code>out</code> parameter must follow — no special compiler exemption is involved.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> There's no automatic zero-initialization for <code>out</code> variables from the caller's side — the guarantee comes entirely from the callee being required to assign it.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Uninitialized local variables of any type, including <code>int</code>, are not safe to read in C# in general — the definite-assignment rule for <code>out</code> parameters is precisely what makes this particular case safe.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>TryParse</code> is an ordinary method following the same <code>out</code> parameter rules any developer-written method with an <code>out</code> parameter must follow — no special compiler exemption is involved.</p>
                 <p><strong>Reinforcement:</strong> Definite assignment isn't a <code>TryParse</code>-specific trick — it's the general rule behind every <code>out</code> parameter in C#.</p>
             </div>
         </details>
@@ -634,11 +634,11 @@ Compute(ref x);</code></pre>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Unlike <code>out</code>, a <code>ref</code> parameter requires the caller to have already assigned a value (since the callee is free to read it, not just write it), and C# requires the <code>ref</code> keyword at the call site too, so the possibility of the callee mutating the caller's variable is visible wherever the call appears.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> That's the <code>out</code> rule specifically — <code>ref</code> requires prior initialization precisely because the callee may read the value before writing anything.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>ref</code> parameters exist specifically to reference actual variables so the callee can modify them — a constant, which can't be modified, wouldn't satisfy that purpose and isn't accepted as a <code>ref</code> argument.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> A <code>ref</code> argument can be a local variable, a field, an array element, or a property with both a getter and setter (via some additional rules) — it's not restricted to newly-declared locals.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> That's the <code>out</code> rule specifically — <code>ref</code> requires prior initialization precisely because the callee may read the value before writing anything.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> <code>ref</code> parameters exist specifically to reference actual variables so the callee can modify them — a constant, which can't be modified, wouldn't satisfy that purpose and isn't accepted as a <code>ref</code> argument.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> A <code>ref</code> argument can be a local variable, a field, an array element, or a property with both a getter and setter (via some additional rules) — it's not restricted to newly-declared locals.</p>
                 <p><strong>Reinforcement:</strong> The caller-side <code>ref</code> keyword requirement is a deliberate visibility choice — it makes "this call might change my variable" impossible to miss when reading the calling code.</p>
             </div>
         </details>
@@ -655,11 +655,11 @@ Compute(ref x);</code></pre>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> <code>in</code> uses the same underlying pass-by-reference mechanism as <code>ref</code> — passing an address, not a copy — which eliminates the field-by-field copy cost. Layered on top, the compiler enforces that the callee cannot write through that reference, which is what keeps it just as safe as ordinary pass-by-value from the caller's perspective.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> The struct remains a value type throughout — <code>in</code> changes how it's passed to this specific method, not its fundamental type category.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no compression involved — the savings come from not copying the data at all, not from copying a smaller version of it.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>in</code> works with structs of any size — it's specifically <em>larger</em> structs where the copy-avoidance benefit becomes meaningful; there's no such size restriction on where <code>in</code> can be applied.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The struct remains a value type throughout — <code>in</code> changes how it's passed to this specific method, not its fundamental type category.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no compression involved — the savings come from not copying the data at all, not from copying a smaller version of it.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>in</code> works with structs of any size — it's specifically <em>larger</em> structs where the copy-avoidance benefit becomes meaningful; there's no such size restriction on where <code>in</code> can be applied.</p>
                 <p><strong>Reinforcement:</strong> <code>in</code>'s value proposition is precisely "ref's performance, pass-by-value's safety" — both halves of that sentence matter equally.</p>
             </div>
         </details>
@@ -676,11 +676,11 @@ Compute(ref x);</code></pre>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly the "reaching for <code>ref</code> when the intent is out" mistake covered in the lesson — since the method never reads the parameter's incoming value, <code>out</code> more precisely documents the real contract and removes any pointless obligation for the caller to initialize the variable first.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> While <code>ref</code> would technically compile and work, it's a less accurate signal of intent than <code>out</code> here, and unnecessarily forces callers to provide (and often waste) an initial value.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> <code>in</code> is for read-only access to the caller's data — the exact opposite of what this method does, which is write a new array without ever reading the old one.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Plain pass-by-value passes a copy of the array <em>reference</em> — reassigning that local copy inside the method (<code>items = newArray;</code>) would not change what the caller's own variable points to. A modifier (here, <code>out</code> or <code>ref</code>) is genuinely required to reassign the caller's own variable.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> While <code>ref</code> would technically compile and work, it's a less accurate signal of intent than <code>out</code> here, and unnecessarily forces callers to provide (and often waste) an initial value.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> <code>in</code> is for read-only access to the caller's data — the exact opposite of what this method does, which is write a new array without ever reading the old one.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Plain pass-by-value passes a copy of the array <em>reference</em> — reassigning that local copy inside the method (<code>items = newArray;</code>) would not change what the caller's own variable points to. A modifier (here, <code>out</code> or <code>ref</code>) is genuinely required to reassign the caller's own variable.</p>
                 <p><strong>Reinforcement:</strong> Choosing between <code>ref</code> and <code>out</code> comes down to one question: does the method ever need to read the parameter's incoming value? If no, <code>out</code> is the more honest, more caller-friendly choice.</p>
             </div>
         </details>
@@ -697,17 +697,17 @@ Compute(ref x);</code></pre>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> <code>ref</code> returns/locals solve a specific, comparatively rare problem — exposing a direct, mutable reference to existing storage from a method, useful mainly in high-performance, indexer-style library code. Ordinary application code almost always has its needs met by regular methods, auto-properties, and standard indexers, which is exactly why the lesson flags this as niche rather than something to reach for regularly.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> They're a fully supported, standard part of the C# language — not deprecated or on any removal path.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> They work with any type <code>T</code>, exactly like <code>ref</code>/<code>in</code>/<code>out</code> parameters — the <code>Grid.At</code> example in Under the Hood used <code>int</code>, not <code>string</code>.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>ref</code> returns and locals are ordinary, safe C# — no <code>unsafe</code> block or manual pointer arithmetic is required to use them.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> They're a fully supported, standard part of the C# language — not deprecated or on any removal path.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> They work with any type <code>T</code>, exactly like <code>ref</code>/<code>in</code>/<code>out</code> parameters — the <code>Grid.At</code> example in Under the Hood used <code>int</code>, not <code>string</code>.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>ref</code> returns and locals are ordinary, safe C# — no <code>unsafe</code> block or manual pointer arithmetic is required to use them.</p>
                 <p><strong>Reinforcement:</strong> "Niche" here means narrowly-applicable, not deprecated or unsafe — it's a real, useful tool for the specific, comparatively rare scenario it targets.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have the precise rules behind <code>out</code>, <code>ref</code>, and <code>in</code> — the exact tool for each job, and honest judgment about when reaching for any of them is actually worth it. This closes out the vocabulary this Part needed — next, you'll see it all put to work together.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now have the precise rules behind <code>out</code>, <code>ref</code>, and <code>in</code> — the exact tool for each job, and honest judgment about when reaching for any of them is actually worth it. This closes out the vocabulary this Part needed — next, you'll see it all put to work together.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

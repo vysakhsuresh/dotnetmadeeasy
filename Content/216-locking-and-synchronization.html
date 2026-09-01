@@ -564,7 +564,7 @@ public void IncrementC() =&gt; _count3++; // DO NOT DO THIS from multiple thread
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🚪</span> A Single Restroom Key vs. a Parking Garage with a Ticket Machine</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Single Restroom Key vs. a Parking Garage with a Ticket Machine</div>
         <p><code class="icode">lock</code> is like a single-key restroom: there's one key, one person uses the restroom at a time, and they're expected to be quick — you wouldn't take that key and then go run an hour-long errand elsewhere, leaving everyone else waiting for something totally unrelated. That's exactly why <code class="icode">await</code> — which can genuinely take an unpredictable amount of time and might even resume as if a different person now holds the key — doesn't belong inside a <code class="icode">lock</code>.</p>
         <p><code class="icode">SemaphoreSlim</code> is more like a small parking garage with a fixed number of spots and a ticket machine — cars (callers) can take however long they need inside, including going off to run an errand and come back (the equivalent of awaiting something), and the garage simply tracks how many spots are currently taken. Once a spot frees up, whoever's been waiting for the next available space gets to pull in.</p>
         <p><code class="icode">Interlocked</code> isn't really a "space" at all — it's more like a single, tamper-proof mechanical counter that can only ever be turned by one hand at a time, purely by the nature of how the gear itself is built — no key, no ticket, no waiting room required for something that quick.</p>
@@ -589,11 +589,11 @@ public void IncrementC() =&gt; _count3++; // DO NOT DO THIS from multiple thread
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Locking on a public, mutable, or shared object</h4>
-    <p>❌ <strong>Wrong</strong> — locking on <code class="icode">this</code>, on a public field, or on a boxed/interned value like a string:</p>
+    <p> <strong>Wrong</strong> — locking on <code class="icode">this</code>, on a public field, or on a boxed/interned value like a string:</p>
     <div class="code-block"><code>lock (this) { ... }              // any outside code could also lock on this same instance
 lock ("shared-key") { ... }      // string literals can be interned — you might be locking
                                   // on the SAME object as unrelated code elsewhere</code></div>
-    <p>✅ <strong>Correct</strong> — use a dedicated, private, non-shared object that exists purely as a lock token:</p>
+    <p> <strong>Correct</strong> — use a dedicated, private, non-shared object that exists purely as a lock token:</p>
     <div class="code-block"><code>private readonly object _gate = new();
 public void DoWork()
 {
@@ -601,28 +601,28 @@ public void DoWork()
 }</code></div>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forgetting to Release() a SemaphoreSlim in every code path</h4>
-    <p>❌ Calling <code class="icode">Release()</code> only at the end of a method, missing an early <code class="icode">return</code> or an exception path that skips it entirely — permanently reducing the semaphore's available count.</p>
-    <p>✅ Always wrap the guarded work in <code class="icode">try</code>/<code class="icode">finally</code>, with <code class="icode">Release()</code> in the <code class="icode">finally</code> block, exactly as shown in this lesson's examples — <code class="icode">lock</code> does this for you automatically; <code class="icode">SemaphoreSlim</code> requires you to write it yourself.</p>
+    <p> Calling <code class="icode">Release()</code> only at the end of a method, missing an early <code class="icode">return</code> or an exception path that skips it entirely — permanently reducing the semaphore's available count.</p>
+    <p> Always wrap the guarded work in <code class="icode">try</code>/<code class="icode">finally</code>, with <code class="icode">Release()</code> in the <code class="icode">finally</code> block, exactly as shown in this lesson's examples — <code class="icode">lock</code> does this for you automatically; <code class="icode">SemaphoreSlim</code> requires you to write it yourself.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for a full lock when Interlocked would do</h4>
-    <p>❌ Wrapping a single counter increment in a <code class="icode">lock</code> block, paying for full mutual exclusion overhead for an operation that's already a single atomic primitive.</p>
+    <p> Wrapping a single counter increment in a <code class="icode">lock</code> block, paying for full mutual exclusion overhead for an operation that's already a single atomic primitive.</p>
     <div class="code-block"><code>// Unnecessary overhead for this specific case:
 lock (_gate) { _requestCount++; }
 
 // Simpler and faster:
 Interlocked.Increment(ref _requestCount);</code></div>
-    <p>✅ Reserve <code class="icode">lock</code> for critical sections that involve more than a single atomic operation — multiple related fields, conditional logic, several steps that must happen together. For a lone counter or flag, <code class="icode">Interlocked</code> is the right-sized tool.</p>
+    <p> Reserve <code class="icode">lock</code> for critical sections that involve more than a single atomic operation — multiple related fields, conditional logic, several steps that must happen together. For a lone counter or flag, <code class="icode">Interlocked</code> is the right-sized tool.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="feature-grid">
         <div class="feature-card">
-            <span class="emoji">🔢</span>
+            <span class="emoji"></span>
             <div class="label">A simple shared counter or flag</div>
             <div class="desc">Interlocked.Increment/CompareExchange — fast, atomic, no lock object needed.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">🔒</span>
+            <span class="emoji"></span>
             <div class="label">A short, purely synchronous critical section</div>
             <div class="desc">lock — simple, automatic release via try/finally, no await allowed inside.</div>
         </div>
@@ -632,13 +632,13 @@ Interlocked.Increment(ref _requestCount);</code></div>
             <div class="desc">SemaphoreSlim.WaitAsync()/Release() — the async-compatible option.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">🚦</span>
+            <span class="emoji"></span>
             <div class="label">Capping concurrency at more than one</div>
             <div class="desc">SemaphoreSlim with maxCount &gt; 1 — a genuine concurrency gate, not just mutual exclusion.</div>
         </div>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Start narrow and widen only if needed. A single atomic operation → <code class="icode">Interlocked</code>. A short synchronous critical section → <code class="icode">lock</code>. A critical section that must include <code class="icode">await</code> → <code class="icode">SemaphoreSlim</code>. Reaching for the heavier tool "just in case" adds overhead and complexity you don't need; reaching for the lighter tool when you actually need the heavier one produces code that either won't compile (<code class="icode">await</code> in a <code class="icode">lock</code>) or silently isn't correct (a single <code class="icode">Interlocked</code> call guarding a multi-step operation).
+        <strong> Rule of thumb:</strong> Start narrow and widen only if needed. A single atomic operation → <code class="icode">Interlocked</code>. A short synchronous critical section → <code class="icode">lock</code>. A critical section that must include <code class="icode">await</code> → <code class="icode">SemaphoreSlim</code>. Reaching for the heavier tool "just in case" adds overhead and complexity you don't need; reaching for the lighter tool when you actually need the heavier one produces code that either won't compile (<code class="icode">await</code> in a <code class="icode">lock</code>) or silently isn't correct (a single <code class="icode">Interlocked</code> call guarding a multi-step operation).
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -669,7 +669,7 @@ Interlocked.Increment(ref _requestCount);</code></div>
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've seen what lock really compiles to, why await can't live inside one, and when SemaphoreSlim and Interlocked are the better fit. Let's check it's all solid.</p>
 
     <div class="quiz-question">
@@ -683,11 +683,11 @@ Interlocked.Increment(ref _requestCount);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is a real, documented fact about how lock is implemented — the compiler generates a call to Monitor.Enter (with the ref bool overload), followed by the guarded code, with Monitor.Exit placed in a finally block so it always runs, even on an exception.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> SemaphoreSlim is a separate, distinct type from what lock/Monitor uses — lock does not go through SemaphoreSlim at all.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Monitor does not busy-wait — a thread that can't acquire the lock is suspended by the OS scheduler, not spinning in a loop consuming CPU.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Interlocked and Monitor are two separate synchronization mechanisms; lock specifically uses Monitor, not Interlocked.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> SemaphoreSlim is a separate, distinct type from what lock/Monitor uses — lock does not go through SemaphoreSlim at all.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Monitor does not busy-wait — a thread that can't acquire the lock is suspended by the OS scheduler, not spinning in a loop consuming CPU.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Interlocked and Monitor are two separate synchronization mechanisms; lock specifically uses Monitor, not Interlocked.</p>
                 <p><strong>Reinforcement:</strong> lock's try/finally-wrapped Monitor.Enter/Exit is exactly what guarantees the lock is always released, even when an exception occurs inside the guarded block.</p>
             </div>
         </details>
@@ -704,11 +704,11 @@ Interlocked.Increment(ref _requestCount);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the actual mechanical reason. Monitor's locking model assumes the same thread acquires and releases the lock. await can resume on a different thread-pool thread, which would violate that assumption — and it could also leave the lock held for however long the awaited operation takes, defeating the "short, synchronous critical section" model lock is built for.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> async methods can freely contain many other kinds of statements alongside await — this isn't a restriction on async methods in general.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> lock works fine inside instance methods — there's no such static-only restriction.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Monitor.Enter itself is thread-safe; the issue is specifically about the enter/exit thread-identity mismatch that await could introduce, not a general thread-safety flaw in Monitor.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> async methods can freely contain many other kinds of statements alongside await — this isn't a restriction on async methods in general.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> lock works fine inside instance methods — there's no such static-only restriction.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Monitor.Enter itself is thread-safe; the issue is specifically about the enter/exit thread-identity mismatch that await could introduce, not a general thread-safety flaw in Monitor.</p>
                 <p><strong>Reinforcement:</strong> This is a real, documented compiler restriction (CS1996) rooted in how Monitor's locking model actually works.</p>
             </div>
         </details>
@@ -725,11 +725,11 @@ Interlocked.Increment(ref _requestCount);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> SemaphoreSlim.WaitAsync()/Release() exists precisely for this case — a critical section that includes awaited async work. Configured with maxCount 1, it behaves like a mutual-exclusion lock while remaining fully compatible with await inside the guarded section.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> lock cannot contain an await at all — the compiler rejects it, so it's not usable here regardless of preference.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Interlocked handles single atomic operations on a value — it has no mechanism for guarding an arbitrary block of code, let alone one containing an awaited HTTP call.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There is a way — SemaphoreSlim — which is exactly why it exists as the async-compatible alternative to lock.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> lock cannot contain an await at all — the compiler rejects it, so it's not usable here regardless of preference.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Interlocked handles single atomic operations on a value — it has no mechanism for guarding an arbitrary block of code, let alone one containing an awaited HTTP call.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There is a way — SemaphoreSlim — which is exactly why it exists as the async-compatible alternative to lock.</p>
                 <p><strong>Reinforcement:</strong> Whenever a critical section needs to await something, SemaphoreSlim is the tool, not lock.</p>
             </div>
         </details>
@@ -746,11 +746,11 @@ Interlocked.Increment(ref _requestCount);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the real, hardware-level reason. Interlocked operations correspond to atomic CPU instructions that the processor itself guarantees complete as a single, uninterruptible step — no OS-level lock object needs to be acquired or released, and no thread is ever suspended waiting.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no validation being skipped — both approaches correctly increment the value; the difference is purely mechanical overhead.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such dedicated core — Interlocked instructions run on whichever core the calling thread happens to be executing on.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> lock doesn't require converting an int to an object for this purpose — the lock token (_gate) is a separate object; the int itself isn't boxed as part of using lock.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> There's no validation being skipped — both approaches correctly increment the value; the difference is purely mechanical overhead.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no such dedicated core — Interlocked instructions run on whichever core the calling thread happens to be executing on.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> lock doesn't require converting an int to an object for this purpose — the lock token (_gate) is a separate object; the int itself isn't boxed as part of using lock.</p>
                 <p><strong>Reinforcement:</strong> The speed advantage is real and hardware-rooted: one atomic instruction versus a full OS-level synchronization object acquire/release.</p>
             </div>
         </details>
@@ -767,17 +767,17 @@ Interlocked.Increment(ref _requestCount);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> The requirement is that both fields update together, as a unit — exactly what Interlocked cannot provide (it only makes a single operation atomic) and exactly what lock is designed for: a short, synchronous critical section spanning multiple related statements, with no await involved.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Calling Interlocked once per field makes each individual assignment atomic on its own, but another thread could still observe the state between the two calls — with the status updated but the timestamp not yet, or vice versa. That violates the "both together" requirement.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> SemaphoreSlim is the right tool specifically when await is involved inside the critical section; using it here adds unnecessary complexity for a purely synchronous case that lock already handles cleanly.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Speed of the individual operations is irrelevant to the correctness problem — without synchronization, another thread can still observe the two fields in an inconsistent, half-updated state, regardless of how fast each assignment executes.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Calling Interlocked once per field makes each individual assignment atomic on its own, but another thread could still observe the state between the two calls — with the status updated but the timestamp not yet, or vice versa. That violates the "both together" requirement.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> SemaphoreSlim is the right tool specifically when await is involved inside the critical section; using it here adds unnecessary complexity for a purely synchronous case that lock already handles cleanly.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Speed of the individual operations is irrelevant to the correctness problem — without synchronization, another thread can still observe the two fields in an inconsistent, half-updated state, regardless of how fast each assignment executes.</p>
                 <p><strong>Reinforcement:</strong> Multiple related updates that must be observed together as a unit is exactly the "short synchronous critical section" shape lock is built for — not a job for Interlocked alone.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have the actual synchronization toolkit — lock, SemaphoreSlim, and Interlocked — and know exactly which one fits which shape of problem. With Parallel programming, Channels, Concurrent Collections, and Locking all in place, you're ready for the deeper pitfalls — race conditions and deadlocks — covered next in this Part.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now have the actual synchronization toolkit — lock, SemaphoreSlim, and Interlocked — and know exactly which one fits which shape of problem. With Parallel programming, Channels, Concurrent Collections, and Locking all in place, you're ready for the deeper pitfalls — race conditions and deadlocks — covered next in this Part.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

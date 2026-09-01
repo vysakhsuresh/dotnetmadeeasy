@@ -472,7 +472,7 @@ Channel&lt;Order&gt; bounded = Channel.CreateBounded&lt;Order&gt;(new BoundedCha
     <p>That's <strong>backpressure</strong>: a fast producer is automatically, naturally slowed down to match a slower consumer's actual pace — without a single thread being wasted sitting idle to enforce it, and without an unbounded queue quietly growing in memory in the meantime. This is the real, practical reason bounded channels matter — the capacity number itself isn't the point; it's the fact that hitting that capacity applies real, self-correcting pressure back on whoever is producing too fast, which is exactly what keeps a producer/consumer pipeline stable and healthy under load instead of growing without limit until memory runs out.</p>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> This is the same pattern from your capstone project</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> This is the same pattern from your capstone project</div>
         <p>The Background Processing Service project used <code class="icode">Channel.CreateBounded&lt;Order&gt;(new BoundedChannelOptions(100) { FullMode = BoundedChannelFullMode.Wait })</code>. Now you know exactly why: with 100 orders already queued, a burst of new <code class="icode">POST /orders</code> requests trying to enqueue a 101st order would have their <code class="icode">await queue.QueueOrderAsync(order, ct)</code> calls (which internally call <code class="icode">WriteAsync</code>) simply wait asynchronously until the worker processes one and frees a slot — never blocking a request-handling thread, and never letting an unbounded backlog of orders pile up in memory if the worker falls behind.</p>
     </div>
 
@@ -562,7 +562,7 @@ await Task.WhenAll(producer, consumer);</code></div>
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
 
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🚰</span> A Sink With a Fixed-Size Basin</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Sink With a Fixed-Size Basin</div>
         <p>An unbounded channel is like a sink with a drain that can never keep up, but the basin itself has no rim — water (items) just keeps accumulating, and accumulating, without limit, until something else gives out.</p>
         <p>A bounded channel with <code class="icode">FullMode = Wait</code> is a sink with a normal, fixed-size basin. Once the water reaches the rim, the tap (the producer) doesn't keep blasting water everywhere — it automatically eases off, exactly matching however fast the drain (the consumer) is actually able to let water out. Nobody has to stand there manually turning the tap on and off; the basin's own capacity does the throttling for you. That automatic, self-correcting slow-down — with no wasted effort spent enforcing it — is backpressure.</p>
     </div>
@@ -585,43 +585,43 @@ await Task.WhenAll(producer, consumer);</code></div>
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Reaching for an unbounded channel by default</h4>
-    <p>❌ Using <code class="icode">Channel.CreateUnbounded&lt;T&gt;()</code> without thinking about whether the producer could ever meaningfully outpace the consumer.</p>
-    <p>✅ Default to bounded with <code class="icode">FullMode = Wait</code> unless you have a specific, deliberate reason not to — it costs you almost nothing when the producer and consumer are already well-matched, and it protects you automatically the moment they aren't.</p>
+    <p> Using <code class="icode">Channel.CreateUnbounded&lt;T&gt;()</code> without thinking about whether the producer could ever meaningfully outpace the consumer.</p>
+    <p> Default to bounded with <code class="icode">FullMode = Wait</code> unless you have a specific, deliberate reason not to — it costs you almost nothing when the producer and consumer are already well-matched, and it protects you automatically the moment they aren't.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Forgetting to call Complete() on the writer</h4>
-    <p>❌ A producer that finishes adding items but never calls <code class="icode">writer.Complete()</code>, leaving a consumer's <code class="icode">await foreach (var item in reader.ReadAllAsync())</code> waiting forever for an item that will never arrive.</p>
-    <p>✅ Call <code class="icode">writer.Complete()</code> (optionally <code class="icode">writer.Complete(exception)</code> to signal a failure) once the producer genuinely has no more items to add — it's the explicit signal that lets consumption end cleanly rather than hang indefinitely.</p>
+    <p> A producer that finishes adding items but never calls <code class="icode">writer.Complete()</code>, leaving a consumer's <code class="icode">await foreach (var item in reader.ReadAllAsync())</code> waiting forever for an item that will never arrive.</p>
+    <p> Call <code class="icode">writer.Complete()</code> (optionally <code class="icode">writer.Complete(exception)</code> to signal a failure) once the producer genuinely has no more items to add — it's the explicit signal that lets consumption end cleanly rather than hang indefinitely.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Blocking on a channel's async methods instead of awaiting them</h4>
-    <p>❌ Calling <code class="icode">.Result</code> or <code class="icode">.GetAwaiter().GetResult()</code> on <code class="icode">WriteAsync</code>/<code class="icode">ReadAsync</code> to use a channel from "synchronous-looking" code.</p>
-    <p>✅ Doing this reintroduces exactly the thread-blocking behavior <code class="icode">Channel&lt;T&gt;</code> was designed to avoid — it defeats the entire point. If a truly synchronous code path needs to touch the channel without waiting, use the non-waiting <code class="icode">TryWrite</code>/<code class="icode">TryRead</code> instead, which never block and simply report success or failure immediately.</p>
+    <p> Calling <code class="icode">.Result</code> or <code class="icode">.GetAwaiter().GetResult()</code> on <code class="icode">WriteAsync</code>/<code class="icode">ReadAsync</code> to use a channel from "synchronous-looking" code.</p>
+    <p> Doing this reintroduces exactly the thread-blocking behavior <code class="icode">Channel&lt;T&gt;</code> was designed to avoid — it defeats the entire point. If a truly synchronous code path needs to touch the channel without waiting, use the non-waiting <code class="icode">TryWrite</code>/<code class="icode">TryRead</code> instead, which never block and simply report success or failure immediately.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="feature-grid">
         <div class="feature-card">
-            <span class="emoji">✅</span>
+            <span class="emoji"></span>
             <div class="label">Producer/consumer running independently</div>
             <div class="desc">An API endpoint enqueuing work, a background service dequeuing it — different rates, no shared timing.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">🚦</span>
+            <span class="emoji"></span>
             <div class="label">Need real backpressure</div>
             <div class="desc">A fast producer that must not overwhelm memory when a consumer falls behind.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">🔁</span>
+            <span class="emoji"></span>
             <div class="label">Fan-in or fan-out pipelines</div>
             <div class="desc">Multiple producers or multiple consumers can safely share one channel — it's inherently thread-safe.</div>
         </div>
         <div class="feature-card">
-            <span class="emoji">🚫</span>
+            <span class="emoji"></span>
             <div class="label">Not for a single in-process request/response</div>
             <div class="desc">If one piece of code just needs a single result back from another, a plain Task&lt;T&gt; is simpler than standing up a channel.</div>
         </div>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Reach for <code class="icode">Channel&lt;T&gt;</code> whenever you have a genuine producer and a genuine consumer that run independently of each other and need a safe, async-native hand-off point — and default to <em>bounded</em> with <code class="icode">FullMode = Wait</code> unless you have a specific reason to let the queue grow without limit or to drop items instead.
+        <strong> Rule of thumb:</strong> Reach for <code class="icode">Channel&lt;T&gt;</code> whenever you have a genuine producer and a genuine consumer that run independently of each other and need a safe, async-native hand-off point — and default to <em>bounded</em> with <code class="icode">FullMode = Wait</code> unless you have a specific reason to let the queue grow without limit or to drop items instead.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -650,7 +650,7 @@ await Task.WhenAll(producer, consumer);</code></div>
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've now got the theory behind the Channel&lt;T&gt; code you already wrote in the capstone. Let's make sure backpressure — the core idea — is really solid.</p>
 
     <div class="quiz-question">
@@ -664,11 +664,11 @@ await Task.WhenAll(producer, consumer);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> This is backpressure — the entire point of FullMode = Wait. WriteAsync doesn't throw and doesn't block a thread; it asynchronously suspends until room opens up, resuming automatically once the consumer reads an item.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Throwing on a full channel is not the behavior of FullMode = Wait — that would defeat the purpose of backpressure. An exception-on-full behavior isn't one of the standard FullMode options at all.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> Replacing the oldest item describes FullMode = DropOldest, a different, explicitly chosen mode — not the Wait mode described in the question.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no secondary unbounded buffer — that would silently reintroduce the unbounded-growth problem bounded channels exist to prevent.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Throwing on a full channel is not the behavior of FullMode = Wait — that would defeat the purpose of backpressure. An exception-on-full behavior isn't one of the standard FullMode options at all.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> Replacing the oldest item describes FullMode = DropOldest, a different, explicitly chosen mode — not the Wait mode described in the question.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no secondary unbounded buffer — that would silently reintroduce the unbounded-growth problem bounded channels exist to prevent.</p>
                 <p><strong>Reinforcement:</strong> Backpressure means the write itself pauses, asynchronously, until there's genuinely room — not that the item is dropped, buffered elsewhere, or rejected.</p>
             </div>
         </details>
@@ -685,11 +685,11 @@ await Task.WhenAll(producer, consumer);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the core distinction. BlockingCollection&lt;T&gt;'s Add/Take were designed for synchronous, thread-based code and genuinely block a thread while waiting. Channel&lt;T&gt;'s WriteAsync/ReadAsync were designed for async code, suspending without occupying a thread — exactly matching the non-blocking-wait model used throughout this course.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Both types are thread-safe for concurrent producers and consumers — that's not the distinguishing factor.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> BlockingCollection&lt;T&gt; supports both bounded and unbounded capacities, just like Channel&lt;T&gt; — capacity isn't the differentiator either.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Disposal semantics aren't the reason Channel&lt;T&gt; is preferred — the async-vs-blocking waiting behavior is.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Both types are thread-safe for concurrent producers and consumers — that's not the distinguishing factor.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> BlockingCollection&lt;T&gt; supports both bounded and unbounded capacities, just like Channel&lt;T&gt; — capacity isn't the differentiator either.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Disposal semantics aren't the reason Channel&lt;T&gt; is preferred — the async-vs-blocking waiting behavior is.</p>
                 <p><strong>Reinforcement:</strong> The choice between these two types comes down to whether waiting blocks a thread (legacy) or suspends asynchronously (modern).</p>
             </div>
         </details>
@@ -706,11 +706,11 @@ await Task.WhenAll(producer, consumer);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> ReadAllAsync()'s async enumeration only ends once the channel is both empty and marked complete. Without an explicit writer.Complete() call, the reader has no signal that production has genuinely finished, so it keeps waiting for a next item that will never arrive.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> ReadAllAsync() behaves exactly as documented — the hang is a usage issue (a missing Complete() call), not a defect in the method.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> Capacity affects backpressure timing on writes, not whether the reader knows production has ended — a low capacity wouldn't cause this specific symptom.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> await foreach is precisely the intended, idiomatic way to consume ReadAllAsync() — this pairing is the standard pattern, exactly as used in the Background Processing Service capstone.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> ReadAllAsync() behaves exactly as documented — the hang is a usage issue (a missing Complete() call), not a defect in the method.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> Capacity affects backpressure timing on writes, not whether the reader knows production has ended — a low capacity wouldn't cause this specific symptom.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> await foreach is precisely the intended, idiomatic way to consume ReadAllAsync() — this pairing is the standard pattern, exactly as used in the Background Processing Service capstone.</p>
                 <p><strong>Reinforcement:</strong> Always call writer.Complete() once a producer is genuinely done, or any await foreach consuming ReadAllAsync() will wait indefinitely.</p>
             </div>
         </details>
@@ -727,11 +727,11 @@ await Task.WhenAll(producer, consumer);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> An unbounded channel has no capacity ceiling — by design, it will accept writes as fast as the producer can make them, regardless of how far behind the consumer falls, leading to an ever-growing in-memory backlog under a sustained speed mismatch.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Unbounded channels apply no backpressure at all — that's precisely their defining characteristic (and precisely why a bounded channel is usually the safer default).</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> There is no hidden capacity limit on an unbounded channel that would cause writes to start failing — "unbounded" means genuinely without a built-in limit.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> A channel has no ability to make a consumer process items faster — the consumer's actual processing speed is whatever it is, independent of the channel.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Unbounded channels apply no backpressure at all — that's precisely their defining characteristic (and precisely why a bounded channel is usually the safer default).</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> There is no hidden capacity limit on an unbounded channel that would cause writes to start failing — "unbounded" means genuinely without a built-in limit.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> A channel has no ability to make a consumer process items faster — the consumer's actual processing speed is whatever it is, independent of the channel.</p>
                 <p><strong>Reinforcement:</strong> This is exactly why a bounded channel with FullMode = Wait is the safer default — it converts an unmanaged memory risk into managed, automatic producer throttling.</p>
             </div>
         </details>
@@ -748,17 +748,17 @@ await Task.WhenAll(producer, consumer);</code></div>
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: C</span></p>
+                <p><span class="correct"> Correct: C</span></p>
                 <p><strong>Why C is correct:</strong> This is the practical payoff of backpressure applied to that real project: capping the queue at 100 orders means a sudden burst of requests can't cause unbounded memory growth if the worker temporarily falls behind — excess producer calls simply wait, asynchronously, for room.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Dependency injection has no requirement about bounded vs. unbounded channels — this was a deliberate design choice, not a framework constraint.</p>
-                <p><span class="incorrect">❌ Why B is incorrect:</span> An unbounded channel would have worked functionally — the worker could still read from it — it just would have removed the backpressure protection against unlimited queue growth.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Channel.CreateUnbounded&lt;T&gt;() works fine for any type, reference or value — this isn't a technical limitation.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Dependency injection has no requirement about bounded vs. unbounded channels — this was a deliberate design choice, not a framework constraint.</p>
+                <p><span class="incorrect"> Why B is incorrect:</span> An unbounded channel would have worked functionally — the worker could still read from it — it just would have removed the backpressure protection against unlimited queue growth.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Channel.CreateUnbounded&lt;T&gt;() works fine for any type, reference or value — this isn't a technical limitation.</p>
                 <p><strong>Reinforcement:</strong> The bounded choice in that project wasn't incidental — it's the exact backpressure mechanism this lesson explains in full.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly why the code you already wrote in the Background Processing Service project worked. Next up: Concurrent Collections — what to reach for when multiple threads need to share a collection directly, without a channel in between.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now know exactly why the code you already wrote in the Background Processing Service project worked. Next up: Concurrent Collections — what to reach for when multiple threads need to share a collection directly, without a channel in between.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

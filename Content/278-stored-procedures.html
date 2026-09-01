@@ -452,26 +452,26 @@ END</code></div>
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — the Vulnerable-vs-Safe Comparison, Reinforcing 138</h2>
     <p>This is the exact scenario 138-parameters warned you about, now wearing an EF Core costume. A product search box, backed by a stored procedure:</p>
 
-    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">❌ Vulnerable — building the raw string yourself, then handing it to FromSqlRaw</h4>
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Vulnerable — building the raw string yourself, then handing it to FromSqlRaw</h4>
     <div class="code-block"><code>// NEVER DO THIS
 List&lt;Product&gt; results = await context.Products
     .FromSqlRaw($"EXEC dbo.SearchProducts '{searchTerm}'")   // C# interpolation BEFORE FromSqlRaw sees it
     .ToListAsync();</code></div>
     <p>Look closely at what's happening: this uses <span class="icode">$"..."</span> too — but because <span class="icode">FromSqlRaw</span> expects an ordinary <span class="icode">string</span> parameter, not a <span class="icode">FormattableString</span>, the C# compiler <em>does</em> eagerly evaluate the interpolated string into a single, fully-baked <span class="icode">string</span> before <span class="icode">FromSqlRaw</span> ever sees it. <span class="icode">searchTerm</span> is already glued into the SQL text by the time EF Core receives it. <span class="icode">FromSqlRaw</span> has no placeholder to find and nothing to parameterize — it just sends the string exactly as it received it. If <span class="icode">searchTerm</span> is <span class="icode">x'; DROP TABLE Products; --</span>, that text becomes part of the executed SQL, exactly like the vulnerable ADO.NET example from 138.</p>
 
-    <h4 style="font-size:1.05rem;margin-top:2rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">✅ Safe — FromSqlRaw with a placeholder and a separate parameter array</h4>
+    <h4 style="font-size:1.05rem;margin-top:2rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Safe — FromSqlRaw with a placeholder and a separate parameter array</h4>
     <div class="code-block"><code>List&lt;Product&gt; results = await context.Products
     .FromSqlRaw("EXEC dbo.SearchProducts {0}", searchTerm)
     .ToListAsync();</code></div>
     <p>Here the SQL text is a fixed literal — <span class="icode">"EXEC dbo.SearchProducts {0}"</span> never changes — and <span class="icode">searchTerm</span> travels alongside it as a separate argument. EF Core recognizes the <span class="icode">{0}</span> placeholder and converts <span class="icode">searchTerm</span> into a real <span class="icode">DbParameter</span> before sending anything to the database. This is the correct way to use <span class="icode">FromSqlRaw</span> when you genuinely need the raw form — it is exactly as safe as the interpolated version.</p>
 
-    <h4 style="font-size:1.05rem;margin-top:2rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">✅ Safe — FromSqlInterpolated, the more natural-reading equivalent</h4>
+    <h4 style="font-size:1.05rem;margin-top:2rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Safe — FromSqlInterpolated, the more natural-reading equivalent</h4>
     <div class="code-block"><code>List&lt;Product&gt; results = await context.Products
     .FromSqlInterpolated($"EXEC dbo.SearchProducts {searchTerm}")
     .ToListAsync();</code></div>
     <p>Same safety, more readable syntax — and it's the one that's genuinely hard to get wrong, because there's no separate placeholder-and-array bookkeeping to forget.</p>
 
-    <h4 style="font-size:1.05rem;margin-top:2rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">✅ Also safe — FromSqlRaw with an explicit SqlParameter</h4>
+    <h4 style="font-size:1.05rem;margin-top:2rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Also safe — FromSqlRaw with an explicit SqlParameter</h4>
     <p>For cases where you need to control the exact SQL type, size, or direction (an output parameter, say), <span class="icode">FromSqlRaw</span> also accepts real <span class="icode">SqlParameter</span>/<span class="icode">DbParameter</span> objects directly, exactly the way 138 taught you to build them for ADO.NET:</p>
     <div class="code-block"><code>SqlParameter searchParam = new("@Term", SqlDbType.NVarChar, 100) { Value = searchTerm };
 
@@ -481,13 +481,13 @@ List&lt;Product&gt; results = await context.Products
     <p>This is the third genuinely safe pattern: the SQL text stays a fixed literal, and the value is handed over as a real, typed database parameter object — never string-concatenated into the command text.</p>
 
     <div class="callout">
-        <strong>💡 The rule that actually matters:</strong> It's not "Interpolated = safe, Raw = unsafe." Both method families can be used safely. The real rule is: <strong>never let a value reach the SQL text as plain concatenated or C#-interpolated string content before EF Core sees it.</strong> <span class="icode">FromSqlInterpolated</span> makes that mistake structurally impossible, because it receives a <span class="icode">FormattableString</span>, not a finished <span class="icode">string</span>. <span class="icode">FromSqlRaw</span> makes it possible to do it safely (placeholders + array, or explicit parameter objects) — but it also makes it possible to do it dangerously, if you build the string yourself first with concatenation or interpolation before calling it.
+        <strong> The rule that actually matters:</strong> It's not "Interpolated = safe, Raw = unsafe." Both method families can be used safely. The real rule is: <strong>never let a value reach the SQL text as plain concatenated or C#-interpolated string content before EF Core sees it.</strong> <span class="icode">FromSqlInterpolated</span> makes that mistake structurally impossible, because it receives a <span class="icode">FormattableString</span>, not a finished <span class="icode">string</span>. <span class="icode">FromSqlRaw</span> makes it possible to do it safely (placeholders + array, or explicit parameter objects) — but it also makes it possible to do it dangerously, if you build the string yourself first with concatenation or interpolation before calling it.
     </div>
 
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">✉️</span> A Sealed Envelope vs. a Note Written Directly on the Form</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Sealed Envelope vs. a Note Written Directly on the Form</div>
         <p><span class="icode">FromSqlInterpolated</span> is like handing the post office a printed form with a labeled blank, and separately, a sealed envelope containing the customer's answer — the post office reads the form's fixed structure, then opens the envelope only to read the value it's tagged for. The customer's answer can never rewrite the form itself, because it never touches the form directly.</p>
         <p><span class="icode">FromSqlRaw</span> used correctly (placeholder + array, or an explicit parameter) is the same sealed-envelope handoff — just requiring you to write "please insert the envelope's contents at blank #0" yourself instead of it happening automatically from the syntax.</p>
         <p><span class="icode">FromSqlRaw</span> used incorrectly is what happens when someone writes the customer's answer directly onto the form in pen, in the same handwriting as the form's own printed instructions, before handing it over — the post office has no way left to tell "the customer's answer" apart from "part of the form" once that's done.</p>
@@ -531,19 +531,19 @@ List&lt;Product&gt; results = await context.Products
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Interpolating a string first, then passing it to FromSqlRaw</h4>
-    <p>❌ <span class="icode">context.Products.FromSqlRaw($"EXEC dbo.Search '{term}'")</span> — this is a real, exploitable SQL injection vulnerability, identical in shape to the ADO.NET mistake 138 warned about. It compiles cleanly and works fine for a normal search term, which is exactly what makes it dangerous. ✅ Use <span class="icode">FromSqlInterpolated</span> for this call, or use <span class="icode">FromSqlRaw</span> with a <span class="icode">{0}</span> placeholder and a separate argument.</p>
+    <p> <span class="icode">context.Products.FromSqlRaw($"EXEC dbo.Search '{term}'")</span> — this is a real, exploitable SQL injection vulnerability, identical in shape to the ADO.NET mistake 138 warned about. It compiles cleanly and works fine for a normal search term, which is exactly what makes it dangerous.  Use <span class="icode">FromSqlInterpolated</span> for this call, or use <span class="icode">FromSqlRaw</span> with a <span class="icode">{0}</span> placeholder and a separate argument.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Reaching for a stored procedure to "avoid EF Core" for ordinary CRUD</h4>
-    <p>❌ Wrapping a plain single-table <span class="icode">INSERT</span> or a simple filtered <span class="icode">SELECT</span> in a stored procedure purely out of habit, when the equivalent LINQ is just as fast and far more maintainable. ✅ Reserve stored procedures for the cases where they genuinely earn their keep — see the next section.</p>
+    <p> Wrapping a plain single-table <span class="icode">INSERT</span> or a simple filtered <span class="icode">SELECT</span> in a stored procedure purely out of habit, when the equivalent LINQ is just as fast and far more maintainable.  Reserve stored procedures for the cases where they genuinely earn their keep — see the next section.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Forgetting AsNoTracking() on a read-only FromSql query</h4>
-    <p>❌ Materializing a large read-only result set from a reporting stored procedure with full change tracking enabled, paying tracking overhead for entities that will never be modified or saved. ✅ Add <span class="icode">.AsNoTracking()</span> to a <span class="icode">FromSqlRaw</span>/<span class="icode">FromSqlInterpolated</span> call exactly as you would for any other read-only LINQ query — the same tracking-vs-no-tracking judgment from Intermediate's 146 lesson still applies here.</p>
+    <p> Materializing a large read-only result set from a reporting stored procedure with full change tracking enabled, paying tracking overhead for entities that will never be modified or saved.  Add <span class="icode">.AsNoTracking()</span> to a <span class="icode">FromSqlRaw</span>/<span class="icode">FromSqlInterpolated</span> call exactly as you would for any other read-only LINQ query — the same tracking-vs-no-tracking judgment from Intermediate's 146 lesson still applies here.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>✅ A stored procedure genuinely earns its place</h4>
+            <h4> A stored procedure genuinely earns its place</h4>
             <ul>
                 <li>Complex, multi-table, set-based reporting logic that's awkward or inefficient to express as LINQ</li>
                 <li>Logic a DBA needs to own, tune, and permission independently of your deployment cycle</li>
@@ -552,7 +552,7 @@ List&lt;Product&gt; results = await context.Products
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>❌ It's adding friction for no real benefit</h4>
+            <h4> It's adding friction for no real benefit</h4>
             <ul>
                 <li>Ordinary single- or few-table CRUD that LINQ already expresses clearly</li>
                 <li>Anything where you want compile-time type checking on the query shape — a stored procedure's SQL isn't checked by the C# compiler at all</li>
@@ -562,7 +562,7 @@ List&lt;Product&gt; results = await context.Products
         </div>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Reach for a stored procedure when the logic genuinely belongs on the database server — not as a default way to write data access, and never as a way to avoid learning EF Core's own safe raw-SQL parameterization.
+        <strong> Rule of thumb:</strong> Reach for a stored procedure when the logic genuinely belongs on the database server — not as a default way to write data access, and never as a way to avoid learning EF Core's own safe raw-SQL parameterization.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -589,7 +589,7 @@ List&lt;Product&gt; results = await context.Products
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">This lesson connects directly back to 138-parameters' security lesson — being able to spot the unsafe pattern instantly is the whole point.</p>
 
     <div class="quiz-question">
@@ -603,11 +603,11 @@ List&lt;Product&gt; results = await context.Products
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Because <code>FromSqlRaw</code> expects a plain <code>string</code>, the C# compiler eagerly evaluates the <code>$"..."</code> expression into one fully-substituted string before <code>FromSqlRaw</code> ever sees it — <code>term</code> is already baked into the SQL text with no parameterization applied.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>FromSqlInterpolated</code> expects a <code>FormattableString</code>, so C# keeps the text and <code>term</code> separate — EF Core parameterizes it safely.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This is the safe raw form — a fixed SQL string with a <code>{0}</code> placeholder plus a separate argument, which EF Core converts into a real parameter.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Same mechanism as A — <code>ExecuteSqlInterpolatedAsync</code> also takes a <code>FormattableString</code> and parameterizes it safely.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> <code>FromSqlInterpolated</code> expects a <code>FormattableString</code>, so C# keeps the text and <code>term</code> separate — EF Core parameterizes it safely.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This is the safe raw form — a fixed SQL string with a <code>{0}</code> placeholder plus a separate argument, which EF Core converts into a real parameter.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Same mechanism as A — <code>ExecuteSqlInterpolatedAsync</code> also takes a <code>FormattableString</code> and parameterizes it safely.</p>
                 <p><strong>Reinforcement:</strong> The danger isn't the word "Raw" — it's a value reaching the SQL text as an already-built string before EF Core ever sees the call.</p>
             </div>
         </details>
@@ -624,11 +624,11 @@ List&lt;Product&gt; results = await context.Products
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> The safety comes from the parameter type EF Core declared for the method. A <code>FormattableString</code> parameter tells the C# compiler not to eagerly evaluate the interpolated string — it hands over the format text and arguments as a structure, which EF Core reads to build real parameters.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> EF Core does not scan or blocklist SQL keywords in values — that approach was explicitly called out as unreliable back in 138. The real mechanism is structural, not detection-based.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Interpolated strings are not universally safe — passed to a method expecting a plain <code>string</code> (like <code>FromSqlRaw</code>), the exact same syntax becomes dangerous, as question 1 showed.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no character-based validation happening — the value can contain anything, including quotes and SQL syntax, and it's still safe because it's never re-parsed as SQL text.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> EF Core does not scan or blocklist SQL keywords in values — that approach was explicitly called out as unreliable back in 138. The real mechanism is structural, not detection-based.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Interpolated strings are not universally safe — passed to a method expecting a plain <code>string</code> (like <code>FromSqlRaw</code>), the exact same syntax becomes dangerous, as question 1 showed.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no character-based validation happening — the value can contain anything, including quotes and SQL syntax, and it's still safe because it's never re-parsed as SQL text.</p>
                 <p><strong>Reinforcement:</strong> This is the single most important mechanical detail in the lesson — the method's declared parameter type, <code>FormattableString</code> vs <code>string</code>, is what determines whether interpolation syntax is safe.</p>
             </div>
         </details>
@@ -645,11 +645,11 @@ List&lt;Product&gt; results = await context.Products
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> <code>FromSqlRaw</code> accepts real <code>SqlParameter</code>/<code>DbParameter</code> objects directly in its argument list, exactly like the explicit parameter form from 138's ADO.NET lesson — giving you full control over type and size while keeping the value safely parameterized.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>FromSqlInterpolated</code> infers parameter types automatically from the interpolated value's .NET type — it doesn't offer this level of explicit control the way a manually-constructed <code>SqlParameter</code> passed to <code>FromSqlRaw</code> does.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> This is a real, supported EF Core capability — you don't need to drop to raw ADO.NET for it.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>FromSqlRaw</code> (the entity-returning method) does accept parameter objects, not just <code>ExecuteSqlRaw</code> (the non-query method) — both support this form.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> <code>FromSqlInterpolated</code> infers parameter types automatically from the interpolated value's .NET type — it doesn't offer this level of explicit control the way a manually-constructed <code>SqlParameter</code> passed to <code>FromSqlRaw</code> does.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> This is a real, supported EF Core capability — you don't need to drop to raw ADO.NET for it.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <code>FromSqlRaw</code> (the entity-returning method) does accept parameter objects, not just <code>ExecuteSqlRaw</code> (the non-query method) — both support this form.</p>
                 <p><strong>Reinforcement:</strong> Explicit <code>SqlParameter</code> objects are the third safe pattern alongside interpolated calls and the placeholder-plus-array form.</p>
             </div>
         </details>
@@ -666,17 +666,17 @@ List&lt;Product&gt; results = await context.Products
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is exactly the honest use case the lesson lays out — complex set-based reporting and DBA-owned logic are where a stored procedure's separate deployment lifecycle and database-server-side execution genuinely add value over LINQ.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> A simple single-table filter is precisely the kind of case ordinary LINQ already expresses clearly — a stored procedure would only add friction here.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The lesson explicitly rejects "always faster" as a blanket claim — performance depends on the specific query, and EF Core-generated SQL is often just as efficient for straightforward cases.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> A single-row insert is ordinary CRUD that <code>context.Add()</code> and <code>SaveChangesAsync()</code> already handle cleanly.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> A simple single-table filter is precisely the kind of case ordinary LINQ already expresses clearly — a stored procedure would only add friction here.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The lesson explicitly rejects "always faster" as a blanket claim — performance depends on the specific query, and EF Core-generated SQL is often just as efficient for straightforward cases.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> A single-row insert is ordinary CRUD that <code>context.Add()</code> and <code>SaveChangesAsync()</code> already handle cleanly.</p>
                 <p><strong>Reinforcement:</strong> Stored procedures earn their place through genuine complexity or ownership boundaries, not as a default data-access style.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know exactly how to call a stored procedure from EF Core, and — more importantly — exactly which of the four methods protects you from SQL injection by construction and which one trusts you to get it right. Next up: what to do when tracked, one-row-at-a-time EF Core operations aren't fast enough for a truly large batch of changes.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now know exactly how to call a stored procedure from EF Core, and — more importantly — exactly which of the four methods protects you from SQL injection by construction and which one trusts you to get it right. Next up: what to do when tracked, one-row-at-a-time EF Core operations aren't fast enough for a truly large batch of changes.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

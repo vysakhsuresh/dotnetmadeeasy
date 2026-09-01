@@ -388,7 +388,7 @@
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
     <div class="comparison-grid">
         <div class="comparison-card">
-            <h4>🔴 The Common Assumption</h4>
+            <h4> The Common Assumption</h4>
             <ul>
                 <li>DbContext is Scoped → one per HTTP request</li>
                 <li>"So one physical connection is held open for the whole request"</li>
@@ -396,7 +396,7 @@
             </ul>
         </div>
         <div class="comparison-card">
-            <h4>🟢 What Actually Happens</h4>
+            <h4> What Actually Happens</h4>
             <ul>
                 <li>DbContext is Scoped → one instance per request (an object lifetime)</li>
                 <li>A physical connection is opened only while a query/save is actually executing — a much shorter window within that request</li>
@@ -471,7 +471,7 @@ builder.Services.AddDbContextPool&lt;AppDbContext&gt;(options =&gt;
     <p>Imagine a team adds a custom field to their <span class="icode">DbContext</span> subclass to cache the current request's tenant id, set once near the start of a request and read repeatedly by query filters:</p>
     <div class="code-block"><code>public class AppDbContext : DbContext
 {
-    public int? CurrentTenantId { get; set; }   // ⚠️ custom mutable state
+    public int? CurrentTenantId { get; set; }   //  custom mutable state
 
     public AppDbContext(DbContextOptions&lt;AppDbContext&gt; options) : base(options) { }
 
@@ -489,7 +489,7 @@ public void ResetForNewRequest(int tenantId) =&gt; CurrentTenantId = tenantId;</
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🏨</span> A Hotel Guest Who Only Uses the Phone Line Occasionally</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Hotel Guest Who Only Uses the Phone Line Occasionally</div>
         <p>Checking into a hotel room for a 3-night stay (the Scoped <span class="icode">DbContext</span>'s lifetime) doesn't mean you're occupying the hotel's shared outside phone trunk line (the physical database connection) for the entire 3 nights. You pick up the phone, place a call, hang up — the trunk line is only "yours" for the duration of that one call, and it's immediately available for a guest in a completely different room the moment you hang up. You could stay 3 nights and only actually use the phone for a total of six minutes across the whole visit.</p>
         <p><span class="icode">AddDbContextPool</span> is a different thing entirely — it's not about the phone line at all, it's about the hotel keeping a small number of already-made-up rooms ready to hand to the next guest instantly, instead of building a brand-new room from scratch for every check-in. Faster check-in, but housekeeping (resetting custom state) has to actually happen between guests, or the next guest finds the previous one's belongings still in the room.</p>
     </div>
@@ -532,13 +532,13 @@ public void ResetForNewRequest(int tenantId) =&gt; CurrentTenantId = tenantId;</
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Sizing the connection pool based on expected concurrent HTTP requests, not concurrent database operations</h4>
-    <p>❌ Setting <span class="icode">Max Pool Size</span> to match an estimate of peak concurrent requests, based on the (incorrect) assumption that each request holds a connection the whole time. This tends to wildly overshoot what's actually needed, since real requests only hold a connection for the brief windows they're actually querying. ✅ Reason about, and ideally measure, how many database operations are plausibly in flight at the exact same instant — a meaningfully smaller number than total concurrent requests for most applications.</p>
+    <p> Setting <span class="icode">Max Pool Size</span> to match an estimate of peak concurrent requests, based on the (incorrect) assumption that each request holds a connection the whole time. This tends to wildly overshoot what's actually needed, since real requests only hold a connection for the brief windows they're actually querying.  Reason about, and ideally measure, how many database operations are plausibly in flight at the exact same instant — a meaningfully smaller number than total concurrent requests for most applications.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Adding custom mutable state to a pooled DbContext subclass without a reset plan</h4>
-    <p>❌ Adding a field like the tenant-id example above to a <span class="icode">DbContext</span> registered via <span class="icode">AddDbContextPool</span>, without any code that explicitly clears or reassigns it at the start of every request. ✅ Either avoid custom mutable state on a pooled context entirely (favor passing values as method parameters instead), or wire up an explicit reset step — commonly in middleware — that runs at the very start of every request.</p>
+    <p> Adding a field like the tenant-id example above to a <span class="icode">DbContext</span> registered via <span class="icode">AddDbContextPool</span>, without any code that explicitly clears or reassigns it at the start of every request.  Either avoid custom mutable state on a pooled context entirely (favor passing values as method parameters instead), or wire up an explicit reset step — commonly in middleware — that runs at the very start of every request.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Reaching for AddDbContextPool by default, assuming it's a strictly-better upgrade</h4>
-    <p>❌ Switching every <span class="icode">DbContext</span> registration to <span class="icode">AddDbContextPool</span> across the board because it sounds like a free performance win, without weighing the reset-state obligation it introduces. ✅ <span class="icode">AddDbContext</span> is a perfectly good default; reach for <span class="icode">AddDbContextPool</span> deliberately, once profiling shows <span class="icode">DbContext</span> construction overhead is meaningful for your workload — and audit for custom mutable state before doing so.</p>
+    <p> Switching every <span class="icode">DbContext</span> registration to <span class="icode">AddDbContextPool</span> across the board because it sounds like a free performance win, without weighing the reset-state obligation it introduces.  <span class="icode">AddDbContext</span> is a perfectly good default; reach for <span class="icode">AddDbContextPool</span> deliberately, once profiling shows <span class="icode">DbContext</span> construction overhead is meaningful for your workload — and audit for custom mutable state before doing so.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -555,7 +555,7 @@ public void ResetForNewRequest(int tenantId) =&gt; CurrentTenantId = tenantId;</
         </table>
     </div>
     <div class="callout">
-        <strong>💡 Rule of thumb:</strong> Trust the pool, size it against real measured concurrent database operations rather than a guess, and treat <span class="icode">AddDbContextPool</span> as a deliberate opt-in that comes with a genuine obligation to reset any custom state you've added — not a free, drop-in upgrade.
+        <strong> Rule of thumb:</strong> Trust the pool, size it against real measured concurrent database operations rather than a guess, and treat <span class="icode">AddDbContextPool</span> as a deliberate opt-in that comes with a genuine obligation to reset any custom state you've added — not a free, drop-in upgrade.
     </div>
 
     <!-- ====== MENTAL MODEL ====== -->
@@ -583,7 +583,7 @@ public void ResetForNewRequest(int tenantId) =&gt; CurrentTenantId = tenantId;</
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've corrected a common misconception about DbContext and connections, and learned a real, documented pooling caveat. Let's confirm it clicked.</p>
 
     <div class="quiz-question">
@@ -597,11 +597,11 @@ public void ResetForNewRequest(int tenantId) =&gt; CurrentTenantId = tenantId;</
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> EF Core opens a physical connection lazily, only when an operation actually needs to talk to the database, and closes it (returning it to the pool) right after that operation finishes — independent of how long the DbContext object itself remains alive for the rest of the request.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is the exact misconception the lesson corrects — Scoped describes the C# object's lifetime, not the physical connection's, which is held for a much shorter window.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> EF Core relies on the ADO.NET connection pool underneath — it doesn't bypass it; it just uses it efficiently, for short, precise windows.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> Pooled connections are returned to the pool (available for other callers) as soon as the DbContext is done with them for that operation — "returned to the pool" is not the same as "held open by this request forever."</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is the exact misconception the lesson corrects — Scoped describes the C# object's lifetime, not the physical connection's, which is held for a much shorter window.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> EF Core relies on the ADO.NET connection pool underneath — it doesn't bypass it; it just uses it efficiently, for short, precise windows.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> Pooled connections are returned to the pool (available for other callers) as soon as the DbContext is done with them for that operation — "returned to the pool" is not the same as "held open by this request forever."</p>
                 <p><strong>Reinforcement:</strong> Physical connection lifetime tracks actual database activity, not the DbContext object's own scope — this is the central correction of this lesson.</p>
             </div>
         </details>
@@ -618,11 +618,11 @@ public void ResetForNewRequest(int tenantId) =&gt; CurrentTenantId = tenantId;</
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> Since a physical connection is only held for the actual duration of a query or save — not the whole request — the number of connections genuinely needed at any instant tracks concurrent database operations, which is typically far lower than total concurrent requests (which include time spent on business logic, serialization, and other non-database work).</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the assumption the lesson corrects — they are not the same number in the typical case.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Max Pool Size has a very real effect — an undersized pool causes wait-timeout exceptions under load, and an oversized one can overwhelm the database server.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> ASP.NET Core has no such automatic capping tied to the connection pool — requests and connections are managed by entirely separate mechanisms.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is exactly the assumption the lesson corrects — they are not the same number in the typical case.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Max Pool Size has a very real effect — an undersized pool causes wait-timeout exceptions under load, and an oversized one can overwhelm the database server.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> ASP.NET Core has no such automatic capping tied to the connection pool — requests and connections are managed by entirely separate mechanisms.</p>
                 <p><strong>Reinforcement:</strong> Base pool sizing on measured database-operation concurrency, not a proxy number like total request concurrency that overestimates real demand.</p>
             </div>
         </details>
@@ -639,17 +639,17 @@ public void ResetForNewRequest(int tenantId) =&gt; CurrentTenantId = tenantId;</
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> EF Core's automatic reset on a pooled DbContext only covers what EF Core itself added (like the change tracker) — it has no visibility into custom fields on your subclass. Without an explicit reset, CurrentUserRole simply keeps whatever value the previous request that used this exact pooled instance left it at, which is a real, documented hazard.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely the false assumption that causes the bug — EF Core's automatic reset is scoped to its own internal state, not arbitrary custom properties.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> AddDbContextPool doesn't forbid custom properties or fail to start because of them — it simply doesn't know to reset them, which is a runtime behavioral risk, not a compile-time or startup restriction.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no automatic reset of custom fields at any point in the pooling lifecycle — the value genuinely persists across reuses unless the application code resets it deliberately.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This is precisely the false assumption that causes the bug — EF Core's automatic reset is scoped to its own internal state, not arbitrary custom properties.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> AddDbContextPool doesn't forbid custom properties or fail to start because of them — it simply doesn't know to reset them, which is a runtime behavioral risk, not a compile-time or startup restriction.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no automatic reset of custom fields at any point in the pooling lifecycle — the value genuinely persists across reuses unless the application code resets it deliberately.</p>
                 <p><strong>Reinforcement:</strong> Any custom mutable state added to a pooled DbContext subclass needs an explicit, deliberate reset plan — this is the real, honest caveat behind AddDbContextPool's performance benefit.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand exactly what a DbContext's lifetime does and doesn't control, and how to size and manage the connections underneath it. Ahead: stored procedures, bulk operations, caching strategy, SQL vs. EF Core, and the Part's capstone on troubleshooting real database performance.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now understand exactly what a DbContext's lifetime does and doesn't control, and how to size and manage the connections underneath it. Ahead: stored procedures, bulk operations, caching strategy, SQL vs. EF Core, and the Part's capstone on troubleshooting real database performance.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">

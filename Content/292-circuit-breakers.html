@@ -431,7 +431,7 @@
 
     <div class="state-diagram">
         <div class="state-card closed">
-            <div class="state-name">🟢 Closed — Normal Operation</div>
+            <div class="state-name"> Closed — Normal Operation</div>
             <ul>
                 <li>Requests flow through to the real dependency</li>
                 <li>The breaker quietly counts recent outcomes (successes/failures)</li>
@@ -439,7 +439,7 @@
             </ul>
         </div>
         <div class="state-card open">
-            <div class="state-name">🔴 Open — Failing Fast</div>
+            <div class="state-name"> Open — Failing Fast</div>
             <ul>
                 <li>Every call fails <em>immediately</em> — the dependency is never even contacted</li>
                 <li>Protects the struggling dependency from more load</li>
@@ -448,7 +448,7 @@
             </ul>
         </div>
         <div class="state-card half-open">
-            <div class="state-name">🟡 Half-Open — Testing Recovery</div>
+            <div class="state-name"> Half-Open — Testing Recovery</div>
             <ul>
                 <li>After cooldown, a small, <em>limited</em> number of test calls are allowed through</li>
                 <li>Test calls succeed → circuit <strong>closes</strong>, normal traffic resumes</li>
@@ -528,7 +528,7 @@
     </div>
 
     <div class="callout">
-        <strong>💡 Why the limited probe in Half-Open matters:</strong> If Half-Open let <em>all</em> traffic through the instant the cooldown elapsed, and the dependency were still struggling, you'd instantly recreate the exact same pile-up that tripped the breaker in the first place — a full-volume retry storm hitting a dependency that hasn't actually recovered. Limiting the probe to a small number of test calls is what makes the recovery check itself safe.
+        <strong> Why the limited probe in Half-Open matters:</strong> If Half-Open let <em>all</em> traffic through the instant the cooldown elapsed, and the dependency were still struggling, you'd instantly recreate the exact same pile-up that tripped the breaker in the first place — a full-volume retry storm hitting a dependency that hasn't actually recovered. Limiting the probe to a small number of test calls is what makes the recovery check itself safe.
     </div>
 
     <!-- ====== SIMPLE EXAMPLE ====== -->
@@ -569,7 +569,7 @@
     <!-- ====== ANALOGY ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
     <div class="concept-box">
-        <div class="concept-title"><span style="font-size:1.3rem;">🔌</span> An Actual Electrical Circuit Breaker</div>
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> An Actual Electrical Circuit Breaker</div>
         <p>The name isn't decorative — it's the literal mechanism the pattern is borrowed from. A home's circuit breaker (<strong>Closed</strong>) lets electricity flow normally through the wiring. If something draws a dangerous amount of current — a short circuit, an overloaded outlet — the breaker <strong>trips (Open)</strong>: it physically interrupts the circuit, and no current flows through that line at all, protecting the wiring (and your house) from further damage, even though whatever caused the surge is still plugged in.</p>
         <p>You don't just flip it back on and hope. You reset it cautiously — flip it back, and see if it holds (<strong>Half-Open</strong>). If it trips again immediately, something's still wrong, and you leave it off (back to <strong>Open</strong>) rather than repeatedly re-energizing a circuit that keeps failing. If it holds, you trust it and go back to using that line normally (<strong>Closed</strong>). The software pattern preserves every part of that behavior: protect first, test cautiously, only fully resume once you have real evidence it's safe.</p>
     </div>
@@ -607,13 +607,13 @@
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Setting the failure threshold too sensitive</h4>
-    <p>❌ A very low <span class="icode">FailureRatio</span> or <span class="icode">MinimumThroughput</span> trips the circuit on completely ordinary, isolated transient blips — the breaker starts failing fast on a dependency that's actually fine, just having one bad moment. ✅ Tune the threshold and sampling window to reflect a genuine, sustained pattern of trouble, not a single outlier — this is exactly why <span class="icode">MinimumThroughput</span> exists.</p>
+    <p> A very low <span class="icode">FailureRatio</span> or <span class="icode">MinimumThroughput</span> trips the circuit on completely ordinary, isolated transient blips — the breaker starts failing fast on a dependency that's actually fine, just having one bad moment.  Tune the threshold and sampling window to reflect a genuine, sustained pattern of trouble, not a single outlier — this is exactly why <span class="icode">MinimumThroughput</span> exists.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Sharing one circuit breaker instance across unrelated dependencies</h4>
-    <p>❌ Wiring up a single breaker that guards calls to two entirely different downstream services — a failure pattern in one incorrectly trips the circuit for the other, which was never actually struggling. ✅ Each distinct dependency gets its own circuit breaker instance (in <code>Microsoft.Extensions.Resilience</code>, this falls naturally out of attaching the pipeline per named/typed <code>HttpClient</code>) — health is tracked, and protection applied, per dependency.</p>
+    <p> Wiring up a single breaker that guards calls to two entirely different downstream services — a failure pattern in one incorrectly trips the circuit for the other, which was never actually struggling.  Each distinct dependency gets its own circuit breaker instance (in <code>Microsoft.Extensions.Resilience</code>, this falls naturally out of attaching the pipeline per named/typed <code>HttpClient</code>) — health is tracked, and protection applied, per dependency.</p>
 
     <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Treating "circuit is open" the same as any other unhandled error</h4>
-    <p>❌ Letting the "circuit is open" exception propagate all the way to the end user as an unhandled 500 error, identical to any other failure — this throws away the entire point of failing fast, which is the opportunity to respond quickly and deliberately instead. ✅ Catch it specifically and respond with a genuine fallback where one exists (cached data, a degraded-but-functional response) or at minimum a fast, clear "temporarily unavailable" — the breaker gives you the speed; your code still has to use it well.</p>
+    <p> Letting the "circuit is open" exception propagate all the way to the end user as an unhandled 500 error, identical to any other failure — this throws away the entire point of failing fast, which is the opportunity to respond quickly and deliberately instead.  Catch it specifically and respond with a genuine fallback where one exists (cached data, a degraded-but-functional response) or at minimum a fast, clear "temporarily unavailable" — the breaker gives you the speed; your code still has to use it well.</p>
 
     <!-- ====== WHEN SHOULD I USE IT? ====== -->
     <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
@@ -648,7 +648,7 @@
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
 
     <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
-    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
     <p style="color:var(--text-main,#E2E8F0);">You've got the full three-state model now, precisely. Let's confirm it clicked.</p>
 
     <div class="quiz-question">
@@ -662,11 +662,11 @@
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the defining behavior of the Open state — calls fail fast, with no attempt made to actually reach the dependency at all, protecting both the caller and the struggling dependency from more load.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> An open circuit doesn't attempt the call with adjusted settings — it skips the attempt entirely, which is the whole point of failing fast rather than failing slow.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Queuing would still tie up resources waiting — this defeats the purpose of an open circuit, which is designed to shed load immediately, not defer it.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The circuit breaker pattern itself doesn't automatically reroute traffic to a different service — a fallback would need to be implemented separately by the calling code, if one exists.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> An open circuit doesn't attempt the call with adjusted settings — it skips the attempt entirely, which is the whole point of failing fast rather than failing slow.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Queuing would still tie up resources waiting — this defeats the purpose of an open circuit, which is designed to shed load immediately, not defer it.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The circuit breaker pattern itself doesn't automatically reroute traffic to a different service — a fallback would need to be implemented separately by the calling code, if one exists.</p>
                 <p><strong>Reinforcement:</strong> "Open" means the dependency is never contacted at all while the circuit is in that state — that's what distinguishes it from a timeout, which still attempts the call.</p>
             </div>
         </details>
@@ -683,11 +683,11 @@
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> The circuit never jumps straight from Open back to full normal operation — it always transitions to Half-Open first, testing recovery cautiously with a limited number of probe calls before deciding whether to fully close or re-open.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> This skips the entire point of Half-Open — testing before trusting. Immediately resuming full traffic risks recreating the exact pile-up that tripped the circuit in the first place if the dependency hasn't actually recovered.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The whole design of the pattern is automatic, self-testing recovery via the cooldown-then-Half-Open cycle — it doesn't require manual intervention to reset under normal operation.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no dependency on deployments in the state machine — the cooldown and subsequent Half-Open test happen automatically based on elapsed time alone.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> This skips the entire point of Half-Open — testing before trusting. Immediately resuming full traffic risks recreating the exact pile-up that tripped the circuit in the first place if the dependency hasn't actually recovered.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The whole design of the pattern is automatic, self-testing recovery via the cooldown-then-Half-Open cycle — it doesn't require manual intervention to reset under normal operation.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no dependency on deployments in the state machine — the cooldown and subsequent Half-Open test happen automatically based on elapsed time alone.</p>
                 <p><strong>Reinforcement:</strong> Open always transitions to Half-Open, never directly back to Closed — recovery is always tested first, never assumed.</p>
             </div>
         </details>
@@ -704,11 +704,11 @@
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> A failed test call in Half-Open means the dependency has not actually recovered — the circuit re-opens, and the cooldown timer restarts, exactly as though the original failure threshold had just been crossed again.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> Closing requires the test call(s) to <em>succeed</em> — a failed test call is precisely the signal that closing would be premature.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The breaker doesn't give up permanently — it continues the same Open → cooldown → Half-Open cycle indefinitely, always ready to re-test.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no escalating-frequency retry behavior in Half-Open — it's a single (or small, fixed number of) test call(s), and a failure sends it back to a full Open cooldown, not a faster retry loop.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Closing requires the test call(s) to <em>succeed</em> — a failed test call is precisely the signal that closing would be premature.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The breaker doesn't give up permanently — it continues the same Open → cooldown → Half-Open cycle indefinitely, always ready to re-test.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> There's no escalating-frequency retry behavior in Half-Open — it's a single (or small, fixed number of) test call(s), and a failure sends it back to a full Open cooldown, not a faster retry loop.</p>
                 <p><strong>Reinforcement:</strong> Half-Open's outcome is binary and clean — success closes the circuit, failure re-opens it with a fresh cooldown.</p>
             </div>
         </details>
@@ -725,11 +725,11 @@
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> This is the exact cascading-failure mechanism the lesson walked through — calls to a struggling dependency tie up threads while waiting, thread pool starvation sets in, the caller itself becomes slow, and this repeats one hop further out for that caller's own callers. A circuit breaker interrupts this by failing fast instead of leaving threads blocked on doomed calls.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> They're directly connected — a struggling dependency without a circuit breaker is precisely one of the classic causes of real-world thread pool starvation.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> Circuit breakers don't touch thread pool sizing configuration at all — they prevent the starvation scenario by avoiding wasted blocking calls in the first place, not by adding more thread capacity.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The thread pool is a completely separate CLR mechanism (Part IV) that circuit breakers don't replace — they simply reduce how much of it gets tied up waiting on doomed calls.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> They're directly connected — a struggling dependency without a circuit breaker is precisely one of the classic causes of real-world thread pool starvation.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Circuit breakers don't touch thread pool sizing configuration at all — they prevent the starvation scenario by avoiding wasted blocking calls in the first place, not by adding more thread capacity.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The thread pool is a completely separate CLR mechanism (Part IV) that circuit breakers don't replace — they simply reduce how much of it gets tied up waiting on doomed calls.</p>
                 <p><strong>Reinforcement:</strong> Preventing cascading failure and preventing thread pool starvation are, in a distributed system, often the same problem described from two different angles.</p>
             </div>
         </details>
@@ -746,17 +746,17 @@
         <details>
             <summary>Show answer</summary>
             <div class="answer-box">
-                <p><span class="correct">✅ Correct: B</span></p>
+                <p><span class="correct"> Correct: B</span></p>
                 <p><strong>Why B is correct:</strong> As the callout in How It Works explained, resuming full traffic instantly on an unproven recovery risks reproducing the original overload. A small, limited probe verifies genuine recovery before the breaker commits to letting normal volume back through.</p>
-                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no such legal requirement — this is a deliberate engineering safety decision, not a compliance rule.</p>
-                <p><span class="incorrect">❌ Why C is incorrect:</span> The limited probe has a precise, well-reasoned technical purpose, as described in the lesson — it is not an arbitrary convention.</p>
-                <p><span class="incorrect">❌ Why D is incorrect:</span> The circuit breaker's own CPU overhead is negligible regardless of test call volume — the reason for limiting probes is about protecting the downstream dependency, not the breaker's own performance.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> There's no such legal requirement — this is a deliberate engineering safety decision, not a compliance rule.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> The limited probe has a precise, well-reasoned technical purpose, as described in the lesson — it is not an arbitrary convention.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The circuit breaker's own CPU overhead is negligible regardless of test call volume — the reason for limiting probes is about protecting the downstream dependency, not the breaker's own performance.</p>
                 <p><strong>Reinforcement:</strong> Half-Open's restraint — testing cautiously rather than assuming recovery — is exactly what keeps the recovery check itself from becoming a second incident.</p>
             </div>
         </details>
     </div>
 
-    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now have the full, precise circuit breaker state machine — and understand exactly how it stops one struggling dependency from taking down an entire distributed system. Next up: distributed transactions, and why coordinating an ACID transaction across service boundaries is so much harder than it looks.</p>
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> You now have the full, precise circuit breaker state machine — and understand exactly how it stops one struggling dependency from taking down an entire distributed system. Next up: distributed transactions, and why coordinating an ACID transaction across service boundaries is so much harder than it looks.</p>
 
     <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
     <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
