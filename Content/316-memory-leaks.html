@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>316 - Memory Leaks · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        .NET has a garbage collector. That doesn't mean it can't leak — it means when it leaks, the cause is never "forgot to free it." The cause is always "something is still holding on."
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Lesson 315 gave you the general framework: what changed, what the graphs show, which dependency is implicated. Now the first specific failure mode this Part applies it to — the one with the slowest, quietest signature of all. Nothing crashes today. Nothing times out today. A dashboard's memory-usage line just keeps climbing, day after day, a little more each time, until eventually the process hits a limit and either the CLR throws an <code class="icode">OutOfMemoryException</code> or the orchestrator kills and restarts it for exceeding its memory budget.</p>
+    <p>The instinct, for anyone who's touched C or C++, is to reach for the word "leak" and picture forgotten <code class="icode">malloc</code> calls with no matching <code class="icode">free</code>. That mental model is wrong here, and getting it wrong wastes real diagnostic time — .NET's garbage collector (lessons 172, 173) never forgets to free anything it's allowed to free. <strong>In this lesson, you'll get the precise, correct definition of a managed memory leak, walk through the handful of patterns that cause almost every real one, and use <code>dotnet-gcdump</code> to actually find one — the same non-invasive-diagnostics discipline lesson 315 introduced, applied to its first concrete target.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>managed memory leak</strong> is memory that your application is done using, but that never gets reclaimed — not because the garbage collector forgot to look at it, but because <em>something, somewhere, is still holding a reference to it</em>. As far as the GC can tell, that object is still in active use. It has no way of knowing your intent was to stop using it three minutes ago.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>The .NET garbage collector reclaims an object precisely when it becomes <strong>unreachable</strong> — when no live chain of references, starting from a <strong>GC root</strong> (a static field, a thread's stack, a still-active handle), leads to it anymore. A managed memory leak is unintended <strong>reachability</strong>: an object that the application logically no longer needs, but that remains reachable from a root, so the GC — correctly, by its own rules — keeps it alive indefinitely. The GC is not broken and never stops running; it simply cannot collect what your own code is still, unintentionally, pointing at.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🔧 The C/C++ Leak (NOT this lesson)</h4>
+            <ul>
+                <li>Memory allocated with <code>malloc</code>, never released with a matching <code>free</code></li>
+                <li>No garbage collector — the runtime has no idea the memory even still exists</li>
+                <li>Cause: a missing deallocation call, full stop</li>
+                <li>Fix: find the missing <code>free</code></li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>♻️ The Managed Leak (This Lesson)</h4>
+            <ul>
+                <li>The GC runs constantly and correctly, exactly as designed (172, 173)</li>
+                <li>Memory is unintentionally still <strong>reachable</strong> from a GC root</li>
+                <li>Cause: a reference nobody meant to keep — a subscription, a cache entry, a static collection</li>
+                <li>Fix: find and remove the unintended reference, not "call free somewhere"</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> Get this framing exactly right</div>
+        <p>".NET can't leak memory because it has a garbage collector" is a genuinely common and genuinely wrong belief. The GC only collects what's unreachable. It offers zero protection against your own code accidentally keeping something reachable forever — a static <code class="icode">List&lt;T&gt;</code> that only ever grows, an event subscription nobody ever unsubscribes, are both perfectly legal, perfectly intentional-looking C#, and both keep memory alive exactly as designed. The bug isn't in the GC. It's in which references your own code chose to hold onto.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — a Small Number of Patterns, Repeated Constantly</h3>
+    <p>Real managed leaks aren't exotic. They come from a short, recurring list of patterns — almost every leak you'll ever chase down in a real .NET codebase belongs to one of these:</p>
+
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">🗄️</span>
+            <div class="label">Unbounded static collections</div>
+            <div class="desc">A static Dictionary or List that entries get added to, but never removed from — grows for the lifetime of the process.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🔔</span>
+            <div class="label">Event subscriptions never unsubscribed</div>
+            <div class="desc">A publisher's event holds a reference to every subscriber — the subscriber stays alive as long as the publisher does, even if nothing else wants it alive.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🧹</span>
+            <div class="label">Undisposed IDisposable objects</div>
+            <div class="desc">An object holding a large buffer or an unmanaged handle that's never disposed keeps that memory alive past when it's needed.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🪤</span>
+            <div class="label">Long-lived closures capturing more than intended</div>
+            <div class="desc">A lambda registered with a timer or a long-lived callback captures its enclosing state — including <code>this</code> — keeping it alive as long as the callback is.</div>
+        </div>
+    </div>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Need — the Event Handler Pattern Deserves Special Attention</h3>
+    <p>Of these, the event-subscription leak is worth calling out specifically, because it's both the most common in real production code and the least intuitive. When object A subscribes to object B's event (<code class="icode">b.SomethingHappened += a.OnSomethingHappened</code>), the reference runs in the direction most people don't expect: <strong>B now holds a reference to A</strong>, not the other way around. If B outlives A's intended lifetime — B is a singleton service, a static event aggregator, or simply a longer-lived component — A stays alive for as long as B does, purely because it never called <code class="icode">-=</code> to unsubscribe. A can be completely unused, completely finished with its work, and it will still never get collected.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Following a Root Chain</h2>
+    <p>Every managed leak, no matter which pattern caused it, has the exact same shape once you trace it: a chain of references leading all the way back to a GC root that never gets broken.</p>
+
+    <div class="flow-container">
+        <div class="flow-title">A ROOT CHAIN KEEPING SOMETHING ALIVE FOREVER</div>
+        <div style="text-align:center;font-size:0.95rem;color:var(--text-main,#E2E8F0);padding:0.5rem 0;">
+            <div><strong>GC Root</strong> (a static field on <code style="font-size:0.85em;">OrderEventBus</code>)</div>
+            <div style="font-size:1.3rem;color:var(--accent-purple,#8B5CF6);margin:0.3rem 0;">⬇ holds a reference to ⬇</div>
+            <div>The event's invocation list (every subscribed delegate)</div>
+            <div style="font-size:1.3rem;color:var(--accent-purple,#8B5CF6);margin:0.3rem 0;">⬇ holds a reference to ⬇</div>
+            <div>A delegate's target — the <code style="font-size:0.85em;">OrderProcessor</code> instance that subscribed</div>
+            <div style="font-size:1.3rem;color:var(--accent-purple,#8B5CF6);margin:0.3rem 0;">⬇ holds a reference to ⬇</div>
+            <div>Every field on that instance — including, say, a 40 MB in-memory cache</div>
+        </div>
+        <div style="text-align:center;font-size:0.85rem;color:var(--text-muted,#94A3B8);margin-top:0.6rem;">The 40 MB cache was never the problem. It's just reachable, transitively, from a static root that never let go of the object holding it.</div>
+    </div>
+    <p>This is the exact tool a heap-diffing session gives you: not just "this object is leaking," but the whole chain of "why is it still reachable at all" — which is very often the more useful answer, because the fix is almost always at the far end of that chain (the missing <code class="icode">-=</code>), not at the near end (the cache you first noticed was large).</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Diagnosing With dotnet-gcdump</h2>
+    <p><code class="icode">dotnet-gcdump</code> is the diagnostics-suite tool (installed the same way as the tools lesson 315 introduced: <code class="icode">dotnet tool install --global dotnet-gcdump</code>) purpose-built for exactly this investigation — it captures a snapshot of the entire managed heap, including every object and every reference between them, without pausing the process for more than the brief moment the snapshot itself takes.</p>
+
+    <div class="flow-container">
+        <div class="flow-title">THE TWO-SNAPSHOT WORKFLOW</div>
+        <div class="flow-step">
+            <div class="step-label">1. CONFIRM IT'S A TREND, NOT A SPIKE</div>
+            <ul><li>Check the memory metric over hours or days (via dotnet-counters, or the metrics dashboard from lesson 270). A leak looks like a steady upward line that never comes back down after a GC — not a sawtooth that rises and falls normally as generations collect.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. CAPTURE A FIRST SNAPSHOT</div>
+            <ul><li><code>dotnet-gcdump collect -p &lt;pid&gt;</code> — captures the full object graph on the managed heap right now, saved to a <code>.gcdump</code> file.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. LET TIME AND TRAFFIC PASS, THEN CAPTURE A SECOND</div>
+            <ul><li>Wait an hour, a day — long enough for a real leak's growth to be unmistakable — and run the same command again against the same process.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. COMPARE THE TWO SNAPSHOTS</div>
+            <ul><li>Opening both dumps side by side (in Visual Studio's diagnostic tools, or a compatible heap viewer) shows exactly which object types grew in count between the two captures — the honest, measured answer to "what's actually growing," instead of a guess.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. FOLLOW THE PATH TO ROOT FOR THE GROWING TYPE</div>
+            <ul><li>For the object type that's clearly accumulating, the heap viewer can show its "path to root" — the exact reference chain, like the one above, connecting it all the way back to whatever GC root is keeping it alive. That chain tells you precisely where the unintended reference lives.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — The Event Subscription Leak, Caused and Fixed</h2>
+    <div class="code-block"><code>public class PriceFeed
+{
+    // A long-lived singleton, registered once at startup and never destroyed.
+    public event Action&lt;decimal&gt; PriceChanged;
+
+    public void Publish(decimal price) =&gt; PriceChanged?.Invoke(price);
+}
+
+public class PriceTicker
+{
+    // Created and destroyed constantly — one per UI panel a user opens.
+    public PriceTicker(PriceFeed feed)
+    {
+        feed.PriceChanged += OnPriceChanged;   // ❌ subscribes, never unsubscribes
+    }
+
+    private void OnPriceChanged(decimal price) =&gt; UpdateDisplay(price);
+    private void UpdateDisplay(decimal price) { /* ... */ }
+}
+
+// Every time a user opens and closes a price panel, a new PriceTicker
+// is created — and every single one stays alive forever, because
+// PriceFeed's event still references OnPriceChanged on all of them.</code></div>
+    <p>The fix is to implement <code class="icode">IDisposable</code> and unsubscribe explicitly, tying the subscription's lifetime to the subscriber's intended lifetime instead of the publisher's:</p>
+    <div class="code-block"><code>public class PriceTicker : IDisposable
+{
+    private readonly PriceFeed _feed;
+
+    public PriceTicker(PriceFeed feed)
+    {
+        _feed = feed;
+        _feed.PriceChanged += OnPriceChanged;
+    }
+
+    private void OnPriceChanged(decimal price) =&gt; UpdateDisplay(price);
+    private void UpdateDisplay(decimal price) { /* ... */ }
+
+    public void Dispose()
+    {
+        _feed.PriceChanged -= OnPriceChanged;   // ✅ breaks the reference explicitly
+    }
+}
+
+// Callers now dispose the ticker when the panel closes — exactly the
+// discipline this course has taught for every IDisposable resource —
+// and PriceFeed no longer keeps it alive after that point.</code></div>
+    <p><strong>Meaning:</strong> Nothing about this fix involves the garbage collector doing anything differently. The GC always behaved correctly. The fix removes the reference that made the ticker reachable in the first place — once <code class="icode">Dispose</code> runs, the next GC that visits <code class="icode">PriceTicker</code> finds no live path to it from any root, and reclaims it exactly as designed.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>A background worker service — the kind lesson 165 introduced — processes an incoming stream of orders and, for auditing, appends a summary of each one to a static <code class="icode">List&lt;OrderAuditRecord&gt;</code> "just in case it's needed for debugging later." The service runs fine in testing, where it only ever processes a handful of orders. In production, after being live for six days, the container's memory usage has quietly climbed from 150 MB to 4 GB, and the orchestrator finally kills it for exceeding its memory limit — right as it happens to be mid-order, taking a customer's in-flight checkout down with it. A <code class="icode">dotnet-gcdump</code> taken beforehand (following lesson 315's advice to capture evidence before restarting) would have shown, immediately, that <code class="icode">OrderAuditRecord</code> instances outnumbered everything else on the heap by orders of magnitude, all rooted in that one static list — an unbounded collection, exactly the first pattern this lesson named, hiding behind an innocent-sounding comment.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📰</span> The Magazine Subscription Nobody Cancelled</div>
+        <p>Picture a magazine publisher (the event publisher) that mails an issue to everyone on its subscriber list every month. You subscribed once, years ago, and stopped reading the magazine long ago — but you never called to cancel. The publisher has no way to know you stopped caring; as far as their records show, you're still an active subscriber, so the magazines keep arriving, piling up in your mailbox, forever. The publisher isn't malfunctioning — it's doing exactly what its subscriber list tells it to do. The only way the magazines stop is if you (the subscriber) explicitly call and cancel — the exact real-world equivalent of unsubscribing from an event. A managed memory leak is precisely this: not a broken mail system, but a subscription nobody remembered to end.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>Recall from lessons 172 and 173 how the GC actually decides what to collect: starting from the full set of GC roots — static fields, local variables and parameters currently on any thread's stack, and a handful of other runtime-tracked handles — it walks every reachable reference transitively, marking everything it finds as live. Anything left unmarked afterward is garbage, and gets reclaimed. An event's invocation list is, structurally, nothing special — it's just a field on the publisher holding a list of delegate references, each of which holds a reference to its target object. If the publisher itself is reachable from a root (a static field, or a singleton registered in DI and resolved for the app's entire lifetime — lesson 125), then everything in that invocation list is transitively reachable too, and the mark phase finds it, keeps it, and moves on. There's no special-case leniency for "this reference looks unintentional" — the GC only ever answers one question, reachable or not, and it answers it correctly every single time.</p>
+    <p><code class="icode">dotnet-gcdump</code> works by requesting exactly this graph from the runtime over the same EventPipe channel lesson 315 introduced — a full walk of the heap's object graph and every reference between objects, serialized to a portable file you can analyze afterward without the original process needing to still be running.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "High memory usage" ≠ "a leak"</h3>
+    <p>A process legitimately using a large, stable amount of memory — a big in-process cache sized deliberately, or the .NET Server GC holding onto reserved-but-currently-unused heap segments for efficiency — is not a leak. A leak is specifically a <em>trend</em>: memory that keeps climbing over time and never comes back down after a full collection. Before chasing a leak, confirm the growth is real and ongoing, not a one-time, intentional, or already-stable memory footprint.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "The GC has a garbage collector, so managed code can't leak" — the misconception this whole lesson exists to correct</h3>
+    <p>This is worth restating precisely one more time, because it's the single most common wrong assumption walking into a memory investigation: the GC guarantees it will collect anything unreachable — it makes no promise whatsoever about what your own code chooses to keep reachable. A managed leak isn't a failure of garbage collection; it's a success of garbage collection applied to code that unintentionally kept something alive.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Subscribing to a longer-lived object's event without a matching unsubscribe</h4>
+    <p>❌ A shorter-lived component subscribes to an event on a singleton or static publisher, and never calls <code class="icode">-=</code> — the most common single cause of real-world managed leaks.</p>
+    <p>✅ Implement <code class="icode">IDisposable</code> on the subscriber and unsubscribe in <code class="icode">Dispose</code>, exactly as this lesson's Simple Example did — tie the subscription's lifetime to the subscriber's, not the publisher's.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Using a static collection as an unbounded, ad-hoc cache</h4>
+    <p>❌ Adding to a static <code class="icode">Dictionary</code> or <code class="icode">List</code> as a quick way to remember things across requests, with no eviction policy and no upper bound.</p>
+    <p>✅ Use a real caching abstraction (lesson 265) with an eviction policy and a size or time bound — a cache without an eviction strategy is, by definition, a scheduled leak.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Registering a long-lived timer or callback with a closure that captures more than it needs</h4>
+    <p>❌ A <code class="icode">Timer</code> or long-lived callback registered with a lambda that implicitly captures <code class="icode">this</code>, keeping the entire enclosing instance alive for as long as the timer runs — even if only one small field was actually needed.</p>
+    <p>✅ Capture only what's necessary, and dispose the timer or unregister the callback deliberately when the owning object's real lifetime ends.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Whenever a memory metric shows a genuine, sustained upward trend over hours or days that never recovers after a full GC — the specific signature this lesson's tools are built for.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Not</strong> when memory is elevated but stable, or spikes and recovers — that's ordinary GC behavior, not a leak, and doesn't need this lesson's toolkit at all.</li>
+        <li style="margin-bottom:0.4rem;">Distinguish this from high CPU (lesson 317, next) — a leak is defined by a growing heap over time, regardless of processor usage; a leaking process can otherwise be perfectly idle and low-CPU right up until it finally runs out of memory.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Take two <code>dotnet-gcdump</code> snapshots, hours apart, and diff them. Whatever object type's count grew the most between the two is your prime suspect — follow its path to root from there rather than guessing at which part of the codebase is responsible.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Managed leak</strong> = unintended reachability, not a missing <code>free</code> — the GC always collects what's genuinely unreachable.<br /><br />
+        <strong>The four repeat offenders:</strong> unbounded static collections, un-unsubscribed event handlers, undisposed IDisposables, over-capturing closures in long-lived callbacks.<br />
+        <strong>Diagnose it:</strong> confirm a real trend (not a stable or spiky footprint) → two dotnet-gcdump snapshots, hours apart → diff for the growing type → follow its path to root.<br />
+        <strong>Remember:</strong> event references run from publisher to subscriber — a longer-lived publisher can keep a shorter-lived subscriber alive forever if nobody unsubscribes.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <strong>managed memory leak</strong> is memory that stays unintentionally <strong>reachable</strong> from a GC root — never a missing <code>free</code> call like in unmanaged code. The GC always collects what's genuinely unreachable; it can't know your intent about anything it's still pointed at.</li>
+            <li style="margin-bottom:0.4rem;">Almost every real leak comes from one of four patterns: unbounded static collections, un-unsubscribed event handlers (the most common, and the trickiest — the reference runs from publisher to subscriber), undisposed <code>IDisposable</code> objects, and long-lived closures capturing more than intended.</li>
+            <li style="margin-bottom:0.4rem;">Diagnose a suspected leak by first confirming a genuine growth trend (not a stable or spiky footprint), then taking two <code>dotnet-gcdump</code> snapshots hours apart and diffing them to find the object type that's actually accumulating.</li>
+            <li style="margin-bottom:0.4rem;">A heap viewer's "path to root" for the growing type tells you exactly which reference chain is keeping it alive — the fix belongs at the far end of that chain, not necessarily the object you first noticed was large.</li>
+            <li style="margin-bottom:0.4rem;">A leak is defined by memory growth over time, independent of CPU usage — which distinguishes it cleanly from the next failure mode this Part covers, high CPU (lesson 317).</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen the precise definition of a managed leak, the four repeat-offender patterns, and how to actually find one. Let's confirm it landed.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What precisely causes a memory leak in a managed .NET application, given that the runtime has a garbage collector?</p>
+        <ul class="options">
+            <li>A) The garbage collector occasionally forgets to run, leaving allocated memory behind</li>
+            <li>B) An object remains unintentionally reachable from a GC root — a static field, an un-unsubscribed event, an undisposed resource — so the GC, correctly following its own rules, never reclaims it</li>
+            <li>C) .NET applications allocate memory using malloc internally, and a missing free call causes the leak</li>
+            <li>D) The operating system fails to return memory pages to the .NET process</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the precise, correct framing the lesson opens with — the GC always collects what's unreachable; a leak means something is still, unintentionally, reachable from a root, which is a bug in what your code holds a reference to, not a bug in the collector.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The GC does not "forget" to run — it runs correctly and predictably according to its own reachability rules; the lesson is explicit that the collector itself isn't malfunctioning.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is the unmanaged C/C++-style leak the lesson explicitly contrasts against — .NET's managed heap doesn't work via malloc/free, and this framing is exactly what the lesson warns against carrying over.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This describes an OS-level memory management issue entirely outside the scope of managed reachability — not what this lesson's leaks are about.</p>
+                <p><strong>Reinforcement:</strong> Managed leaks are about unintended reachability, not a missing deallocation — get this framing right before diagnosing anything.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Object A subscribes to an event on object B (<code>b.SomethingHappened += a.OnSomethingHappened</code>). If A is supposed to be short-lived but B is a long-lived singleton, and A never unsubscribes, what happens?</p>
+        <ul class="options">
+            <li>A) Nothing — event subscriptions don't hold references and have no effect on garbage collection</li>
+            <li>B) B's event holds a reference to A through the delegate, so A remains reachable — and therefore alive — for as long as B is, even after A's intended usefulness has ended</li>
+            <li>C) A automatically gets unsubscribed the next time the garbage collector runs</li>
+            <li>D) B gets kept alive by A instead, since A initiated the subscription</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the exact direction of reference the lesson emphasizes — B's event invocation list holds a delegate whose target is A, so B (the publisher) keeps A (the subscriber) reachable, not the other way around. Without an explicit unsubscribe, A lives exactly as long as B does.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Event subscriptions are ordinary delegate references under the hood, and delegate references absolutely affect reachability — this is precisely why the pattern causes real leaks.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The GC has no special-case behavior for "this subscription looks unintentional" — it simply follows reachability, and a still-subscribed delegate keeps its target reachable indefinitely.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This reverses the actual direction — the publisher's event holds references to its subscribers' delegates, not the reverse.</p>
+                <p><strong>Reinforcement:</strong> The reference always runs from publisher to subscriber — a longer-lived publisher can silently keep a shorter-lived subscriber alive forever.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A service's memory usage sits at a stable 800 MB for weeks, occasionally dipping to 600 MB after a Gen2 collection, then climbing back to roughly 800 MB again in a repeating pattern. According to this lesson, is this evidence of a memory leak?</p>
+        <ul class="options">
+            <li>A) Yes — any memory usage above a few hundred megabytes always indicates a leak</li>
+            <li>B) Not necessarily — a leak specifically means a sustained upward trend that never recovers after a full collection; a stable, repeating sawtooth pattern is consistent with ordinary GC behavior, not a leak</li>
+            <li>C) Yes, because the memory never drops to exactly zero</li>
+            <li>D) It's impossible to tell without running dotnet-trace first</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the "Common Confusion" point the lesson makes — high or fluctuating memory usage that repeats a stable pattern after collections is ordinary, healthy GC behavior. A leak is specifically defined by a trend: memory that keeps climbing and never comes back down.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Absolute memory usage alone says nothing about a leak — a large but stable working set can be entirely intentional and healthy, as the lesson explicitly notes.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Memory never dropping to zero is completely normal and expected for any running process — the GC doesn't (and shouldn't) reclaim everything down to nothing.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> dotnet-trace is the CPU/event-tracing tool from lesson 233/315 — for a memory trend question like this, the relevant tool is dotnet-counters (to observe the trend) or dotnet-gcdump (to diagnose it further), not dotnet-trace.</p>
+                <p><strong>Reinforcement:</strong> Confirm a genuine growth trend before reaching for leak-diagnosis tooling — a stable or repeating pattern isn't a leak.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> What is the purpose of taking two dotnet-gcdump snapshots hours apart and diffing them, rather than analyzing a single snapshot?</p>
+        <ul class="options">
+            <li>A) A single snapshot cannot be opened or analyzed at all — dotnet-gcdump requires at least two files to function</li>
+            <li>B) Comparing object counts between the two snapshots reveals which object type is actually growing over time — a single snapshot only shows a static picture with no sense of trend</li>
+            <li>C) The first snapshot is always discarded; only the second one matters</li>
+            <li>D) Two snapshots are needed because dotnet-gcdump cannot capture reference chains, only object counts</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A single heap snapshot is just a moment in time — it can't tell you what's growing. Diffing two snapshots taken hours apart is exactly what surfaces which object type's count is climbing, pointing you at the real culprit instead of guessing from a static picture.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A single gcdump snapshot is a perfectly valid, analyzable file on its own — it just can't show a trend by itself, which is why the workflow uses two.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Both snapshots matter — the comparison between them, not either one alone, is what reveals the growth.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A gcdump snapshot does capture the full object graph, including references between objects — that's exactly what makes "path to root" analysis possible on either snapshot.</p>
+                <p><strong>Reinforcement:</strong> One snapshot shows what's there; two snapshots, diffed, show what's growing — that difference is the whole point of the workflow.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> A developer says: "This service allocates a lot of memory per request, so it must have a memory leak." Based on this lesson, what's the issue with that reasoning?</p>
+        <ul class="options">
+            <li>A) High allocation rate always equals a leak — the reasoning is correct</li>
+            <li>B) High allocation volume describes GC pressure (allocation rate), which is a different concern from a leak — a leak specifically requires those allocations to remain unintentionally reachable and never get reclaimed at all, not just that a lot gets allocated per request</li>
+            <li>C) .NET applications cannot leak memory under any circumstances, so the claim is automatically false</li>
+            <li>D) Memory leaks can only occur in unmanaged code, never in a service written entirely in C#</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> A high allocation rate per request is normal for many workloads and gets cleaned up fine by the GC as long as nothing stays reachable afterward — that's a throughput/GC-pressure concern, distinct from a leak. A leak specifically requires those objects to remain reachable and never get collected, which allocation volume alone doesn't establish.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This conflates two different concerns — allocating a lot per request (which the GC can handle fine if objects are later unreachable) is not the same as objects staying reachable forever.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> This is the exact misconception the lesson corrects — managed code absolutely can leak, precisely through unintended reachability; the lesson exists specifically to explain how.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Managed leaks happen in ordinary, fully-managed C# code all the time — every pattern this lesson covered (event handlers, static collections, undisposed resources, closures) is pure managed code with no unmanaged component required.</p>
+                <p><strong>Reinforcement:</strong> Allocation rate and reachability are different questions — a leak is specifically about the second one.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know precisely what a managed memory leak is, the handful of patterns that cause almost every real one, and how to actually find one with dotnet-gcdump. Next up: the opposite kind of resource pressure — a process that's using every ounce of CPU it can get. High CPU.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

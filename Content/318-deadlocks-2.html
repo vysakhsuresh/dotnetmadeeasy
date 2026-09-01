@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>318 - Deadlocks · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Lesson 218 taught you what a deadlock is and why it happens. It never had to teach you how to find one in a process you can't step through — because on your own machine, you can always just reproduce it under a debugger. In production, you usually can't.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>You already know exactly what a deadlock is. Lesson 218 walked the two classic shapes in full — the two-lock ordering deadlock and the notorious sync-over-async deadlock built on a captured <code class="icode">SynchronizationContext</code> — in enough depth that re-deriving any of it here would just waste your time. None of that comes back up in this lesson.</p>
+    <p>What lesson 218 couldn't teach you, because it wasn't the question yet, is this: a production service has gone completely unresponsive. Requests hang and never return. There's no exception, no crash, nothing in the logs pointing anywhere. You strongly suspect a deadlock — but you can't attach a debugger with breakpoints to a live process the way lesson 060 taught, and even if you technically could, the deadlock has already happened by the time you'd get there; there's no line of code to put a breakpoint on. <strong>This lesson is entirely about that gap: how you actually confirm a deadlock occurred in a process you can't step through, using a process dump and the SOS debugging extension — and, just as importantly, how you tell a genuine deadlock apart from thread pool starvation (lesson 319, next), which produces the exact same "everything is hanging" symptom for a completely different reason.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Diagnosing a live deadlock</strong> means capturing a frozen snapshot of a hung process's entire state — every thread, every stack, every lock currently held — and reading that snapshot afterward to find the specific cycle of threads waiting on each other. You're not watching it happen; you're photographing the aftermath and reconstructing the scene from the photograph.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A <strong>process dump</strong> is a complete, point-in-time capture of a process's memory — for a .NET process, that includes every managed thread's call stack, every object on the heap, and the CLR's own internal bookkeeping about locks and synchronization objects. <code class="icode">dotnet-dump</code> is the diagnostics-suite tool (same family as <code class="icode">dotnet-trace</code> and <code class="icode">dotnet-counters</code> from lessons 315 and 317) that captures this snapshot from a running process, and analyzes it afterward using <strong>SOS</strong> — the CLR's own debugging extension, which understands managed threads, stacks, and lock objects well enough to answer questions no generic memory viewer could.</p>
+
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🔑</span> A useful, honest asymmetry with lesson 315</div>
+        <p>Lesson 315 explained why you generally can't pause a live production process to inspect it — pausing drops real traffic. A genuinely deadlocked process is the one situation where that concern mostly evaporates: if the threads serving requests are already permanently stuck, they aren't making progress anyway, and capturing a dump doesn't cost you anything those threads were still doing. This is exactly why <code class="icode">dotnet-dump collect</code> is a safe, standard first move the moment you suspect a genuine hang — you're not disrupting healthy work, you're documenting work that had already stopped.</p>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — By the Time You're Paged, the Moment Has Passed</h3>
+    <p>Lesson 218's interactive debugging works beautifully when you can reproduce the exact interleaving that causes a deadlock, on demand, on your own machine. Production deadlocks are rarely that cooperative — they might depend on a specific, rare timing window under real concurrent load that never shows up in a local repro attempt. By the time an alert fires and an engineer is looking at the system, the deadlock already happened; there's no "step forward one line" available because nothing is stepping forward at all, forever.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Freeze the Whole Picture, Then Read It Offline</h3>
+    <p>Instead of trying to catch the deadlock as it forms, <code class="icode">dotnet-dump</code> captures everything at once, after the fact — every thread's exact call stack, and the CLR's own record of which synchronization objects are currently held by which thread. That snapshot can then be analyzed calmly, offline, without the process even needing to still be running — the investigation and the incident are decoupled in time, which is exactly what a live, unrepeatable hang requires.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — Deadlock vs. Thread Pool Starvation, Up Front</h2>
+    <p>Before touching any tooling, it's worth settling this distinction clearly, because it's the single most common misdiagnosis in this territory, and lesson 319 depends on you having it straight: both a real deadlock and thread pool starvation present, to a user, as "the request never comes back." They are not the same failure, they don't share a root cause, and they don't share a fix.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>🔒 Genuine Deadlock (this lesson)</h4>
+            <ul>
+                <li>Specific threads are permanently blocked, each waiting on a lock/monitor another one of them holds — a real circular wait</li>
+                <li>Those specific hung requests <strong>never</strong> recover on their own — not in a second, not in an hour</li>
+                <li>Plenty of other threads may be completely free and healthy the whole time</li>
+                <li>Confirmed by finding an actual cycle in a process dump</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>🐌 Thread Pool Starvation (lesson 319)</h4>
+            <ul>
+                <li>No thread is waiting on any other thread's lock — there simply aren't enough available worker threads to dequeue the backlog of queued work</li>
+                <li>Requests are slow or timing out, but do eventually complete once a thread frees up — genuine, if painful, progress is still happening</li>
+                <li>Uniformly affects everything competing for the thread pool, not two specific threads</li>
+                <li>Confirmed by watching ThreadPool metrics via dotnet-counters, not a dump</li>
+            </ul>
+        </div>
+    </div>
+
+    <p>The one-sentence version worth memorizing: a deadlock is threads waiting on <em>each other</em>; starvation is threads waiting for <em>a free worker thread that isn't there yet</em>. No thread in a starvation scenario is "held hostage" by another thread's lock — there's no cycle to find, because there's nothing to be circular about.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Capturing and Reading a Dump</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">FROM "IT'S HUNG" TO "CONFIRMED CYCLE"</div>
+        <div class="flow-step">
+            <div class="step-label">1. NOTICE THE SIGNATURE — requests hang, CPU sits near idle, health checks (302) start failing</div>
+            <ul><li>Near-zero CPU with hanging requests is the tell — contrast this against lesson 317's high-CPU signature; a busy loop burns cycles, a deadlock burns nothing at all because the blocked threads aren't executing anything.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. CAPTURE A DUMP BEFORE RESTARTING — dotnet-dump collect</div>
+            <ul><li><code>dotnet-dump collect -p &lt;pid&gt;</code> — writes a full snapshot of the process to a dump file. This is the exact "capture evidence before restarting" advice from lesson 315, applied here.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. LOAD THE DUMP OFFLINE — dotnet-dump analyze</div>
+            <ul><li><code>dotnet-dump analyze &lt;dumpfile&gt;</code> — opens an interactive SOS session against the frozen snapshot. The original process can be restarted or even killed at this point; the dump is now a fully self-contained artifact.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. LIST THREADS AND INSPECT EACH ONE'S STACK — threads, clrstack</div>
+            <ul><li>The <code>threads</code> SOS command lists every managed thread in the dump. Switching to one and running <code>clrstack</code> shows exactly where that thread was stopped — which method, and often which specific lock-acquisition call it was blocked inside.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. FIND WHO OWNS WHAT — syncblk</div>
+            <ul><li>The <code>syncblk</code> SOS command lists every active sync block in the process — each lock currently held, which thread owns it, and which threads are waiting on it. This is the single most direct way to confirm a deadlock: it shows ownership and waiting relationships explicitly, not just individual stack traces.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">6. CONFIRM THE CYCLE — is the waiting circular?</div>
+            <ul><li>If <code>syncblk</code> shows Thread A waiting on a lock owned by Thread B, and Thread B waiting on a lock owned by Thread A, that's the exact cycle lesson 218 defined — now confirmed from real, captured evidence, not assumed from a hunch.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — Reading a Simplified syncblk Output</h2>
+    <p>Here's a simplified, illustrative shape of what a <code class="icode">syncblk</code> listing communicates once you're looking at the two-lock deadlock from lesson 218 frozen inside a dump — the exact field names and formatting vary by SOS version, but the information it's built to surface is always this:</p>
+    <div class="code-block"><code>&gt; syncblk
+
+Index   SyncBlock  MonitorHeld  Recursion  Owning Thread  Object     Waiters
+    2   0000021a0  1            0          0x4a10 (Thread A)  0x02f...  Thread B
+    3   0000021b8  1            0          0x4a24 (Thread B)  0x031...  Thread A
+
+&gt; setthread 0x4a10
+&gt; clrstack
+   ... TransferFromAccountXToY(...)
+   ...   at System.Threading.Monitor.Enter(Object obj)   ← blocked here, waiting for _lockB
+
+&gt; setthread 0x4a24
+&gt; clrstack
+   ... TransferFromAccountYToX(...)
+   ...   at System.Threading.Monitor.Enter(Object obj)   ← blocked here, waiting for _lockA</code></div>
+    <p><strong>Meaning:</strong> The <code class="icode">syncblk</code> table alone already tells the story — Thread A owns one lock and has Thread B listed as a waiter; Thread B owns the other lock and has Thread A listed as a waiter. Following each thread's <code class="icode">clrstack</code> confirms exactly what lesson 218 predicted: each is parked inside <code class="icode">Monitor.Enter</code>, permanently, waiting for a lock the other thread will never release. This is the confirmed circular-wait signature — not a guess based on "the app seems stuck," but read directly off frozen, real evidence.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>An inventory service's health probe (lesson 302) starts failing intermittently, and support reports that certain order-processing requests simply never complete — no timeout, no error, no recovery, ever, for those specific requests. Other endpoints on the same instance keep working fine, which already rules out a whole-process crash or resource exhaustion. Following this lesson's workflow, an engineer runs <code class="icode">dotnet-dump collect</code> against the hung instance before restarting it, then <code class="icode">dotnet-dump analyze</code> offline. <code class="icode">syncblk</code> reveals exactly two threads holding each other's locks — traced back to a recent change where a new "reserve stock" code path and an existing "release stock" code path acquire the same two per-warehouse locks, but in opposite order, exactly the lesson-218 pattern, shipped without anyone noticing because it only manifests under a specific, rare concurrent timing. The fix is the same one lesson 218 already gave you — consistent lock ordering — but finding it here required this lesson's dump-analysis workflow, not a debugger, because the bug wasn't reproducible on demand.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📷</span> A Crime-Scene Photograph, Not a Stakeout</div>
+        <p>You weren't there to watch the standoff form — there was no stakeout, no live surveillance running the moment it happened. What you have instead is a single, comprehensive photograph of the frozen scene, taken right after the fact: every person's exact position, what's in each of their hands, and who's facing whom. A process dump is exactly this photograph. <code class="icode">syncblk</code> is like a caption on the photo listing who's holding what and who's reaching for it — and once you have that caption, tracing the cycle ("this one is reaching for what that one's holding, who is in turn reaching for what this one's holding") doesn't require having witnessed the standoff form at all. The photograph alone is enough to prove the standoff exists.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p><code class="icode">dotnet-dump collect</code> relies on the operating system's own native process-snapshot facility (on Linux, the CLR's <code class="icode">createdump</code> mechanism; a comparable mechanism on Windows and macOS) to capture the process's full memory image — stacks, heap, and loaded module information — at one instant. Crucially, that raw memory image on its own is just bytes; it has no notion of "a C# thread" or "a lock" by itself. That's exactly what <strong>SOS</strong> supplies: a CLR-aware debugging extension that knows how to walk that raw memory and reconstruct managed concepts from it — which native OS threads correspond to which managed threads, what each one's managed call stack actually looked like, and which CLR-level sync blocks (the data structure backing every <code class="icode">lock</code> statement, per lesson 218's "under the hood" section) were held by whom. <code class="icode">dotnet-dump analyze</code> is the harness that loads a dump and hosts SOS's commands interactively, which is why <code class="icode">threads</code>, <code class="icode">clrstack</code>, and <code class="icode">syncblk</code> all work identically whether you're inspecting a dump captured seconds ago or one captured last week.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Everything is hanging, so it must be a deadlock" — not necessarily</h3>
+    <p>This is the exact misdiagnosis the Big Picture section above exists to prevent. Hanging requests are also the headline symptom of thread pool starvation (lesson 319) — a completely different root cause with a completely different fix. The only way to actually tell them apart is to look: a dump showing a genuine <code class="icode">syncblk</code> cycle confirms a deadlock; a dump showing plenty of threads simply not running anything in particular, alongside <code class="icode">dotnet-counters</code> showing a large, growing ThreadPool queue, points to starvation instead.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "0% CPU always confirms a deadlock" — it confirms threads aren't executing, not why</h3>
+    <p>Near-idle CPU is consistent with a genuine deadlock, but it's equally consistent with starvation (threads simply have no work assigned to run) or even a process legitimately waiting on slow external I/O with nothing pathological going on at all. CPU usage alone narrows the space of possibilities; only <code class="icode">syncblk</code> and a confirmed cycle actually proves a deadlock occurred.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Restarting the hung process before capturing a dump</h4>
+    <p>❌ The instinctive first move — kill and restart — relieves the symptom immediately but destroys the only evidence that could confirm what actually happened, or rule out a deadlock in favor of a different cause entirely.</p>
+    <p>✅ Wherever operationally possible, run <code class="icode">dotnet-dump collect</code> first. Since the hung threads weren't making progress anyway, this costs you essentially nothing you weren't already losing.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming it's a deadlock and searching the codebase for lock statements before confirming anything</h4>
+    <p>❌ Spending an hour reading every <code class="icode">lock</code> block in a large codebase, hunting for a plausible ordering bug, on the assumption that the symptom alone proves it's a deadlock.</p>
+    <p>✅ Confirm via a dump and <code class="icode">syncblk</code> first — it tells you immediately whether a real cycle exists at all, and if it does, exactly which objects and which threads are involved, turning a codebase-wide search into a targeted one.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Not knowing dotnet-dump exists, and trying to attach an interactive debugger to a production container instead</h4>
+    <p>❌ Reaching for the only tool a local-development background has taught (lesson 060's debugger), which — even where technically reachable — offers no way to "rewind" to the moment a deadlock already happened, and would pause a process that's arguably already not making progress on plenty of its threads.</p>
+    <p>✅ Reach for <code class="icode">dotnet-dump</code> specifically for a suspected hang — it's built for exactly this after-the-fact, non-interactive investigation.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Whenever specific requests hang indefinitely with no error, no timeout, and no recovery — and, ideally, before restarting the affected process.</li>
+        <li style="margin-bottom:0.4rem;">Alongside a check of ThreadPool metrics (dotnet-counters, lesson 319) — the two investigations are cheap to run together, and together they cleanly separate a real deadlock from starvation instead of guessing.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Not</strong> the right tool when requests are simply slow but do eventually complete — that pattern of "still making progress, just too slowly" points toward starvation (319) or a database bottleneck (320), not a genuine, permanent deadlock.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> A confirmed deadlock never recovers on its own — if you wait five more minutes and the exact same requests are still hung, with the exact same threads shown by a fresh dump, that persistence is itself strong evidence for a real cycle rather than a temporary backlog that starvation would eventually work through.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Can't reproduce it live?</strong> Freeze the whole process instead: <code>dotnet-dump collect</code>, then read it offline with <code>dotnet-dump analyze</code>.<br />
+        <strong>threads</strong> = who's here. <strong>clrstack</strong> = what each one was doing when it froze. <strong>syncblk</strong> = who's holding what, and who's waiting for it.<br /><br />
+        <strong>Deadlock</strong> = a real cycle in syncblk — threads waiting on each other, never recovers.<br />
+        <strong>Starvation (319)</strong> = no cycle at all, just not enough free worker threads — eventually recovers as threads free up.<br />
+        <strong>Remember:</strong> capture the dump before you restart — the hung threads aren't losing you anything by staying frozen a little longer.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">You can't step through a production deadlock the way lesson 218's examples were built to be stepped through — by the time you notice it, the standoff has already formed and nothing is moving to step through.</li>
+            <li style="margin-bottom:0.4rem;"><code>dotnet-dump collect</code> captures a full snapshot of a live (or hung) process's threads, stacks, and sync blocks; <code>dotnet-dump analyze</code> loads that snapshot offline for interactive inspection via SOS — the CLR's own debugging extension.</li>
+            <li style="margin-bottom:0.4rem;"><code>threads</code> lists every managed thread; <code>clrstack</code> shows where a specific one was frozen; <code>syncblk</code> shows exactly who owns each lock and who's waiting on it — the direct, evidence-based way to confirm a real circular wait.</li>
+            <li style="margin-bottom:0.4rem;">Because hung threads aren't making progress anyway, capturing a dump before restarting a suspected-deadlocked process costs you essentially nothing — and preserves the only evidence that can confirm what actually happened.</li>
+            <li style="margin-bottom:0.4rem;"><strong>The distinction that matters most:</strong> a genuine deadlock is a confirmed cycle of threads waiting on each other's locks, and never recovers on its own. Thread pool starvation (lesson 319, next) produces the identical "everything is hanging" symptom with no cycle at all — just not enough free threads to keep up — and it does eventually recover as capacity frees up. Same symptom, opposite root cause, opposite fix.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how to confirm a deadlock in a process you can't step through, and — critically — how it differs from thread pool starvation. Let's check it landed.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why is capturing a process dump generally considered safe to do against a process you suspect is genuinely deadlocked, even though lesson 315 warned against pausing a live production process?</p>
+        <ul class="options">
+            <li>A) dotnet-dump never actually pauses the process at all, under any circumstances</li>
+            <li>B) If the threads serving requests are already permanently stuck in a real deadlock, they aren't making progress anyway — so capturing a snapshot doesn't cost you any real work those threads were still doing</li>
+            <li>C) Process dumps are only used on staging environments, never on production</li>
+            <li>D) Deadlocked processes automatically stop serving all traffic, so there's no real traffic left to protect</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the exact nuance the lesson draws out — a genuinely hung process's stuck threads aren't producing useful work regardless of whether you capture a dump, so the usual "don't pause a live process" caution from lesson 315 doesn't really apply the same way here.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Capturing a dump does involve a brief pause to take the snapshot — the point isn't that there's zero pause, it's that the pause costs you nothing extra for threads that were already stuck.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The lesson explicitly frames dotnet-dump as a standard production diagnostic tool for a suspected hang, not something restricted to staging.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A deadlock typically affects specific threads/requests, not the entire process — other endpoints and threads can remain completely healthy, as the Real-World Example illustrates, so there is often still real traffic elsewhere in the same process.</p>
+                <p><strong>Reinforcement:</strong> The safety argument is specific: stuck threads have nothing left to lose from a brief snapshot.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In a captured dump, what does the syncblk SOS command specifically show, and why is it the most direct way to confirm a genuine deadlock?</p>
+        <ul class="options">
+            <li>A) It lists every method ever called during the process's lifetime</li>
+            <li>B) It lists every active sync block — each lock currently held, which thread owns it, and which threads are waiting on it — making a circular ownership/waiting relationship directly visible rather than inferred</li>
+            <li>C) It shows the exact CPU percentage each thread consumed since the process started</li>
+            <li>D) It automatically restarts any thread found to be blocked for too long</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly what the lesson describes — syncblk shows ownership and waiting relationships explicitly for every active lock, which is what lets you directly read off a circular wait instead of piecing it together indirectly from separate stack traces alone.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> syncblk is specifically about synchronization objects (locks) and their owners/waiters — it isn't a historical log of every method call during the process's lifetime.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> CPU usage per thread isn't what syncblk reports — that kind of metric belongs to tools like dotnet-counters or dotnet-trace (lesson 317), not SOS's lock-inspection commands.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Dump analysis is purely observational — it inspects a frozen snapshot and takes no automatic action on the (now potentially no-longer-running, or still-running-unaffected) original process.</p>
+                <p><strong>Reinforcement:</strong> syncblk is the command that turns "I suspect a deadlock" into "confirmed: Thread A owns lock X and waits on lock Y, Thread B owns lock Y and waits on lock X."</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> A production service has hanging requests. A dump is captured, and syncblk shows several threads simply not holding or waiting on any sync block at all — they're just not running anything, while dotnet-counters shows a large, growing ThreadPool queue length. What does this most likely indicate?</p>
+        <ul class="options">
+            <li>A) A textbook deadlock, exactly like the two-lock example — the fix is consistent lock ordering</li>
+            <li>B) Thread pool starvation (lesson 319), not a deadlock — there's no circular wait to find here; the threads simply aren't blocked on each other, there just aren't enough free worker threads to process the queued backlog</li>
+            <li>C) A sync-over-async deadlock exactly as described in lesson 218</li>
+            <li>D) A memory leak, since the ThreadPool queue is growing</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The absence of any real syncblk cycle, combined with a growing ThreadPool queue, is exactly the starvation signature this lesson contrasts against a deadlock — no thread is waiting on another thread's lock; there simply aren't enough available threads to keep up with queued work.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A deadlock requires a confirmed syncblk cycle — threads owning and waiting on each other's locks. Here, syncblk shows no such ownership/waiting relationship at all, ruling out a genuine deadlock.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A sync-over-async deadlock (lesson 218) is still a real deadlock — it would show up in syncblk (or an equivalent captured-context wait) as threads/continuations stuck waiting on each other, which isn't what's described here.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> A growing ThreadPool queue reflects a backlog of work waiting to be dequeued, not heap object reachability — that's an unrelated concern from lesson 316, diagnosed with a different tool (dotnet-gcdump) entirely.</p>
+                <p><strong>Reinforcement:</strong> No cycle in syncblk, plus a growing ThreadPool queue, points to starvation — exactly the distinction the next lesson builds on.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> Why does this lesson deliberately avoid re-explaining what causes a deadlock, or why sync-over-async deadlocks occur?</p>
+        <ul class="options">
+            <li>A) Because deadlocks are no longer relevant in modern .NET</li>
+            <li>B) Because lesson 218 already covered the causal/conceptual side of deadlocks in full — this lesson's job is specifically the diagnosis side: confirming a deadlock occurred in a live process you can't step through</li>
+            <li>C) Because sync-over-async deadlocks cannot be diagnosed using dotnet-dump</li>
+            <li>D) Because this lesson assumes deadlocks are always caused by database connection pool exhaustion</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This lesson explicitly builds on lesson 218 as a prerequisite, deliberately not re-deriving the two-lock or sync-over-async deadlock shapes — its entire focus is the missing half of the picture: how to confirm a deadlock happened in a process you can't interactively step through.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Nothing in the lesson suggests deadlocks are no longer relevant — quite the opposite, the Real-World Example shows one shipping in a recent production change.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A sync-over-async deadlock is still, ultimately, threads/continuations waiting on each other — it's fully diagnosable via a dump and SOS, just potentially requiring inspection of the captured SynchronizationContext state rather than a plain lock statement.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This conflates deadlocks with database bottlenecks (lesson 320), an entirely different failure mode with a different root cause and different diagnostic tools.</p>
+                <p><strong>Reinforcement:</strong> Lesson 218 owns the "what and why," this lesson owns the "how do you prove it happened" — deliberately non-overlapping.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> An engineer suspects a production hang is a deadlock, immediately restarts the affected pod to restore service, and only afterward tries to investigate the cause. What did this approach cost them, according to this lesson?</p>
+        <ul class="options">
+            <li>A) Nothing — restarting first and investigating after is always the recommended order</li>
+            <li>B) The restart likely destroyed the only evidence (the frozen thread states and sync block ownership) that could have confirmed whether it was a genuine deadlock or something else entirely, like starvation</li>
+            <li>C) Restarting a pod always causes a memory leak on the next startup</li>
+            <li>D) This approach has no diagnostic downside as long as logs were enabled</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly Mistake 1 from the lesson — restarting before capturing a dump relieves the symptom but destroys the frozen thread/lock state that dotnet-dump and syncblk depend on, making it impossible afterward to confirm whether it was truly a deadlock.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson explicitly recommends capturing a dump before restarting wherever operationally possible — restarting first is called out as a common mistake, not a recommended order.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Restarting a process has no inherent connection to causing a memory leak — that's an unrelated claim not supported anywhere in this lesson or lesson 316.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Ordinary application logs generally don't capture thread stacks or sync block ownership at the level of detail a dump does — logging alone doesn't substitute for the evidence a dump would have preserved.</p>
+                <p><strong>Reinforcement:</strong> Whenever it's operationally feasible, capture the dump before you restart — you rarely get a second chance at that exact frozen evidence.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now know how to confirm — not guess at — a deadlock in a live process using dotnet-dump and SOS, and exactly how it differs from a lookalike failure mode. Next up: that lookalike, in full. Thread Pool Starvation.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
