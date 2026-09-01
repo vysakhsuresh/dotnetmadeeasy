@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>321 - Production Incident Analysis · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Testing tries to catch a failure before it happens. Production debugging figures out what happened once it did anyway. This Part has now taught you both halves — this lesson is where they meet.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Fourteen lessons ago, Part XI opened with unit tests (308) — the smallest, cheapest way to catch a bug before it ships. It built up through integration testing, mocking, and testcontainers (309-311), through API and performance testing (312-313), to load testing (314), which put a whole system under realistic pressure on purpose, to watch it bend before a real customer ever could. Then lesson 315 turned the page entirely: no more controlled rehearsals. Real production, real failures, no debugger. Lessons 316 through 320 handed you five specific, sharp tools — one for a leak, one for pathological CPU, one for a genuine deadlock, one for thread pool starvation, one for a database bottleneck — each with its own signature, its own diagnostic command, and its own fix.</p>
+    <p>None of that is worth much until you can do it under pressure, in the right order, on a system you're seeing fail for the first time. <strong>This capstone lesson walks one complete, realistic incident from first alert to root cause to fix — using lesson 315's triage framework to narrow the search, systematically ruling out each of lessons 316-320's failure modes with real evidence instead of guesswork, and closing the loop by asking what this Part's first half, the testing discipline of lessons 308-314, should have caught before any of it ever reached a real customer.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Incident analysis</strong> is the disciplined, end-to-end process of taking a live production problem from "something's wrong" to "here's exactly why, here's the fix, and here's what should have caught it earlier" — using evidence at every step, never a hunch dressed up as a conclusion.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>A rigorous incident analysis applies lesson 315's triage framework first to narrow the space of plausible causes, then systematically tests each candidate failure mode from lessons 316-320 against real diagnostic evidence — ruling each one in or out explicitly — until exactly one root cause is confirmed, not merely suspected. It closes not with a fix alone, but with a look backward at lessons 308-314's testing practices: which of them, applied earlier, would have caught this specific class of problem before it ever reached production.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Five Failure Modes Can Look Identical From the Outside</h3>
+    <p>Here is the uncomfortable truth this whole Part has been building toward: from a customer's point of view, "the app is timing out" is the entire observable symptom for a memory leak finally exhausting available memory (316), pathological CPU burning every core (317), a genuine deadlock (318), thread pool starvation (319), and a database bottleneck (320) alike. Guessing which one it is, and reaching for that lesson's fix on a hunch, is a coin flip with five sides. Worse, several of these causes actively chain into each other — lesson 320 showed a slow query triggering lesson 319's starvation; a slow-building leak (316) can eventually starve available memory for everything else running in the same process. Ad hoc firefighting doesn't scale against that kind of overlap.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Rule Out, Don't Guess In</h3>
+    <p>The fix isn't a smarter guess — it's a systematic elimination process, using the specific, distinguishing evidence each of lessons 316-320 already taught you to look for. Every failure mode in this Part has at least one piece of evidence that confirms or rules it out cleanly: a growing gcdump diff, a flame graph's dominant method, a confirmed syncblk cycle, a ThreadPool queue length, a captured SQL statement's execution plan. Walk through them in a sensible order, and the coin flip disappears.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — The Diagnostic Decision Tree</h2>
+    <p>Here is the distinguishing signal for each failure mode this Part covered, side by side — this is the map an incident should be walked against, not five separate lessons in isolation:</p>
+
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">📈</span>
+            <div class="label">Memory Leak (316)</div>
+            <div class="desc">Memory trends upward for hours/days, never recovers after a full GC. Confirmed by two dotnet-gcdump snapshots, diffed.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🔥</span>
+            <div class="label">High CPU (317)</div>
+            <div class="desc">CPU pinned high, disproportionate to throughput. Confirmed by a dotnet-trace flame graph dominated by one narrow method.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🔒</span>
+            <div class="label">Deadlock (218/318)</div>
+            <div class="desc">Specific requests hang forever, CPU near idle, never recover. Confirmed by a dotnet-dump syncblk cycle.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🐌</span>
+            <div class="label">Starvation (319)</div>
+            <div class="desc">Everything using the pool slows uniformly, but eventually completes. Confirmed by dotnet-counters ThreadPool queue/thread metrics.</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🗄️</span>
+            <div class="label">DB Bottleneck (320)</div>
+            <div class="desc">Only DB-touching endpoints are slow. Confirmed by EF Core logging/interceptors and an execution plan.</div>
+        </div>
+    </div>
+
+    <p>Notice the shape of this table: it's the same three-question triage framework from lesson 315 — what changed, what the graphs show, which dependency is implicated — refined one level further into "and once you know roughly which category, here's the one piece of evidence that actually confirms it." That's what makes this a decision tree rather than five unrelated checklists.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — One Incident, Walked End to End</h2>
+    <p>A checkout API — the same shape of system this whole Advanced tier has been building toward — starts timing out under what looks like completely ordinary Tuesday-afternoon traffic. No unusual spike. Here's the investigation, in the order it actually happened:</p>
+
+    <div class="flow-container">
+        <div class="flow-title">FROM FIRST ALERT TO CONFIRMED ROOT CAUSE</div>
+        <div class="flow-step">
+            <div class="step-label">1. TRIAGE (LESSON 315) — WHAT CHANGED, WHAT DO THE GRAPHS SHOW, WHICH ENDPOINT?</div>
+            <ul><li>A deploy went out two hours before the first alert. The latency graph shows a gradual climb in p99, not a hard step change, with error rate still low — a backlog forming, not a crash. A distributed trace on a slow request shows almost all its time inside the checkout endpoint specifically, and within it, mostly inside a call to the order database.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. RULE OUT A MEMORY LEAK (316) — CHECK THE TREND</div>
+            <ul><li><code>dotnet-counters</code> shows a stable, unremarkable heap size — no upward trend at all. Ruled out. A leak takes hours or days to matter; this started climbing within minutes of the deploy, an inconsistent timeline.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. RULE OUT PATHOLOGICAL HIGH CPU (317) — CHECK THE CORRELATION</div>
+            <ul><li>CPU usage is mildly elevated but roughly proportional to the (unchanged) traffic level — no flame graph is even needed yet; the correlation check alone doesn't support a CPU-bound cause. Ruled out, tentatively.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. RULE OUT A GENUINE DEADLOCK (218/318) — CHECK FOR RECOVERY</div>
+            <ul><li>Watching the same set of slow requests over several minutes shows them eventually completing, just slowly — not permanently hung. A real deadlock never lets go; this is letting go, just too slowly. Ruled out without even needing a full dump.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. THREAD POOL STARVATION (319) IS PRESENT — BUT IS IT THE ROOT CAUSE?</div>
+            <ul><li><code>dotnet-counters</code> confirms it: ThreadPool Queue Length is climbing, Thread Count growing only slowly. Starvation is real and measurable — but lesson 319 also taught that starvation is very often a downstream symptom of something else blocking a thread. The question becomes: blocking on <em>what</em>?</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">6. CONFIRM THE DATABASE BOTTLENECK (320) — THE ACTUAL ROOT CAUSE</div>
+            <ul><li>EF Core command logging, enabled against the checkout endpoint, shows it: the deploy two hours ago accidentally dropped an <code>.Include()</code> that used to eager-load a customer's saved payment methods. What used to be one query is now one query per payment method — an N+1 pattern, invisible in code review, catastrophic under real order volume. Each of those extra round trips holds a pooled connection open a little longer, and the checkout handler blocks synchronously waiting on the whole thing, tying up a thread-pool thread for the duration — exactly lesson 319's classic trigger, with lesson 320's N+1 pattern as its true upstream cause.</li></ul>
+        </div>
+    </div>
+
+    <div class="callout">
+        <strong>💡 The one-sentence diagnosis:</strong> a dropped <code class="icode">.Include()</code> in a routine deploy caused an N+1 database bottleneck (320), which — because the code path blocked synchronously waiting on it — starved the ThreadPool (319) of capacity for every other checkout in flight. Not a leak, not pathological CPU, not a deadlock. Ruled out systematically, not guessed.
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — The Fix, and What Verified It</h2>
+    <div class="code-block"><code>// The regression, introduced by the deploy — a missing .Include()
+// silently turned one query into an N+1 pattern (lesson 320):
+var order = await db.Orders
+    // .Include(o =&gt; o.Customer.PaymentMethods)   ← accidentally removed
+    .FirstOrDefaultAsync(o =&gt; o.Id == orderId);
+
+// The fix — restore eager loading, and stop blocking the request
+// thread synchronously on the checkout confirmation step that made
+// the starvation (lesson 319) so much worse than the query alone:
+var order = await db.Orders
+    .Include(o =&gt; o.Customer.PaymentMethods)
+    .FirstOrDefaultAsync(o =&gt; o.Id == orderId);
+
+var confirmation = await paymentGateway.ConfirmAsync(order);   // was .Result</code></div>
+    <p><strong>Meaning:</strong> Neither half of the fix alone was the whole story. Restoring <code class="icode">.Include()</code> removes the N+1 pattern at its root; removing the blocking <code class="icode">.Result</code> call means that even a slower-than-ideal database call in the future won't tie up a thread-pool thread the same way again. Before shipping either change, the team re-ran the same performance test suite from lesson 313 against a copy of production-scale order data — exactly the check that should have caught this the first time.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — What the First Half of This Part Should Have Caught</h2>
+    <p>This is the question the incident isn't complete without asking. The N+1 pattern here was a one-line diff — removing an <code class="icode">.Include()</code> during an unrelated refactor — the kind of change that sails through a unit test (308) with a mocked repository (310) that was never going to notice an extra round trip, because there was no real database underneath it to measure against. Integration testing against a real, ephemeral database via testcontainers (309, 311) would have exercised the actual query, but with only a handful of seeded rows in a test fixture, the difference between one query and a dozen is invisible in wall-clock time — passes fine, ships fine. Performance testing (313), run specifically against a dataset shaped like production — customers with realistic numbers of saved payment methods, not three neat test records — is exactly the check built to catch a query whose cost scales badly with data shape, and load testing (314), replaying realistic concurrent checkout volume, is exactly what would have shown the thread pool starvation pattern forming under pressure, before a single real customer ever felt it. The gap wasn't a missing test category. It was a performance/load test that either didn't exist for this endpoint, or ran against unrealistic data — the specific blind spot lessons 313 and 314 exist to close.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🩺</span> Differential Diagnosis, Not a Guess at the First Symptom</div>
+        <p>A doctor presented with "the patient has a fever" doesn't reach for the first plausible-sounding illness and start treatment. They run a structured process called differential diagnosis: list every condition that could produce this symptom, then use specific tests — a blood panel, an imaging scan, a targeted question — to rule each one out or in, one at a time, until exactly one explanation survives every test that could have contradicted it. "Feels like an infection" isn't a diagnosis; a confirmed pathogen, isolated by a specific test that couldn't be explained any other way, is. This Part's five failure modes are exactly this list of candidate conditions, and lessons 316-320 each handed you the specific test that rules one in or out — not a symptom checklist to eyeball, but real evidence to run.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Every Lesson in This Part, Tied Together</h2>
+    <p>Each lesson in Part XI is, underneath, a specific answer to a question this incident-analysis discipline needs answered — worth laying out as one connected picture, the same way lesson 295 closed out Part IX:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Question a real incident raises</th><th>This Part's answer</th></tr></thead>
+            <tbody>
+                <tr><td>How do we catch a bug before it ever reaches production, cheaply?</td><td>Unit testing, mocking (308, 310)</td></tr>
+                <tr><td>How do we test against something that behaves like a real dependency?</td><td>Integration testing, testcontainers (309, 311)</td></tr>
+                <tr><td>How do we verify a whole API contract, not just one method?</td><td>API testing (312)</td></tr>
+                <tr><td>How do we know a change is fast enough before shipping it?</td><td>Performance testing (313)</td></tr>
+                <tr><td>How do we know the system survives realistic concurrent traffic?</td><td>Load testing (314)</td></tr>
+                <tr><td>Once it's live, how do we investigate without a debugger?</td><td>Non-invasive diagnostics, triage framework (315)</td></tr>
+                <tr><td>What if memory is quietly climbing?</td><td>Managed leak diagnosis via dotnet-gcdump (316)</td></tr>
+                <tr><td>What if CPU is pinned?</td><td>Legitimate vs. pathological CPU via dotnet-trace (317)</td></tr>
+                <tr><td>What if specific requests are permanently stuck?</td><td>Deadlock confirmation via dotnet-dump/syncblk (318)</td></tr>
+                <tr><td>What if everything is uniformly slow but still moving?</td><td>ThreadPool starvation via dotnet-counters (319)</td></tr>
+                <tr><td>What if only database-touching endpoints are slow?</td><td>Query/pool diagnosis via EF Core logging (320)</td></tr>
+                <tr><td>How does all of this fit together in one real incident?</td><td>This lesson</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "The first plausible-looking cause is the diagnosis" — no, it's a hypothesis until confirmed</h3>
+    <p>In the walkthrough above, thread pool starvation was real and measurable at step 5 — and it would have been tempting to stop there, ship a <code class="icode">SetMinThreads</code> mitigation, and call the incident closed. Lesson 319 explicitly warned against exactly this: starvation is very often a symptom of something else blocking a thread, not the root cause itself. Stopping at the first confirmed-but-not-necessarily-final piece of evidence is how the same incident recurs a week later.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "One incident can only have one failure mode" — real incidents often chain</h3>
+    <p>This walkthrough involved two of this Part's five failure modes at once, one causing the other. Ruling out the other three (leak, high CPU, deadlock) cleanly, and then correctly linking starvation to its actual upstream cause rather than treating it as the final answer, is exactly the systematic elimination this lesson has been building toward — not a search for a single tidy label.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Reaching for a specific lesson's tool before triaging with lesson 315's framework</h4>
+    <p>❌ Opening <code class="icode">dotnet-trace</code> immediately on instinct, without first checking what changed, what the graphs show, and which endpoint is implicated — burning time on a tool that may not even apply to the actual failure mode.</p>
+    <p>✅ Triage first, exactly as lesson 315 taught — it's what narrowed this incident from five candidate failure modes down to two worth real investigation, in minutes rather than hours.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Stopping at the first confirmed symptom instead of chasing it to its root</h4>
+    <p>❌ Confirming thread pool starvation via dotnet-counters and treating that confirmation as the finished diagnosis, shipping only a <code class="icode">SetMinThreads</code> mitigation.</p>
+    <p>✅ Ask what's blocking the thread in the first place — starvation is frequently a symptom of an upstream cause (a slow query, a database bottleneck) that needs its own fix, not just a higher thread floor.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Fixing the incident without asking what should have caught it earlier</h4>
+    <p>❌ Shipping the fix, closing the ticket, and moving on — leaving the exact same class of bug (a silently dropped eager-load, invisible without realistic data volume) free to recur on the next refactor.</p>
+    <p>✅ Close every incident by asking which of lessons 308-314's testing practices — run against realistic data and realistic concurrency — would have caught this before it shipped, and make sure that gap actually gets closed.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Every time a production incident's root cause isn't immediately, unambiguously obvious — which, in practice, is most of them.</li>
+        <li style="margin-bottom:0.4rem;">As a habit of mind even for incidents that get resolved quickly by luck — the systematic elimination is what turns "we got lucky" into "we know why, and we know it won't happen the same way twice."</li>
+        <li style="margin-bottom:0.4rem;">Always paired with a look backward at testing coverage (308-314) — an incident without that follow-up question is a fix without a lesson learned.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> Never let the first piece of confirming evidence end the investigation. Ask, explicitly, "is this the root cause, or a symptom of something upstream?" — exactly the question that turned a starvation confirmation into a database-bottleneck diagnosis in the walkthrough above.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Triage (315)</strong> narrows the search. <strong>Each failure mode's specific evidence (316-320)</strong> rules it in or out. <strong>Chase symptoms to their root</strong> instead of stopping at the first confirmation.<br /><br />
+        Leak (316): a growing gcdump diff. High CPU (317): a dominant flame graph method. Deadlock (218/318): a confirmed syncblk cycle. Starvation (319): a growing queue with no cycle. DB bottleneck (320): captured SQL and an execution plan.<br /><br />
+        <strong>Every incident closes with one more question:</strong> which of lessons 308-314's testing practices, run against realistic data and load, should have caught this before it shipped?
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway — Closing Part XI</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A real production incident should never be diagnosed by guessing at the first plausible-sounding cause — lessons 316-320 each gave you a specific, distinguishing piece of evidence that rules a failure mode in or out with confidence, not a hunch.</li>
+            <li style="margin-bottom:0.4rem;">Failure modes chain: this lesson's walkthrough showed a database bottleneck (320) triggering thread pool starvation (319) — the systematic elimination has to keep asking "is this the root cause, or a symptom of something upstream?" rather than stopping at the first confirmation.</li>
+            <li style="margin-bottom:0.4rem;">Lesson 315's triage framework — what changed, what the graphs show, which dependency is implicated — is what narrows five candidate failure modes down to the one or two actually worth deep investigation, before any specific tool gets opened.</li>
+            <li style="margin-bottom:0.4rem;">Every incident should close with one more question: which of lessons 308-314's testing practices, run against realistic data volume and realistic concurrent load, would have caught this before it ever reached production.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Testing (308-314) and production debugging (315-320) are two expressions of the same engineering discipline.</strong> Testing is methodical verification, run before a change ships, trying to catch a failure while it's still cheap and private. Production debugging is methodical diagnosis, run after a failure has already happened, trying to understand it precisely enough to fix it and prevent its recurrence. Neither replaces the other — a codebase with perfect tests still ships to a real world full of real, unpredictable traffic, and a team skilled at production diagnosis but careless about testing will spend its whole career firefighting problems better tests would have prevented. The engineer who reasons carefully with BOTH — who writes the test that would have caught this, and who diagnoses with evidence rather than instinct when something slips through anyway — is the engineer this entire Part, and honestly this entire Advanced tier, has been built to produce.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've walked one complete incident from first alert to confirmed root cause, using every tool this Part built. Let's confirm it all ties together — and close out Part XI.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> In this lesson's walkthrough, dotnet-counters confirms thread pool starvation is genuinely occurring. Why doesn't the investigation stop there?</p>
+        <ul class="options">
+            <li>A) It should have stopped there — starvation confirmed by dotnet-counters is always the final root cause of any hanging-request incident</li>
+            <li>B) Starvation is very often a downstream symptom of something else blocking a thread, not the root cause itself — the investigation needs to ask what's actually causing the blocking, which traced back to a database bottleneck</li>
+            <li>C) dotnet-counters cannot reliably detect thread pool starvation, so its result needed to be double-checked</li>
+            <li>D) Thread pool starvation and database bottlenecks are mutually exclusive, so confirming one automatically rules out ever needing to check the other</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the lesson's central point about chained failure modes — confirming starvation is real evidence, but lesson 319 already taught that starvation is frequently a symptom of an upstream blocking cause, which here turned out to be an N+1 database bottleneck (320).</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is precisely Mistake 2 the lesson warns against — stopping at the first confirmed symptom instead of chasing it to its actual root cause.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> dotnet-counters reliably reports ThreadPool queue length and thread count — the issue isn't reliability of the tool, it's that a confirmed symptom still needs its upstream cause identified.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The walkthrough shows exactly the opposite — the two failure modes are directly connected, with the database bottleneck causing the starvation, not excluding it.</p>
+                <p><strong>Reinforcement:</strong> A confirmed symptom is not automatically the root cause — always ask what's causing it.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> In the walkthrough, how was a genuine deadlock (218/318) ruled out without even needing a full dotnet-dump analysis?</p>
+        <ul class="options">
+            <li>A) Deadlocks can never occur in ASP.NET Core, so they were assumed impossible from the start</li>
+            <li>B) The same set of slow requests was observed to eventually complete over several minutes — a real deadlock never recovers on its own, so this recovery pattern alone was enough to rule it out</li>
+            <li>C) The CPU usage was too high to be consistent with a deadlock</li>
+            <li>D) A deadlock was ruled out because the error rate graph showed a hard step change</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This applies lesson 318's key distinguishing test directly — a genuine deadlock never recovers on its own, so observing the same requests eventually complete (even slowly) is sufficient evidence to rule out a true deadlock without needing a full dump analysis.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Deadlocks absolutely can occur in ASP.NET Core (the two-lock ordering deadlock from lesson 218 has nothing to do with SynchronizationContext) — this isn't the reasoning used, and it isn't accurate.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> While a genuine deadlock does show near-idle CPU for the affected threads, that's not what ruled it out in the walkthrough — the recovery-over-time observation was the specific test applied.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The walkthrough describes a gradual p99 climb with flat error rate, not a hard step change — and this graph shape was used earlier, for triage, not as the specific test that ruled out a deadlock.</p>
+                <p><strong>Reinforcement:</strong> "Does it ever recover?" is the fast, cheap first test for a deadlock — no dump required to at least tentatively rule it out.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> According to the Real-World Example, why did the N+1 regression pass unit tests (308) and even basic integration tests (309, 311) without being caught?</p>
+        <ul class="options">
+            <li>A) Unit and integration tests are incapable of catching any kind of database-related bug under any circumstances</li>
+            <li>B) The tests used mocked repositories or small seeded test datasets — with only a handful of rows, the difference between one query and a dozen extra round trips is invisible in wall-clock time, unlike performance/load testing (313, 314) run against realistic data volume</li>
+            <li>C) The team had no unit or integration tests at all for the checkout endpoint</li>
+            <li>D) The regression was only introduced after all testing had already completed, making it impossible to catch by definition</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the gap the Real-World Example identifies — mocked or lightly-seeded tests can't surface a query-count problem that only matters at realistic data volume, which is precisely why performance testing (313) and load testing (314), run against production-shaped data and concurrency, are the specific checks that would have caught it.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson doesn't claim these test types are universally incapable — it identifies a specific blind spot (unrealistic data volume/mocking) that a different test type (313/314) is built to cover.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The example explicitly describes the change passing through unit and integration testing — implying tests existed and ran, just without catching this specific class of issue.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The regression was introduced during a routine refactor before the deploy — well within the window where testing, if it exercised realistic data shape, could have caught it.</p>
+                <p><strong>Reinforcement:</strong> Different test types catch different classes of bug — a data-volume-sensitive regression specifically needs a test run against realistic data volume to surface.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team fixes a production incident, ships the fix, and closes the ticket without further discussion. What does this lesson say is missing from that response?</p>
+        <ul class="options">
+            <li>A) Nothing — shipping the fix is the complete, correct end of any incident response</li>
+            <li>B) The follow-up question of which of lessons 308-314's testing practices, run against realistic data and load, should have caught this before it ever shipped — without that, the same class of bug is free to recur</li>
+            <li>C) The team should have restarted the affected service before shipping the fix</li>
+            <li>D) The team should have immediately increased the ThreadPool's minimum thread count as a permanent solution</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly Mistake 3 and the lesson's closing synthesis — an incident isn't fully closed by a fix alone; asking which testing practice from lessons 308-314 should have caught it, and closing that gap, is what actually prevents recurrence.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson explicitly frames shipping the fix without this follow-up question as an incomplete response, leaving the same class of bug free to recur.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Restarting the service is unrelated to closing the loop on testing coverage — it's an operational action, not the reflective step the lesson is asking for here.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> SetMinThreads is explicitly framed elsewhere in this Part (lesson 319) as a blunt mitigation, not a permanent fix — and it addresses only the starvation symptom, not the underlying testing gap or the database-bottleneck root cause.</p>
+                <p><strong>Reinforcement:</strong> Closing an incident well means asking what testing gap allowed it, not just shipping the fix and moving on.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> How does this lesson characterize the relationship between testing (lessons 308-314) and production debugging (lessons 315-320)?</p>
+        <ul class="options">
+            <li>A) Testing makes production debugging entirely unnecessary once enough tests exist</li>
+            <li>B) They are two expressions of the same engineering discipline — testing is methodical verification before a change ships, production debugging is methodical diagnosis after a failure happens, and neither replaces the other</li>
+            <li>C) Production debugging is strictly more important, since testing cannot catch every possible bug</li>
+            <li>D) The two are unrelated skill sets that happen to appear in the same course Part by coincidence</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the lesson's explicit closing synthesis — testing and production debugging are framed as complementary, equally necessary expressions of the same underlying discipline: careful, evidence-based reasoning, applied before a change ships and again after a failure occurs.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson's own incident walkthrough demonstrates the opposite — even with testing in place, a real production failure still occurred and still required production debugging to resolve.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The lesson explicitly avoids ranking one as more important than the other — it frames them as equally necessary, complementary halves of the same discipline, not a hierarchy.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The lesson goes out of its way to connect the two deliberately — the whole capstone is built around showing they're the same discipline applied at different points in a system's life, not an arbitrary pairing.</p>
+                <p><strong>Reinforcement:</strong> Verification before shipping, diagnosis after failure — two applications of the same careful, evidence-based engineering mindset.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 That closes Part XI — Testing &amp; Prod Eng. You now understand not just how to write a good test and not just how to diagnose a live production failure, but why both exist together: methodical verification before a change ships, and methodical diagnosis when something gets through anyway, are the same engineering discipline, applied at two different moments in a system's life.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
