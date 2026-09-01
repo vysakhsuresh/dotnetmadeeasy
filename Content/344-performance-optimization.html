@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>344 - Performance Optimization · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Lesson 341's dashboard is where a real slow spot in OrderFlow first shows up as a number. This lesson is where that number turns into a profiled, fixed, and verified line of code.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Lesson 233 already gave you the closing workflow for Part V: profile first to find the real, measured bottleneck; apply the right tool from that Part's toolkit to that one hot path; benchmark with BenchmarkDotNet (232) to verify the fix actually helped before shipping it. Lessons 313 and 314 then gave you performance and load testing — the tools that tell you whether a whole endpoint holds up under realistic data volume and concurrent traffic, exactly the blind spot lesson 321's incident exposed. This lesson runs that entire loop against OrderFlow itself, on the exact kind of bug lesson 321 already diagnosed once: an N+1 query loading an <span class="icode">Order</span> and its <span class="icode">OrderItem</span>s.</p>
+    <p><strong>Nothing here reintroduces what BenchmarkDotNet, profiling, or load testing are — you already know the mechanics. This lesson walks the full measure-optimize-verify loop end to end, against OrderFlow's checkout path, the way you'd actually run it in production.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>Performance-optimizing OrderFlow means finding a real, measured slow spot — not a guessed one — using lesson 341's dashboard and Part V's profiling tools, fixing precisely that one hot path with the right specific technique, and then proving the fix actually helped with a benchmark and a load test before it ships, rather than trusting that a change which "looks faster" actually is.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Applied to OrderFlow, the profile-optimize-verify loop from lesson 233 starts with lesson 341's <code>orderflow.checkout.duration</code> histogram flagging a p99 regression, narrows the cause with <span class="icode">dotnet-trace</span> against a running instance, confirms the specific query with EF Core's own logging (exactly as lesson 320 taught for the database-bottleneck failure mode), fixes it with a targeted <span class="icode">.Include()</span> or projection change, verifies the fix with a BenchmarkDotNet (232) comparison of the old and new repository methods, and finally confirms the fix holds under realistic concurrent checkout traffic with a load test (314) against production-shaped order data.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — N+1 Queries Are Invisible Until They're Not</h3>
+    <p>Lesson 321 already walked through the exact mechanism: a dropped <span class="icode">.Include()</span> that turns one query into one-query-per-related-row sails through code review and even a lightly-seeded integration test, because with three test rows the difference between one query and a dozen is invisible in wall-clock time. It's only at realistic order volume — a customer with a dozen saved payment methods, or an order with fifteen line items — that the N+1 pattern's cost actually shows up, and by then it's live, in production, silently multiplying database round trips on every checkout.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Measure the Real Hot Path, Fix It Precisely, Prove the Fix</h3>
+    <p>The fix isn't "add <span class="icode">.Include()</span> everywhere defensively" — that's exactly the blanket-optimization trap lesson 233's Common Confusion #3 warned against. It's the disciplined loop: let lesson 341's real dashboard signal point at the actual regressed endpoint, use <span class="icode">dotnet-trace</span> and EF Core logging to find the actual query responsible, apply the one targeted fix that query needs, and then use BenchmarkDotNet and a load test to prove — not assume — that the fix measurably helped.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — the Loop, Applied to OrderFlow</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji">📊</span>
+            <div class="label">1. Dashboard Signal (341)</div>
+            <div class="desc">orderflow.checkout.duration p99 climbing — the real, measured starting point, not a guess</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🔎</span>
+            <div class="label">2. Profile (233)</div>
+            <div class="desc">dotnet-trace + EF Core logging pinpoint the exact query and its N+1 shape</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">🛠️</span>
+            <div class="label">3. Fix, Precisely</div>
+            <div class="desc">One targeted projection change to OrderRepository.GetByIdAsync — nothing else touched</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji">✅</span>
+            <div class="label">4. Verify (232, 314)</div>
+            <div class="desc">BenchmarkDotNet confirms Mean and Allocated both improved; a load test confirms it holds under real concurrency</div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — From a Dashboard Spike to a Verified Fix</h2>
+    <div class="flow-container">
+        <div class="flow-title">ORDERFLOW'S CHECKOUT LATENCY REGRESSION, END TO END</div>
+        <div class="flow-step">
+            <div class="step-label">1. LESSON 341'S DASHBOARD FLAGS IT FIRST</div>
+            <ul><li><code>orderflow.checkout.duration</code> p99 has climbed from ~120ms to ~900ms over the past week — no corresponding traffic spike, no recent deploy in the incident-response sense, just a slow, steady degradation.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. dotnet-trace CONFIRMS WHERE THE TIME ACTUALLY GOES</div>
+            <ul><li>A flame graph from a live instance shows an outsized share of time inside <code>OrderRepository.GetOrderHistoryAsync</code> — specifically, inside repeated calls into Npgsql's command execution path, not inside application logic.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. EF CORE LOGGING (LESSON 320) NAMES THE EXACT QUERY</div>
+            <ul><li>Enabling EF Core command logging against that endpoint shows the smoking gun: one query for the customer's orders, followed by one additional query <em>per order</em> to load that order's <code>OrderItem</code>s — classic N+1, growing linearly with a customer's order history.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. ONE TARGETED FIX — NOT A DEFENSIVE REWRITE OF EVERY QUERY</div>
+            <ul><li><code>.Include(o =&gt; o.Items)</code> restores eager loading for exactly this one method — the fix that query needs, and nothing broader applied speculatively elsewhere.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">5. BENCHMARKDOTNET AND A LOAD TEST CLOSE THE LOOP</div>
+            <ul><li>A BenchmarkDotNet comparison (232) of the old and new <code>GetOrderHistoryAsync</code> confirms both Mean latency and query count dropped; a load test (314) against a realistic order-history dataset confirms p99 checkout latency returns to its expected baseline under real concurrent traffic — not just in one isolated benchmark run.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — the Fix, and the Benchmark That Proves It</h2>
+    <div class="code-block"><code>// Before — one query per order to load its items (N+1)
+public async Task&lt;List&lt;Order&gt;&gt; GetOrderHistoryAsync(int customerId, CancellationToken ct)
+{
+    var orders = await _db.Orders
+        .Where(o =&gt; o.CustomerId == customerId)
+        .ToListAsync(ct);
+
+    foreach (var order in orders)
+    {
+        // Lazy-loaded on first access to order.Items — one extra round trip PER ORDER
+        _ = order.Items.Count;
+    }
+    return orders;
+}
+
+// After — one query total, items eager-loaded up front
+public async Task&lt;List&lt;Order&gt;&gt; GetOrderHistoryAsync(int customerId, CancellationToken ct) =&gt;
+    await _db.Orders
+        .Where(o =&gt; o.CustomerId == customerId)
+        .Include(o =&gt; o.Items)
+        .ToListAsync(ct);</code></div>
+    <div class="code-block"><code>[MemoryDiagnoser]
+public class OrderHistoryBenchmarks
+{
+    // Seeded against a Testcontainers Postgres (311) with 40 orders,
+    // ~8 items each — realistic order-history shape, not 3 toy rows.
+
+    [Benchmark(Baseline = true)]
+    public Task&lt;List&lt;Order&gt;&gt; Lazy() =&gt; _repo.GetOrderHistoryAsync_Old(_customerId, default);
+
+    [Benchmark]
+    public Task&lt;List&lt;Order&gt;&gt; EagerLoaded() =&gt; _repo.GetOrderHistoryAsync(_customerId, default);
+}</code></div>
+    <p><strong>Meaning:</strong> The fix itself is a one-line change to a single method — exactly the "precisely scoped" step lesson 233's workflow calls for. The benchmark seeds a realistic 40-orders/~8-items shape specifically because, as lesson 342 already established, a handful of toy rows would hide the very regression being verified — the <span class="icode">[MemoryDiagnoser]</span>'s <strong>Allocated</strong> column and the query-count difference are what turn "should be faster" into a number you can actually trust.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Confirming It Under Real Concurrency, Not Just in Isolation</h2>
+    <p>A BenchmarkDotNet win in isolation doesn't automatically mean the fix holds up once OrderFlow is horizontally scaled and handling real concurrent traffic — a load test (314) is what actually confirms that. Replaying a realistic mix of checkout and order-history requests against a staging environment shaped like production — the same Testcontainers-seeded data volume as the benchmark, but now under fifty concurrent virtual users instead of one sequential benchmark loop — is what proves the fix's benefit survives contention: connection pool pressure, cache (337) hit patterns under real concurrent reads, and the database's own query planner behavior at realistic scale. If the load test's p99 checkout latency lands back near its historical baseline and the connection pool's utilization stops trending toward exhaustion, that's the actual, trustworthy confirmation the incident is closed — not the benchmark alone, and not a hunch that the fix "should" have helped.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🚑</span> A Diagnosis, a Treatment, and a Follow-Up Scan</div>
+        <p>A doctor doesn't treat a patient based on a hunch about what's wrong — imaging confirms exactly where the problem is (profiling), a targeted treatment addresses precisely that (the fix), and a follow-up scan confirms the treatment actually worked before declaring the patient recovered (the benchmark and load test). Skipping straight from symptom to treatment risks treating the wrong thing entirely; skipping the follow-up scan risks declaring victory on a treatment that never actually worked. OrderFlow's checkout latency regression got exactly this discipline: dashboard symptom, profiled diagnosis, one precise fix, and two independent follow-up confirmations before anyone called it resolved.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood — Why the Benchmark Alone Wasn't Enough</h2>
+    <p>It's worth being precise about why this lesson insists on both a benchmark and a load test, rather than treating the benchmark as sufficient on its own. A BenchmarkDotNet run executes the method under controlled, isolated, repeated conditions — exactly what makes its Mean and Allocated numbers trustworthy for comparing two candidate implementations head-to-head, per lesson 232. What it deliberately does <em>not</em> reproduce is contention: dozens of concurrent requests competing for the same connection pool, the same cache entries, the same database CPU. A fix that looks like a clean win in an isolated benchmark can still interact differently under real concurrent load — which is precisely the distinction lesson 233 draws between benchmarking (compares specific candidates) and load testing (proves behavior under realistic, simultaneous traffic). Trusting the benchmark alone would mean skipping the exact kind of verification lesson 321's incident showed was missing the first time.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "The fix is a one-liner, so it doesn't need benchmarking" — size of the diff isn't the same as size of the impact</h3>
+    <p>Adding one <span class="icode">.Include()</span> call looks trivial on a diff, but the difference it makes to query count and latency at realistic order-history depth is exactly the kind of thing that's easy to misjudge without measuring. Lesson 233's Mistake 2 applies directly: "should be faster" and "measurably is faster" are not the same claim, regardless of how small the code change looks.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Since lesson 321 already diagnosed one N+1 incident, OrderFlow's team should now eagerly-load everything defensively" — that's the opposite of the discipline this lesson teaches</h3>
+    <p>Reflexively adding <span class="icode">.Include()</span> to every query across the codebase, "just in case," is exactly the blanket-optimization-without-profiling trap lesson 233 warned against — it can quietly over-fetch data that a given code path never needed, trading one performance problem for another. The fix belongs precisely where profiling and dashboard evidence point, and nowhere else.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Jumping straight to a fix from a dashboard symptom, skipping the profiling step</h4>
+    <p>❌ Seeing checkout p99 climb and immediately guessing "must be the payment gateway" or "must be the cache," rewriting code based on intuition rather than <span class="icode">dotnet-trace</span> or EF Core logging evidence.</p>
+    <p>✅ Profile first, exactly as lesson 233 insists — developer intuition about where the time actually goes is famously, repeatedly wrong, which is the entire reason profiling tools exist.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Benchmarking against a handful of toy rows</h4>
+    <p>❌ Running the <span class="icode">OrderHistoryBenchmarks</span> comparison against a database with three seeded orders — exactly the data-volume blind spot lesson 342's Real-World Example already named for OrderFlow's tests, and it applies just as much to benchmarks.</p>
+    <p>✅ Seed the benchmark's Testcontainers-backed database with a realistic order-history shape — the whole point of measuring is to reflect the conditions where the regression actually shows up.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Treating a passing benchmark as proof the incident is closed</h4>
+    <p>❌ Shipping the fix the moment BenchmarkDotNet shows an improved Mean, without a follow-up load test against realistic concurrent traffic.</p>
+    <p>✅ Close the loop with a load test (314), exactly as this lesson's Real-World Example does — a benchmark proves the candidate is better in isolation; a load test proves that advantage survives real, simultaneous production-shaped traffic.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Start from a real, measured signal — lesson 341's dashboard, a customer report, an alert — never from a guess about what "seems slow."</li>
+        <li style="margin-bottom:0.4rem;">Profile before touching code, every time, even when the fix seems obvious in hindsight — the profiling step is what confirms the obvious guess was actually right.</li>
+        <li style="margin-bottom:0.4rem;">Verify with both a benchmark (isolated, precise) and a load test (realistic, concurrent) before calling a performance fix done — each catches something the other structurally can't.</li>
+    </ul>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> If you can't point to the specific dashboard metric, trace, or profiler output that told you where to look, you're not optimizing — you're guessing with extra steps.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Dashboard (341)</strong> = the real, measured symptom, not a hunch<br />
+        <strong>Profile (233) + EF Core logging (320)</strong> = the diagnosis, pointing at one specific query<br />
+        <strong>Fix</strong> = the precise, scoped treatment — one method, not a defensive rewrite everywhere<br />
+        <strong>Benchmark (232) + load test (314)</strong> = two independent follow-up confirmations, isolated and realistic<br /><br />
+        <strong>Remember:</strong> measure, optimize, verify — in that order, every time, exactly as lesson 233 closed out Part V.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">The measure-optimize-verify loop from lesson 233 applies to OrderFlow exactly as taught, starting from a real dashboard signal (341) rather than a guess.</li>
+            <li style="margin-bottom:0.4rem;">An N+1 query — the same class of bug lesson 321 diagnosed once already — regressed <span class="icode">GetOrderHistoryAsync</span>'s latency, invisible at toy data volume and only real at production-scale order history.</li>
+            <li style="margin-bottom:0.4rem;">The fix was precisely scoped — one <span class="icode">.Include()</span> in one method — not a defensive rewrite sprayed speculatively across the codebase.</li>
+            <li style="margin-bottom:0.4rem;">A BenchmarkDotNet comparison and a load test are both necessary, not redundant — the benchmark proves the candidate is better in isolation; the load test proves that advantage survives real, concurrent, production-shaped traffic.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've walked OrderFlow's actual checkout-latency regression through the full profile-optimize-verify loop. Let's confirm it clicked.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Why does this lesson insist on both a BenchmarkDotNet comparison AND a load test before considering the <span class="icode">GetOrderHistoryAsync</span> fix verified?</p>
+        <ul class="options">
+            <li>A) BenchmarkDotNet cannot measure database-backed methods at all, so a load test is the only valid measurement tool</li>
+            <li>B) A benchmark proves the fix is better under controlled, isolated conditions, but doesn't reproduce contention (shared connection pool, concurrent cache access) — a load test is what confirms the improvement survives real, simultaneous production-shaped traffic</li>
+            <li>C) Load tests and benchmarks always report identical numbers, so running both is purely a formality</li>
+            <li>D) BenchmarkDotNet is deprecated in favor of load testing as of this Part</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the Under the Hood distinction — isolated, controlled measurement (benchmark) versus realistic, concurrent measurement (load test) answer genuinely different questions, and both are needed before declaring the fix trustworthy.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson's own example benchmarks a database-backed repository method directly, against a real Testcontainers-seeded Postgres — BenchmarkDotNet handles this fine.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The whole point of running both is that they can diverge — a benchmark win doesn't automatically guarantee the same win under real contention.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> BenchmarkDotNet remains a core part of the workflow here — it's explicitly framed as necessary, just not sufficient on its own.</p>
+                <p><strong>Reinforcement:</strong> Isolated measurement and realistic-load measurement catch different failure modes — neither replaces the other.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> Why does the lesson explicitly reject "eagerly-load everything defensively across the whole codebase" as the right response to lesson 321's earlier N+1 incident?</p>
+        <ul class="options">
+            <li>A) <code>.Include()</code> is a deprecated EF Core API that should never be used</li>
+            <li>B) Applying a fix speculatively, without profiling evidence pointing at that specific code path, risks over-fetching data a given query never needed — trading one performance problem for another, exactly the blanket-optimization trap lesson 233 warned against</li>
+            <li>C) EF Core limits an application to a fixed maximum number of <code>.Include()</code> calls across an entire codebase</li>
+            <li>D) Defensive eager loading is fine everywhere except in repository classes specifically</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is precisely Common Confusion #2's reasoning — a fix should be scoped to where measured evidence points, not sprayed everywhere on the assumption that more eager loading is always safer; over-fetching has its own real cost.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> <code>.Include()</code> is the correct, standard EF Core API for eager loading — it's used correctly in this lesson's own fix, not deprecated.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no such fixed limit — this isn't a technical constraint the lesson describes anywhere.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The lesson's objection applies to defensive, unprofiled eager loading anywhere in the codebase, not to a specific class of file.</p>
+                <p><strong>Reinforcement:</strong> A fix belongs precisely where profiling evidence points — broadening it "just in case" undermines the entire discipline of measuring first.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> What was the specific role of the dashboard metric <span class="icode">orderflow.checkout.duration</span>, established back in lesson 341, in this lesson's investigation?</p>
+        <ul class="options">
+            <li>A) It directly identified the exact line of code responsible, without needing any further profiling</li>
+            <li>B) It was the real, measured starting signal that told the team something was worth investigating at all, before any profiling tool was opened</li>
+            <li>C) It has no role — this lesson's investigation started from a customer complaint instead</li>
+            <li>D) It measures database query count directly, making EF Core logging unnecessary</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly how the How It Works walkthrough opens — the dashboard's p99 climb is the real, measured trigger that starts the investigation, well before <code>dotnet-trace</code> or EF Core logging narrow down the specific cause.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A latency histogram tells you THAT something regressed, not WHERE in the code — that's exactly why profiling and EF Core logging are still needed as the next steps.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The walkthrough explicitly starts from the dashboard metric, tying back to lesson 341's monitoring work, not a customer complaint.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The latency histogram measures duration, not query count — EF Core command logging is what's needed to see the actual N+1 query pattern, a genuinely separate signal.</p>
+                <p><strong>Reinforcement:</strong> A monitoring metric tells you something is wrong and roughly where to look; it doesn't replace the profiling step that pinpoints exactly why.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">Next up: lesson 345 takes this fixed, benchmarked, load-tested OrderFlow and actually ships it — applying Part X's configuration, secrets, and scaling lessons to a real deployment pipeline.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
