@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>290 - Idempotency · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        Call it once, or call it five times — an idempotent operation leaves the system in exactly the same state either way.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>A customer clicks "Pay Now" once. Somewhere between your payment consumer successfully charging the card and the acknowledgment making it back to the message broker, the network hiccups for half a second. The broker never hears "I handled that one" — so, doing exactly what it's designed to do, it assumes the message was never processed and delivers it again. Your consumer, humming along, picks it up a second time and… charges the card again. The customer paid once. Your system thinks it collected payment twice. Nothing crashed. No bug was thrown. The system worked <em>exactly as every piece of it was designed to</em> — and the customer is still overcharged.</p>
+    <p>This isn't a rare edge case. It's the routine, expected behavior of the messaging and event-driven systems you've been building throughout this Part. The fix isn't "make delivery more reliable" — it's "make your consumer not care how many times the same message shows up."</p>
+    <p><strong>In this lesson, you'll learn precisely what idempotency means, why "at-least-once" message delivery makes it a first-class design requirement rather than a nice-to-have, and the concrete techniques — idempotency keys with a deduplication table, and naturally idempotent operations like UPSERTs — that make a consumer safe to call more than once.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>An operation is <strong>idempotent</strong> if doing it once and doing it five times leave the system in the <em>exact same end state</em>. Not "similar." Not "roughly the same." Identical. If you can't tell, just by inspecting the system afterward, whether an operation ran once or ran five times, it's idempotent.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Formally: an operation <span class="icode">f</span> is idempotent if applying it <span class="icode">n</span> times produces the same result as applying it once — <span class="icode">f(f(f(x))) = f(x)</span> for any number of applications. In distributed systems specifically, this is almost always talked about in terms of an operation's <em>effect on state</em>, not its return value: "set the order's status to <span class="icode">Shipped</span>" is idempotent because running it 1 time or 100 times leaves the order in the exact same <span class="icode">Shipped</span> state. "Increment the shipped count by 1" is <strong>not</strong> idempotent — running it 100 times increments the count 100 times, and the end state depends entirely on how many times it ran.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>✅ Idempotent</h4>
+            <ul>
+                <li>Set order status to <span class="icode">Shipped</span></li>
+                <li>Set a user's email address to a specific value</li>
+                <li><span class="icode">DELETE</span> a specific row by id</li>
+                <li>UPSERT a record by its key</li>
+                <li>HTTP <span class="icode">PUT</span>, <span class="icode">DELETE</span> (by REST convention)</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>❌ Not Idempotent</h4>
+            <ul>
+                <li>Charge the customer's card for $50</li>
+                <li>Increment the shipped-items counter</li>
+                <li><span class="icode">INSERT</span> a new row with a fresh id, unconditionally</li>
+                <li>Send a "your order shipped" email</li>
+                <li>HTTP <span class="icode">POST</span> (by REST convention, unless designed otherwise)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — "At-Least-Once" Is the Delivery Guarantee You Actually Get</h3>
+    <p>The messaging and event-driven architecture covered earlier in this Part let services communicate without a tight, synchronous handshake — a producer publishes a message, and a consumer processes it whenever it gets around to it. But that decoupling comes with an honest trade-off in what guarantee the broker can actually make about delivery. There are, in theory, three possible guarantees:</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Guarantee</th><th>What it promises</th><th>Reality</th></tr></thead>
+            <tbody>
+                <tr><td><strong>At-most-once</strong></td><td>A message is delivered zero or one times — never more</td><td>Achievable, but risks silently <em>losing</em> messages on failure</td></tr>
+                <tr><td><strong>Exactly-once</strong></td><td>A message is delivered and processed precisely one time, no more, no less</td><td>Genuinely difficult to guarantee end-to-end across independent systems; most real messaging infrastructure does not offer true exactly-once delivery semantics for arbitrary consumer-side effects</td></tr>
+                <tr><td><strong>At-least-once</strong></td><td>A message is delivered one <em>or more</em> times — it is never silently dropped</td><td>The practical, common guarantee real message brokers actually provide</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>At-least-once is the pragmatic middle ground: brokers would rather redeliver a message you already handled than risk losing one you never got to. That's the right trade-off for reliability — but it pushes a real obligation onto you, the consumer author: your processing logic must be safe to run more than once on the same message.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Exactly How a "Duplicate" Happens</h3>
+    <p>It's worth being precise about the mechanism, because it's not a bug in the broker — it's the broker doing its job correctly under an ordinary, unavoidable failure:</p>
+    <div class="flow-container">
+        <div class="flow-title">THE ACK-LOSS SCENARIO</div>
+        <div class="flow-step">
+            <div class="step-label">1. THE BROKER DELIVERS A MESSAGE TO THE CONSUMER</div>
+            <ul><li>e.g. "charge $50 to card ending 4242 for order #8831."</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE CONSUMER SUCCESSFULLY PROCESSES IT</div>
+            <ul><li>The card is genuinely, successfully charged. From the payment processor's point of view, this is done.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE CONSUMER SENDS AN ACKNOWLEDGMENT BACK TO THE BROKER</div>
+            <ul><li>"I handled message #8831 — you can stop tracking it." This ack is itself just another message over the network, and the network can lose it, just like anything else.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. THE ACK NEVER ARRIVES</div>
+            <ul><li>From the broker's point of view: it delivered the message, and heard nothing back before its visibility/lock timeout expired. It has no way to know the work actually succeeded — all it knows is "no confirmation." Its only safe assumption is that the message was never handled.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">🔁 THE BROKER REDELIVERS THE SAME MESSAGE</div>
+            <ul><li>A perfectly reasonable, correct decision by the broker — and now the consumer is about to process an already-completed charge for a second time, unless it's specifically built to recognize that.</li></ul>
+        </div>
+    </div>
+    <p>Notice: nothing here is a defect. Every component behaved exactly as designed. That's precisely why idempotency can't be an afterthought — it's the only thing standing between "the system worked as designed" and "the customer got charged twice."</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="code-block"><code>WITHOUT IDEMPOTENCY
+
+Message delivered once  → charge card → $50 charged
+Message redelivered     → charge card → $50 charged AGAIN
+                                          Total: $100 charged for a $50 order ❌
+
+
+WITH IDEMPOTENCY (dedup check before applying effects)
+
+Message delivered once  → "seen op #8831 before?" NO  → charge card → record op #8831 → $50 charged
+Message redelivered     → "seen op #8831 before?" YES → skip charge, return success
+                                          Total: $50 charged, exactly what the customer expects ✅</code></div>
+    <p>The redelivery itself is not the problem — a redelivered message showing up is completely normal in an at-least-once world. The problem only happens if the consumer <em>reapplies the effect</em> blindly. Idempotency is what breaks that link: the message can arrive again, harmlessly, because the consumer recognizes it's already been handled.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Two Real Techniques</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Technique 1 — Idempotency Key + a Processed-Operations Table</h3>
+    <p>Every message or request carries a unique identifier — an <strong>idempotency key</strong> (sometimes called a deduplication id, correlation id, or operation id). Before applying the operation's real effects, the consumer checks: "have I already processed this exact id?" If yes, skip straight to returning success without redoing the work. If no, do the work <em>and</em> record the id as processed — atomically, in the same transaction as the business change.</p>
+    <div class="flow-container">
+        <div class="flow-title">THE CHECK-THEN-APPLY FLOW</div>
+        <div class="flow-step">
+            <div class="step-label">1. EXTRACT THE IDEMPOTENCY KEY FROM THE MESSAGE</div>
+            <ul><li>Usually a GUID the original producer generated once, when the operation was first requested — not regenerated on each delivery attempt.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. CHECK A "PROCESSED OPERATIONS" TABLE FOR THAT KEY</div>
+            <ul><li>If a row with that key already exists, this exact operation has already run to completion. Stop here — do not reapply the effect.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. IF NOT SEEN BEFORE: APPLY THE EFFECT AND RECORD THE KEY, ATOMICALLY</div>
+            <ul><li>Both the business change (charge the card, update the order) and the "mark this key as processed" write happen in the same local database transaction, so there's no window where one succeeds without the other.</li></ul>
+        </div>
+    </div>
+
+    <div class="code-block"><code>public async Task ProcessPaymentMessageAsync(PaymentMessage message, CancellationToken ct)
+{
+    await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+
+    // 1. Have we already processed this exact operation?
+    bool alreadyProcessed = await _db.ProcessedOperations
+        .AnyAsync(p => p.IdempotencyKey == message.IdempotencyKey, ct);
+
+    if (alreadyProcessed)
+    {
+        // Already handled on a previous delivery attempt — do nothing, just succeed.
+        await transaction.CommitAsync(ct);
+        return;
+    }
+
+    // 2. Apply the real effect — this is the part that must NEVER run twice.
+    await _paymentGateway.ChargeAsync(message.CardToken, message.Amount, ct);
+
+    // 3. Record that this operation id is now handled — same transaction as the effect.
+    _db.ProcessedOperations.Add(new ProcessedOperation
+    {
+        IdempotencyKey = message.IdempotencyKey,
+        ProcessedAtUtc = DateTime.UtcNow
+    });
+    await _db.SaveChangesAsync(ct);
+
+    await transaction.CommitAsync(ct);
+}</code></div>
+    <p>The <span class="icode">IdempotencyKey</span> column should carry a <strong>unique database constraint</strong>, not just an application-level check — that's what closes the race condition where two redelivered copies of the same message are processed concurrently by two different consumer instances (more on this in Common Mistakes below).</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Technique 2 — Natural Idempotency via UPSERT-Style Operations</h3>
+    <p>Sometimes you don't need a separate dedup table at all, because the operation itself can be phrased in a way that's <em>inherently</em> idempotent — running it 1 time or 100 times produces the same end state, with no bookkeeping required.</p>
+    <div class="code-block"><code>-- NOT idempotent: running this twice adds 2 to the count, not 1
+UPDATE Orders SET ShippedItemCount = ShippedItemCount + 1 WHERE Id = @orderId;
+
+-- Idempotent: running this once or five times, the end state is identical
+UPDATE Orders SET Status = 'Shipped' WHERE Id = @orderId;
+
+-- Idempotent UPSERT: insert if new, update if it already exists — same end state either way
+INSERT INTO InventoryReservations (OrderId, Sku, Quantity)
+VALUES (@orderId, @sku, @quantity)
+ON CONFLICT (OrderId, Sku)
+DO UPDATE SET Quantity = EXCLUDED.Quantity;</code></div>
+    <p>An <span class="icode">UPSERT</span> — <span class="icode">INSERT ... ON CONFLICT DO UPDATE</span> in PostgreSQL, or a <span class="icode">MERGE</span> statement in SQL Server — replaces "blindly insert a new row" (which duplicates on redelivery) with "insert if absent, otherwise overwrite with the same intended final value" (which converges to the same row no matter how many times it runs). This is often the cleanest fix of all, because it needs no separate tracking table — the target row's own key <em>is</em> the deduplication mechanism.</p>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>Before and after, on the exact scenario from the hook:</p>
+    <div class="code-block"><code>// ❌ BEFORE — not idempotent, vulnerable to redelivery
+public async Task HandleAsync(ShipOrderMessage message)
+{
+    var order = await _db.Orders.FindAsync(message.OrderId);
+    order.ShippedCount++;               // runs again on redelivery → wrong count
+    await _emailer.SendShippedEmailAsync(order.CustomerEmail); // sent twice → annoying, or worse
+    await _db.SaveChangesAsync();
+}
+
+// ✅ AFTER — idempotent, safe under at-least-once delivery
+public async Task HandleAsync(ShipOrderMessage message)
+{
+    var order = await _db.Orders.FindAsync(message.OrderId);
+
+    if (order.Status == OrderStatus.Shipped)
+        return; // already handled on a previous delivery — natural idempotency check
+
+    order.Status = OrderStatus.Shipped;             // same end state, run once or five times
+    await _outbox.EnqueueAsync(new OrderShippedEvent(order.Id, message.IdempotencyKey));
+    await _db.SaveChangesAsync();
+}</code></div>
+    <p><strong>Code → Meaning → Result:</strong> The fixed version checks the order's own current status before doing anything — a natural idempotency check with no separate dedup table needed, because "already Shipped" is itself the signal that this message has already been handled. Note the fix also stops sending the email <em>directly</em> from inside the message handler — a consumer-triggered side effect like that should itself go through an idempotency-aware path (the Outbox pattern, covered two lessons from now, is exactly how that's done reliably).</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — Idempotency Keys on an HTTP Payment Endpoint</h2>
+    <p>This same discipline shows up outside message queues too, anywhere a caller might legitimately retry a request that could have partially succeeded — a classic case is a checkout API where the client itself might retry a timed-out request:</p>
+    <div class="code-block"><code>[HttpPost("charges")]
+public async Task&lt;IActionResult&gt; ChargeAsync(
+    [FromHeader(Name = "Idempotency-Key")] string idempotencyKey,
+    [FromBody] ChargeRequest request,
+    CancellationToken ct)
+{
+    // Has this exact idempotency key already produced a result?
+    var existing = await _db.ChargeResults
+        .FirstOrDefaultAsync(c => c.IdempotencyKey == idempotencyKey, ct);
+
+    if (existing is not null)
+        return Ok(existing.ToResponse()); // return the SAME result as the first attempt — no re-charge
+
+    var chargeId = await _paymentGateway.ChargeAsync(request.CardToken, request.Amount, ct);
+
+    _db.ChargeResults.Add(new ChargeResult
+    {
+        IdempotencyKey = idempotencyKey, // enforced UNIQUE at the database level
+        ChargeId = chargeId,
+        Amount = request.Amount
+    });
+    await _db.SaveChangesAsync(ct);
+
+    return Ok(new { chargeId });
+}</code></div>
+    <p>This is exactly how real payment providers (Stripe among them) design their public charge APIs — the client generates one idempotency key per logical checkout attempt, and resends the same key on every retry of that same attempt. A dropped connection, a client-side timeout, a mobile app retry after losing signal — none of them risk a double charge, because the server recognizes the repeated key and returns the original result instead of charging again.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">💡</span> A Light Switch, Not a Tally Counter</div>
+        <p>Flipping a light switch to "on" is idempotent: flip it once, the room is lit. Flip it four more times (assuming it's a simple on/off switch, not a toggle), and the room is still just lit — the exact same state. You genuinely cannot tell, from the room alone, whether the switch was flipped once or five times.</p>
+        <p>A tally counter at a museum door is the opposite: every single press adds one, on purpose. If you're trying to count visitors, that's exactly the behavior you want — this operation is <em>supposed</em> to be non-idempotent. The point isn't that idempotent operations are always better; it's that you have to know, precisely, which kind of operation you're building, because treating a tally-counter operation as if it were a light-switch operation — assuming duplicate presses are harmless — is exactly how a duplicate message becomes a duplicate charge.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHY THE UNIQUE CONSTRAINT MATTERS, NOT JUST THE CHECK</div>
+        <div class="flow-step">
+            <div class="step-label">1. A PLAIN "CHECK, THEN INSERT" HAS A RACE CONDITION</div>
+            <ul><li>If two copies of the same redelivered message are picked up by two different consumer instances at nearly the same moment, both can run the "have I seen this key before?" check <em>before either has committed its own insert</em> — both see "no," and both proceed to apply the effect. The check alone doesn't prevent this; only a database-level guarantee does.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. A UNIQUE CONSTRAINT ON THE IDEMPOTENCY KEY CLOSES THE GAP</div>
+            <ul><li>With a unique index on the key column, the <em>second</em> insert attempt fails at the database engine level with a constraint violation — even if both consumers raced past the application-level check. The losing consumer catches that specific exception and treats it exactly like "already processed": skip the effect (or, if the effect already ran before the constraint check, this is why applying the effect and recording the key must be in the same transaction, so a losing transaction rolls back the effect too).</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE DATABASE'S OWN ATOMICITY GUARANTEE IS DOING THE REAL WORK</div>
+            <ul><li>The dedup mechanism isn't really "your code checked a table" — it's "the database will only ever let one row with this key exist, full stop, no matter how many concurrent writers try." That's an ordinary, single-database ACID guarantee, the same one you already relied on throughout Advanced Part VIII — no distributed coordination required.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "Idempotent means it has no side effects" — no, it means the side effects don't accumulate</h3>
+    <p>Charging a card, sending an email, updating a row — these are all real side effects, and an idempotent version of each still has one. The property isn't "no side effect happened"; it's "the side effect's <em>end state</em> is the same whether this ran once or many times." "Set status to Shipped" absolutely changes something in the database — it's idempotent because that change is the same no matter how many times it's applied, not because nothing changed at all.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "If the response looks the same every time, it must be idempotent" — response and effect are different things</h3>
+    <p>Idempotency, in the distributed-systems sense used throughout this Part, is about the operation's effect on <em>stored state</em>, not about whether the HTTP response body is byte-for-byte identical across calls. A well-designed idempotent charge endpoint might return a slightly different timestamp field on a duplicate call while still guaranteeing the customer is charged exactly once — the state-level guarantee is what matters, not surface-level response formatting.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Deduplicating in application memory instead of the database</h4>
+    <p>❌ Keeping a <span class="icode">HashSet&lt;string&gt;</span> of processed ids in memory to check against. This evaporates on a restart, and doesn't work at all once you scale out to multiple consumer instances — each instance has its own, separate set, blind to what the others have seen. ✅ The processed-operations record has to live somewhere every consumer instance can see and atomically check against — a shared database table with a unique constraint, not process memory.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Checking for a duplicate, then applying the effect, as two separate, non-atomic steps</h4>
+    <p>❌ A plain <span class="icode">SELECT</span> to check, followed later by an <span class="icode">INSERT</span> — with no unique constraint and no shared transaction, leaving a real race window under concurrent redelivery (see Under the Hood above). ✅ Enforce the uniqueness at the database level and do the effect-plus-record-key write inside one transaction.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Assuming a freshly-generated id on every delivery attempt is a usable dedup key</h4>
+    <p>❌ Generating a new GUID inside the message handler itself, then using <em>that</em> as the idempotency key — a fresh id every attempt means every redelivery looks "new," defeating the whole point. ✅ The idempotency key has to be generated once, by whoever first initiates the operation (the original producer, or the original client request), and carried through unchanged on every retry or redelivery of that same logical operation.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Every</strong> consumer of a message from the messaging/event-driven architecture covered earlier in this Part — at-least-once delivery is the norm, not the exception, so idempotency isn't optional hardening, it's a baseline requirement.</li>
+        <li style="margin-bottom:0.4rem;">Any HTTP endpoint a client might legitimately retry — checkout, payment, order-submission — especially where the client can't easily tell whether its previous attempt actually succeeded server-side before timing out.</li>
+        <li style="margin-bottom:0.4rem;">Prefer natural idempotency (status fields, UPSERTs) when the operation's shape allows it — it needs no extra table and is simpler to reason about.</li>
+        <li style="margin-bottom:0.4rem;">Reach for an explicit idempotency-key table when the operation genuinely can't be phrased as a natural UPSERT — charging a card is the textbook case, since "charge" has no natural idempotent phrasing on its own.</li>
+        <li style="margin-bottom:0.4rem;">You can skip the extra machinery for operations that are already, by their own nature, safe to repeat with no tracking at all — e.g. a pure read, or deleting a row that's already gone (most databases treat deleting a non-existent row as a harmless no-op).</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Idempotent</strong> = once or five times, the end state is identical<br />
+        <strong>At-least-once delivery</strong> = the broker would rather redeliver than lose a message — duplicates are normal, expected traffic<br />
+        <strong>Idempotency key + dedup table</strong> = "have I done this exact operation id before?" checked and recorded atomically<br />
+        <strong>Natural idempotency</strong> = phrase the operation itself so repeating it changes nothing (status fields, UPSERTs)<br /><br />
+        <strong>Remember:</strong> the message showing up twice was never the bug — reapplying its effect blindly is.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">An operation is <strong>idempotent</strong> if applying it any number of times produces the exact same end state as applying it once.</li>
+            <li style="margin-bottom:0.4rem;">Real message brokers offer <strong>at-least-once</strong> delivery, not exactly-once — a message can genuinely be redelivered even after it was successfully handled, most commonly because the consumer's acknowledgment itself got lost.</li>
+            <li style="margin-bottom:0.4rem;">An <strong>idempotency key</strong> checked against a processed-operations table — with a genuine unique database constraint, not just an application-level check — lets a consumer safely recognize and skip a duplicate.</li>
+            <li style="margin-bottom:0.4rem;"><strong>UPSERT-style operations</strong> ("set status to Shipped") are naturally idempotent; counters and unconditional inserts ("increment shipped count") are not, and need explicit deduplication.</li>
+            <li style="margin-bottom:0.4rem;">This is not defensive-programming polish — it's a load-bearing correctness requirement for any consumer built on top of this Part's messaging architecture.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen why at-least-once delivery makes duplicates routine, and the two real techniques for handling them safely. Let's confirm it clicked.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Which of the following operations is genuinely idempotent?</p>
+        <ul class="options">
+            <li>A) <span class="icode">UPDATE Orders SET ShippedItemCount = ShippedItemCount + 1 WHERE Id = @id</span></li>
+            <li>B) <span class="icode">UPDATE Orders SET Status = 'Shipped' WHERE Id = @id</span></li>
+            <li>C) <span class="icode">INSERT INTO ShipmentLog (OrderId) VALUES (@id)</span> with no uniqueness constraint</li>
+            <li>D) Sending a "your order shipped" notification email, unconditionally, every time the handler runs</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Setting a field to a specific fixed value produces the exact same end state whether it runs once or a hundred times — the row's status is <span class="icode">Shipped</span> either way. That's the textbook definition of idempotent.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Incrementing a counter accumulates — running it twice produces a different (higher) end state than running it once. This is the canonical non-idempotent operation.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> An unconditional insert with no uniqueness constraint creates a new row every time it runs — two runs leave two rows, a different end state than one run leaving one row.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> The customer receiving one email versus five emails is a very different, and noticeably worse, end state — this is not idempotent unless it's specifically guarded with a deduplication check.</p>
+                <p><strong>Reinforcement:</strong> Idempotent operations converge to the same end state regardless of how many times they run — look for "set to a value," not "add to a value."</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> A consumer successfully charges a customer's card, but the acknowledgment back to the message broker is lost due to a network blip. What does the broker do, and why?</p>
+        <ul class="options">
+            <li>A) The broker permanently discards the message, since it was already delivered once</li>
+            <li>B) The broker redelivers the message, because from its perspective it received no confirmation the message was handled — this is the broker behaving correctly under at-least-once delivery, not a bug</li>
+            <li>C) The broker automatically detects that the charge already succeeded and skips redelivery</li>
+            <li>D) The broker escalates to a human operator to decide whether to redeliver</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The broker has no visibility into what the consumer actually did — all it knows is whether it received an acknowledgment. With no ack, its only safe assumption under at-least-once delivery is that the message wasn't handled, so it redelivers. This is the exact mechanism the lesson walked through.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Discarding a message with no confirmation is exactly the at-most-once behavior brokers deliberately avoid, because it risks silently losing genuinely unprocessed work.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The broker has no insight into the consumer's internal business logic or external side effects (like a card charge) — it can only track whether it received an acknowledgment message.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This redelivery decision is fully automated based on the acknowledgment timeout — no human is in this loop.</p>
+                <p><strong>Reinforcement:</strong> Duplicate delivery isn't a broker malfunction — it's the broker correctly erring on the side of "redeliver rather than risk losing work," which is exactly why consumers must be idempotent.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why is a database-level unique constraint on the idempotency key column necessary, when the consumer code already checks "have I seen this key before?" as a separate step?</p>
+        <ul class="options">
+            <li>A) It isn't necessary — the application-level check alone is always sufficient</li>
+            <li>B) Without it, two concurrent instances processing the same redelivered message can both pass the check before either has committed, both proceeding to apply the effect — a race condition only a database-level constraint closes</li>
+            <li>C) Unique constraints are required by SQL syntax for any table with more than one column</li>
+            <li>D) It improves query performance but has no bearing on correctness</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> An application-level "check, then act" sequence has a genuine race window under concurrency — two consumer instances can both check and both see "not yet processed" before either one's write commits. Only a database-enforced uniqueness guarantee reliably prevents both from succeeding.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> As Under the Hood explained, the application-level check alone is exactly what leaves the race condition open under concurrent redelivery.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Unique constraints are optional and used specifically to enforce a business rule (in this case, "one row per idempotency key") — they're not a general SQL requirement.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> While it can help query performance, the reason it matters here is squarely about correctness — closing a real race condition, not speed.</p>
+                <p><strong>Reinforcement:</strong> True deduplication safety comes from the database's own atomicity guarantee, not from application code alone.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team implements idempotency by generating a brand-new GUID inside the message handler on every invocation, and using that as the "idempotency key" to check against a processed-operations table. What's wrong with this?</p>
+        <ul class="options">
+            <li>A) Nothing — any GUID works fine as an idempotency key</li>
+            <li>B) GUIDs are too short to reliably avoid collisions</li>
+            <li>C) A freshly-generated key on every delivery attempt looks "new" every single time, including on redeliveries of the same logical message — defeating deduplication entirely, since the key must be generated once by the original operation and carried through unchanged on every retry</li>
+            <li>D) Processed-operations tables can only use integer keys, not GUIDs</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> The entire mechanism depends on the SAME key showing up again on a redelivery so the check can recognize it. Generating a fresh id inside the handler itself means every delivery attempt — including duplicates of the exact same underlying operation — gets a different key, so the dedup check will never find a match. This is exactly Common Mistake 3 from the lesson.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The problem isn't the format of the key, it's when and how many times it's generated.</p>
+                <p><span class="incorrect">❌ Why B is incorrect:</span> GUID collision is astronomically unlikely and not the issue here at all — the issue is deliberately generating a different key every time, not a collision between two independently-generated ones.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no such restriction — string/GUID primary or unique keys are completely standard.</p>
+                <p><strong>Reinforcement:</strong> The idempotency key must originate once, from whoever first initiates the logical operation, and travel unchanged through every retry or redelivery — not be regenerated per attempt.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand precisely why duplicate message delivery is routine, not exceptional — and exactly how to make a consumer safe against it. Next up: retries in the messaging world, and why idempotency is the prerequisite that makes them safe rather than dangerous.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

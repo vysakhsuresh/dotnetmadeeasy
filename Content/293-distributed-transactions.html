@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>293 - Distributed Transactions · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        A single database will happily promise you ACID. Ask three independent services to promise it together, and the honest answer is: not without real, well-documented cost.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Advanced Part VIII's transactions lesson mentioned <code>System.Transactions.TransactionScope</code> in passing — a mechanism that can, in principle, coordinate a commit across a database and a genuinely separate resource, "conceptually via a two-phase commit protocol." It also gave you an honest warning: this is "distributed transaction territory," meaningfully more complex, and named the Outbox pattern as the modern alternative most systems reach for instead. This lesson makes good on the part that was left conceptual: what a two-phase commit actually does, step by step, and precisely why it's fallen out of favor for coordinating modern, independently-deployed services.</p>
+    <p>Here's the question worth sitting with before diving in: an order-fulfillment flow touches an Orders service, a Payments service, and an Inventory service — three independent databases, three independent processes, potentially three independent teams. What would it even <em>mean</em> for a single transaction to span all three, and what would it cost to actually guarantee it?</p>
+    <p><strong>In this lesson, you'll learn precisely why distributed transactions are hard, walk through the Two-Phase Commit (2PC) protocol conceptually, understand 2PC's real, documented weaknesses — its blocking nature, its poor scalability, and its limited support among modern data stores and brokers — and see why the next two lessons in this Part, the Outbox pattern and Eventual Consistency, are the modern answer most production systems reach for instead.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p>A <strong>distributed transaction</strong> is an attempt to get the exact same all-or-nothing guarantee a single-database transaction gives you — either every change happens, or none of them do — except spread across multiple independent systems: separate databases, separate services, sometimes separate organizations entirely. Nothing about the goal changes from an ordinary transaction. What changes is that no single system is in charge of all the pieces, which makes "all or nothing" dramatically harder to actually deliver.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>Within a single database, ACID transactions work because one component — the database engine — controls the locks, the write-ahead log, and the commit decision for everything involved. A distributed transaction spans multiple independent <strong>resource managers</strong> (a database, a message broker, another service's own datastore) with no single component naturally in charge of all of them. Making them agree requires an explicit coordination protocol — a <strong>transaction coordinator</strong> — layered on top, since none of the participants can, on their own, know or control what the others are doing.</p>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — Why "Just Coordinate Them" Is Genuinely Hard</h3>
+    <p>Imagine trying to guarantee "reserve the inventory AND charge the card AND create the order — all three, or none of them" across three independent services. Each service can only directly control its own database. None of them can see inside another's transaction, none of them can force another to commit or roll back, and — critically — any of them, or the network between them, can fail at any moment, including in the narrow window after one has decided to commit but before the others have heard about it. A single-database transaction never faces this problem, because there's only ever one component making the commit decision. Spread that decision across multiple independent systems, and you've introduced a coordination problem that a single database's ACID guarantees were never designed to solve on their own.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Historical Solution — Two-Phase Commit</h3>
+    <p>The classic answer, developed for exactly this problem, is <strong>Two-Phase Commit (2PC)</strong>: introduce a coordinator that first asks every participant to privately confirm it <em>could</em> commit (without actually doing so yet), and only once every single one has agreed does the coordinator tell them all to actually commit, together. It's a genuinely clever protocol — and, as this lesson will show, it comes with real, well-documented costs that have pushed most modern distributed systems toward different approaches entirely.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture — The Two Phases</h2>
+    <div class="code-block"><code>                         COORDINATOR
+                        /     |      \
+                   PREPARE PREPARE  PREPARE
+                      /       |        \
+                 Orders    Payments   Inventory
+                   │            │          │
+                  VOTE        VOTE       VOTE
+                (yes/no)    (yes/no)   (yes/no)
+                      \       |        /
+                       ALL VOTED YES?
+                      /                \
+                   YES                  NO (even one)
+                    │                    │
+              PHASE 2: COMMIT      PHASE 2: ABORT
+           (tell everyone to     (tell everyone to
+            actually commit)      roll back instead)</code></div>
+    <p>The defining idea: nobody actually, permanently commits during Phase 1. They only promise they <em>can</em>. The real, irreversible commit only happens in Phase 2, and only once the coordinator has heard "yes" from absolutely everyone.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works — Phase by Phase</h2>
+
+    <div class="flow-container">
+        <div class="flow-title">PHASE 1 — PREPARE (THE VOTING PHASE)</div>
+        <div class="flow-step">
+            <div class="step-label">1. THE COORDINATOR ASKS EVERY PARTICIPANT TO PREPARE</div>
+            <ul><li>"Can you do this work, and guarantee you'll be able to commit it later if I ask you to?" Each participant does the real work — writing changes, acquiring locks — but does <strong>not</strong> make it permanent yet.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. EACH PARTICIPANT VOTES YES OR NO</div>
+            <ul><li>"Yes" means: the work is done, durably recorded on this participant's side, and this participant guarantees it can commit it on request — no matter what else happens, short of catastrophic failure. "No" means: something failed, and this participant cannot proceed.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE PARTICIPANT NOW HOLDS ITS LOCKS AND WAITS</div>
+            <ul><li>Having voted "yes," a participant cannot unilaterally change its mind — it's bound by its vote. It holds whatever locks the pending change requires, and waits for the coordinator's final decision. This waiting is the seed of 2PC's central weakness, explained below.</li></ul>
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <div class="flow-title">PHASE 2 — COMMIT (THE DECISION PHASE)</div>
+        <div class="flow-step">
+            <div class="step-label">1. THE COORDINATOR TALLIES THE VOTES</div>
+            <ul><li>All "yes"? The coordinator decides to commit. Even a single "no" (or no response at all)? The coordinator decides to abort — the whole transaction, everywhere, not just at the participant that voted no.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. THE COORDINATOR BROADCASTS THE FINAL DECISION</div>
+            <ul><li>Every participant is told, explicitly, either "commit" or "abort" — and every participant must obey that instruction, since they already gave up the right to decide independently the moment they voted "yes" in Phase 1.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. EACH PARTICIPANT MAKES ITS CHANGE PERMANENT (OR ROLLS BACK) AND RELEASES ITS LOCKS</div>
+            <ul><li>Only now — after both phases — is the change actually, durably committed. The locks held since Phase 1 are finally released, whichever way the decision went.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example — Where This Shows Up in .NET</h2>
+    <p>You've already met the .NET-level entry point for this: <code>System.Transactions.TransactionScope</code>, from Part VIII. When operations inside a <code>TransactionScope</code> touch more than one genuinely separate resource manager, .NET can escalate the transaction to a full distributed transaction, coordinated (on Windows) by the Microsoft Distributed Transaction Coordinator (MSDTC) — a real, concrete implementation of the coordinator role described above:</p>
+    <div class="code-block"><code>using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+{
+    await using (var ordersContext = new OrdersDbContext(ordersOptions))
+    {
+        ordersContext.Orders.Add(order);
+        await ordersContext.SaveChangesAsync();       // resource manager #1: Orders database
+    }
+
+    await using (var paymentsContext = new PaymentsDbContext(paymentsOptions))
+    {
+        paymentsContext.Charges.Add(charge);
+        await paymentsContext.SaveChangesAsync();      // resource manager #2: Payments database
+    }
+
+    // If both resource managers support it, .NET escalates this to a real
+    // two-phase commit coordinated by MSDTC once scope.Complete() is called.
+    scope.Complete();
+}</code></div>
+    <p><strong>Code → Meaning → Result:</strong> This code <em>looks</em> like an ordinary transaction — that's exactly the appeal, and exactly the trap. Underneath, if both databases support participating in a distributed transaction, .NET silently escalates to the full 2PC machinery described above: a prepare phase across both databases, then a coordinated commit. It genuinely can work — but it's paying the real cost this lesson is about to detail, and many modern resources (most message brokers among them) don't support this kind of coordination at all, meaning this pattern simply isn't available for a large share of the systems you'll actually build against.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example — 2PC's Real, Documented Weaknesses</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Weakness 1 — It's Fundamentally a Blocking Protocol</h4>
+    <p>Picture the exact moment the coordinator has collected all "yes" votes and is about to broadcast "commit" — and then the coordinator process crashes, right there. Every participant is stuck: each one has voted "yes," which means each one is contractually bound to commit if told to, but none of them can safely decide on its own whether the final answer was actually "commit" or "abort," because they never got to hear it. They're left holding their locks — real database locks, blocking other transactions — indefinitely, until the coordinator recovers (if it ever does) and tells them what was actually decided. This is not a rare implementation bug; it's an inherent, structural property of the protocol: participants who've voted "yes" cannot unilaterally proceed without risking disagreeing with what actually happened elsewhere.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Weakness 2 — It Scales Poorly as Participants Grow</h4>
+    <p>Every participant has to hold its locks for the entire duration of both phases — the full round trip of "prepare, vote, wait for everyone else, commit." The more participants involved, and the slower or less reliable any one of them is, the longer every <em>other</em> participant sits there holding locks, blocking other work on their own systems. Two participants is manageable. A dozen independent services, each with its own latency and its own chance of a hiccup, and the odds that at least one of them is slow (or briefly unreachable) on any given transaction climb fast — and every other participant pays for that one straggler's delay by sitting locked and waiting.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Weakness 3 — Many Modern Resources Simply Don't Support It</h4>
+    <p>2PC requires a resource manager that can genuinely "prepare" (do the work, durably, without committing) and later either commit or roll back on command. Most modern message brokers and many contemporary data stores were never built with this specific two-phase contract in mind — they're built around simpler, faster, more scalable operational models that don't offer a "prepare but don't commit yet" mode at all. That means, in practice, a large share of the infrastructure powering real distributed systems today — including the very message brokers this Part has been building around — cannot participate in a classic 2PC transaction, no matter how much you might want them to.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">💍</span> "Speak Now, or Forever Hold Your Peace"</div>
+        <p>A wedding ceremony is a surprisingly exact analogy for 2PC. The officiant (the coordinator) asks each party (the participants) in turn to privately confirm their intent — "do you take this person...?" Each "I do" is a vote, given before anything is made final. Only once <em>every</em> required party has said "I do" does the officiant make the pronouncement that actually, permanently commits the marriage.</p>
+        <p>Now imagine the officiant collapses at the altar right after collecting every "I do," but before making the final pronouncement. The couple is stuck in limbo — each of them already said yes, bound by that answer, but neither can unilaterally declare themselves married, nor can they safely walk away, because the actual final word was never spoken. Everyone in the room — the guests, the caterers waiting to start the reception — is stuck waiting too. That paralysis, caused by one single point (the coordinator) failing at exactly the wrong moment, is precisely 2PC's blocking weakness in miniature.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <div class="flow-container">
+        <div class="flow-title">WHY A PREPARED PARTICIPANT CAN'T JUST DECIDE ON ITS OWN</div>
+        <div class="flow-step">
+            <div class="step-label">1. A "YES" VOTE IS A DURABLE, BINDING PROMISE</div>
+            <ul><li>Once a participant votes yes, it writes that promise durably (to its own write-ahead log) — it has committed, in a sense, to committing later. It cannot simply decide "I'll go ahead and commit on my own" because it has no way to know whether every <em>other</em> participant also voted yes — maybe one of them voted no, and the coordinator was in the middle of telling everyone to abort when it crashed.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. GUESSING WRONG WOULD BREAK THE "ALL OR NOTHING" GUARANTEE ENTIRELY</div>
+            <ul><li>If a stuck participant guessed "commit" and it turned out the real decision was "abort," that participant would now hold data inconsistent with every other participant that correctly rolled back — silently breaking the exact atomicity guarantee 2PC exists to provide. So the only safe move, from the participant's own local point of view, is to keep waiting.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THIS IS WHY THE COORDINATOR ITSELF BECOMES A SINGLE POINT OF FAILURE</div>
+            <ul><li>The entire protocol's liveness — whether it ever actually finishes — depends on the coordinator surviving long enough to deliver its final decision to everyone. A coordinator failure doesn't just delay the transaction; it can leave every participant's locks held indefinitely, until the coordinator recovers or a human intervenes.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "TransactionScope always gives me a real distributed transaction" — only if every resource supports it</h3>
+    <p>As Part VIII already warned, wrapping operations in a <code>TransactionScope</code> doesn't magically grant every resource distributed-transaction capability — it can only coordinate resources that actually implement the prepare/commit contract 2PC requires. A resource that doesn't support this either throws when you try, or — worse, and more dangerous — silently doesn't actually get the atomicity guarantee you assumed you were getting. Never assume distributed atomicity is happening just because the code compiles and runs inside a <code>TransactionScope</code> block.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "2PC is obsolete and nobody uses it anywhere" — it's specifically a poor fit for this domain, not universally useless</h3>
+    <p>2PC and its relatives are still used in some contexts — certain database internals, some tightly-controlled environments with a small, known, reliable set of participants. What this lesson is really arguing is narrower and more precise: 2PC is a poor fit specifically for coordinating <em>independently deployed microservices and modern messaging infrastructure</em>, exactly the kind of system this Part has been building. The blocking behavior, the poor scaling with participant count, and the lack of broad support among modern brokers and data stores are what make it the wrong tool for that specific job — not evidence that the protocol itself is worthless everywhere.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Reaching for a distributed transaction as the default fix for a multi-service consistency problem</h4>
+    <p>❌ The instinct, especially coming from a single-database background, is "I need these three services to stay in sync, so I need a transaction spanning all three." That instinct, applied literally via 2PC, imports real blocking risk and scaling limits into a system that will only grow more services and more independent failure points over time. ✅ Ask first whether the specific problem is actually the narrower "dual write" problem (the next lesson's subject) or a broader consistency question better served by eventual consistency (the lesson after that) — reach for a full distributed transaction only when neither of those genuinely fits.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming every resource can participate in 2PC</h4>
+    <p>❌ Designing a workflow that assumes a message broker or a modern NoSQL store will happily join a distributed transaction, only to discover in production that it simply doesn't support the prepare/commit protocol at all. ✅ Verify a resource's actual support for distributed transaction coordination before designing around it — and default to assuming most modern messaging infrastructure does <em>not</em> support it, since that's the common case.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Underestimating how long locks stay held across a slow participant</h4>
+    <p>❌ Not accounting for the fact that every participant in a 2PC transaction holds its locks for the full duration of both phases — if one participant is slow, every other participant's locks stay held that whole time too, throttling unrelated work on systems that had nothing to do with the slowness. ✅ Recognize this as a real, structural scaling cost, not a tuning problem to configure away.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Situation</th><th>Reach for</th></tr></thead>
+            <tbody>
+                <tr><td>A small, tightly-controlled number of resources, all known to genuinely support 2PC, where the blocking risk is acceptable and well-understood</td><td>A real distributed transaction (<code>TransactionScope</code>/MSDTC) — rare, but not impossible</td></tr>
+                <tr><td>Updating your own database AND publishing an event about that change (the extremely common "dual write" case)</td><td>The Outbox pattern — the very next lesson</td></tr>
+                <tr><td>Coordinating state across genuinely independent services over time, where a brief window of temporary disagreement is acceptable</td><td>Eventual consistency — the lesson after that</td></tr>
+                <tr><td>Modern, independently-deployed microservices and message-broker-based architecture, generally</td><td>Avoid 2PC as a default — its weaknesses compound exactly as this kind of system scales</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="callout">
+        <strong>💡 Rule of thumb:</strong> If you find yourself reaching for a distributed transaction spanning independent services, stop and ask whether the actual underlying need is narrower (a single dual-write) or broader (general cross-service consistency) — the next two lessons cover the modern answer to each.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Phase 1 (Prepare)</strong> = every participant does the work and votes yes/no, but doesn't commit yet<br />
+        <strong>Phase 2 (Commit)</strong> = only once EVERYONE voted yes does the coordinator tell everyone to actually commit — together, or not at all<br />
+        <strong>Blocking risk</strong> = a coordinator crash between the phases can leave every "yes" voter stuck holding locks indefinitely<br />
+        <strong>Poor support</strong> = most modern message brokers and many modern data stores don't implement the prepare/commit contract 2PC needs<br /><br />
+        <strong>Remember:</strong> 2PC isn't wrong — it's a real, well-understood answer to a hard problem, whose costs are exactly why modern distributed systems generally reach for something else instead.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">A <strong>distributed transaction</strong> tries to give multiple independent systems the same all-or-nothing guarantee one database gives for free — and has no single component naturally positioned to enforce it.</li>
+            <li style="margin-bottom:0.4rem;"><strong>Two-Phase Commit</strong> solves this with a coordinator: Phase 1 collects a yes/no vote from every participant without committing; Phase 2 tells everyone to commit only if every vote was yes, or to abort otherwise.</li>
+            <li style="margin-bottom:0.4rem;">2PC is <strong>fundamentally blocking</strong> — a coordinator crash between the phases can leave participants holding locks indefinitely, unable to safely proceed alone.</li>
+            <li style="margin-bottom:0.4rem;">2PC <strong>scales poorly</strong> as participant count grows, and <strong>many modern data stores and brokers don't support it</strong> at all.</li>
+            <li style="margin-bottom:0.4rem;">The modern answer for most real systems isn't "coordinate the distributed transaction better" — it's the <strong>Outbox pattern</strong> for the specific dual-write problem, and <strong>eventual consistency</strong> as the broader philosophy — both covered in the next two lessons.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've walked through the two phases and the real reasons 2PC struggles at modern scale. Let's confirm it clicked.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> During Phase 1 (Prepare) of Two-Phase Commit, what does a participant actually do?</p>
+        <ul class="options">
+            <li>A) It permanently commits its changes immediately, then reports success</li>
+            <li>B) It performs and durably records the work, votes yes or no on whether it CAN commit, but does not make the change permanent yet</li>
+            <li>C) It waits idly, doing nothing, until Phase 2 begins</li>
+            <li>D) It sends its data directly to every other participant for review</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Phase 1 is the voting phase — each participant does the real work and durably records its readiness, but the change is not yet permanent. It's a promise to commit later if instructed, not the commit itself.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Committing immediately in Phase 1 would defeat the entire point of the protocol — the whole design exists specifically to avoid any participant committing before everyone has agreed.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The participant does real, meaningful work in Phase 1 — preparing and voting — it isn't idle.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Participants communicate with the coordinator, not directly with each other — the coordinator is the central point collecting votes and broadcasting the final decision.</p>
+                <p><strong>Reinforcement:</strong> Prepare means "ready and promised, not yet permanent" — that distinction is the entire mechanism that makes 2PC's atomicity guarantee possible.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> The coordinator crashes after collecting all "yes" votes but before broadcasting the final "commit" decision. What happens to the participants?</p>
+        <ul class="options">
+            <li>A) Each participant independently decides to commit, since they all voted yes</li>
+            <li>B) Each participant is left holding its locks, unable to safely decide to commit or abort on its own, until the coordinator recovers and delivers the actual decision — this is 2PC's defining blocking weakness</li>
+            <li>C) The transaction automatically and safely rolls back across all participants with no further action needed</li>
+            <li>D) Each participant queries the others directly to determine the correct outcome</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the scenario the lesson (and the wedding analogy) walked through. A participant that voted yes cannot safely guess the final outcome — it has to wait, holding its locks, until the coordinator's actual decision arrives. This structural blocking is 2PC's most cited real weakness.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> A participant deciding unilaterally risks disagreeing with what actually happened elsewhere (maybe another participant voted no) — this is precisely the unsafe guess the protocol is designed to prevent.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> There's no automatic safe rollback here — that's exactly the problem; the participants are stuck without the coordinator's explicit instruction.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Classic 2PC doesn't define a peer-to-peer fallback communication path between participants — they depend on the coordinator specifically.</p>
+                <p><strong>Reinforcement:</strong> The coordinator is a single point of failure whose crash at the wrong moment can leave every participant blocked indefinitely — this is not a rare edge case, it's an inherent property of the protocol.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Why does 2PC scale poorly as the number of participants grows?</p>
+        <ul class="options">
+            <li>A) The coordinator can only support a maximum of two participants by design</li>
+            <li>B) Every participant holds its locks for the full duration of both phases, so the more participants involved (and the slower or less reliable any one of them is), the longer every other participant sits blocked waiting</li>
+            <li>C) 2PC requires exponentially more network bandwidth per participant added</li>
+            <li>D) Adding participants requires rewriting the coordinator's source code each time</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> As the lesson explained, all participants hold locks across the full round trip of both phases. More participants means more chances that at least one is slow or briefly unreachable — and every other participant pays for that delay by staying locked and blocked.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> There's no hard two-participant limit in the protocol itself — the scaling problem is about lock duration and coordination overhead, not a hardcoded cap.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> The scaling issue described in the lesson is about locks and blocking time, not primarily about raw bandwidth consumption.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Coordinators are designed to support a configurable set of participants — no source rewrite is implied by adding one.</p>
+                <p><strong>Reinforcement:</strong> Lock duration scales with the slowest participant and the total participant count — that's the concrete mechanism behind 2PC's poor scalability.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A team wants to update their own database and publish an event to a message broker, and considers wrapping both in a distributed transaction via TransactionScope. What does this lesson suggest?</p>
+        <ul class="options">
+            <li>A) This is always the correct, recommended approach for this exact scenario</li>
+            <li>B) Most modern message brokers don't support participating in a 2PC-style distributed transaction at all, and even where technically possible, this imports real blocking risk — the Outbox pattern, covered next, is the modern answer to this specific dual-write scenario</li>
+            <li>C) TransactionScope cannot be used with any database under any circumstances</li>
+            <li>D) This scenario doesn't actually require any coordination at all</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is exactly the dual-write scenario the lesson flags as a poor fit for 2PC — most brokers don't support the prepare/commit contract, and even when a resource does, 2PC's blocking and scaling costs remain. The lesson explicitly points to the Outbox pattern as the modern, standard answer.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson is explicit that this is generally the wrong default reach for this scenario, precisely because of the weaknesses just covered.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> TransactionScope works fine within a single database or with resources that genuinely support distributed coordination — the limitation is specifically about resources (like most brokers) that don't support the 2PC contract.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> This is precisely the dual-write problem that needs some form of coordination — the point is that 2PC is the wrong tool, not that no solution is needed.</p>
+                <p><strong>Reinforcement:</strong> Recognizing "this is a dual-write problem" is the cue to reach for the Outbox pattern, not a distributed transaction — exactly the handoff to the next lesson.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 You now understand precisely why distributed transactions are hard, and exactly what 2PC costs to solve it the "textbook" way. Next up: the Outbox pattern — the real, modern fix for the specific dual-write problem this lesson set up.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>

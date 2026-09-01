@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>289 - Event-Driven Architecture · dotnetmadeeasy.dev</title>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple, #8B5CF6);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple, #8B5CF6);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple, #8B5CF6);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple, #8B5CF6);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        You already know this pattern — lesson 107 taught it inside one process. This is the exact same idea, stretched across a network.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>Lesson 107 gave <code>OrderService</code> an <code>OrderPlaced</code> event so it could announce a fact without knowing or caring who was listening — <code>InventoryUpdater</code> and <code>OrderConfirmationEmailer</code> subscribed independently, in the same process, on the same call stack. Lesson 192 took that further with an event aggregator, so publishers and subscribers didn't even need direct references to each other. Lesson 244 named the formal pattern underneath both: Observer.</p>
+    <p>Now picture the exact same shape, except <code>OrderService</code>, <code>InventoryService</code>, <code>NotificationService</code>, and <code>AnalyticsService</code> are four separate microservices (285), each independently deployed, each potentially down or slow at any given moment. Lesson 107 was explicit at the time that this larger version — "publishers and subscribers as entirely separate services, communicating asynchronously through a message broker" — was "a much later, Advanced-tier topic," deliberately left for later.</p>
+    <p><strong>This is that topic. Event-driven architecture is the same core idea you already understand deeply — a publisher announces a fact, subscribers react independently, the publisher doesn't know or care who's listening — scaled up to work across service boundaries, using the queues (287) and Kafka (288) covered in the last two lessons as the transport instead of an in-process delegate.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Event-driven architecture</strong> is a way of designing a system so that services communicate primarily by publishing and subscribing to <strong>events</strong> — records of something that has already happened — instead of directly, synchronously calling each other's APIs. A service that publishes an event has no idea which other services, if any, are listening, exactly the same way <code>OrderService</code> in lesson 107 had no idea whether zero, one, or ten in-process subscribers existed.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>An event's name and shape describe a fact that has already occurred, and its name is deliberately, always past tense: <code>OrderPlaced</code>, <code>PaymentReceived</code>, <code>StockReduced</code>. This is a precise, meaningful distinction from a <strong>command</strong> — an instruction telling a specific service what to do, named imperatively: <code>PlaceOrder</code>, <code>ChargePayment</code>. Lesson 107 already drew exactly this line inside one process ("event" and "command" sound similar but mean opposite things) — event-driven architecture applies the same rule across service boundaries: publish a past-tense event when announcing a fact to whoever cares; send a command (typically as a direct, synchronous request, or a targeted point-to-point message) when instructing one specific, known service to do something on your behalf.</p>
+
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4>⚡ Command — an instruction, present/imperative tense</h4>
+            <ul>
+                <li><code>PlaceOrder</code>, <code>ChargeCard</code>, <code>CancelOrder</code></li>
+                <li>Sent to exactly ONE specific, known service that must handle it</li>
+                <li>Can be refused or fail — it's a request, not yet a fact</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4>📢 Event — a fact, past tense</h4>
+            <ul>
+                <li><code>OrderPlaced</code>, <code>PaymentReceived</code>, <code>OrderCancelled</code></li>
+                <li>Published with no specific recipient in mind — anyone may listen</li>
+                <li>Already true by the time anyone hears it — not up for debate</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — the Same One Lesson 107 Solved, Now With a Much Higher Cost of Getting It Wrong</h3>
+    <p>Imagine <code>OrderService</code> directly, synchronously calling <code>InventoryService</code>, <code>NotificationService</code>, and <code>AnalyticsService</code> via REST every time an order is placed — exactly the tightly-coupled shape lesson 107 warned against, just now spread across a network via lesson 284's contracts. Every new reaction (loyalty points, fraud screening, a new reporting pipeline) means editing <code>OrderService</code>'s code and adding another outbound call. And because these are now genuinely separate, independently-deployed services (285), lesson 286 already showed the sharper cost: any one of those synchronous calls failing or timing out can threaten the entire order operation, purely because an unrelated downstream service happened to be briefly unavailable.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — the Same Decoupling, Now Paying Off in Deployment and Availability, Not Just Code</h3>
+    <p><code>OrderService</code> publishes one <code>OrderPlaced</code> event to a broker (a queue or a Kafka topic) and moves on. <code>InventoryService</code>, <code>NotificationService</code>, and <code>AnalyticsService</code> each subscribe independently, with <code>OrderService</code> having zero code referencing any of them — the exact same decoupling lesson 107 achieved with a C# <code>event</code>, now achieved with a message broker instead of a multicast delegate.</p>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">🧠</span> The key insight — decoupled in deployment and availability, not just in code</div>
+        <p>Lesson 107's in-process events decoupled <em>code</em> — <code>OrderService</code> didn't need a reference to <code>InventoryUpdater</code>'s type. But everything still shared one process: if a subscriber's handler threw, it could still break <code>PlaceOrder()</code> itself, and every subscriber had to be online (i.e. compiled into the same running process) for the design to work at all. Event-driven architecture removes that remaining constraint. A subscriber being down, mid-deployment, or simply slow does not break or block the publisher — <code>OrderService</code> finishes placing the order the instant the broker durably accepts the event, exactly as lesson 286 described, regardless of whether <code>NotificationService</code> happens to be healthy at that exact moment. The decoupling is now in <strong>deployment and availability</strong>, not merely in code.</p>
+    </div>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1rem;margin:1.5rem 0;">
+        <div style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;margin-bottom:0.8rem;font-weight:600;text-align:center;color:var(--accent-purple,#8B5CF6);">
+            LESSON 107, SCALED UP ACROSS SERVICE BOUNDARIES
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:0.5rem 0;">
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">107 — IN ONE PROCESS</div>
+                <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.7rem;border-radius:4px;margin:0.5rem 0 0 0;font-size:0.85rem;border:none;overflow-x:auto;color:var(--text-main,#E2E8F0);"><code style="background:transparent;padding:0;font-size:inherit;color:inherit;">OrderService
+  raises C# event OrderPlaced
+    ⤳ InventoryUpdater (same process)
+    ⤳ OrderConfirmationEmailer (same process)
+  ── synchronous, one call stack ──</code></pre>
+            </div>
+            <div style="background:var(--bg-active,rgba(139,92,246,0.12));padding:0.8rem;border-radius:8px;color:var(--text-main,#E2E8F0);">
+                <div style="font-weight:600;font-size:1.05rem;text-align:center;">289 — ACROSS SERVICES</div>
+                <pre style="background:var(--bg-dark,#0B0E14);padding:0.5rem 0.7rem;border-radius:4px;margin:0.5rem 0 0 0;font-size:0.85rem;border:none;overflow-x:auto;color:var(--text-main,#E2E8F0);"><code style="background:transparent;padding:0;font-size:inherit;color:inherit;">OrderService (own process/deploy)
+  publishes OrderPlaced to a broker
+    ⤳ InventoryService (own process/deploy)
+    ⤳ NotificationService (own process/deploy)
+    ⤳ AnalyticsService (own process/deploy)
+  ── async, independent deploys, independent uptime ──</code></pre>
+            </div>
+        </div>
+    </div>
+    <p>The shape is identical. What changed is what's on the other side of the arrow: a method reference in the same memory space, versus a completely independent, separately-deployed process reachable only through a broker.</p>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">AN ORDER PLACED, THREE INDEPENDENT SERVICES REACT</div>
+        <div class="flow-step">
+            <div class="step-label">1. ORDERSERVICE PERSISTS THE ORDER — ITS OWN JOB, NOTHING ELSE</div>
+            <ul><li>Exactly like lesson 107's <code>PlaceOrder()</code>: validate and save, and nothing more.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2. ORDERSERVICE PUBLISHES ONE EVENT, NAMED IN THE PAST TENSE</div>
+            <pre style="background:var(--bg-dark,#0B0E14);padding:0.3rem 0.6rem;border-radius:4px;margin:0.2rem 0;font-size:0.85rem;color:var(--text-main,#E2E8F0);border:none;overflow-x:auto;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">public record OrderPlaced(int OrderId, string CustomerEmail, string Sku, int Quantity);</code></pre>
+            <ul><li><code>OrderService</code> has no reference to <code>InventoryService</code>, <code>NotificationService</code>, or <code>AnalyticsService</code> — none of them, by type, by URL, or otherwise.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THREE INDEPENDENT SERVICES SUBSCRIBE, EACH TO ITS OWN CONCERN</div>
+            <ul>
+                <li><code>InventoryService</code> — reduces stock for that SKU</li>
+                <li><code>NotificationService</code> — emails the customer a confirmation</li>
+                <li><code>AnalyticsService</code> — records the sale for reporting</li>
+            </ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">4. EACH SUBSCRIBER RUNS INDEPENDENTLY, ON ITS OWN SCHEDULE, IN ITS OWN PROCESS</div>
+            <ul><li>Unlike lesson 107's synchronous, same-thread invocation list, these three run in genuinely separate processes, at genuinely independent times — one being slow or briefly down has zero effect on the other two, or on <code>OrderService</code> itself.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <pre style="background:var(--bg-panel,#151821);padding:0.8rem 1rem;border-radius:8px;border:1px solid var(--border-color,#1E293B);overflow-x:auto;color:var(--text-main,#E2E8F0);font-size:0.9rem;line-height:1.5;"><code style="background:transparent;padding:0;border-radius:0;font-size:inherit;color:inherit;">// ─── The event — a fact, past tense, shared as a contract between services ───
+public record OrderPlaced(int OrderId, string CustomerEmail, string Sku, int Quantity);
+
+// ─── OrderService — its own microservice, own deploy, own database ───
+public class OrderService
+{
+    private readonly IEventBus _eventBus; // wraps a queue or Kafka topic — see 287/288
+
+    public async Task PlaceOrderAsync(Order order)
+    {
+        await _ordersDb.SaveOrderAsync(order);           // its own job, done
+
+        await _eventBus.PublishAsync(new OrderPlaced(     // announce the fact, move on
+            order.Id, order.CustomerEmail, order.Sku, order.Quantity));
+
+        // OrderService's job ends here. It has NO idea who, if anyone, is listening.
+    }
+}
+
+// ─── InventoryService — a COMPLETELY SEPARATE deployable, subscribing independently ───
+public class InventoryEventHandler
+{
+    public async Task HandleAsync(OrderPlaced evt) =>
+        await _inventory.ReduceStockAsync(evt.Sku, evt.Quantity);
+}</code></pre>
+    <p><strong>Meaning:</strong> Compare this directly to lesson 107's <code>OrderService.OrderPlaced += inventoryUpdater.HandleOrderPlaced;</code> composition-root wiring. The <em>concept</em> is identical — a publisher announces a fact, a subscriber reacts. What's genuinely different is that <code>InventoryEventHandler</code> here isn't wired up by an in-process composition root at all — it's wired up by subscribing to a topic or queue name, entirely outside <code>OrderService</code>'s deployment, build, or even knowledge.</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>An <code>OrderPlaced</code> event is published exactly once, by <code>OrderService</code> alone. Consumed independently: <code>InventoryService</code> reduces stock; <code>NotificationService</code> emails a confirmation; <code>AnalyticsService</code> logs the sale for a dashboard. None of these three services is known to <code>OrderService</code> at all — not by name, not by URL, not by type. If the business adds a fourth reaction tomorrow — say, a <code>LoyaltyService</code> awarding points — that's a brand-new service subscribing to the exact same, already-existing event. <code>OrderService</code> is not touched, not redeployed, and not even aware a fourth subscriber now exists.</p>
+    <p>Now suppose <code>NotificationService</code> is mid-deployment for two minutes, right when a customer places an order. In a synchronous design, that order might fail outright. Here, the <code>OrderPlaced</code> event simply sits safely in the broker — exactly as lesson 286 and 287 described — until <code>NotificationService</code> finishes deploying and comes back online to process it. The order itself was never at risk, and the customer never even notices the two-minute gap.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;">📌</span> The Same Notice Board, Now Between Buildings</div>
+        <p>Lesson 107 used a notice board inside one office: <code>OrderService</code> pins a notice, anyone in the building reads it on their own schedule. Event-driven architecture is that same notice board, except now it's a shared bulletin service spanning an entire office park of separate buildings, each building its own independently-run company. One building being closed for renovation (a service being redeployed) doesn't stop the notice from being posted, and it doesn't stop any of the <em>other</em> buildings from reading it right away — that closed building just catches up on the notice whenever it reopens. The publisher never needed any building to be open in the first place to post its notice.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <p>Lesson 107 was precise that its in-process events were "still one call stack, one thread, synchronous, in-process — not a message queue, not a distributed system," and explicitly promised that the Advanced tier would revisit the exact same idea "stretched across independent services communicating over a message broker, where subscribers can be down, slow, or processing the message minutes later." That promise is what this lesson delivers on. Under the hood, <code>_eventBus.PublishAsync(...)</code> is not a multicast delegate invocation — it's a network call to a broker (287's queue-style ack/nack semantics, or 288's Kafka-style partitioned log), and each subscriber is its own independently-running process, reading messages on its own schedule, with its own thread pool, its own memory space, and its own failure modes entirely separate from <code>OrderService</code>'s.</p>
+    <p>One consequence worth being explicit about: unlike lesson 107, where an unhandled exception in one subscriber's handler could stop every later subscriber in the invocation list from running at all, a failure in <code>NotificationService</code>'s handling of <code>OrderPlaced</code> has zero effect on <code>InventoryService</code>'s or <code>AnalyticsService</code>'s independent processing of that exact same event — each subscriber's success or failure is now fully isolated from every other subscriber's, not just from the publisher's.</p>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. Naming an event as a command is a real, common design smell</h3>
+    <p>A team publishing <code>PlaceOrder</code> as an "event" (imperative, present tense) rather than <code>OrderPlaced</code> (past tense) is usually a sign the design has quietly drifted from event-driven thinking back into disguised, one-directional commanding — as if the publisher is secretly telling one specific service what to do, rather than genuinely, indifferently announcing a fact to whoever happens to be listening. If a message's name reads like an instruction, ask whether it's actually meant for exactly one specific recipient (a command) rather than for any number of unknown subscribers (an event) — and route it accordingly.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. Event-driven architecture doesn't mean every cross-service interaction becomes an event</h3>
+    <p>Just as lesson 286 was clear that a caller genuinely needing an immediate answer should still use a synchronous call, a real system typically mixes both: synchronous REST (284) for "I need an answer right now to keep going" (checking whether a card is valid during checkout), and event-driven messaging (this lesson, via 287/288) for "here's a fact — react however and whenever makes sense to you." Treating every single interaction as an event, including ones that genuinely need an immediate response, forces awkward workarounds that undo the pattern's own benefits.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Letting the publisher secretly depend on a subscriber's outcome</h4>
+    <p>❌ <code>OrderService</code> publishing <code>OrderPlaced</code>, then somehow waiting to see whether <code>InventoryService</code> successfully reduced stock before considering the order "truly" placed — this quietly reintroduces the exact synchronous coupling event-driven architecture exists to remove, and defeats the entire purpose of publishing an event in the first place.</p>
+    <p>✅ Let <code>OrderService</code>'s responsibility end at "the order is saved and the fact is announced." If inventory reduction genuinely must succeed for the order to be valid, that's a sign it isn't actually an independent, eventually-consistent reaction — model it as part of the same synchronous operation instead of forcing events to fake a guarantee they were never designed to provide.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Assuming a subscriber processes an event exactly once</h4>
+    <p>❌ Writing <code>InventoryEventHandler.HandleAsync</code> as if it will only ever run once per order — as lesson 287 covered, redelivery after a crash before an ack is a normal, expected occurrence in a message-based system, not a rare edge case.</p>
+    <p>✅ Every subscriber's event-handling logic should be idempotent, exactly as lesson 287 established — safe to run twice for the exact same event without producing a wrong result.</p>
+
+    <h4 style="font-size:1.05rem;margin-top:1.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 3 — Publishing an event shaped around internal implementation details instead of a genuine business fact</h4>
+    <p>❌ An event like <code>OrdersTableRowInserted</code> that leaks a specific database's internal structure — this ties every subscriber to that specific storage detail, which is exactly the kind of contract fragility lesson 284 warned against.</p>
+    <p>✅ Name and shape events around genuine business facts other services would recognize and care about — <code>OrderPlaced</code>, not a description of the row that happened to get written.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;">Use event-driven architecture when one occurrence genuinely triggers multiple, independent reactions across separate services — order placement triggering inventory, notification, and analytics is the same textbook case lesson 107 used, now at true service scale.</li>
+        <li style="margin-bottom:0.4rem;">Use it when you want new subscribers addable over time without ever touching the publishing service — the same open/closed benefit lesson 107 gave you in-process, now delivered across deployment boundaries.</li>
+        <li style="margin-bottom:0.4rem;">Use it specifically where a subscriber's downtime or slowness must not be able to block or fail the publisher's own operation.</li>
+        <li style="margin-bottom:0.4rem;">Skip it, and use a direct synchronous call (284) instead, when the caller genuinely needs an immediate result to proceed — event-driven architecture is for "notify and move on," not "ask and wait," exactly as lesson 286 distinguished.</li>
+    </ul>
+
+    <div class="callout">
+        <strong>💡 Full circle:</strong> Lesson 107 promised this exact idea would return, stretched across services, with "its own concerns around durability, retries, and asynchronous processing." That's precisely this lesson, resting directly on 286's case for messaging, 287's queue mechanics, and 288's Kafka mechanics. The design instinct — decouple a publisher from its reactions — never changed from lesson 107 to here. Only the distance between publisher and subscriber did.
+    </div>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        <strong>Event</strong> = a fact, already true, named in the past tense — <code>OrderPlaced</code>, not <code>PlaceOrder</code>.<br />
+        <strong>Publisher</strong> = announces the fact, knows nothing about who, if anyone, is listening.<br />
+        <strong>Subscriber</strong> = its own independently-deployed service, reacting on its own schedule, owning its own failures.<br />
+        Same idea as lesson 107's Observer pattern — now decoupled in <strong>deployment and availability</strong>, not just in code.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">Event-driven architecture has services communicate by publishing and subscribing to events — facts that have already happened, named in the past tense — instead of calling each other directly and synchronously.</li>
+            <li style="margin-bottom:0.4rem;">This is the exact same underlying idea as in-process events (107) and the formal Observer pattern (192, 244), scaled up to work across service boundaries using the transport technologies from 286–288 instead of an in-process delegate.</li>
+            <li style="margin-bottom:0.4rem;">The payoff goes beyond code decoupling: services become decoupled in <strong>deployment and availability</strong> — a subscriber being temporarily down or slow does not break or block the publisher, directly delivering on 286's core argument for asynchronous messaging.</li>
+            <li style="margin-bottom:0.4rem;">An event's name is always past tense and describes a fact, never an imperative instruction — that's the line separating an event from a command.</li>
+            <li style="margin-bottom:0.4rem;">A worked example: <code>OrderPlaced</code> published once, consumed independently by inventory, notification, and analytics services, none of which the order service needs to know about directly.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">🧠 Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">You've seen how lesson 107's in-process idea scales up to a full distributed architecture. Let's confirm the reasoning — and close out this cluster of lessons.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> Which of the following is correctly named as an event, in the sense this lesson uses the term?</p>
+        <ul class="options">
+            <li>A) <code>PlaceOrder</code></li>
+            <li>B) <code>ChargeCustomer</code></li>
+            <li>C) <code>OrderPlaced</code></li>
+            <li>D) <code>SendNotification</code></li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: C</span></p>
+                <p><strong>Why C is correct:</strong> <code>OrderPlaced</code> is past tense and describes a fact that has already happened — exactly the definition of an event this lesson establishes.</p>
+                <p><span class="incorrect">❌ Why A, B, D are incorrect:</span> All three are imperative, present-tense instructions telling a specific service what to do — that's the definition of a command, not an event, and naming an event this way is called out as a real design smell.</p>
+                <p><strong>Reinforcement:</strong> An event's name should always read like something that's already true, never like an instruction.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> How does this lesson's event-driven architecture relate to lesson 107's in-process event-driven design?</p>
+        <ul class="options">
+            <li>A) They are entirely unrelated concepts that happen to share the word "event"</li>
+            <li>B) This lesson's architecture is the exact same underlying decoupling idea as lesson 107, scaled up to work across independently-deployed services using a message broker instead of an in-process delegate</li>
+            <li>C) Lesson 107's in-process events are a newer replacement for this lesson's architecture</li>
+            <li>D) Event-driven architecture requires abandoning the Observer pattern entirely</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This lesson explicitly builds on 107's promise that the same publisher/subscriber decoupling idea would return "stretched across independent services" — the core design instinct is identical; only the transport (broker vs. in-process delegate) and the resulting scope of decoupling (deployment/availability, not just code) change.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> The lesson is explicit that they share the same underlying idea, not just the word "event."</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Chronology runs the other way in this course's structure — lesson 107 came first and explicitly promised this later, larger-scale version.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Event-driven architecture is, if anything, the Observer pattern (244) applied at a larger scale, not a departure from it.</p>
+                <p><strong>Reinforcement:</strong> Same decoupling idea, different scale and transport — recognizing that connection is the core of this lesson.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> <code>NotificationService</code> is mid-deployment and briefly unreachable at the exact moment <code>OrderService</code> publishes an <code>OrderPlaced</code> event. What happens to the order, according to this lesson?</p>
+        <ul class="options">
+            <li>A) <code>PlaceOrder()</code> fails, because a subscriber wasn't reachable at the moment of publishing</li>
+            <li>B) The order completes successfully; the event waits safely in the broker until <code>NotificationService</code> comes back online and processes it — the publisher's success does not depend on any subscriber's availability</li>
+            <li>C) The order is placed, but <code>OrderPlaced</code> is silently dropped and <code>NotificationService</code> never sees it</li>
+            <li>D) <code>OrderService</code> automatically retries calling <code>NotificationService</code> directly until it succeeds</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is the lesson's central payoff, tying directly back to lesson 286 — publishing to a broker succeeds independently of any subscriber's availability, and the message safely waits until that subscriber is ready to process it.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This is exactly the synchronous-coupling failure mode event-driven architecture is designed to avoid — the publisher's success is decoupled from subscriber availability.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A durable broker (287/288) holds the message rather than dropping it — that durability is a core property of the messaging infrastructure underneath this architecture.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> There's no direct call to <code>NotificationService</code> at all in this design — <code>OrderService</code> only ever talks to the broker, never to individual subscribers.</p>
+                <p><strong>Reinforcement:</strong> A subscriber's temporary unavailability is invisible to the publisher — that's the "decoupled in deployment and availability" payoff this lesson centers on.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>4.</strong> A checkout flow needs to know immediately whether a customer's card is valid before completing the purchase. According to this lesson and lesson 286, what's the appropriate way to handle that specific interaction?</p>
+        <ul class="options">
+            <li>A) Publish a <code>CardValidationRequested</code> event and have the checkout flow wait indefinitely for some future event in response</li>
+            <li>B) Use a direct, synchronous call (as in lesson 284), since the caller genuinely needs an immediate answer to proceed — not every cross-service interaction should become an event</li>
+            <li>C) This can only be solved by making every service in the system fully event-driven, with no synchronous calls anywhere</li>
+            <li>D) Skip card validation entirely, since event-driven architecture makes it impossible to get any information back</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Common Confusion 2 is explicit that not every interaction should become an event — when the caller genuinely needs an immediate answer to keep going, a synchronous call is still the right tool, exactly as lesson 286 distinguished "ask and wait" from "notify and move on."</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> Forcing a genuinely synchronous need into an asynchronous event, and awkwardly waiting on it, is precisely the mistake this lesson warns against.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> Real systems mix synchronous and event-driven communication deliberately, based on what each specific interaction actually needs — event-driven architecture isn't meant to replace every synchronous call.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> Event-driven architecture doesn't prevent synchronous calls from existing alongside it — services can and do use both, chosen per interaction.</p>
+                <p><strong>Reinforcement:</strong> Choose the communication style based on whether the caller genuinely needs an immediate answer — that single question decides between a synchronous call and an event.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>5.</strong> <code>OrderPlaced</code> is consumed independently by <code>InventoryService</code>, <code>NotificationService</code>, and <code>AnalyticsService</code>. <code>NotificationService</code>'s handler throws an unhandled exception while processing the event. What happens to <code>InventoryService</code>'s and <code>AnalyticsService</code>'s processing of that same event?</p>
+        <ul class="options">
+            <li>A) Both are also prevented from processing the event, exactly like lesson 107's synchronous invocation list, where a later subscriber never runs after an earlier one throws</li>
+            <li>B) Both continue processing the event independently and unaffected, since each subscriber runs as its own separate process with its own isolated failure handling</li>
+            <li>C) The entire <code>OrderPlaced</code> event is permanently deleted from the broker the moment any one subscriber fails</li>
+            <li>D) <code>OrderService</code> automatically rolls back the order because one subscriber failed</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct">✅ Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> This is explicitly called out under the hood as a genuine improvement over lesson 107's in-process model — each subscriber is its own independent process, so one subscriber's failure has zero effect on any other subscriber's independent processing of the same event.</p>
+                <p><span class="incorrect">❌ Why A is incorrect:</span> This describes lesson 107's synchronous, single-invocation-list behavior specifically — the lesson is explicit that event-driven architecture across services does NOT share this limitation.</p>
+                <p><span class="incorrect">❌ Why C is incorrect:</span> A durable broker (287/288) retains the event independently for each consumer group/queue — one subscriber's failure doesn't delete it for others.</p>
+                <p><span class="incorrect">❌ Why D is incorrect:</span> <code>OrderService</code> has no reference to any subscriber and no way to even know a subscriber failed — nothing automatically ties the order's fate to a subscriber's success, which is precisely the point of the design.</p>
+                <p><strong>Reinforcement:</strong> Cross-service subscribers are isolated from each other's failures in a way lesson 107's same-process subscribers never were — a genuine, meaningful upgrade this lesson highlights.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);">🎉 That closes this opening cluster of Part IX — REST at the architectural level, microservices, and the full arc from "why messaging" through queues, Kafka, and event-driven architecture. You now have the vocabulary and mental models the rest of Part IX's resilience patterns — idempotency, retries, circuit breakers, distributed transactions, the outbox pattern, and eventual consistency — will build directly on top of.</p>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+    <p style="font-size:0.9rem;color:var(--text-muted,#94A3B8);text-align:center;">
+        <strong>dotnetmadeeasy.dev</strong> — Learn C# and .NET, the right way.
+    </p>
+
+</body>
+</html>
