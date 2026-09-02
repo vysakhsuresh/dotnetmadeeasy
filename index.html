@@ -3561,22 +3561,20 @@ JAVASCRIPT — Course Player with Full FILE_MAP
 
         // ─── SEARCH ──────────────────────────────────────────────────
         // Resolve which lesson numbers match every word of a query against
-        // the prebuilt content index — exact word match first, falling back
-        // to a prefix match so a partial word (mid-typing) still works.
+        // the prebuilt content index. Exact word match only, deliberately -
+        // an earlier prefix-fallback (for partial words while mid-typing)
+        // caused bad fan-out: e.g. "depen" matched not just "dependency" but
+        // also "depend"/"depending" as ordinary English verbs ("the outcome
+        // depends on...", unrelated to Dependency Injection), unioning to
+        // 167 of 315 lessons instead of the ~90 the real word alone gives.
+        // Title search already gives precise, instant feedback while
+        // typing (substring match doesn't fan out the same way), so content
+        // matching only needs to kick in once a word is actually complete.
         function contentMatchesForQuery(queryWords) {
             if (!queryWords.length || !SEARCH_INDEX || !Object.keys(SEARCH_INDEX).length) return null;
             let result = null;
             for (const w of queryWords) {
-                const idsForWord = new Set();
-                if (SEARCH_INDEX[w]) {
-                    SEARCH_INDEX[w].forEach(n => idsForWord.add(n));
-                } else {
-                    for (const key in SEARCH_INDEX) {
-                        if (key.startsWith(w)) {
-                            SEARCH_INDEX[key].forEach(n => idsForWord.add(n));
-                        }
-                    }
-                }
+                const idsForWord = new Set(SEARCH_INDEX[w] || []);
                 result = result === null ? idsForWord : new Set([...result].filter(n => idsForWord.has(n)));
                 if (result.size === 0) break;
             }
