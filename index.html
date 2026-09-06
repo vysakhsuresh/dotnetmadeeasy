@@ -3842,7 +3842,16 @@ JAVASCRIPT — Course Player with Full FILE_MAP
 
         function buildTtsChunks() {
             const clone = lessonBody.cloneNode(true);
-            clone.querySelectorAll('pre').forEach(el => el.remove());
+            // The fetched lesson file is a full standalone document, and
+            // innerHTML injection (in loadLesson) keeps whatever it doesn't
+            // explicitly strip - including a generic <style> block (raw CSS
+            // text) and other head-level tags. Element.textContent is
+            // tag-agnostic and would read that CSS straight into speech
+            // (and, separately, spell out the raw code inside <pre>), so
+            // all of it - plus the UI chrome this app itself injects after
+            // loading (copy buttons, related-lessons, feedback widget) -
+            // needs to come out before extracting the text to speak.
+            clone.querySelectorAll('style, script, head, title, meta, link, pre, .code-copy-btn, .related-lessons, .feedback-widget').forEach(el => el.remove());
             const text = (lessonTitle.textContent + '. ' + clone.textContent).replace(/\s+/g, ' ').trim();
             const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
             const chunks = [];
