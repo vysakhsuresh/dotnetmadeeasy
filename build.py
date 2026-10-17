@@ -25,14 +25,24 @@ ADSENSE = '<script async src="https://pagead2.googlesyndication.com/pagead/js/ad
 FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />'
 
 course = json.load(open(os.path.join(ROOT, 'src', 'course.json'), encoding='utf-8'))
+LESSON_META = json.load(open(os.path.join(ROOT, 'lesson-meta.json'), encoding='utf-8'))
 LESSON_COUNT = sum(len(p['lessons']) for b in course['books'] for p in b['parts'])
+COURSE_MINUTES = sum(LESSON_META[l['id']]['minutes'] for b in course['books'] for p in b['parts'] for l in p['lessons'])
+COURSE_HOURS = int(round(COURSE_MINUTES / 60 / 5.0) * 5)
 YEAR = str(datetime.date.today().year)
+
+def minutes_of(lessons): return sum(LESSON_META[l['id']]['minutes'] for l in lessons)
+def fmt_minutes(m):
+    if m < 60: return f'{m} min'
+    h, r = divmod(m, 60)
+    return f'{h}h {r:02d}m' if r else f'{h}h'
+def fmt_hours(m): return f'about {int(round(m / 60))} hours'
 
 def read(p): return open(os.path.join(ROOT, p), encoding='utf-8').read()
 def esc(t): return html.escape(t, quote=True)
 
 def fill(s):
-    return s.replace('{{LESSON_COUNT}}', str(LESSON_COUNT)).replace('{{YEAR}}', YEAR)
+    return s.replace('{{LESSON_COUNT}}', str(LESSON_COUNT)).replace('{{YEAR}}', YEAR).replace('{{COURSE_HOURS}}', str(COURSE_HOURS))
 
 HEADER = fill(read('src/partials/header.html'))
 FOOTER = fill(read('src/partials/footer.html'))
@@ -104,15 +114,16 @@ def build_lessons_index():
     sec = []
     for b in course['books']:
         count = sum(len(p['lessons']) for p in b['parts'])
+        book_min = minutes_of([l for p in b['parts'] for l in p['lessons']])
         anchor = ANCHOR.get(b['id'], b['id'])
         s = [f'<section class="book" id="{anchor}">', f'    <h2>{esc(b["title"])}</h2>',
              f'    <p class="lede" style="margin-bottom:6px">{esc(BLURB.get(b["title"], ""))}</p>',
-             f'    <p class="small muted" style="text-transform:uppercase;letter-spacing:.5px;font-weight:600">{count} lessons &middot; {len(b["parts"])} parts</p>']
+             f'    <p class="small muted" style="text-transform:uppercase;letter-spacing:.5px;font-weight:600">{count} lessons &middot; {len(b["parts"])} parts &middot; {fmt_hours(book_min)}</p>']
         for p in b['parts']:
-            s.append(f'    <h3 id="{esc(p["id"])}">{esc(p["title"])}</h3>')
+            s.append(f'    <h3 id="{esc(p["id"])}">{esc(p["title"])} <span class="part-time">{len(p["lessons"])} lessons &middot; {fmt_minutes(minutes_of(p["lessons"]))}</span></h3>')
             s.append('    <ol class="lesson-list">')
             for l in p['lessons']:
-                s.append(f'        <li><a href="{esc(l["href"])}">{esc(l["title"])}</a></li>')
+                s.append(f'        <li><a href="{esc(l["href"])}">{esc(l["title"])}</a><span class="mins">{LESSON_META[l["id"]]["minutes"]} min</span></li>')
             s.append('    </ol>')
         s.append('</section>')
         sec.append('\n'.join(s))
@@ -120,8 +131,9 @@ def build_lessons_index():
               "name": ".NET Made Easy — Free C# and .NET Course",
               "description": f"A free, written C# and .NET course: {LESSON_COUNT} lessons across three tiers, from your first line of code through production systems.",
               "url": SITE + "/lessons.html", "isAccessibleForFree": True, "inLanguage": "en",
+              "timeRequired": f"PT{int(round(COURSE_MINUTES / 60))}H",
               "provider": {"@type": "Organization", "name": "Layerbit", "url": "https://layerbit.co.in/"},
-              "hasCourseInstance": {"@type": "CourseInstance", "courseMode": "online", "courseWorkload": "PT150H"},
+              "hasCourseInstance": {"@type": "CourseInstance", "courseMode": "online", "courseWorkload": f"PT{int(round(COURSE_MINUTES / 60))}H"},
               "numberOfCredits": 0, "educationalLevel": "Beginner to Advanced",
               "teaches": [b['title'] for b in course['books']],
               "hasPart": [{"@type": "Course", "name": b['title'], "url": f"{SITE}/lessons.html#{ANCHOR.get(b['id'], b['id'])}"} for b in course['books']]}
@@ -138,8 +150,10 @@ def build_lessons_index():
         <div class="stat"><div class="num">{LESSON_COUNT}</div><div class="label">Lessons</div></div>
         <div class="stat"><div class="num">{len(course["books"])}</div><div class="label">Tiers</div></div>
         <div class="stat"><div class="num">{parts_total}</div><div class="label">Parts</div></div>
+        <div class="stat"><div class="num">~{COURSE_HOURS} h</div><div class="label">Reading time</div></div>
         <div class="stat"><div class="num">Free</div><div class="label">No signup</div></div>
     </div>
+    <p class="small muted">Reading times are estimates for reading at a steady pace, typing the code, and answering the quiz. Most lessons take 15 to 25 minutes; the course player shows the time left in each part as you go.</p>
     <div class="toc"><div class="toc-title">Jump to a tier</div><ol>
         <li><a href="#foundations">C# Foundations</a></li>
         <li><a href="#intermediate">C# In Practice</a></li>

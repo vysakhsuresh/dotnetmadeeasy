@@ -16,7 +16,7 @@ The site is static and served from this repository by GitHub Pages; the `main` b
 | `src/course.json` | The course structure (books → parts → lessons). Drives `lessons.html` and the lesson count shown across the site. |
 | `assets/site.css` | Shared stylesheet for the static pages. |
 | `build.py` | Builds the static pages from `src/`. |
-| `search-index.json`, `related-lessons.json` | Prebuilt indexes used by the course player's search and related-lessons features. |
+| `search-index.json`, `related-lessons.json`, `lesson-meta.json` | Prebuilt indexes used by the course player: full-text search, related lessons, and reading time per lesson. Regenerate `lesson-meta.json` with `python3 scripts/lesson_meta.py` after editing lessons. |
 | `sitemap.xml`, `robots.txt`, `ads.txt`, `manifest.json`, `CNAME` | Hosting, indexing and advertising configuration. |
 
 ## Editing
