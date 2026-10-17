@@ -22,6 +22,7 @@ The site is static and served from this repository by GitHub Pages; the `main` b
 ## Editing
 
 - **A lesson:** edit the file in `Content/`. Keep the `standalone-*` blocks and the `<style id="standalone-page-reset">` block intact; the player relies on them.
+- **Code examples in a lesson:** use `<pre><code>` or `<div class="code-block"><code>`, with the code starting at column 0 and indented with four spaces. Both are rendered as monospace blocks (whitespace preserved, horizontal scroll) by the player and by the standalone page.
 - **A static page:** edit `src/pages/<name>.html`, then run `python3 build.py` and commit both the source and the generated file.
 - **Header, footer or nav:** edit `src/partials/`, rebuild. (The course player and the lesson files have their own copies of the nav — search for `standalone-site-header` and `sidebar-footer-links`.)
 - **The design:** tokens live at the top of `assets/site.css`, of `index.html`'s `<style>`, and of the `standalone-page-reset` block in every lesson. Keep them in step.
