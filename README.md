@@ -10,18 +10,23 @@ The site is static and served from this repository by GitHub Pages; the `main` b
 |---|---|
 | `index.html` | The course player: a single-page shell that lists every lesson in a sidebar and loads the lesson file into the reading pane. Progress, theme and reader preferences are kept in the visitor's `localStorage`. |
 | `Content/*.html` | The 315 lessons. Each is a complete standalone page (its own header, nav, footer, structured data) *and* the fragment the course player injects. Blocks meant only for the standalone view carry a `standalone-*` class and are stripped on injection. |
-| `lessons.html`, `start-here.html`, `interview-prep.html`, `glossary.html`, `csharp-cheatsheet.html`, `about.html`, `contact.html`, `privacy.html`, `terms.html`, `404.html` | Static pages, **generated** — do not edit these directly. |
+| `lessons.html`, `dotnet-developer-roadmap.html`, `start-here.html`, `interview-prep.html`, `glossary.html`, `csharp-cheatsheet.html`, `about.html`, `contact.html`, `privacy.html`, `terms.html`, `404.html` | Static pages, **generated** — do not edit these directly. |
 | `src/pages/*.html` | Sources for the static pages: a JSON meta comment followed by the page body. |
 | `src/partials/` | Shared header and footer. |
 | `src/course.json` | The course structure (books → parts → lessons). Drives `lessons.html` and the lesson count shown across the site. |
 | `assets/site.css` | Shared stylesheet for the static pages. |
-| `build.py` | Builds the static pages from `src/`. |
+| `build.py` | Builds the static pages from `src/`, and also writes `sitemap.xml`, `feed.xml` (Atom feed of recently updated lessons) and `llms.txt`, and refreshes the figures and the crawlable lesson list inside `index.html`. |
+| `src/lesson-seo.json` | Per lesson: the search title (also the lesson's `<h1>`) and the meta description. |
+| `src/lesson-dates.json` | Per lesson: published and last-updated dates, maintained by `scripts/seo_lessons.py`. |
+| `scripts/seo_lessons.py` | Applies titles, descriptions, Open Graph tags, structured data, breadcrumbs and the related-lessons block to every lesson. |
+| `.github/workflows/indexnow.yml`, `<key>.txt` | After each deploy, tells IndexNow search engines (Bing and others) which pages changed. |
 | `search-index.json`, `related-lessons.json`, `lesson-meta.json` | Prebuilt indexes used by the course player: full-text search, related lessons, and reading time per lesson. Regenerate `lesson-meta.json` with `python3 scripts/lesson_meta.py` after editing lessons. |
-| `sitemap.xml`, `robots.txt`, `ads.txt`, `manifest.json`, `CNAME` | Hosting, indexing and advertising configuration. |
+| `robots.txt`, `ads.txt`, `manifest.json`, `CNAME` | Hosting, indexing and advertising configuration. |
 
 ## Editing
 
-- **A lesson:** edit the file in `Content/`. Keep the `standalone-*` blocks and the `<style id="standalone-page-reset">` block intact; the player relies on them.
+- **A lesson:** edit the file in `Content/`. Keep the `standalone-*` blocks and the `<style id="standalone-page-reset">` block intact; the player relies on them. Then run `python3 scripts/lesson_meta.py`, `python3 scripts/seo_lessons.py` and `python3 build.py`, in that order.
+- **A lesson's search title or description:** edit `src/lesson-seo.json`, then run `python3 scripts/seo_lessons.py` and `python3 build.py`.
 - **Code examples in a lesson:** use `<pre><code>` or `<div class="code-block"><code>`, with the code starting at column 0 and indented with four spaces. Both are rendered as monospace blocks (whitespace preserved, horizontal scroll) by the player and by the standalone page.
 - **A static page:** edit `src/pages/<name>.html`, then run `python3 build.py` and commit both the source and the generated file.
 - **Header, footer or nav:** edit `src/partials/`, rebuild. (The course player and the lesson files have their own copies of the nav — search for `standalone-site-header` and `sidebar-footer-links`.)
