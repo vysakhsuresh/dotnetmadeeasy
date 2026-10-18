@@ -83,10 +83,18 @@ def human_date(iso):
 
 
 def content_hash(body):
+    """Hash of the lesson's readable text only.
+
+    Markup, inline styles and the blocks this script generates are left
+    out, so a styling or accessibility fix never changes a lesson's
+    "Updated" date; only an edit to its words does.
+    """
     s = re.sub(r'<header class="standalone-site-header".*?</header>', '', body, flags=re.S)
     s = re.sub(r'<div class="standalone-lesson-header">.*?\n</div>', '', s, flags=re.S)
     s = re.sub(r'<aside class="standalone-related".*?</aside>', '', s, flags=re.S)
     s = re.sub(r'<nav class="standalone-lesson-nav".*?</nav>|<footer class="standalone-site-footer".*?</footer>', '', s, flags=re.S)
+    s = re.sub(r'<(script|style)[^>]*>.*?</\1>|<!--.*?-->', ' ', s, flags=re.S)
+    s = html.unescape(re.sub(r'<[^>]+>', ' ', s))
     return hashlib.sha1(re.sub(r'\s+', ' ', s).strip().encode('utf-8')).hexdigest()[:16]
 
 
@@ -165,7 +173,9 @@ def main():
             f'  <meta name="twitter:image" content="{OG_IMAGE}" />',
             '  <link rel="preconnect" href="https://fonts.googleapis.com" />',
             '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />',
-            f'  <link rel="stylesheet" href="{FONT_CSS}" />',
+            # Non-blocking: text paints in the fallback font straight away and
+            # swaps when the web font arrives (it is display=swap either way).
+            f'  <link rel="stylesheet" href="{FONT_CSS}" media="print" onload="this.media=\'all\'" /><noscript><link rel="stylesheet" href="{FONT_CSS}" /></noscript>',
             '  ' + ADSENSE,
         ])
         out, n = re.subn(r'  <title>.*?(?=\n\s*<style id="standalone-page-reset">)', lambda m: head, out, count=1, flags=re.S)
@@ -213,6 +223,19 @@ def main():
         updated = f'<span>Updated <time datetime="{mod_day}">{mod_human}</time></span>'
         out, n = re.subn(r'<span>(?:Free written lesson|Updated <time[^>]*>[^<]*</time>)</span>(?=</p>)', lambda m: updated, out, count=1)
         assert n == 1, f'{href}: meta line not found'
+
+        # ---- accessibility -------------------------------------------------
+        # One <main> landmark around the lesson itself (the course player
+        # unwraps it on injection), a CTA colour with 4.5:1 contrast for its
+        # white label, and underlined links inside footer prose.
+        if '<main id="lesson-main">' not in out:
+            out = out.replace('<div class="standalone-lesson-header">', '<main id="lesson-main">\n<div class="standalone-lesson-header">', 1)
+        if '</main>' not in out:
+            out, n = re.subn(r'\n(?=[ \t]*(?:<aside class="standalone-related"|<nav class="standalone-lesson-nav"))', '\n</main>\n', out, count=1)
+            assert n == 1, f'{href}: could not close <main>'
+        out = out.replace('.ss-nav a.ss-cta{color:#fff;background:#8B5CF6;', '.ss-nav a.ss-cta{color:#fff;background:#7C3AED;')
+        if '/* a11y */' not in out:
+            out = out.replace('\n</style>', '\n/* a11y */.standalone-site-footer p a{text-decoration:underline;text-underline-offset:2px}\n</style>', 1)
 
         # ---- site navigation: roadmap link ---------------------------------
         if '<a href="/dotnet-developer-roadmap.html">Roadmap</a>' not in out:
