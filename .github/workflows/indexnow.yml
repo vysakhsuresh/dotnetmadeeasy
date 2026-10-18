@@ -27,7 +27,7 @@ concurrency:
 jobs:
   submit:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       HOST: dotnetmadeeasy.com
       KEY: 66ce72676bb87456038ff2bd325f928b
@@ -73,12 +73,32 @@ jobs:
         if: steps.urls.outputs.count != '0'
         run: |
           python3 - <<'PY'
-          import json, os, urllib.request
+          import json, os, time, urllib.error, urllib.request
           urls = [u.strip() for u in open('urls.txt') if u.strip()]
           host, key = os.environ['HOST'], os.environ['KEY']
-          for i in range(0, len(urls), 10000):
-              body = json.dumps({'host': host, 'key': key, 'keyLocation': f'https://{host}/{key}.txt', 'urlList': urls[i:i + 10000]}).encode()
+
+          def submit(batch):
+              body = json.dumps({'host': host, 'key': key, 'keyLocation': f'https://{host}/{key}.txt', 'urlList': batch}).encode()
               req = urllib.request.Request('https://api.indexnow.org/indexnow', data=body, headers={'Content-Type': 'application/json; charset=utf-8'})
-              with urllib.request.urlopen(req, timeout=60) as r:
-                  print(f'Submitted {len(urls[i:i + 10000])} URLs: HTTP {r.status}')
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as r:
+                      return r.status, r.read().decode(errors='replace')
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read().decode(errors='replace')
+
+          for i in range(0, len(urls), 10000):
+              batch = urls[i:i + 10000]
+              # 403 means the key file could not be verified. Right after a
+              # deploy the CDN can still serve a cached 404 for a new file for
+              # up to ten minutes, so retry with backoff before giving up.
+              for attempt, wait in enumerate([0, 60, 180, 300, 420], start=1):
+                  time.sleep(wait)
+                  status, text = submit(batch)
+                  print(f'Attempt {attempt}: {len(batch)} URLs -> HTTP {status} {text[:200]}')
+                  if status in (200, 202):
+                      break
+                  if status not in (403, 429, 500, 502, 503):
+                      raise SystemExit(f'IndexNow rejected the request: HTTP {status}')
+              else:
+                  raise SystemExit(f'IndexNow still returned HTTP {status} after retries')
           PY
