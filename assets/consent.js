@@ -1,7 +1,7 @@
 /* Cookie choices for dotnetmadeeasy.com.
  *
  * The consent defaults are set in each page's <head> (src/partials/consent-head.html)
- * before any Google tag runs: advertising cookies start off in the EEA, the UK and
+ * before any Google tag runs: advertising and analytics cookies start off in the EEA, the UK and
  * Switzerland, a stored choice is re-applied on every page, and a Global Privacy
  * Control signal counts as "Reject all". This file shows the banner on a first
  * visit, stores the visitor's choice in localStorage and passes it to Google
@@ -63,8 +63,8 @@
         banner.setAttribute('aria-live', 'polite');
         banner.setAttribute('aria-label', 'Cookie choices');
         banner.innerHTML =
-            '<p>We use cookies to show ads (Google AdSense), which fund the course. Your lesson progress stays in your browser either way. ' +
-            'Choose whether to allow advertising cookies; you can change this any time from &ldquo;Privacy choices&rdquo; in the footer. ' +
+            '<p>We use cookies to show ads (Google AdSense), which fund the course, and to see which lessons readers find useful (Google Analytics). ' +
+            'Your lesson progress stays in your browser either way. Choose whether to allow these cookies; you can change this any time from &ldquo;Privacy choices&rdquo; in the footer. ' +
             '<a href="/privacy.html#cookies">Privacy policy</a></p>' +
             '<div class="dme-consent-actions">' +
             '<button type="button" data-choice="rejected">Reject all</button>' +
