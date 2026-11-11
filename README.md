@@ -1,6 +1,6 @@
 # .NET Made Easy
 
-Source for [dotnetmadeeasy.com](https://dotnetmadeeasy.com) — a free, written C# and .NET course (315 lessons across three tiers), published by [Layerbit](https://layerbit.co.in/).
+Source for [dotnetmadeeasy.com](https://dotnetmadeeasy.com) — a free, written C# and .NET course (325 lessons across three tiers), published by [Layerbit](https://layerbit.co.in/).
 
 The site is static and served from this repository by GitHub Pages; the `main` branch is what is live.
 
@@ -9,7 +9,7 @@ The site is static and served from this repository by GitHub Pages; the `main` b
 | Path | What it is |
 |---|---|
 | `index.html` | The course player: a single-page shell that lists every lesson in a sidebar and loads the lesson file into the reading pane. Progress, theme and reader preferences are kept in the visitor's `localStorage`. |
-| `Content/*.html` | The 315 lessons. Each is a complete standalone page (its own header, nav, footer, structured data) *and* the fragment the course player injects. Blocks meant only for the standalone view carry a `standalone-*` class and are stripped on injection. |
+| `Content/*.html` | The 325 lessons. Each is a complete standalone page (its own header, nav, footer, structured data) *and* the fragment the course player injects. Blocks meant only for the standalone view carry a `standalone-*` class and are stripped on injection. |
 | `lessons.html`, `dotnet-developer-roadmap.html`, `start-here.html`, `interview-prep.html`, `glossary.html`, `csharp-cheatsheet.html`, `about.html`, `contact.html`, `privacy.html`, `terms.html`, `404.html` | Static pages, **generated** — do not edit these directly. |
 | `src/pages/*.html` | Sources for the static pages: a JSON meta comment followed by the page body. |
 | `src/partials/` | Shared header and footer. |
@@ -20,12 +20,12 @@ The site is static and served from this repository by GitHub Pages; the `main` b
 | `src/lesson-dates.json` | Per lesson: published and last-updated dates, maintained by `scripts/seo_lessons.py`. |
 | `scripts/seo_lessons.py` | Applies titles, descriptions, Open Graph tags, structured data, breadcrumbs and the related-lessons block to every lesson. |
 | `.github/workflows/indexnow.yml`, `<key>.txt` | After each deploy, tells IndexNow search engines (Bing and others) which pages changed. |
-| `search-index.json`, `related-lessons.json`, `lesson-meta.json` | Prebuilt indexes used by the course player: full-text search, related lessons, and reading time per lesson. Regenerate `lesson-meta.json` with `python3 scripts/lesson_meta.py` after editing lessons. |
+| `search-index.json`, `related-lessons.json`, `lesson-meta.json` | Prebuilt indexes used by the course player: full-text search, related lessons, and reading time per lesson. Regenerate `lesson-meta.json` with `python3 scripts/lesson_meta.py` and `search-index.json` with `python3 scripts/search_index.py` after editing lessons. |
 | `robots.txt`, `ads.txt`, `manifest.json`, `CNAME` | Hosting, indexing and advertising configuration. |
 
 ## Editing
 
-- **A lesson:** edit the file in `Content/`. Keep the `standalone-*` blocks and the `<style id="standalone-page-reset">` block intact; the player relies on them. Then run `python3 scripts/lesson_meta.py`, `python3 scripts/seo_lessons.py` and `python3 build.py`, in that order.
+- **A lesson:** edit the file in `Content/`. Keep the `standalone-*` blocks and the `<style id="standalone-page-reset">` block intact; the player relies on them. Then run `python3 scripts/lesson_meta.py`, `python3 scripts/seo_lessons.py`, `python3 scripts/search_index.py` and `python3 build.py`, in that order.
 - **A lesson's search title or description:** edit `src/lesson-seo.json`, then run `python3 scripts/seo_lessons.py` and `python3 build.py`.
 - **Code examples in a lesson:** use `<pre><code>` or `<div class="code-block"><code>`, with the code starting at column 0 and indented with four spaces. Both are rendered as monospace blocks (whitespace preserved, horizontal scroll) by the player and by the standalone page.
 - **A static page:** edit `src/pages/<name>.html`, then run `python3 build.py` and commit both the source and the generated file.

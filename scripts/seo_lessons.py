@@ -202,6 +202,7 @@ def main():
             'learningResourceType': 'Lesson',
             'author': {'@type': 'Organization', 'name': 'Layerbit', 'url': SITE + '/about.html', 'sameAs': 'https://layerbit.co.in/'},
             'position': i + 1,
+            'about': f"{tier} — {part['title']}",
         })
         crumb = next(n for n in ld['@graph'] if n.get('@type') == 'BreadcrumbList')
         crumb['itemListElement'][-1]['name'] = l['title']
@@ -245,14 +246,22 @@ def main():
             out = re.sub(r'(<div class="ss-footer-links">.*?<a href="/start-here.html">[^<]*</a>)',
                          lambda m: m.group(1) + '<a href="/dotnet-developer-roadmap.html">.NET roadmap</a>', out, count=1, flags=re.S)
 
-        # ---- prev / next labels -------------------------------------------
-        def relabel(m):
-            target = by_href.get(m.group(1))
-            if not target:
-                return m.group(0)
-            label = esc(target['title'])
-            return f'<a href="{m.group(1)}" rel="prev">&larr; {label}</a>' if m.group(2) == 'prev' else f'<a href="{m.group(1)}" rel="next">{label} &rarr;</a>'
-        out = re.sub(r'<a href="([^"]+)" rel="(prev|next)">[^<]*</a>', relabel, out)
+        # ---- prev / next, lesson number and totals ----------------------------
+        # Regenerated from the course order every run, so inserting or moving
+        # lessons only needs src/course.json to change.
+        prev_l = flat[i - 1][2] if i > 0 else None
+        next_l = flat[i + 1][2] if i + 1 < total else None
+        nav = ['<nav class="standalone-lesson-nav" aria-label="Lesson navigation">',
+               f'  <a href="{prev_l["href"]}" rel="prev">&larr; {esc(prev_l["title"])}</a>' if prev_l else '  <span></span>',
+               f'  <a class="ss-all" href="/lessons.html">All {total} lessons</a>',
+               f'  <a href="{next_l["href"]}" rel="next">{esc(next_l["title"])} &rarr;</a>' if next_l else '  <span></span>',
+               '</nav>']
+        out, n = re.subn(r'[ \t]*<nav class="standalone-lesson-nav".*?</nav>', lambda m: '\n'.join(nav), out, count=1, flags=re.S)
+        assert n == 1, f'{href}: lesson nav not found'
+        out, n = re.subn(r'<span>Lesson \d+ of \d+</span>', f'<span>Lesson {i + 1} of {total}</span>', out, count=1)
+        assert n == 1, f'{href}: lesson number not found'
+        out = re.sub(r'(rel="noopener">Layerbit</a>: )\d+( lessons)', lambda m: f'{m.group(1)}{total}{m.group(2)}', out, count=1)
+        out = re.sub(r'<a class="ss-cta" href="/#[^"]*">', f'<a class="ss-cta" href="/#{lid}">', out, count=1)
 
         # ---- related lessons ------------------------------------------------
         prev_href = flat[i - 1][2]['href'] if i > 0 else None

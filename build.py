@@ -203,7 +203,7 @@ ROADMAP = [
         ('Distributed systems', ['a9'], 'Microservices, messaging, Kafka, idempotency, retries, circuit breakers, the outbox pattern and eventual consistency.', None),
         ('Cloud and containers', ['a10'], 'Docker, cloud configuration, secrets, Kubernetes health probes, scaling and .NET Aspire.', None),
         ('Testing and production debugging', ['a11'], 'Unit, integration and API tests and load testing, then diagnosing memory leaks, high CPU, deadlocks and thread pool starvation in production.', None),
-        ('Stay current with C# 14', ['a12'], 'Every new C# 14 feature, explained with before-and-after code.', None),
+        ('Stay current: C# 14, C# 15 and .NET 11', ['a12', 'a14'], 'Every new feature in C# 14 and C# 15, explained with before-and-after code, plus what is new in the .NET 11 runtime, libraries, ASP.NET Core and EF Core, and a step-by-step checklist for upgrading a real project.', None),
         ('Capstone: build a complete system', ['a13'], 'Put everything together in OrderFlow, a realistic order-management system, from architecture and authorization to messaging, monitoring and deployment.', 'You have designed, built, tested and deployed a distributed .NET system end to end.'),
     ]),
 ]
@@ -292,10 +292,18 @@ def sync_index():
     """Keep index.html's hand-written figures and crawlable lesson list in step with the course data."""
     p = os.path.join(ROOT, 'index.html')
     s = open(p, encoding='utf-8').read()
-    for b in course['books']:
+    # Tier cards appear in book order; rewrite each one whatever figures it held before.
+    tiers = iter(course['books'])
+    def tier_card(m):
+        b = next(tiers)
         count = sum(len(pt['lessons']) for pt in b['parts'])
-        s = re.sub(r'(<div class="tier-count">)' + str(count) + r' lessons &middot; (\d+) parts &middot; about \d+ hours',
-                   lambda m: f'{m.group(1)}{count} lessons &middot; {m.group(2)} parts &middot; about {TIER_HOURS[b["id"]]} hours', s)
+        return f'{m.group(1)}{count} lessons &middot; {len(b["parts"])} parts &middot; about {TIER_HOURS[b["id"]]} hours'
+    s, n = re.subn(r'(<div class="tier-count">)\d+ lessons &middot; \d+ parts &middot; about \d+ hours', tier_card, s)
+    assert n == len(course['books']), n
+    # The course total is written by hand in the title, meta tags, hero and links.
+    old_total = re.search(r'<title>Free C# and \.NET Course — (\d+) Lessons', s).group(1)
+    if old_total != str(LESSON_COUNT):
+        s = re.sub(r'(?<!of )\b' + old_total + r'\b(?=\s+(?:free\s+|written\s+)?[Ll]essons)', str(LESSON_COUNT), s)
     s = re.sub(r'"courseWorkload": "PT\d+H"', f'"courseWorkload": "PT{int(round(COURSE_MINUTES / 60))}H"', s)
     # Static copy of the sidebar lesson tree. The player replaces it with the
     # interactive tree on load; without JavaScript (and for crawlers that do
@@ -359,7 +367,7 @@ def build_llms():
     out = ['# .NET Made Easy', '',
            f'> A free, written C# and .NET course from Layerbit: {LESSON_COUNT} lessons in three tiers, from a first program to running .NET in production. No signup and no paywall.',
            '',
-           'Every lesson is a standalone HTML page with a plain-English explanation, diagrams, C# code examples, common mistakes and a short quiz. The course targets C# 14 and .NET 10.',
+           'Every lesson is a standalone HTML page with a plain-English explanation, diagrams, C# code examples, common mistakes and a short quiz. The course targets C# 15 and .NET 11.',
            '', '## Start here', '',
            f'- [Start Here guide]({SITE}/start-here.html): which path to take and a week-by-week plan for beginners and for developers switching to C#',
            f'- [.NET developer roadmap]({SITE}/dotnet-developer-roadmap.html): the skills a .NET developer needs, in order, each linked to its lessons',

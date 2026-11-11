@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>.NET 11 Runtime Async Explained: async/await in the Runtime</title>
+  <meta name="description" content=".NET 11&#x27;s runtime async moves async/await from compiler-made state machines into the runtime: cleaner stack traces, less overhead. What it is and how to try it." />
+  <link rel="canonical" href="https://dotnetmadeeasy.com/Content/353-runtime-async.html" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <meta name="author" content="Layerbit" />
+  <meta name="theme-color" content="#0A0C10" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="alternate" type="application/atom+xml" title=".NET Made Easy: new and updated lessons" href="/feed.xml" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content=".NET Made Easy" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:title" content=".NET 11 Runtime Async Explained: async/await in the Runtime" />
+  <meta property="og:description" content=".NET 11&#x27;s runtime async moves async/await from compiler-made state machines into the runtime: cleaner stack traces, less overhead. What it is and how to try it." />
+  <meta property="og:url" content="https://dotnetmadeeasy.com/Content/353-runtime-async.html" />
+  <meta property="og:image" content="https://dotnetmadeeasy.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content=".NET Made Easy: a free C# and .NET course" />
+  <meta property="article:published_time" content="2026-11-11T05:01:21+00:00" />
+  <meta property="article:modified_time" content="2026-11-11T05:01:21+00:00" />
+  <meta property="article:section" content="Production .NET" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content=".NET 11 Runtime Async Explained: async/await in the Runtime" />
+  <meta name="twitter:description" content=".NET 11&#x27;s runtime async moves async/await from compiler-made state machines into the runtime: cleaner stack traces, less overhead. What it is and how to try it." />
+  <meta name="twitter:image" content="https://dotnetmadeeasy.com/og-image.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" media="print" onload="this.media='all'" /><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" /></noscript>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6072772587431629" crossorigin="anonymous"></script>
+    <style id="standalone-page-reset">
+:root{--bg-dark:#0A0C10;--bg-main:#0D1016;--bg-panel:#12151C;--bg-card:#161A23;--bg-hover:#1C2130;--bg-active:rgba(139,92,246,.14);--border-color:#232838;--text-main:#F1F5F9;--text-muted:#94A3B8;--accent-purple:#8B5CF6;--accent-purple-text:#B79BFF;--accent-green:#34D399;color-scheme:dark}
+html{background:#0A0C10}
+body{margin:0 auto;max-width:820px;padding:0 24px 60px;background:#0A0C10;color:#D5DBE6;font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:17px;line-height:1.75;-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
+body a{color:#B79BFF;text-decoration:none}body a:hover{color:#fff}
+.standalone-site-header{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:14px 0 12px;margin:0 0 26px;border-bottom:1px solid #232838;background:rgba(10,12,16,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.ss-brand{display:inline-flex;align-items:center;gap:8px;font-size:18px;font-weight:700;letter-spacing:-.3px;color:#fff!important;white-space:nowrap}
+.ss-dot{width:12px;height:12px;border-radius:50%;background:#FFC107;box-shadow:0 0 12px rgba(255,193,7,.45);flex-shrink:0}
+.ss-light{color:#94A3B8;font-weight:500}.ss-br{color:#FFC107;font-weight:700;margin-left:2px}
+.ss-nav{display:flex;flex-wrap:wrap;gap:2px 4px;align-items:center}
+.ss-nav a{color:#94A3B8;font-size:13.5px;font-weight:500;padding:6px 9px;border-radius:8px}
+.ss-nav a:hover{color:#fff;background:rgba(255,255,255,.06)}
+.ss-nav a.ss-cta{color:#fff;background:#7C3AED;font-weight:600}.ss-nav a.ss-cta:hover{filter:brightness(1.1)}
+.standalone-lesson-header{margin:0 0 30px;padding:0 0 22px;border-bottom:1px solid #232838}
+.ss-crumb{font-size:13.5px;color:#94A3B8;margin-bottom:12px}.ss-crumb a{color:#94A3B8}.ss-crumb a:hover{color:#fff}.ss-crumb .sep{margin:0 6px;opacity:.5}
+h1.ss-title{font-size:clamp(1.9rem,4vw,2.5rem);font-weight:700;letter-spacing:-.02em;line-height:1.2;color:#F8FAFC;margin:0 0 10px;text-wrap:balance}
+.ss-meta{font-size:13.5px;color:#94A3B8;margin:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ss-pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:20px;background:rgba(139,92,246,.14);color:#B79BFF;border:1px solid rgba(139,92,246,.3)}
+body h2,body h3,body h4{color:#F1F5F9;line-height:1.25;text-wrap:balance}
+body h2{font-size:1.6rem!important;font-weight:700;letter-spacing:-.01em;margin:44px 0 14px!important;line-height:1.25!important}
+body h3{font-size:1.3rem!important;font-weight:600;margin:28px 0 10px!important;line-height:1.3!important}body h4{font-size:1.1rem!important;font-weight:600;margin:20px 0 8px!important;line-height:1.3!important}
+body p{margin:0 0 18px}body ul,body ol{margin:0 0 18px;padding-left:24px}body li{margin-bottom:6px}
+body strong{color:#F1F5F9}
+body code,body .icode{font-family:'Fira Code','JetBrains Mono',Consolas,monospace;font-size:.86em;background:rgba(255,255,255,.06);border:1px solid #232838;border-radius:5px;padding:1px 6px;color:#C4B5FD}
+body pre{font-family:'Fira Code','JetBrains Mono',Consolas,monospace;font-size:14px;line-height:1.6;background:#12151C;border:1px solid #232838;border-radius:12px;padding:16px 18px;overflow-x:auto;margin:0 0 22px;color:#E6EAF2}
+body pre code{background:none;border:none;padding:0;font-size:inherit;color:inherit}body .code-block{font-family:'Fira Code','JetBrains Mono',Consolas,monospace;font-size:14px;line-height:1.6;background:#12151C;border:1px solid #232838;border-radius:12px;padding:16px 18px;overflow-x:auto;margin:0 0 22px;color:#E6EAF2;white-space:pre;-webkit-overflow-scrolling:touch}body .code-block code{display:block;background:none;border:none;padding:0;font-size:inherit;color:inherit;white-space:pre}body .comparison-grid>*,body .feature-grid>*{min-width:0}
+body table{display:block;overflow-x:auto;border-collapse:collapse;max-width:100%}body th,body td{text-align:left;padding:8px 12px;border-bottom:1px solid #232838;vertical-align:top}body th{color:#F1F5F9}
+body img{max-width:100%;height:auto}
+.standalone-lesson-nav{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin:48px 0 0;padding-top:22px;border-top:1px solid #232838;font-size:15px}
+.standalone-lesson-nav a{font-weight:600}.standalone-lesson-nav a.ss-all{color:#94A3B8;font-weight:500}
+.standalone-site-footer{margin-top:44px;padding:26px 0 10px;border-top:1px solid #232838;font-size:13.5px;color:#94A3B8}
+.standalone-site-footer p{margin:0 0 12px;max-width:60ch}.ss-footer-links{display:flex;flex-wrap:wrap;gap:4px 16px}.ss-footer-links a{color:#94A3B8}.ss-footer-links a:hover{color:#fff}
+@media (max-width:640px){body{font-size:16px;padding:0 16px 50px}.standalone-site-header{position:static;backdrop-filter:none;-webkit-backdrop-filter:none;gap:8px 12px}.ss-nav{flex-wrap:nowrap;overflow-x:auto;width:100%;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}.ss-nav::-webkit-scrollbar{display:none}.ss-nav a{white-space:nowrap;flex-shrink:0;font-size:13px;padding:5px 7px}body h2{font-size:1.4rem}body pre,body .code-block{font-size:13px;padding:12px 14px}}
+/* related */.standalone-related{margin:48px 0 0;padding:20px 22px 12px;border:1px solid #232838;border-radius:14px;background:#12151C}body .standalone-related h2{font-size:1.05rem!important;margin:0 0 6px!important;padding:0!important;border:0!important;letter-spacing:0}.standalone-related ul{list-style:none;margin:0;padding:0}.standalone-related li{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;margin:0;border-top:1px solid #1C2130}.standalone-related li:first-child{border-top:0}.standalone-related li span{color:#94A3B8;font-size:13px;white-space:nowrap;flex-shrink:0}
+/* a11y */.standalone-site-footer p a{text-decoration:underline;text-underline-offset:2px}
+</style>
+    <style>
+        /* ── Scoped custom classes with variable fallbacks ── */
+        .concept-box {
+            background: var(--bg-panel, #151821);
+            border-left: 6px solid var(--accent-purple, #8B5CF6);
+            padding: 1.2rem 1.8rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .concept-box .concept-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .concept-box p {
+            color: var(--text-main, #E2E8F0);
+            margin: 0.5rem 0;
+        }
+
+        .flow-container {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-title {
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--accent-purple-text, #B79BFF);
+        }
+
+        .flow-step {
+            padding: 0.3rem 0.6rem;
+            margin: 0.3rem 0;
+            border-radius: 4px;
+            background: var(--bg-dark, #0B0E14);
+        }
+
+        .flow-step .step-label {
+            font-weight: 500;
+            color: var(--accent-purple-text, #B79BFF);
+        }
+
+        .flow-step pre {
+            background: var(--bg-dark, #0B0E14);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.2rem 0 0.2rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main, #E2E8F0);
+            border: none;
+            overflow-x: auto;
+        }
+
+        .flow-step ul {
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.2rem 1.2rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted, #94A3B8);
+            font-size: 0.8rem;
+        }
+
+        .step-divider .line {
+            flex: 1;
+            max-width: 60px;
+            height: 1px;
+            background: var(--border-color, #1E293B);
+        }
+
+        .step-divider .arrow-icon {
+            font-size: 1rem;
+            color: var(--accent-purple-text, #B79BFF);
+            opacity: 0.5;
+        }
+
+        /* Quiz toggle styles */
+        .quiz-question {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .quiz-question .question-text {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question .options {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.4rem 0 0.8rem 0;
+        }
+
+        .quiz-question .options li {
+            padding: 0.2rem 0;
+            margin-bottom: 0.1rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details {
+            margin-top: 0.6rem;
+            cursor: pointer;
+        }
+
+        .quiz-question details summary {
+            font-weight: 600;
+            color: var(--accent-purple-text, #B79BFF);
+            padding: 0.3rem 0;
+            cursor: pointer;
+            display: inline-block;
+            list-style: none;
+        }
+
+        .quiz-question details summary:hover {
+            text-decoration: underline;
+        }
+
+        .quiz-question details summary::before {
+            content: '▶ ';
+            font-size: 0.8rem;
+            color: var(--accent-purple-text, #B79BFF);
+        }
+
+        .quiz-question details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .quiz-question details .answer-box {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.4rem;
+            margin-top: 0.6rem;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .quiz-question details .answer-box .correct {
+            color: var(--accent-green, #10B981);
+            font-weight: 600;
+        }
+
+        .quiz-question details .answer-box .incorrect {
+            color: var(--accent-red, #EF4444);
+            font-weight: 600;
+        }
+
+        .callout {
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--bg-dark, #0B0E14);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+        }
+
+        .comparison-card h4 {
+            color: var(--accent-purple-text, #B79BFF);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .comparison-card ul {
+            color: var(--text-main, #E2E8F0);
+            padding-left: 1.2rem;
+            margin: 0.2rem 0;
+        }
+
+        .comparison-card ul li {
+            margin-bottom: 0.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-purple, #8B5CF6);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.1rem 0.5rem;
+            border-radius: 20px;
+            margin-right: 0.3rem;
+        }
+
+        .code-block {
+            background: var(--bg-panel, #151821);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #1E293B);
+            overflow-x: auto;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+        }
+
+        .code-block code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .icode {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+            background: var(--bg-active, rgba(139, 92, 246, 0.12));
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-wrap table thead th {
+            background: var(--bg-hover, #1E2230);
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 2px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+            font-weight: 600;
+        }
+
+        .table-wrap table tbody td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color, #1E293B);
+            color: var(--text-main, #E2E8F0);
+        }
+
+        .table-wrap table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1.2rem 0;
+        }
+
+        .feature-grid .feature-card {
+            background: var(--bg-panel, #151821);
+            border: 1px solid var(--border-color, #1E293B);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+        }
+
+        .feature-grid .feature-card .emoji {
+            font-size: 1.8rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .feature-grid .feature-card .label {
+            font-weight: 600;
+            color: var(--text-main, #E2E8F0);
+            font-size: 0.9rem;
+        }
+
+        .feature-grid .feature-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted, #94A3B8);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Article", "@id": "https://dotnetmadeeasy.com/Content/353-runtime-async.html#article", "headline": ".NET 11 Runtime Async Explained: async/await in the Runtime", "description": ".NET 11's runtime async moves async/await from compiler-made state machines into the runtime: cleaner stack traces, less overhead. What it is and how to try it.", "url": "https://dotnetmadeeasy.com/Content/353-runtime-async.html", "mainEntityOfPage": "https://dotnetmadeeasy.com/Content/353-runtime-async.html", "inLanguage": "en", "isAccessibleForFree": true, "author": {"@type": "Organization", "name": "Layerbit", "url": "https://dotnetmadeeasy.com/about.html", "sameAs": "https://layerbit.co.in/"}, "publisher": {"@type": "Organization", "name": ".NET Made Easy", "url": "https://dotnetmadeeasy.com/", "logo": {"@type": "ImageObject", "url": "https://dotnetmadeeasy.com/apple-touch-icon.png"}}, "isPartOf": {"@type": "Course", "name": ".NET Made Easy — Free C# and .NET Course", "url": "https://dotnetmadeeasy.com/lessons.html", "provider": {"@type": "Organization", "name": "Layerbit", "url": "https://layerbit.co.in/"}}, "educationalLevel": "All levels", "about": "Production .NET — Part XIII — What's New in .NET 11 and C# 15", "position": 308, "image": {"@type": "ImageObject", "url": "https://dotnetmadeeasy.com/og-image.png", "width": 1200, "height": 630}, "datePublished": "2026-11-11T05:01:21+00:00", "dateModified": "2026-11-11T05:01:21+00:00", "timeRequired": "PT13M", "wordCount": 2052, "learningResourceType": "Lesson"}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://dotnetmadeeasy.com/"}, {"@type": "ListItem", "position": 2, "name": "All Lessons", "item": "https://dotnetmadeeasy.com/lessons.html"}, {"@type": "ListItem", "position": 3, "name": "Runtime Async", "item": "https://dotnetmadeeasy.com/Content/353-runtime-async.html"}]}]}</script>
+</head>
+<body>
+<header class="standalone-site-header">
+  <a class="ss-brand" href="/" aria-label=".NET Made Easy home"><span class="ss-dot"></span>.net <span class="ss-light">made easy</span><span class="ss-br">[]</span></a>
+  <nav class="ss-nav" aria-label="Site"><a href="/lessons.html">Lessons</a><a href="/start-here.html">Start Here</a><a href="/dotnet-developer-roadmap.html">Roadmap</a><a href="/interview-prep.html">Interview Prep</a><a href="/glossary.html">Glossary</a><a href="/csharp-cheatsheet.html">Cheat Sheet</a><a href="/about.html">About</a><a class="ss-cta" href="/#a14-7">Open in course player</a></nav>
+</header>
+<main id="lesson-main">
+<div class="standalone-lesson-header">
+  <nav class="ss-crumb" aria-label="Breadcrumb"><a href="/">Home</a><span class="sep">&rsaquo;</span><a href="/lessons.html">All Lessons</a><span class="sep">&rsaquo;</span><a href="/lessons.html#advanced">Production .NET</a><span class="sep">&rsaquo;</span><a href="/lessons.html#a14">Part XIII — What&#x27;s New in .NET 11 and C# 15</a></nav>
+  <h1 class="ss-title">.NET 11 Runtime Async Explained: async/await in the Runtime</h1>
+  <p class="ss-meta"><span class="ss-pill">All levels</span><span>Lesson 308 of 325</span><span>&middot;</span><span>Production .NET</span><span>&middot;</span><span>13 min read</span><span>&middot;</span><span>Updated <time datetime="2026-11-11">11 Nov 2026</time></span></p>
+</div>
+
+
+    <!-- ====== SUBHEAD ====== -->
+    <p style="font-size:1.2rem; color:var(--text-muted, #94A3B8); border-left:4px solid var(--accent-purple, #8B5CF6); padding-left:1rem; margin-bottom:2rem;">
+        You write async and await exactly as before. What changes in .NET 11 is who does the hard work behind them: increasingly, the runtime itself rather than code the compiler generates.
+    </p>
+
+    <!-- ====== HOOK ====== -->
+    <p>In <a href="/Content/152-async-await.html">lesson 152</a> you learned that <span class="icode">await</span> means "pause here, give the thread back, and carry on when the result is ready". In <a href="/Content/207-task-internals.html">lesson 207</a> you saw how C# makes that possible: the compiler secretly rewrites every <span class="icode">async</span> method into a hidden class called a <strong>state machine</strong>, which remembers where the method paused.</p>
+    <p>That trick has served C# well since 2012, but it has costs. Every async method gets a generated class, error stack traces fill up with strange compiler-made names, and stepping through <span class="icode">await</span> in a debugger can wander into code you never wrote. .NET 11 takes a big step towards fixing this with <strong>runtime async</strong>.</p>
+    <p><strong>In this lesson, you'll learn what runtime async is, what it changes and what it doesn't, why your stack traces get shorter, how to try it in a project, and why it is still marked as a preview feature.</strong></p>
+
+    <!-- ====== WHAT IS IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">What Is It?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Simple Explanation</h3>
+    <p><strong>Runtime async</strong> means the .NET runtime itself knows how to pause and resume <span class="icode">async</span> methods. The compiler no longer has to build a hidden state-machine class for each one. You keep writing the same <span class="icode">async</span> and <span class="icode">await</span> code; the difference is underneath.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Technical Definition</h3>
+    <p>.NET 11 introduces runtime-native async (Runtime Async V2). Instead of the compiler emitting a state-machine type per async method, the runtime tracks suspension and resumption. The .NET 11 runtime libraries themselves are already compiled this way. For your own code it is a <strong>preview feature</strong>: you opt in per project with <span class="icode">&lt;Features&gt;runtime-async=on&lt;/Features&gt;</span>, and a <span class="icode">net11.0</span> project no longer needs <span class="icode">EnablePreviewFeatures</span> to do so. To opt a project out, set <span class="icode">&lt;UseRuntimeAsync&gt;false&lt;/UseRuntimeAsync&gt;</span>. It also works with Native AOT and ReadyToRun compilation.</p>
+    <div class="comparison-grid">
+        <div class="comparison-card">
+            <h4> Compiler-generated async (the classic way)</h4>
+            <ul>
+                <li>Every <span class="icode">async</span> method becomes a hidden state-machine class</li>
+                <li>Live stack traces show extra builder and state-machine frames</li>
+                <li>The debugger can step into generated infrastructure</li>
+                <li>Extra objects and code for every async method</li>
+            </ul>
+        </div>
+        <div class="comparison-card">
+            <h4> Runtime async (.NET 11)</h4>
+            <ul>
+                <li>The runtime handles pausing and resuming</li>
+                <li>Live stack traces show just your real methods</li>
+                <li>Breakpoints bind correctly and stepping over <span class="icode">await</span> stays in your code</li>
+                <li>Lower overhead and smaller generated code</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ====== WHY DOES IT EXIST? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Why Does It Exist?</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Problem — A Clever Trick With Side Effects</h3>
+    <p>Generating a state machine for every async method works without any help from the runtime, which is why C# could add <span class="icode">async</span> back in 2012. But the runtime can't see what's really going on: as far as it's concerned, your method is a bunch of generated classes. That costs memory and speed, and it confuses profilers, debuggers and anyone reading a stack trace.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">The Solution — Teach the Runtime About async</h3>
+    <p>If the runtime understands "this method can pause and resume", it can do the job more efficiently and show tools the real call chain. .NET 11 ships that machinery, has compiled its own libraries with it to prove it works at scale, and lets you try it in your projects while it finishes maturing.</p>
+
+    <!-- ====== BIG PICTURE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Big Picture</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="emoji"></span>
+            <div class="label">Your code</div>
+            <div class="desc">Unchanged: same <span class="icode">async</span>, <span class="icode">await</span>, <span class="icode">Task</span> and <span class="icode">ValueTask</span></div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji"></span>
+            <div class="label">.NET 11 libraries</div>
+            <div class="desc">Already compiled with runtime async</div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji"></span>
+            <div class="label">Your projects</div>
+            <div class="desc">Preview opt-in: <span class="icode">&lt;Features&gt;runtime-async=on&lt;/Features&gt;</span></div>
+        </div>
+        <div class="feature-card">
+            <span class="emoji"></span>
+            <div class="label">What you notice</div>
+            <div class="desc">Shorter live stack traces, smoother debugging, less overhead</div>
+        </div>
+    </div>
+
+    <!-- ====== HOW IT WORKS ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">How It Works</h2>
+    <div class="flow-container">
+        <div class="flow-title">ONE await, TWO WAYS</div>
+        <div class="flow-step">
+            <div class="step-label">1. YOUR METHOD REACHES await</div>
+            <ul><li>The awaited task isn't finished yet, so the method must pause and free the thread.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2a. CLASSIC: THE GENERATED STATE MACHINE SAVES ITS PLACE</div>
+            <ul><li>A compiler-generated class stores the local variables and a "step number", then registers a continuation. The runtime only sees ordinary objects and method calls.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">2b. RUNTIME ASYNC: THE RUNTIME SAVES ITS PLACE</div>
+            <ul><li>The runtime itself records where the method paused and what it needs to resume, reusing continuation objects and skipping locals that haven't changed.</li></ul>
+        </div>
+        <div class="step-divider"><span class="line"></span><span class="arrow-icon">▼</span><span class="line"></span></div>
+        <div class="flow-step">
+            <div class="step-label">3. THE TASK COMPLETES AND THE METHOD RESUMES</div>
+            <ul><li>Either way, your method continues after the <span class="icode">await</span> with all its variables intact. The result is identical; only the machinery differs.</li></ul>
+        </div>
+    </div>
+
+    <!-- ====== SIMPLE EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Simple Example</h2>
+    <p>This program awaits through three methods and prints the live stack trace from the innermost one:</p>
+    <div class="code-block"><code>using System.Diagnostics;
+
+await OuterAsync();
+
+static async Task OuterAsync()
+{
+    await Task.CompletedTask;
+    await MiddleAsync();
+}
+
+static async Task MiddleAsync()
+{
+    await Task.CompletedTask;
+    await InnerAsync();
+}
+
+static async Task InnerAsync()
+{
+    await Task.CompletedTask;
+    Console.WriteLine(new StackTrace(fNeedFileInfo: true));
+}</code></div>
+    <p><strong>Without runtime async</strong>, the trace has 13 frames, and most of them are the state-machine plumbing:</p>
+    <div class="code-block"><code>   at Program.&lt;&lt;Main&gt;$&gt;g__InnerAsync|0_2() in Program.cs:line 24
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](...)
+   at Program.&lt;&lt;Main&gt;$&gt;g__InnerAsync|0_2()
+   at Program.&lt;&lt;Main&gt;$&gt;g__MiddleAsync|0_1() in Program.cs:line 14
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](...)
+   ...  (8 more lines like these)</code></div>
+    <p><strong>With runtime async</strong>, it shrinks to 5 frames, the real call chain:</p>
+    <div class="code-block"><code>   at Program.&lt;&lt;Main&gt;$&gt;g__InnerAsync|0_2() in Program.cs:line 24
+   at Program.&lt;&lt;Main&gt;$&gt;g__MiddleAsync|0_1() in Program.cs:line 14
+   at Program.&lt;&lt;Main&gt;$&gt;g__OuterAsync|0_0() in Program.cs:line 8
+   at Program.&lt;Main&gt;$(String[] args) in Program.cs:line 3
+   at Program.&lt;Main&gt;(String[] args)</code></div>
+    <p><strong>Code → Meaning → Result:</strong> The C# code is identical in both runs. Only the project setting differs. With runtime async the live stack shows exactly the methods you wrote, in the order they called each other, which is what profilers, logs and the debugger's Call Stack window now see too. (The odd-looking names such as <span class="icode">g__InnerAsync|0_2</span> are how C# names local functions inside top-level statements, and the line numbers depend on where the methods sit in your file.)</p>
+
+    <!-- ====== REAL-WORLD EXAMPLE ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Real-World Example</h2>
+    <p>To try runtime async in one of your own projects, for example a test copy of a web API, add one property to the <span class="icode">.csproj</span> file:</p>
+    <div class="code-block"><code>&lt;Project Sdk="Microsoft.NET.Sdk.Web"&gt;
+  &lt;PropertyGroup&gt;
+    &lt;TargetFramework&gt;net11.0&lt;/TargetFramework&gt;
+    &lt;Features&gt;runtime-async=on&lt;/Features&gt;
+  &lt;/PropertyGroup&gt;
+&lt;/Project&gt;</code></div>
+    <p>Rebuild, run your tests, and compare memory use, throughput and startup time with your normal build. Because it's a preview, a sensible plan is to try it in a development or staging environment first. Microsoft has asked for reports, positive or negative, on the throughput and size changes people see.</p>
+    <p>If a project ever needs to stay on the classic model, set <span class="icode">&lt;UseRuntimeAsync&gt;false&lt;/UseRuntimeAsync&gt;</span> in its project file. The old <span class="icode">DOTNET_RuntimeAsync</span> environment variables from earlier previews have been removed, so the project setting is now the switch.</p>
+
+    <!-- ====== ANALOGY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Analogy</h2>
+    <div class="concept-box">
+        <div class="concept-title"><span style="font-size:1.3rem;"></span> A Bookmark Made by Hand vs Built Into the Book</div>
+        <p>Classic async is like reading a library book that has no bookmark ribbon: every time you stop, you write the page number, the paragraph and your notes on a slip of paper and tuck it in. It works, but it's extra paper and fuss, and anyone flipping through the book sees your slips everywhere.</p>
+        <p>Runtime async is a book with a built-in ribbon. Stopping and starting is part of the book itself: quicker, tidier, and the pages show only the story.</p>
+    </div>
+
+    <!-- ====== UNDER THE HOOD ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Under the Hood</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>The .NET 11 libraries already use it.</strong> The runtime libraries are compiled with <span class="icode">runtime-async=on</span> and no longer contain compiler-generated async state machines. That gives the feature broad real-world testing.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Performance work.</strong> .NET 11 compiles a dedicated runtime-async version of synchronous task-returning methods, lets continuations skip capturing <span class="icode">ExecutionContext</span> when there's no ambient state, and merges suspension points to shrink code.</li>
+        <li style="margin-bottom:0.4rem;"><strong>AOT-friendly.</strong> Runtime async supports Native AOT and ReadyToRun, and the old restrictions on inlining runtime-async methods during ReadyToRun compilation have been removed.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Exception traces were already tidy.</strong> Stack traces in <span class="icode">catch (Exception ex)</span> looked clean before, because existing cleanup code handled that case. The visible improvement is in <strong>live</strong> stack traces, while code is running.</li>
+    </ul>
+
+    <!-- ====== COMMON CONFUSION ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Confusion</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">1. "I have to rewrite my async code" — no, the source code doesn't change</h3>
+    <p><span class="icode">async</span>, <span class="icode">await</span>, <span class="icode">Task</span>, <span class="icode">ValueTask</span>, <span class="icode">ConfigureAwait</span> and <span class="icode">CancellationToken</span> all work exactly as you learned. Runtime async changes how the compiled code runs, not what you write.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">2. "Runtime async makes my code run in parallel" — no, the behaviour is the same</h3>
+    <p>An <span class="icode">await</span> still pauses the method until the result is ready, and nothing runs on extra threads that didn't before. You get the same results with less overhead and better diagnostics, not a different concurrency model.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">3. "It's preview, so .NET 11 is preview" — no, only this opt-in is</h3>
+    <p>.NET 11 is a fully supported release. Runtime async for <strong>your own</strong> code is the part still marked as preview, which is why you switch it on deliberately per project.</p>
+
+    <!-- ====== COMMON MISTAKES ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Common Mistakes</h2>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 1 — Switching it on in production first</h3>
+    <p><strong>The mistake:</strong> Turning on <span class="icode">runtime-async=on</span> in the main production app because the release notes mentioned better performance.</p>
+    <p><strong>The fix:</strong> Try it in a test or staging copy, run your full test suite, and measure. Preview features can still change between releases.</p>
+
+    <h3 style="font-size:1.3rem;margin-top:1.8rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mistake 2 — Using the old environment variables</h3>
+    <p><strong>The mistake:</strong> Setting <span class="icode">DOTNET_RuntimeAsync</span> from an earlier preview blog post and wondering why nothing changes.</p>
+    <p><strong>The fix:</strong> Those environment variables were removed. Use the project properties: <span class="icode">&lt;Features&gt;runtime-async=on&lt;/Features&gt;</span> to opt in, <span class="icode">&lt;UseRuntimeAsync&gt;false&lt;/UseRuntimeAsync&gt;</span> to opt out.</p>
+
+    <!-- ====== WHEN SHOULD I USE IT? ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">When Should I Use It?</h2>
+    <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+        <li style="margin-bottom:0.4rem;"><strong>Right away, without doing anything:</strong> the .NET 11 libraries already use it, so every .NET 11 app benefits.</li>
+        <li style="margin-bottom:0.4rem;"><strong>In test and staging environments</strong> of async-heavy apps such as web APIs and background workers, to measure the difference.</li>
+        <li style="margin-bottom:0.4rem;"><strong>When diagnosing hard async problems</strong>, because shorter live stack traces make profiler and debugger output much easier to read.</li>
+        <li style="margin-bottom:0.4rem;"><strong>Carefully in production</strong> while it's marked preview: measure first, and keep the opt-out property handy.</li>
+    </ul>
+
+    <!-- ====== MENTAL MODEL ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Mental Model</h2>
+    <div style="background:var(--bg-active,rgba(139,92,246,0.12));border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.2rem 1.8rem;margin:1.5rem 0;font-size:0.95rem;line-height:1.8;color:var(--text-main,#E2E8F0);">
+        Classic async: the compiler builds a hidden state machine for every async method.<br />
+        Runtime async: the runtime pauses and resumes the method itself.<br />
+        Same source code, same results; shorter live stack traces and less overhead.<br /><br />
+        <strong>Remember:</strong> runtime async changes who does the work behind await, not what await means.
+    </div>
+
+    <!-- ====== KEY TAKEAWAY ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;">Key Takeaway</h2>
+    <div style="background:var(--bg-panel,#151821);border:1px solid var(--border-color,#1E293B);border-radius:8px;padding:1.5rem 2rem;margin:2rem 0;color:var(--text-main,#E2E8F0);">
+        <ul style="color:var(--text-main,#E2E8F0);padding-left:1.5rem;">
+            <li style="margin-bottom:0.4rem;">.NET 11 introduces runtime async: the runtime itself handles suspending and resuming <span class="icode">async</span> methods instead of compiler-generated state machines.</li>
+            <li style="margin-bottom:0.4rem;">Your <span class="icode">async</span>/<span class="icode">await</span> code stays exactly the same.</li>
+            <li style="margin-bottom:0.4rem;">Benefits: cleaner live stack traces (5 frames instead of 13 in the example), better debugging, lower overhead, and Native AOT support.</li>
+            <li style="margin-bottom:0.4rem;">The .NET 11 libraries already use it. For your own projects it's a preview: opt in with <span class="icode">&lt;Features&gt;runtime-async=on&lt;/Features&gt;</span>, opt out with <span class="icode">&lt;UseRuntimeAsync&gt;false&lt;/UseRuntimeAsync&gt;</span>.</li>
+            <li style="margin-bottom:0.4rem;">Try it in test environments and measure before relying on it in production.</li>
+        </ul>
+    </div>
+
+    <hr style="border:none;border-top:2px solid var(--border-color,#1E293B);margin:2.5rem 0;" />
+
+    <!-- ====== CHECK YOUR UNDERSTANDING ====== -->
+    <h2 style="border-bottom:2px solid var(--border-color,#1E293B);padding-bottom:0.4rem;font-size:1.8rem;margin-top:2.5rem;color:var(--text-main,#E2E8F0);margin-bottom:0.8rem;line-height:1.3;"> Check Your Understanding</h2>
+    <p style="color:var(--text-main,#E2E8F0);">Three questions on what runtime async changes, and what it leaves alone.</p>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>1.</strong> What do you need to change in your C# source code to benefit from runtime async?</p>
+        <ul class="options">
+            <li>A) Replace every <span class="icode">await</span> with a new keyword</li>
+            <li>B) Nothing: the same <span class="icode">async</span>/<span class="icode">await</span> code works, and only the project setting decides how it's compiled</li>
+            <li>C) Change every <span class="icode">Task</span> return type to <span class="icode">RuntimeTask</span></li>
+            <li>D) Remove all <span class="icode">ConfigureAwait</span> calls</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct"> Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Runtime async changes the machinery behind <span class="icode">async</span>/<span class="icode">await</span>, not the language. Your methods, tasks and awaits stay exactly as they are.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> There's no new keyword. <span class="icode">await</span> keeps its meaning.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> There's no <span class="icode">RuntimeTask</span> type. <span class="icode">Task</span> and <span class="icode">ValueTask</span> are unchanged.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <span class="icode">ConfigureAwait</span> behaves as before. Nothing about it needs removing.</p>
+                <p><strong>Reinforcement:</strong> Same code, different engine underneath.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>2.</strong> How does a project opt in to runtime async in .NET 11?</p>
+        <ul class="options">
+            <li>A) Set the <span class="icode">DOTNET_RuntimeAsync=1</span> environment variable</li>
+            <li>B) Add <span class="icode">&lt;Features&gt;runtime-async=on&lt;/Features&gt;</span> to the project file</li>
+            <li>C) Install a NuGet package called RuntimeAsync</li>
+            <li>D) It's impossible: only the .NET libraries can use it</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct"> Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> The official opt-in is the <span class="icode">&lt;Features&gt;runtime-async=on&lt;/Features&gt;</span> property, and a <span class="icode">net11.0</span> project no longer needs <span class="icode">EnablePreviewFeatures</span> for it.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> The <span class="icode">DOTNET_RuntimeAsync</span> environment variables were removed. Project properties replaced them.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> No package is needed. The support is built into the .NET 11 runtime and compiler.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> The libraries already use it, and your projects can opt in as a preview feature.</p>
+                <p><strong>Reinforcement:</strong> Opt in: <span class="icode">&lt;Features&gt;runtime-async=on&lt;/Features&gt;</span>. Opt out: <span class="icode">&lt;UseRuntimeAsync&gt;false&lt;/UseRuntimeAsync&gt;</span>.</p>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz-question">
+        <p class="question-text"><strong>3.</strong> Which improvement does runtime async give most visibly?</p>
+        <ul class="options">
+            <li>A) Async methods start running on multiple threads in parallel</li>
+            <li>B) Live stack traces show your real methods without state-machine frames</li>
+            <li>C) Exceptions are no longer thrown from async methods</li>
+            <li>D) <span class="icode">await</span> no longer waits for the task to finish</li>
+        </ul>
+        <details>
+            <summary>Show answer</summary>
+            <div class="answer-box">
+                <p><span class="correct"> Correct: B</span></p>
+                <p><strong>Why B is correct:</strong> Without the compiler-generated state machines, tools that inspect the running stack (profilers, the debugger, <span class="icode">new StackTrace()</span>) see just the real call chain, as the 13-frame vs 5-frame example shows.</p>
+                <p><span class="incorrect"> Why A is incorrect:</span> Runtime async doesn't change concurrency. Code runs exactly as it did before.</p>
+                <p><span class="incorrect"> Why C is incorrect:</span> Exceptions still flow through tasks and are rethrown at <span class="icode">await</span>, just as you learned in the async exception lesson.</p>
+                <p><span class="incorrect"> Why D is incorrect:</span> <span class="icode">await</span> still pauses until the awaited task completes. That's the definition of await.</p>
+                <p><strong>Reinforcement:</strong> Biggest visible win: honest, short live stack traces.</p>
+            </div>
+        </details>
+    </div>
+
+    <p style="margin-top:2rem;font-weight:500;color:var(--text-main,#E2E8F0);"> Runtime async improves code you've already written. The next lesson looks at code you'll want to write: the most useful new library APIs in .NET 11, from LINQ's FullJoin to running a process and capturing its output in one line.</p>
+
+
+</main>
+<aside class="standalone-related" aria-label="Related lessons">
+  <h2>Keep learning</h2>
+  <ul>
+    <li><a href="/Content/152-async-await.html">C# async and await Explained Step by Step</a><span>23 min</span></li>
+    <li><a href="/Content/207-task-internals.html">How async/await Works Internally: The C# State Machine</a><span>29 min</span></li>
+    <li><a href="/Content/061-reading-stack-traces.html">How to Read a C# Stack Trace and Find the Bug Fast</a><span>23 min</span></li>
+    <li><a href="/Content/355-aspnet-core-11-and-ef-core-11.html">What&#x27;s New in ASP.NET Core 11 and EF Core 11</a><span>17 min</span></li>
+    <li><a href="/Content/356-upgrading-to-dotnet-11.html">How to Upgrade a Project to .NET 11: Step-by-Step Checklist</a><span>15 min</span></li>
+  </ul>
+</aside>
+<nav class="standalone-lesson-nav" aria-label="Lesson navigation">
+  <a href="/Content/352-labeled-break-and-continue.html" rel="prev">&larr; Labeled break and continue</a>
+  <a class="ss-all" href="/lessons.html">All 325 lessons</a>
+  <a href="/Content/354-new-library-apis-in-dotnet-11.html" rel="next">New Library APIs in .NET 11 &rarr;</a>
+</nav>
+<footer class="standalone-site-footer">
+  <p><strong>.NET Made Easy</strong> is a free, written C# and .NET course from <a href="https://layerbit.co.in/" rel="noopener">Layerbit</a>: 325 lessons from your first line of code through production systems. No signup, no paywall.</p>
+  <div class="ss-footer-links"><a href="/">Course player</a><a href="/lessons.html">All lessons</a><a href="/start-here.html">Start here</a><a href="/dotnet-developer-roadmap.html">.NET roadmap</a><a href="/interview-prep.html">Interview prep</a><a href="/glossary.html">Glossary</a><a href="/about.html">About</a><a href="/contact.html">Contact</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></div>
+</footer>
+
+</body>
+</html>
