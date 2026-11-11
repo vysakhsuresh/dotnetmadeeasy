@@ -42,6 +42,8 @@ SITE = 'https://dotnetmadeeasy.com'
 BRAND = '.NET Made Easy'
 OG_IMAGE = SITE + '/og-image.png'
 ADSENSE = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6072772587431629" crossorigin="anonymous"></script>'
+# Consent Mode defaults, AdSense account tag and cookie banner script, shared with build.py.
+CONSENT_HEAD = open(os.path.join(ROOT, 'src', 'partials', 'consent-head.html'), encoding='utf-8').read().strip()
 FONT_CSS = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap'
 TIER_ANCHOR = {'foundations': 'foundations', 'intermediate': 'intermediate', 'advanced': 'advanced'}
 
@@ -176,6 +178,7 @@ def main():
             # Non-blocking: text paints in the fallback font straight away and
             # swaps when the web font arrives (it is display=swap either way).
             f'  <link rel="stylesheet" href="{FONT_CSS}" media="print" onload="this.media=\'all\'" /><noscript><link rel="stylesheet" href="{FONT_CSS}" /></noscript>',
+            '\n'.join('  ' + line for line in CONSENT_HEAD.splitlines()),
             '  ' + ADSENSE,
         ])
         out, n = re.subn(r'  <title>.*?(?=\n\s*<style id="standalone-page-reset">)', lambda m: head, out, count=1, flags=re.S)
@@ -245,6 +248,14 @@ def main():
         if '<a href="/dotnet-developer-roadmap.html">.NET roadmap</a>' not in out:
             out = re.sub(r'(<div class="ss-footer-links">.*?<a href="/start-here.html">[^<]*</a>)',
                          lambda m: m.group(1) + '<a href="/dotnet-developer-roadmap.html">.NET roadmap</a>', out, count=1, flags=re.S)
+
+        # ---- site navigation: changelog and cookie choices --------------------
+        if '<a href="/changelog.html">What&#x27;s new</a>' not in out:
+            out = re.sub(r'(<div class="ss-footer-links">.*?)(<a href="/about.html">)',
+                         lambda m: m.group(1) + '<a href="/changelog.html">What&#x27;s new</a>' + m.group(2), out, count=1, flags=re.S)
+        if 'data-cookie-settings' not in out:
+            out = re.sub(r'(<div class="ss-footer-links">.*?<a href="/privacy.html">Privacy</a>)',
+                         lambda m: m.group(1) + '<a href="/privacy.html#cookies" data-cookie-settings>Privacy choices</a>', out, count=1, flags=re.S)
 
         # ---- prev / next, lesson number and totals ----------------------------
         # Regenerated from the course order every run, so inserting or moving

@@ -18,6 +18,8 @@ The site is static and served from this repository by GitHub Pages; the `main` b
 | `build.py` | Builds the static pages from `src/`, and also writes `sitemap.xml`, `feed.xml` (Atom feed of recently updated lessons) and `llms.txt`, and refreshes the figures and the crawlable lesson list inside `index.html`. |
 | `src/lesson-seo.json` | Per lesson: the search title (also the lesson's `<h1>`) and the meta description. |
 | `src/lesson-dates.json` | Per lesson: published and last-updated dates, maintained by `scripts/seo_lessons.py`. |
+| `src/changelog.json` | The dated list of course updates, newest first. `build.py` renders it as `/changelog.html` (What's new) and puts the latest entry in the notice above the home page headline. Add an entry whenever lessons are added or materially updated. |
+| `src/partials/consent-head.html`, `assets/consent.js` | Google Consent Mode defaults, the AdSense account tag and the cookie banner. The head snippet is copied into every built page, every lesson (by `scripts/seo_lessons.py`) and the course player (by `build.py`); edit it here only. |
 | `scripts/seo_lessons.py` | Applies titles, descriptions, Open Graph tags, structured data, breadcrumbs and the related-lessons block to every lesson. |
 | `.github/workflows/indexnow.yml`, `<key>.txt` | After each deploy, tells IndexNow search engines (Bing and others) which pages changed. |
 | `search-index.json`, `related-lessons.json`, `lesson-meta.json` | Prebuilt indexes used by the course player: full-text search, related lessons, and reading time per lesson. Regenerate `lesson-meta.json` with `python3 scripts/lesson_meta.py` and `search-index.json` with `python3 scripts/search_index.py` after editing lessons. |

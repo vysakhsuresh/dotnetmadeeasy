@@ -51,6 +51,19 @@ def fill(s):
 
 HEADER = fill(read('src/partials/header.html'))
 FOOTER = fill(read('src/partials/footer.html'))
+# Consent Mode defaults, the AdSense account tag and the cookie banner script.
+# Shared with the lessons (scripts/seo_lessons.py) and the course player
+# (index.html, synced below) so all three stay identical.
+CONSENT_HEAD = read('src/partials/consent-head.html').strip()
+CHANGELOG = json.load(open(os.path.join(ROOT, 'src', 'changelog.json'), encoding='utf-8'))
+
+def long_date(iso):
+    d = datetime.date.fromisoformat(iso)
+    return f'{d.day} {d.strftime("%B %Y")}'
+
+def short_date(iso):
+    d = datetime.date.fromisoformat(iso)
+    return f'{d.day} {d.strftime("%b %Y")}'
 
 def header_for(nav):
     if not nav: return HEADER
@@ -86,6 +99,7 @@ def head(meta):
         f'    <meta name="twitter:title" content="{esc(meta.get("og_title", title))}" />',
         f'    <meta name="twitter:description" content="{esc(desc)}" />',
         f'    <meta name="twitter:image" content="{SITE}/og-image.png" />',
+        '\n'.join('    ' + line for line in CONSENT_HEAD.splitlines()),
         '    ' + FONTS,
         '    <link rel="stylesheet" href="/assets/site.css" />',
     ]
@@ -273,6 +287,42 @@ DATES = json.load(open(os.path.join(ROOT, 'src', 'lesson-dates.json'), encoding=
 TIER_ANCHOR = {'foundations': 'foundations', 'intermediate': 'intermediate', 'advanced': 'advanced'}
 NOW = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()
 
+def build_changelog():
+    path = '/changelog.html'
+    title = "What's New: Course Updates and Changelog | .NET Made Easy"
+    desc = ('Every update to the .NET Made Easy course, newest first: new lessons, new .NET and C# versions '
+            'and site improvements. Updated for .NET 11 a day after release.')
+    latest = CHANGELOG[0]['date']
+    jsonld = {'@context': 'https://schema.org', '@type': 'WebPage', 'name': "What's new on .NET Made Easy",
+              'url': SITE + path, 'description': desc, 'inLanguage': 'en', 'dateModified': latest,
+              'isPartOf': {'@type': 'WebSite', 'name': '.NET Made Easy', 'url': SITE + '/'},
+              'publisher': {'@type': 'Organization', 'name': 'Layerbit', 'url': 'https://layerbit.co.in/'}}
+    meta = {'title': title, 'og_title': "What's new on .NET Made Easy", 'description': desc, 'path': path, 'nav': '', 'jsonld': jsonld}
+    rows = []
+    for e in CHANGELOG:
+        rows.append(f'        <li class="change" id="update-{e["date"]}">')
+        rows.append(f'            <time class="change-date" datetime="{e["date"]}">{long_date(e["date"])}</time>')
+        rows.append(f'            <h2>{esc(e["title"])}</h2>')
+        rows.append(f'            <p>{e["summary"]}</p>')
+        if e['items']:
+            rows.append('            <ul>')
+            rows.extend(f'                <li>{item}</li>' for item in e['items'])
+            rows.append('            </ul>')
+        rows.append('        </li>')
+    body = f'''<main class="page page-narrow">
+    <span class="eyebrow">Changelog</span>
+    <h1>What&rsquo;s new</h1>
+    <p class="lede">Every change to the course, newest first. .NET ships a new version every November, and the lessons move with it: the .NET 11 update went live the day after its release.</p>
+    <div class="callout"><p>Every lesson shows the date it was last updated. To follow changes as they happen, add the <a href="/feed.xml">feed of new and updated lessons</a> to any feed reader. Spotted something out of date? <a href="/contact.html">Tell us</a> and it gets fixed.</p></div>
+    <ol class="changelog">
+{chr(10).join(rows)}
+    </ol>
+</main>
+'''
+    out = head(meta) + header_for(None) + body + FOOTER + '</body>\n</html>\n'
+    open(os.path.join(ROOT, 'changelog.html'), 'w', encoding='utf-8').write(out)
+    return path
+
 def all_lessons():
     for b in course['books']:
         for p in b['parts']:
@@ -304,6 +354,15 @@ def sync_index():
     old_total = re.search(r'<title>[^<]*?(\d+) (?:[A-Za-z-]+ )?Lessons', s).group(1)
     if old_total != str(LESSON_COUNT):
         s = re.sub(r'(?<!of )\b' + old_total + r'\b(?=\s+(?:[Ff]ree\s+|written\s+|[Ii]n-[Dd]epth\s+)?[Ll]essons)', str(LESSON_COUNT), s)
+    # Consent defaults and the latest-update notice come from shared sources.
+    consent = '\n'.join('    ' + line for line in CONSENT_HEAD.splitlines())
+    s, n = re.subn(r'    <!-- consent -->.*?<!-- /consent -->', lambda m: f'    <!-- consent -->\n{consent}\n    <!-- /consent -->', s, count=1, flags=re.S)
+    assert n == 1, 'index.html: consent markers missing'
+    e = CHANGELOG[0]
+    note = (f'<a class="latest-update" href="/changelog.html"><span class="latest-update-dot" aria-hidden="true"></span>'
+            f'<time datetime="{e["date"]}">{short_date(e["date"])}</time><span aria-hidden="true">&middot;</span>{esc(e["title"])} <span aria-hidden="true">&rarr;</span></a>')
+    s, n = re.subn(r'<!-- latest-update -->.*?<!-- /latest-update -->', lambda m: f'<!-- latest-update -->{note}<!-- /latest-update -->', s, count=1, flags=re.S)
+    assert n == 1, 'index.html: latest-update markers missing'
     s = re.sub(r'"courseWorkload": "PT\d+H"', f'"courseWorkload": "PT{int(round(COURSE_MINUTES / 60))}H"', s)
     # Static copy of the sidebar lesson tree. The player replaces it with the
     # interactive tree on load; without JavaScript (and for crawlers that do
@@ -382,11 +441,11 @@ def build_llms():
             out += [f'### {p["title"]}', '']
             out += [f'- [{SEO[l["id"]]["title"]}]({SITE}{l["href"]}): {SEO[l["id"]]["description"]}' for l in p['lessons']]
             out.append('')
-    out += ['## About', '', f'- [About .NET Made Easy]({SITE}/about.html)', f'- [Contact]({SITE}/contact.html)', f'- [Privacy policy]({SITE}/privacy.html)', '']
+    out += ['## About', '', f'- [About .NET Made Easy]({SITE}/about.html)', f"- [What's new]({SITE}/changelog.html): every update to the course, newest first", f'- [Contact]({SITE}/contact.html)', f'- [Privacy policy]({SITE}/privacy.html)', '']
     open(os.path.join(ROOT, 'llms.txt'), 'w', encoding='utf-8').write('\n'.join(out))
 
 if __name__ == '__main__':
-    built = [build_lessons_index(), build_roadmap()]
+    built = [build_lessons_index(), build_roadmap(), build_changelog()]
     for f in sorted(os.listdir(os.path.join(ROOT, 'src', 'pages'))):
         if f.endswith('.html'):
             built.append(build_page(f))
