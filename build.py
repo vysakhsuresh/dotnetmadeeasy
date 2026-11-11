@@ -137,8 +137,8 @@ def build_lessons_index():
         s.append('</section>')
         sec.append('\n'.join(s))
     jsonld = {"@context": "https://schema.org", "@type": "Course",
-              "name": ".NET Made Easy — Free C# and .NET Course",
-              "description": f"A free, written C# and .NET course: {LESSON_COUNT} lessons across three tiers, from your first line of code through production systems.",
+              "name": ".NET Made Easy — C# and .NET Course",
+              "description": f"An in-depth, written C# and .NET course: {LESSON_COUNT} lessons across three tiers, from your first line of code through production systems.",
               "url": SITE + "/lessons.html", "isAccessibleForFree": True, "inLanguage": "en",
               "timeRequired": f"PT{int(round(COURSE_MINUTES / 60))}H",
               "provider": {"@type": "Organization", "name": "Layerbit", "url": "https://layerbit.co.in/"},
@@ -148,19 +148,19 @@ def build_lessons_index():
               "hasPart": [{"@type": "Course", "name": b['title'], "url": f"{SITE}/lessons.html#{ANCHOR.get(b['id'], b['id'])}"} for b in course['books']]}
     meta = {'title': f'Full Course Contents — All {LESSON_COUNT} C# and .NET Lessons | .NET Made Easy',
             'og_title': f'Full Course Contents — All {LESSON_COUNT} Lessons',
-            'description': f'The complete syllabus for the free .NET Made Easy course: all {LESSON_COUNT} C# and .NET lessons across three tiers, from your first line of code through production systems.',
+            'description': f'The complete syllabus for the .NET Made Easy course: all {LESSON_COUNT} C# and .NET lessons across three tiers, from your first line of code through production systems.',
             'path': '/lessons.html', 'nav': 'lessons', 'jsonld': jsonld}
     body = f'''<main class="page">
     <span class="eyebrow">Syllabus</span>
     <h1>Full Course Contents</h1>
-    <p class="lede">Every lesson in the free .NET Made Easy course, in order. Each one is a complete, self-contained written lesson &mdash; open any of them directly, or use the <a href="/">interactive course player</a> to track your progress as you go.</p>
+    <p class="lede">Every lesson in the .NET Made Easy course, in order. Each one is a complete, self-contained written lesson &mdash; open any of them directly, or use the <a href="/">interactive course player</a> to track your progress as you go.</p>
     <p>The course runs in three tiers. If you are new to C#, start at the top of Foundations and work down &mdash; or read the <a href="/start-here.html">Start Here guide</a> for a week-by-week plan. If you already write C# professionally, skip to Production .NET.</p>
     <div class="stat-row">
         <div class="stat"><div class="num">{LESSON_COUNT}</div><div class="label">Lessons</div></div>
         <div class="stat"><div class="num">{len(course["books"])}</div><div class="label">Tiers</div></div>
         <div class="stat"><div class="num">{parts_total}</div><div class="label">Parts</div></div>
         <div class="stat"><div class="num">~{COURSE_HOURS} h</div><div class="label">Reading time</div></div>
-        <div class="stat"><div class="num">Free</div><div class="label">No signup</div></div>
+        <div class="stat"><div class="num">C# 15</div><div class="label">.NET 11</div></div>
     </div>
     <p class="small muted">Reading times are estimates for reading at a steady pace, typing the code, and answering the quiz. Most lessons take 15 to 25 minutes; the course player shows the time left in each part as you go.</p>
     <div class="toc"><div class="toc-title">Jump to a tier</div><ol>
@@ -212,7 +212,7 @@ def build_roadmap():
     parts = {p['id']: p for b in course['books'] for p in b['parts']}
     path = '/dotnet-developer-roadmap.html'
     title = f'.NET Developer Roadmap {YEAR}: Learn C# and .NET Step by Step'
-    desc = f'A step-by-step .NET developer roadmap for {YEAR}: what to learn in C# and .NET, in what order, how long each stage takes, and a free lesson for every skill.'
+    desc = f'A step-by-step .NET developer roadmap for {YEAR}: what to learn in C# and .NET, in what order, how long each stage takes, and an in-depth lesson for every skill.'
     rows, sections, n = [], [], 0
     for phase, who, stages in ROADMAP:
         phase_min = minutes_of([l for _, pids, _, _ in stages for pid in pids for l in parts[pid]['lessons']])
@@ -248,7 +248,7 @@ def build_roadmap():
     body = f"""<main class="page page-narrow">
     <span class="eyebrow">Roadmap</span>
     <h1>.NET Developer Roadmap {YEAR}</h1>
-    <p class="lede">What to learn to become a C# and .NET developer, in the order that makes each step easier than the last. Every stage links to free lessons on this site and shows roughly how long it takes.</p>
+    <p class="lede">What to learn to become a C# and .NET developer, in the order that makes each step easier than the last. Every stage links to in-depth lessons on this site and shows roughly how long it takes.</p>
     <p>The roadmap has three phases. Phase 1 takes you from nothing to writing complete C# programs. Phase 2 covers the tools you use to build real .NET applications every day. Phase 3 is about running .NET well in production: performance, architecture, distributed systems, the cloud and debugging live problems.</p>
     <div class="callout"><p><strong>Where to start.</strong> New to programming? Start at stage 1 and use the <a href="/start-here.html">week-by-week plan</a>. Already code in another language? Skim Phase 1 and start properly at stage 7. Already ship C#? Jump to Phase 3.</p></div>
     <h2>The roadmap at a glance</h2>
@@ -301,9 +301,9 @@ def sync_index():
     s, n = re.subn(r'(<div class="tier-count">)\d+ lessons &middot; \d+ parts &middot; about \d+ hours', tier_card, s)
     assert n == len(course['books']), n
     # The course total is written by hand in the title, meta tags, hero and links.
-    old_total = re.search(r'<title>Free C# and \.NET Course — (\d+) Lessons', s).group(1)
+    old_total = re.search(r'<title>[^<]*?(\d+) (?:[A-Za-z-]+ )?Lessons', s).group(1)
     if old_total != str(LESSON_COUNT):
-        s = re.sub(r'(?<!of )\b' + old_total + r'\b(?=\s+(?:free\s+|written\s+)?[Ll]essons)', str(LESSON_COUNT), s)
+        s = re.sub(r'(?<!of )\b' + old_total + r'\b(?=\s+(?:[Ff]ree\s+|written\s+|[Ii]n-[Dd]epth\s+)?[Ll]essons)', str(LESSON_COUNT), s)
     s = re.sub(r'"courseWorkload": "PT\d+H"', f'"courseWorkload": "PT{int(round(COURSE_MINUTES / 60))}H"', s)
     # Static copy of the sidebar lesson tree. The player replaces it with the
     # interactive tree on load; without JavaScript (and for crawlers that do
@@ -346,7 +346,7 @@ def build_feed(limit=50):
     updated = max(DATES[l['id']]['modified'] for _, _, l in items)
     x = ['<?xml version="1.0" encoding="utf-8"?>', '<feed xmlns="http://www.w3.org/2005/Atom">',
          '  <title>.NET Made Easy: new and updated lessons</title>',
-         f'  <subtitle>A free, written C# and .NET course: {LESSON_COUNT} lessons from your first program to production.</subtitle>',
+         f'  <subtitle>An in-depth, written C# and .NET course: {LESSON_COUNT} lessons from your first program to production.</subtitle>',
          f'  <link href="{SITE}/feed.xml" rel="self" type="application/atom+xml" />',
          f'  <link href="{SITE}/" rel="alternate" type="text/html" />',
          f'  <id>{SITE}/</id>', f'  <updated>{updated}</updated>',
@@ -365,7 +365,7 @@ def build_feed(limit=50):
 def build_llms():
     """llms.txt (https://llmstxt.org/): a plain-text map of the site for AI assistants and AI search."""
     out = ['# .NET Made Easy', '',
-           f'> A free, written C# and .NET course from Layerbit: {LESSON_COUNT} lessons in three tiers, from a first program to running .NET in production. No signup and no paywall.',
+           f'> An in-depth, written C# and .NET course from Layerbit: {LESSON_COUNT} lessons in three tiers, from a first program to running .NET in production. No signup and no paywall.',
            '',
            'Every lesson is a standalone HTML page with a plain-English explanation, diagrams, C# code examples, common mistakes and a short quiz. The course targets C# 15 and .NET 11.',
            '', '## Start here', '',

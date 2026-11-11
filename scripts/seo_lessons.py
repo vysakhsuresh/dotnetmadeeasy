@@ -163,7 +163,7 @@ def main():
             f'  <meta property="og:image" content="{OG_IMAGE}" />',
             '  <meta property="og:image:width" content="1200" />',
             '  <meta property="og:image:height" content="630" />',
-            f'  <meta property="og:image:alt" content="{BRAND}: a free C# and .NET course" />',
+            f'  <meta property="og:image:alt" content="{BRAND}: learn C# and .NET, from first line to production" />',
             f'  <meta property="article:published_time" content="{pub_iso}" />',
             f'  <meta property="article:modified_time" content="{mod_iso}" />',
             f'  <meta property="article:section" content="{esc(tier)}" />',
