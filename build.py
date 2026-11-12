@@ -358,7 +358,7 @@ def sync_index():
     consent = '\n'.join('    ' + line for line in CONSENT_HEAD.splitlines())
     s, n = re.subn(r'    <!-- consent -->.*?<!-- /consent -->', lambda m: f'    <!-- consent -->\n{consent}\n    <!-- /consent -->', s, count=1, flags=re.S)
     assert n == 1, 'index.html: consent markers missing'
-    e = CHANGELOG[0]
+    e = next(x for x in CHANGELOG if x.get('home', True))  # minor entries can stay off the home page
     note = (f'<a class="latest-update" href="/changelog.html"><span class="latest-update-dot" aria-hidden="true"></span>'
             f'<time datetime="{e["date"]}">{short_date(e["date"])}</time><span aria-hidden="true">&middot;</span>{esc(e["title"])} <span aria-hidden="true">&rarr;</span></a>')
     s, n = re.subn(r'<!-- latest-update -->.*?<!-- /latest-update -->', lambda m: f'<!-- latest-update -->{note}<!-- /latest-update -->', s, count=1, flags=re.S)
